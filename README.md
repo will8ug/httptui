@@ -123,7 +123,3 @@ DELETE https://jsonplaceholder.typicode.com/users/1
 - **Ink**: React-based framework for building interactive CLIs.
 - **React**: Component-based UI architecture.
 - **undici**: Modern, high-performance HTTP client for Node.js.
-
-## License
-
-MIT
