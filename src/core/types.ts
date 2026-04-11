@@ -51,6 +51,10 @@ export interface RequestError {
   code?: string;
 }
 
+export interface ExecutorConfig {
+  insecure: boolean;
+}
+
 export type FocusedPanel = 'requests' | 'response';
 
 export interface AppState {
@@ -61,6 +65,7 @@ export interface AppState {
   response: ResponseData | null;
   isLoading: boolean;
   error: RequestError | null;
+  insecure: boolean;
   verbose: boolean;
   rawMode: boolean;
   showHelp: boolean;

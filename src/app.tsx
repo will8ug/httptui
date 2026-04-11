@@ -7,13 +7,14 @@ import { RequestList } from './components/RequestList';
 import { ResponseView } from './components/ResponseView';
 import { StatusBar } from './components/StatusBar';
 import { executeRequest, isRequestError } from './core/executor';
-import type { Action, AppState, FileVariable, ParsedRequest, RequestError } from './core/types';
+import type { Action, AppState, ExecutorConfig, FileVariable, ParsedRequest, RequestError } from './core/types';
 import { resolveVariables } from './core/variables';
 
 interface AppProps {
   filePath: string;
   requests: ParsedRequest[];
   variables: FileVariable[];
+  executorConfig: ExecutorConfig;
 }
 
 const REQUEST_SCROLL_WINDOW = 12;
@@ -162,6 +163,7 @@ function createInitialState(props: AppProps): AppState {
     filePath: props.filePath,
     responseScrollOffset: 0,
     requestScrollOffset: 0,
+    insecure: props.executorConfig.insecure,
   };
 }
 
@@ -184,7 +186,7 @@ export function App(props: AppProps): React.ReactElement {
 
     try {
       const resolvedRequest = resolveVariables(request, state.variables);
-      const result = await executeRequest(resolvedRequest);
+      const result = await executeRequest(resolvedRequest, props.executorConfig);
 
       if (isRequestError(result)) {
         dispatch({ type: 'REQUEST_ERROR', error: result });
@@ -277,6 +279,7 @@ export function App(props: AppProps): React.ReactElement {
           filePath={state.filePath}
           requestCount={state.requests.length}
           selectedIndex={state.selectedIndex}
+          insecure={state.insecure}
         />
       }
       overlay={state.showHelp ? <HelpOverlay visible={state.showHelp} /> : undefined}

@@ -40,6 +40,18 @@ npm link
 httptui path/to/api.http
 ```
 
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--insecure`, `-k` | Skip TLS certificate verification |
+
+```bash
+# Skip TLS certificate verification
+httptui --insecure path/to/api.http
+httptui -k path/to/api.http
+```
+
 ## Keyboard Shortcuts
 
 | Key | Action |
@@ -130,6 +142,41 @@ Content-Type: application/json
 ### Delete user
 DELETE https://jsonplaceholder.typicode.com/users/1
 ```
+
+## TLS Troubleshooting
+
+If you encounter certificate errors like `UNABLE_TO_VERIFY_LEAF_SIGNATURE` or `SELF_SIGNED_CERT_IN_CHAIN`, try these solutions in order:
+
+### 1. Use system CA certificates (Node.js 23.8+)
+
+If your Node.js version is 23.8 or later, pass the `--use-system-ca` flag via `NODE_OPTIONS`:
+
+```bash
+NODE_OPTIONS=--use-system-ca httptui api.http
+```
+
+This tells Node.js to trust certificates from your OS certificate store (macOS Keychain, Windows Certificate Store, etc.), which is the same behavior as browsers and VS Code REST Client.
+
+### 2. Point to your CA certificate file
+
+If you have a custom CA certificate (e.g., from a corporate proxy), use `NODE_EXTRA_CA_CERTS`:
+
+```bash
+NODE_EXTRA_CA_CERTS=/path/to/your-ca.pem httptui api.http
+```
+
+This works with all Node.js versions. The file should be PEM-encoded and can contain multiple certificates.
+
+### 3. Skip certificate verification (not recommended)
+
+As a last resort, disable TLS verification entirely:
+
+```bash
+httptui --insecure api.http
+httptui -k api.http
+```
+
+**Warning**: This disables all certificate checks, making connections vulnerable to man-in-the-middle attacks. Use only for local development or trusted networks.
 
 ## Tech Stack
 

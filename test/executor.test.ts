@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { RequestError, ResolvedRequest, ResponseData } from '../src/core/types';
 
-const { requestMock } = vi.hoisted(() => ({
+const { agentMock, requestMock } = vi.hoisted(() => ({
+  agentMock: vi.fn().mockImplementation(() => ({})),
   requestMock: vi.fn(),
 }));
 
 vi.mock('undici', () => ({
+  Agent: agentMock,
   request: requestMock,
 }));
 
@@ -136,6 +138,73 @@ describe('executeRequest', () => {
       message: 'connect ECONNREFUSED 127.0.0.1:3000',
       code: 'ECONNREFUSED',
     });
+  });
+
+  it('appends TLS hint for UNABLE_TO_VERIFY_LEAF_SIGNATURE errors', async () => {
+    const error = new Error('unable to verify the first certificate') as Error & { code?: string };
+    error.code = 'UNABLE_TO_VERIFY_LEAF_SIGNATURE';
+    requestMock.mockRejectedValue(error);
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isRequestError(result)).toBe(true);
+    if (!isRequestError(result)) throw new Error('Expected error');
+    expect(result.message).toContain('unable to verify the first certificate');
+    expect(result.message).toContain('--insecure');
+    expect(result.message).toContain('NODE_EXTRA_CA_CERTS');
+    expect(result.code).toBe('UNABLE_TO_VERIFY_LEAF_SIGNATURE');
+  });
+
+  it('appends TLS hint for DEPTH_ZERO_SELF_SIGNED_CERT errors', async () => {
+    const error = new Error('self-signed certificate') as Error & { code?: string };
+    error.code = 'DEPTH_ZERO_SELF_SIGNED_CERT';
+    requestMock.mockRejectedValue(error);
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isRequestError(result)).toBe(true);
+    if (!isRequestError(result)) throw new Error('Expected error');
+    expect(result.message).toContain('self-signed certificate');
+    expect(result.message).toContain('--insecure');
+  });
+
+  it('does not append TLS hint for non-TLS errors', async () => {
+    const error = new Error('connect ECONNREFUSED 127.0.0.1:3000') as Error & { code?: string };
+    error.code = 'ECONNREFUSED';
+    requestMock.mockRejectedValue(error);
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isRequestError(result)).toBe(true);
+    if (!isRequestError(result)) throw new Error('Expected error');
+    expect(result.message).toBe('connect ECONNREFUSED 127.0.0.1:3000');
+    expect(result.message).not.toContain('--insecure');
+  });
+
+  it('passes dispatcher with rejectUnauthorized:false when insecure is true', async () => {
+    requestMock.mockResolvedValue(createMockResponse());
+
+    await executeRequest(createResolvedRequest(), { insecure: true });
+
+    expect(requestMock).toHaveBeenCalledWith(
+      'https://example.com/api',
+      expect.objectContaining({
+        dispatcher: expect.any(Object),
+      }),
+    );
+  });
+
+  it('does not pass dispatcher when insecure is false', async () => {
+    requestMock.mockResolvedValue(createMockResponse());
+
+    await executeRequest(createResolvedRequest(), { insecure: false });
+
+    expect(requestMock).toHaveBeenCalledWith(
+      'https://example.com/api',
+      expect.objectContaining({
+        dispatcher: undefined,
+      }),
+    );
   });
 
   it('type guard identifies both response and error results', () => {

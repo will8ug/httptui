@@ -1,6 +1,6 @@
-import { request } from 'undici';
+import { Agent, request } from 'undici';
 
-import type { RequestError, ResolvedRequest, ResponseData } from './types';
+import type { ExecutorConfig, RequestError, ResolvedRequest, ResponseData } from './types';
 
 const STATUS_TEXTS: Record<number, string> = {
   200: 'OK',
@@ -39,11 +39,29 @@ function normalizeHeaders(
   }, {});
 }
 
+const TLS_ERROR_CODES = new Set([
+  'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+  'DEPTH_ZERO_SELF_SIGNED_CERT',
+  'SELF_SIGNED_CERT_IN_CHAIN',
+  'CERT_HAS_EXPIRED',
+  'ERR_TLS_CERT_ALTNAME_INVALID',
+]);
+
+function getTlsHint(code: string): string | undefined {
+  if (!TLS_ERROR_CODES.has(code)) {
+    return undefined;
+  }
+
+  return 'Hint: Try running with --insecure flag, or set NODE_EXTRA_CA_CERTS=/path/to/ca.pem';
+}
+
 function toRequestError(error: unknown): RequestError {
   if (error instanceof Error) {
     const errorWithCode = error as Error & { code?: string };
+    const hint = errorWithCode.code ? getTlsHint(errorWithCode.code) : undefined;
+
     return {
-      message: error.message,
+      message: hint ? `${error.message}\n${hint}` : error.message,
       code: errorWithCode.code,
     };
   }
@@ -59,6 +77,7 @@ function getStatusText(statusCode: number): string {
 
 export async function executeRequest(
   resolvedRequest: ResolvedRequest,
+  config?: ExecutorConfig,
 ): Promise<ResponseData | RequestError> {
   try {
     new URL(resolvedRequest.url);
@@ -79,11 +98,16 @@ export async function executeRequest(
   const startTime = performance.now();
 
   try {
+    const dispatcher = config?.insecure
+      ? new Agent({ connect: { rejectUnauthorized: false } })
+      : undefined;
+
     const response = await request(resolvedRequest.url, {
       method: resolvedRequest.method,
       headers,
       body: resolvedRequest.body,
       signal: AbortSignal.timeout(30000),
+      dispatcher,
     });
 
     const body = await response.body.text();

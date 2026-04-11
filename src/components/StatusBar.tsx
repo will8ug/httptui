@@ -7,6 +7,7 @@ interface StatusBarProps {
   filePath: string;
   requestCount: number;
   selectedIndex: number;
+  insecure: boolean;
 }
 
 function truncateText(value: string, maxWidth: number): string {
@@ -29,17 +30,22 @@ export function StatusBar({
   filePath,
   requestCount,
   selectedIndex,
+  insecure,
 }: StatusBarProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || 80;
   const leftText = '[Enter] Send  [j/k] Nav  [Tab] Panel  [v] Verbose  [q] Quit';
   const rightText = `${basename(filePath)}  ${selectedIndex + 1}/${requestCount}`;
-  const availableLeftWidth = Math.max(0, columns - rightText.length - 1);
+  const insecureLabelWidth = insecure ? 10 : 0;
+  const availableLeftWidth = Math.max(0, columns - rightText.length - insecureLabelWidth - 1);
 
   return (
     <Box width="100%" justifyContent="space-between">
       <Text color="gray">{truncateText(leftText, availableLeftWidth)}</Text>
-      <Text color="gray">{rightText}</Text>
+      <Box>
+        {insecure ? <Text color="yellow" bold>INSECURE  </Text> : null}
+        <Text color="gray">{rightText}</Text>
+      </Box>
     </Box>
   );
 }
