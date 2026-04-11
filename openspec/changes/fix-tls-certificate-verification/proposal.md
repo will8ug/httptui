@@ -6,7 +6,6 @@ httptui fails with `UNABLE_TO_VERIFY_LEAF_SIGNATURE` when hitting APIs whose TLS
 
 - Add a `--insecure` CLI flag to skip TLS certificate verification for environments where system CA setup is impractical.
 - Improve error messaging for TLS failures — surface the specific certificate error and suggest remediation steps (`NODE_EXTRA_CA_CERTS`, `--use-system-ca`, `--insecure`).
-- Update the shebang/bin entry to support `--use-system-ca` passthrough for Node.js 23.8+.
 - Update README with TLS troubleshooting section.
 
 ## Capabilities
