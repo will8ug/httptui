@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import React, { useReducer } from 'react';
 import { useApp, useInput } from 'ink';
 
@@ -8,6 +10,7 @@ import { ResponseView } from './components/ResponseView';
 import { StatusBar } from './components/StatusBar';
 import { executeRequest, isRequestError } from './core/executor';
 import type { Action, AppState, ExecutorConfig, FileVariable, ParsedRequest, RequestError } from './core/types';
+import { parseHttpFile } from './core/parser';
 import { resolveVariables } from './core/variables';
 
 interface AppProps {
@@ -130,6 +133,31 @@ function reducer(state: AppState, action: Action): AppState {
       };
     }
 
+    case 'RELOAD_FILE': {
+      const currentRequestName = state.requests[state.selectedIndex]?.name;
+      const newIndex = currentRequestName
+        ? action.requests.findIndex((req) => req.name === currentRequestName)
+        : -1;
+
+      return {
+        ...state,
+        requests: action.requests,
+        variables: action.variables,
+        selectedIndex: newIndex >= 0 ? newIndex : 0,
+        response: null,
+        error: null,
+        responseScrollOffset: 0,
+        requestScrollOffset: 0,
+        reloadMessage: 'Reloaded',
+      };
+    }
+
+    case 'CLEAR_RELOAD_MESSAGE':
+      return {
+        ...state,
+        reloadMessage: null,
+      };
+
     default:
       return state;
   }
@@ -164,6 +192,7 @@ function createInitialState(props: AppProps): AppState {
     responseScrollOffset: 0,
     requestScrollOffset: 0,
     insecure: props.executorConfig.insecure,
+    reloadMessage: null,
   };
 }
 
@@ -233,6 +262,19 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (input === 'R') {
+      try {
+        const content = readFileSync(state.filePath, 'utf8');
+        const parseResult = parseHttpFile(content);
+        dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
+        setTimeout(() => dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }), 2000);
+      } catch (error) {
+        dispatch({ type: 'REQUEST_ERROR', error: toRequestError(error) });
+      }
+
+      return;
+    }
+
     if (key.return) {
       void sendSelectedRequest();
       return;
@@ -280,6 +322,7 @@ export function App(props: AppProps): React.ReactElement {
           requestCount={state.requests.length}
           selectedIndex={state.selectedIndex}
           insecure={state.insecure}
+          reloadMessage={state.reloadMessage}
         />
       }
       overlay={state.showHelp ? <HelpOverlay visible={state.showHelp} /> : undefined}

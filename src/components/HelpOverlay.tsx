@@ -12,6 +12,7 @@ const SHORTCUTS = [
   ['Tab', 'Switch focused panel'],
   ['v', 'Toggle verbose headers'],
   ['r', 'Toggle raw response body'],
+  ['R', 'Reload file from disk'],
   ['?', 'Toggle this help overlay'],
   ['q', 'Quit application'],
   ['Escape', 'Close help overlay'],

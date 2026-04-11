@@ -62,6 +62,7 @@ httptui -k path/to/api.http
 | `Tab` | Switch focus between panels |
 | `v` | Toggle verbose mode (show/hide headers) |
 | `r` | Toggle raw mode (no JSON formatting) |
+| `R` | Reload file from disk |
 | `?` | Toggle help overlay |
 | `q` | Quit application |
 
