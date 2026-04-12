@@ -27,7 +27,7 @@ Or
 # npm config set prefix "$HOME/.local"
 # npm config delete prefix
 
-cd restclient-cli-nodejs
+cd <project-folder>
 npm install
 npm link
 
