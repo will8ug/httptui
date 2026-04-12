@@ -17,7 +17,7 @@ The removal touches 5 source files and the TUI spec, but the change is straightf
 
 ## Decisions
 
-1. **Always pretty-print JSON** — `formatResponseBody` loses its `raw` parameter and always attempts JSON pretty-printing. Non-JSON responses continue to pass through unchanged. This is the simplest approach and matches what users currently see 100% of the time (since raw mode was invisible).
+1. **Preserve existing rendering behavior** — `formatResponseBody` loses its `raw` parameter and always uses the current default behavior: attempt JSON pretty-printing, fall back to as-is for non-JSON. No rendering behavior changes — just removing the unused toggle path.
 
 2. **Remove the `r` shortcut entirely** — Rather than repurposing the `r` key for something else, simply remove it. Fewer shortcuts means less cognitive load for users. The key can be reassigned in a future change if needed.
 

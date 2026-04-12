@@ -12,7 +12,7 @@
 
 ### Requirement: Keyboard Shortcuts
 
-The TUI SHALL define a `SHORTCUTS` array listing all keyboard shortcuts. The `r` key SHALL NOT be included in the list. Response bodies SHALL always be formatted using `formatResponseBody` without a `rawMode` flag — JSON responses are pretty-printed, non-JSON responses are displayed as-is.
+The TUI SHALL define a `SHORTCUTS` array listing all keyboard shortcuts. The `r` key SHALL NOT be included in the list. Response body rendering SHALL preserve the existing default behavior: attempt JSON pretty-printing, fall back to displaying as-is for non-JSON content.
 
 #### Scenario: Shortcuts list does not include r
 - **WHEN** the `SHORTCUTS` array is rendered in the help overlay
