@@ -2,7 +2,6 @@ import React from 'react';
 import { Spinner } from '@inkjs/ui';
 import { Box, Text, useStdout } from 'ink';
 
-import { formatResponseBody } from '../core/formatter';
 import type { RequestError, ResponseData } from '../core/types';
 import { colorizeJson, getStatusColor } from '../utils/colors';
 
@@ -92,8 +91,8 @@ export function ResponseView({
   } else if (!response) {
     content = <Text color="gray">Press Enter to send a request</Text>;
   } else {
-    const formattedBody = formatResponseBody(response.body);
-    const isJsonBody = isJson(formattedBody);
+    const responseBody = response.body;
+    const isJsonBody = isJson(responseBody);
     const responseLines: React.ReactNode[] = [];
 
     responseLines.push(
@@ -122,7 +121,7 @@ export function ResponseView({
       </Text>,
     );
 
-    const bodyLines = formattedBody.split('\n');
+    const bodyLines = responseBody.split('\n');
 
     bodyLines.forEach((line, index) => {
       const displayLine = line === '' ? ' ' : truncateText(line, contentWidth);
