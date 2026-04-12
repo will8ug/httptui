@@ -275,4 +275,43 @@ describe('parseHttpFile', () => {
       variables: [],
     });
   });
+
+  it('parses URLs containing {{...}} expressions with spaces', () => {
+    const content = [
+      '@baseUrl = https://jsonplaceholder.typicode.com',
+      '',
+      '### Get post with dynamic ID',
+      'GET {{baseUrl}}/posts/{{$randomInt 1 100}}',
+    ].join('\n');
+
+    const result = parseHttpFile(content);
+
+    expect(result.requests).toHaveLength(1);
+    expect(result.requests[0].url).toBe('{{baseUrl}}/posts/{{$randomInt 1 100}}');
+    expect(result.requests[0].method).toBe('GET');
+    expect(result.requests[0].name).toBe('Get post with dynamic ID');
+  });
+
+  it('parses multiple requests where some URLs contain {{...}} with spaces', () => {
+    const content = [
+      '### First',
+      'GET https://example.com/users',
+      '',
+      '### Second',
+      'GET {{baseUrl}}/posts/{{$randomInt 1 100}}',
+      '',
+      '### Third',
+      'POST https://example.com/posts',
+      'Content-Type: application/json',
+      '',
+      '{}',
+    ].join('\n');
+
+    const result = parseHttpFile(content);
+
+    expect(result.requests).toHaveLength(3);
+    expect(result.requests[0].url).toBe('https://example.com/users');
+    expect(result.requests[1].url).toBe('{{baseUrl}}/posts/{{$randomInt 1 100}}');
+    expect(result.requests[2].url).toBe('https://example.com/posts');
+  });
 });
