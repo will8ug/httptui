@@ -24,7 +24,7 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 │                    │   }                                    │
 │                    │                                        │
 ├────────────────────┴───────────────────────────────────────┤
-│ [Enter] Send  [j/k] Nav  [Tab] Panel  [v] Verbose  [q] Quit│
+│ [Enter] Send  [j/k] Nav  [Tab] Panel  [v] Verbose  [q] Quit  [?] Help│
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -47,7 +47,7 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 - Empty state: "Select a request and press Enter to send"
 
 ### Status Bar (bottom)
-- Left side: keyboard shortcut hints
+- Left side: keyboard shortcut hints (rendered from centralized shortcuts data, showing only items with `showInBar: true`)
 - Right side: file name, request count
 - Single line, full width
 - Dimmed text

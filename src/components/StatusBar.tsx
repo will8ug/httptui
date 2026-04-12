@@ -3,6 +3,8 @@ import { basename } from 'node:path';
 import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
+import { SHORTCUTS } from '../core/shortcuts';
+
 interface StatusBarProps {
   filePath: string;
   requestCount: number;
@@ -36,7 +38,8 @@ export function StatusBar({
 }: StatusBarProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || 80;
-  const leftText = '[Enter] Send  [j/k] Nav  [Tab] Panel  [v] Verbose  [o] Open  [R] Reload  [q] Quit';
+  const barShortcuts = SHORTCUTS.filter((s) => s.showInBar);
+  const leftText = barShortcuts.map((s) => `[${s.key}] ${s.label}`).join('  ');
   const rightText = `${basename(filePath)}  ${selectedIndex + 1}/${requestCount}`;
   const insecureLabelWidth = insecure ? 10 : 0;
   const reloadLabelWidth = reloadMessage ? reloadMessage.length + 2 : 0;

@@ -1,23 +1,11 @@
 import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
+import { SHORTCUTS } from '../core/shortcuts';
+
 interface HelpOverlayProps {
   visible: boolean;
 }
-
-const SHORTCUTS = [
-  ['↑ / k', 'Previous request or scroll up'],
-  ['↓ / j', 'Next request or scroll down'],
-  ['Enter', 'Send selected request'],
-  ['Tab', 'Switch focused panel'],
-  ['v', 'Toggle verbose headers'],
-  ['r', 'Toggle raw response body'],
-  ['o', 'Open a different file'],
-  ['R', 'Reload file from disk'],
-  ['?', 'Toggle this help overlay'],
-  ['q', 'Quit application'],
-  ['Escape', 'Close overlay / cancel file load'],
-] as const;
 
 export function HelpOverlay({ visible }: HelpOverlayProps): React.ReactElement | null {
   const { stdout } = useStdout();
@@ -43,10 +31,10 @@ export function HelpOverlay({ visible }: HelpOverlayProps): React.ReactElement |
         </Text>
         <Text color="gray">Navigate requests, send them, and inspect responses.</Text>
         <Text>{' '}</Text>
-        {SHORTCUTS.map(([keyLabel, description]) => (
-          <Text key={keyLabel}>
-            <Text color="yellow">{keyLabel.padEnd(8, ' ')}</Text>
-            <Text color="white"> {description}</Text>
+        {SHORTCUTS.map((shortcut) => (
+          <Text key={shortcut.key}>
+            <Text color="yellow">{shortcut.key.padEnd(8, ' ')}</Text>
+            <Text color="white"> {shortcut.description}</Text>
           </Text>
         ))}
         <Text>{' '}</Text>
