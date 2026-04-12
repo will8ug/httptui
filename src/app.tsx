@@ -1,8 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import React, { useReducer } from 'react';
 import { useApp, useInput } from 'ink';
 
+import { FileLoadOverlay } from './components/FileLoadOverlay';
 import { HelpOverlay } from './components/HelpOverlay';
 import { Layout } from './components/Layout';
 import { RequestList } from './components/RequestList';
@@ -158,6 +160,57 @@ function reducer(state: AppState, action: Action): AppState {
         reloadMessage: null,
       };
 
+    case 'ENTER_FILE_LOAD':
+      return {
+        ...state,
+        mode: 'fileLoad',
+        fileLoadInput: '',
+        fileLoadError: null,
+      };
+
+    case 'UPDATE_FILE_LOAD_INPUT':
+      return {
+        ...state,
+        fileLoadInput: action.value,
+      };
+
+    case 'SET_FILE_LOAD_ERROR':
+      return {
+        ...state,
+        fileLoadError: action.error,
+      };
+
+    case 'LOAD_FILE': {
+      const currentRequestName = state.requests[state.selectedIndex]?.name;
+      const newIndex = currentRequestName
+        ? action.requests.findIndex((req) => req.name === currentRequestName)
+        : -1;
+
+      return {
+        ...state,
+        requests: action.requests,
+        variables: action.variables,
+        filePath: action.filePath,
+        selectedIndex: newIndex >= 0 ? newIndex : 0,
+        response: null,
+        error: null,
+        responseScrollOffset: 0,
+        requestScrollOffset: 0,
+        mode: 'normal',
+        fileLoadInput: '',
+        fileLoadError: null,
+        reloadMessage: `Loaded: ${action.filePath.split('/').pop()}`,
+      };
+    }
+
+    case 'CANCEL_FILE_LOAD':
+      return {
+        ...state,
+        mode: 'normal',
+        fileLoadInput: '',
+        fileLoadError: null,
+      };
+
     default:
       return state;
   }
@@ -193,6 +246,9 @@ function createInitialState(props: AppProps): AppState {
     requestScrollOffset: 0,
     insecure: props.executorConfig.insecure,
     reloadMessage: null,
+    mode: 'normal',
+    fileLoadInput: '',
+    fileLoadError: null,
   };
 }
 
@@ -237,6 +293,61 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (state.mode === 'fileLoad') {
+      if (key.escape) {
+        dispatch({ type: 'CANCEL_FILE_LOAD' });
+        return;
+      }
+
+      if (key.return) {
+        const inputPath = state.fileLoadInput.trim();
+        if (!inputPath) {
+          dispatch({ type: 'SET_FILE_LOAD_ERROR', error: 'Please enter a file path' });
+          return;
+        }
+
+        const resolvedPath = resolve(inputPath);
+
+        if (!existsSync(resolvedPath)) {
+          dispatch({ type: 'SET_FILE_LOAD_ERROR', error: `File not found: ${inputPath}` });
+          return;
+        }
+
+        try {
+          const content = readFileSync(resolvedPath, 'utf8');
+          const parseResult = parseHttpFile(content);
+
+          if (parseResult.requests.length === 0) {
+            dispatch({ type: 'SET_FILE_LOAD_ERROR', error: `No requests found in ${inputPath}` });
+            return;
+          }
+
+          dispatch({
+            type: 'LOAD_FILE',
+            requests: parseResult.requests,
+            variables: parseResult.variables,
+            filePath: resolvedPath,
+          });
+          setTimeout(() => dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }), 2000);
+        } catch (error) {
+          dispatch({ type: 'SET_FILE_LOAD_ERROR', error: toRequestError(error).message });
+        }
+
+        return;
+      }
+
+      if (key.backspace || key.delete) {
+        dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: state.fileLoadInput.slice(0, -1) });
+        return;
+      }
+
+      if (input && !key.ctrl && !key.meta) {
+        dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: state.fileLoadInput + input });
+      }
+
+      return;
+    }
+
     if ((key.ctrl && input === 'c') || input === 'q') {
       exit();
       return;
@@ -259,6 +370,11 @@ export function App(props: AppProps): React.ReactElement {
 
     if (input === 'r') {
       dispatch({ type: 'TOGGLE_RAW' });
+      return;
+    }
+
+    if (input === 'o') {
+      dispatch({ type: 'ENTER_FILE_LOAD' });
       return;
     }
 
@@ -325,7 +441,7 @@ export function App(props: AppProps): React.ReactElement {
           reloadMessage={state.reloadMessage}
         />
       }
-      overlay={state.showHelp ? <HelpOverlay visible={state.showHelp} /> : undefined}
+      overlay={state.showHelp ? <HelpOverlay visible={state.showHelp} /> : state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> : undefined}
     />
   );
 }

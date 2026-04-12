@@ -56,6 +56,7 @@ export interface ExecutorConfig {
 }
 
 export type FocusedPanel = 'requests' | 'response';
+export type AppMode = 'normal' | 'fileLoad';
 
 export interface AppState {
   requests: ParsedRequest[];
@@ -73,6 +74,9 @@ export interface AppState {
   responseScrollOffset: number;
   requestScrollOffset: number;
   reloadMessage: string | null;
+  mode: AppMode;
+  fileLoadInput: string;
+  fileLoadError: string | null;
 }
 
 export type Action =
@@ -88,4 +92,9 @@ export type Action =
   | { type: 'SCROLL'; direction: 'up' | 'down' }
   | { type: 'CLOSE_HELP' }
   | { type: 'RELOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[] }
-  | { type: 'CLEAR_RELOAD_MESSAGE' };
+  | { type: 'CLEAR_RELOAD_MESSAGE' }
+  | { type: 'ENTER_FILE_LOAD' }
+  | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string }
+  | { type: 'SET_FILE_LOAD_ERROR'; error: string }
+  | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string }
+  | { type: 'CANCEL_FILE_LOAD' };

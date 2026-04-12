@@ -40,6 +40,8 @@ npm link
 httptui path/to/api.http
 ```
 
+You can also open a different `.http` file from within the running TUI by pressing `o` and typing the file path. This is useful when working across multiple API definition files without restarting httptui.
+
 ### Options
 
 | Flag | Description |
@@ -62,6 +64,7 @@ httptui -k path/to/api.http
 | `Tab` | Switch focus between panels |
 | `v` | Toggle verbose mode (show/hide headers) |
 | `r` | Toggle raw mode (no JSON formatting) |
+| `o` | Open a different .http file |
 | `R` | Reload file from disk |
 | `?` | Toggle help overlay |
 | `q` | Quit application |

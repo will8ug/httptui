@@ -36,17 +36,17 @@ export function StatusBar({
 }: StatusBarProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || 80;
-  const leftText = '[Enter] Send  [j/k] Nav  [Tab] Panel  [v] Verbose  [R] Reload  [q] Quit';
+  const leftText = '[Enter] Send  [j/k] Nav  [Tab] Panel  [v] Verbose  [o] Open  [R] Reload  [q] Quit';
   const rightText = `${basename(filePath)}  ${selectedIndex + 1}/${requestCount}`;
   const insecureLabelWidth = insecure ? 10 : 0;
-  const reloadLabelWidth = reloadMessage ? 10 : 0;
+  const reloadLabelWidth = reloadMessage ? reloadMessage.length + 2 : 0;
   const availableLeftWidth = Math.max(0, columns - rightText.length - insecureLabelWidth - reloadLabelWidth - 1);
 
   return (
     <Box width="100%" justifyContent="space-between">
       <Text color="gray">{truncateText(leftText, availableLeftWidth)}</Text>
       <Box>
-        {reloadMessage ? <Text color="green" bold>Reloaded  </Text> : null}
+        {reloadMessage ? <Text color="green" bold>{reloadMessage}  </Text> : null}
         {insecure ? <Text color="yellow" bold>INSECURE  </Text> : null}
         <Text color="gray">{rightText}</Text>
       </Box>

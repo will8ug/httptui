@@ -12,10 +12,11 @@ const SHORTCUTS = [
   ['Tab', 'Switch focused panel'],
   ['v', 'Toggle verbose headers'],
   ['r', 'Toggle raw response body'],
+  ['o', 'Open a different file'],
   ['R', 'Reload file from disk'],
   ['?', 'Toggle this help overlay'],
   ['q', 'Quit application'],
-  ['Escape', 'Close help overlay'],
+  ['Escape', 'Close overlay / cancel file load'],
 ] as const;
 
 export function HelpOverlay({ visible }: HelpOverlayProps): React.ReactElement | null {
