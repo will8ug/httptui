@@ -2,7 +2,7 @@
 
 Interactive terminal UI for .http files.
 
-<!-- TODO: Add screenshot/demo GIF -->
+![httptui requests](assets/httptui-requests.jpg)
 
 httptui is a fast, keyboard-driven REST client that lives in your terminal. It parses `.http` and `.rest` files, allowing you to browse and execute requests without leaving your workflow.
 
