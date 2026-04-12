@@ -101,12 +101,6 @@ function reducer(state: AppState, action: Action): AppState {
         verbose: !state.verbose,
       };
 
-    case 'TOGGLE_RAW':
-      return {
-        ...state,
-        rawMode: !state.rawMode,
-      };
-
     case 'TOGGLE_HELP':
       return {
         ...state,
@@ -239,7 +233,6 @@ function createInitialState(props: AppProps): AppState {
     isLoading: false,
     error: null,
     verbose: false,
-    rawMode: false,
     showHelp: false,
     filePath: props.filePath,
     responseScrollOffset: 0,
@@ -368,11 +361,6 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
-    if (input === 'r') {
-      dispatch({ type: 'TOGGLE_RAW' });
-      return;
-    }
-
     if (input === 'o') {
       dispatch({ type: 'ENTER_FILE_LOAD' });
       return;
@@ -427,7 +415,6 @@ export function App(props: AppProps): React.ReactElement {
           error={state.error}
           isLoading={state.isLoading}
           verbose={state.verbose}
-          rawMode={state.rawMode}
           focused={state.focusedPanel === 'response'}
           scrollOffset={state.responseScrollOffset}
         />

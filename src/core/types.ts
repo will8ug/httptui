@@ -68,7 +68,6 @@ export interface AppState {
   error: RequestError | null;
   insecure: boolean;
   verbose: boolean;
-  rawMode: boolean;
   showHelp: boolean;
   filePath: string;
   responseScrollOffset: number;
@@ -87,7 +86,6 @@ export type Action =
   | { type: 'REQUEST_ERROR'; error: RequestError }
   | { type: 'SWITCH_PANEL' }
   | { type: 'TOGGLE_VERBOSE' }
-  | { type: 'TOGGLE_RAW' }
   | { type: 'TOGGLE_HELP' }
   | { type: 'SCROLL'; direction: 'up' | 'down' }
   | { type: 'CLOSE_HELP' }

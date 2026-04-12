@@ -1,5 +1,5 @@
-export function formatResponseBody(body: string, raw: boolean): string {
-  if (body.length === 0 || raw) {
+export function formatResponseBody(body: string): string {
+  if (body.length === 0) {
     return body;
   }
 

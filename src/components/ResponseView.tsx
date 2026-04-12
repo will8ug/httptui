@@ -11,7 +11,6 @@ interface ResponseViewProps {
   error: RequestError | null;
   isLoading: boolean;
   verbose: boolean;
-  rawMode: boolean;
   focused: boolean;
   scrollOffset: number;
 }
@@ -73,7 +72,6 @@ export function ResponseView({
   error,
   isLoading,
   verbose,
-  rawMode,
   focused,
   scrollOffset,
 }: ResponseViewProps): React.ReactElement {
@@ -94,7 +92,7 @@ export function ResponseView({
   } else if (!response) {
     content = <Text color="gray">Press Enter to send a request</Text>;
   } else {
-    const formattedBody = formatResponseBody(response.body, rawMode);
+    const formattedBody = formatResponseBody(response.body);
     const isJsonBody = isJson(formattedBody);
     const responseLines: React.ReactNode[] = [];
 

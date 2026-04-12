@@ -14,7 +14,6 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: '?', label: 'Help', description: 'Toggle this help overlay', showInBar: true },
   { key: '↑ / k', label: '', description: 'Previous request or scroll up', showInBar: false },
   { key: '↓ / j', label: '', description: 'Next request or scroll down', showInBar: false },
-  { key: 'r', label: '', description: 'Toggle raw response body', showInBar: false },
   { key: 'o', label: '', description: 'Open a different file', showInBar: false },
   { key: 'R', label: '', description: 'Reload file from disk', showInBar: false },
   { key: 'Escape', label: '', description: 'Close current overlay', showInBar: false },
