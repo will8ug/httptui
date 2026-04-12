@@ -38,7 +38,7 @@ export function HelpOverlay({ visible }: HelpOverlayProps): React.ReactElement |
           </Text>
         ))}
         <Text>{' '}</Text>
-        <Text color="gray">Press Escape or ? to close</Text>
+        <Text color="gray">Press Escape or ? to close this overlay</Text>
       </Box>
     </Box>
   );

@@ -56,7 +56,7 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 - Lists all keyboard shortcuts from the centralized `SHORTCUTS` data source (including those not shown in the status bar)
 - Key displayed in yellow (padded to 8 characters), description in white
 - Toggled by pressing `?`
-- Closed by pressing `Escape` or `?`
+- Closed by pressing `Escape` or `?` (closes current overlay)
 
 ## Keyboard Shortcuts
 
@@ -74,8 +74,8 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 | `o` | Any | Open a different .http file |
 | `?` | Any | Toggle help overlay |
 | `q` | Any (no overlay) | Quit application |
-| `Escape` | Help overlay open | Close overlay |
-| `Escape` | File-load overlay open | Cancel file load |
+| `Escape` | Help overlay open | Close current overlay |
+| `Escape` | File-load overlay open | Close current overlay |
 
 ## States
 

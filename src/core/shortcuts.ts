@@ -17,5 +17,5 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'r', label: '', description: 'Toggle raw response body', showInBar: false },
   { key: 'o', label: '', description: 'Open a different file', showInBar: false },
   { key: 'R', label: '', description: 'Reload file from disk', showInBar: false },
-  { key: 'Escape', label: '', description: 'Close overlay / cancel file load', showInBar: false },
+  { key: 'Escape', label: '', description: 'Close current overlay', showInBar: false },
 ] as const;
