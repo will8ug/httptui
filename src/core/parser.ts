@@ -65,7 +65,7 @@ function parseMethod(value: string): HttpMethod | undefined {
 }
 
 function parseRequestLine(line: string): Pick<RequestBuilder, 'method' | 'url'> | undefined {
-  const match = line.match(/^([A-Za-z]+)\s+((?:\{\{[^}]*\}\}|[^\s])+)(?:\s+HTTP\/\S+)?$/);
+  const match = line.match(/^([A-Za-z]+)\s+((?:\{\{[^}]*}}|\S)+)(?:\s+HTTP\/\S+)?$/);
 
   if (!match) {
     return undefined;
