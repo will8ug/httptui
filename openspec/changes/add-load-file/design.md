@@ -31,11 +31,15 @@ The app currently uses `readFileSync` for file I/O (in both `cli.tsx` and the `R
 
 **Why**: `o` is mnemonic ("open"), and it's currently unbound. It follows vim convention where `:e` opens a file, but since we don't have a command line, a single key is simpler. No conflict with existing bindings (`r` = raw, `R` = reload, `v` = verbose, `Tab`, `?`, `q`, `j`/`k`).
 
-### 2. Text input as a mode (not a modal overlay)
+### 2. Pop-up overlay for file input
 
-**Choice**: When `o` is pressed, the app enters a "file-load mode". A text input bar appears at the bottom of the screen (replacing or overlaying the status bar area). All keystrokes go to the text input until Enter (confirm) or Escape (cancel).
+**Choice**: When `o` is pressed, a centered pop-up overlay appears (similar to `HelpOverlay`) containing a prompt, a text input, and a hint line. The overlay blocks interaction with the main panels until the user confirms (Enter) or cancels (Escape).
 
-**Why**: This mirrors how vim's command line works — the bottom of the screen becomes an input area. It's simpler than rendering a full modal overlay for what is essentially a single-line input. The existing help overlay pattern (boolean state toggle) shows we already have a modal mechanism, but a text input is different because it needs to capture keystrokes.
+**Why**: An overlay provides enough space to show the prompt, the typed path, a hint line, *and* inline error messages — all in one place. This is critical for error UX: when a file is not found or has no requests, the error appears inside the overlay next to the input, the typed path is preserved, and the user can immediately correct it and retry. A status bar replacement would have nowhere natural to show errors without losing the input text.
+
+The overlay also makes the mode switch visually unambiguous — it's obvious you're in a different interaction state. This follows the existing `HelpOverlay` pattern already proven in the codebase, so the component structure is well-established.
+
+The main trade-off is that the overlay obscures the current request list and response while it's open. This is acceptable because the user is *leaving* the current file — they don't need to reference it while typing a new path.
 
 ### 3. Mode state as a union field
 
@@ -49,11 +53,11 @@ The app currently uses `readFileSync` for file I/O (in both `cli.tsx` and the `R
 
 **Why**: Users most commonly start httptui from the directory containing their `.http` files. Resolving against CWD matches the CLI startup behavior where `httptui path/to/api.http` resolves relative to CWD. Relative-to-current-file resolution would be surprising if the user has navigated to a different directory. Absolute paths always work regardless.
 
-### 5. Confirm with a "Loaded" message (reuse the reloadMessage pattern)
+### 5. Error display inside overlay + success confirmation in status bar
 
-**Choice**: On successful file load, set `reloadMessage` to `"Loaded: {basename}"`. The existing `CLEAR_RELOAD_MESSAGE` timeout (2 seconds) clears it.
+**Choice**: Errors (file not found, no requests, parse failure) are displayed inline inside the overlay as red text below the input, preserving the typed path so the user can correct it. On successful load, the overlay closes and a fleeting `"Loaded: {basename}"` message appears in the status bar via the existing `reloadMessage` / `CLEAR_RELOAD_MESSAGE` mechanism.
 
-**Why**: Reuses the existing fleeting-message mechanism — no new UI component. The basename of the new file distinguishes it from a plain "Reloaded" message. On error, dispatch `REQUEST_ERROR` which already handles error display.
+**Why**: Showing errors inside the overlay is the key UX advantage of the overlay approach — the user sees the error right next to their input, can fix the path, and press Enter again without losing what they typed. This is much better than dispatching `REQUEST_ERROR` (which shows errors in the response panel, conflating file-load errors with HTTP errors). Success confirmation reuses the existing fleeting-message pattern for consistency with `R` reload.
 
 ### 6. State transitions on load
 
@@ -70,6 +74,6 @@ The app currently uses `readFileSync` for file I/O (in both `cli.tsx` and the `R
 ## Risks / Trade-offs
 
 - **No tab-autocomplete**: Users must type the full path. This is acceptable for v1. Autocomplete can be added later with `fs.readdir` completions.
-- **Mode confusion**: Entering file-load mode changes key behavior. The input bar with a prompt (e.g., `Open file: _`) and Escape to cancel should make the current mode obvious.
+- **Mode confusion**: The overlay makes the mode switch visually obvious — it physically blocks the main UI. The hint line ("Press Enter to load, Esc to cancel") inside the overlay reinforces the available actions.
 - **Empty file or parse failure**: If the new file has no requests, show an error and stay in the current state (don't switch to empty file).
 - **Relative path ambiguity**: CWD-relative resolution is consistent with CLI behavior but may surprise users who expect path-relative-to-current-file. Documented in README.

@@ -6,28 +6,28 @@ The existing `R` key reloads the *same* file, but there is no way to navigate to
 
 ## What Changes
 
-- Add an `o` key (mnemonic: "open") that enters a file-load mode.
-- In file-load mode, render a text input bar at the bottom of the screen where the user types a file path.
-- Support both absolute and relative paths. Relative paths resolve against the current working directory (not the directory of the currently loaded file).
-- On Enter: validate the path exists, read and parse the file, replace the in-memory state (requests, variables, filePath), and exit file-load mode.
+- Add an `o` key (mnemonic: "open") that opens a centered pop-up overlay for entering a file path.
+- The overlay shows a prompt, the typed input with a cursor, an inline error message (if any), and a hint line ("Enter to load, Esc to cancel").
+- Errors (file not found, no requests in file) appear inside the overlay in red, preserving the typed path so the user can correct it and retry without dismissing.
+- Support both absolute and relative paths. Relative paths resolve against the current working directory.
+- On Enter: validate the path, read and parse the file, replace the in-memory state (requests, variables, filePath), close the overlay, and show a fleeting "Loaded: {filename}" confirmation in the status bar.
 - On Escape: cancel and return to normal mode without changes.
-- Show clear feedback: error message if the file doesn't exist or has no requests, confirmation message similar to "Reloaded" on success.
-- Update HelpOverlay with the `o` shortcut.
 - Preserve selection by request name (same strategy as `R` reload).
+- Update HelpOverlay with the `o` shortcut.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `tui/load-file`: Allow users to open a different `.http` file from within the running TUI by pressing `o`, typing a path, and pressing Enter.
+- `tui/load-file`: Allow users to open a different `.http` file from within the running TUI by pressing `o`, typing a path in a pop-up overlay, and pressing Enter. Inline error display allows retries without losing the typed path.
 
 ### Modified Capabilities
 
-- `tui`: Add file-load mode with text input bar, `o` keybinding, and path resolution.
+- `tui`: Add file-load mode with pop-up overlay, `o` keybinding, path resolution, and inline error display.
 - `tui/help-overlay`: Document the `o` shortcut.
 
 ## Impact
 
-- **Code**: `src/core/types.ts` (new actions, new mode state), `src/app.tsx` (mode handling, input routing, file loading logic), `src/components/StatusBar.tsx` or new `FileInput` component, `src/components/HelpOverlay.tsx` (new shortcut entry).
-- **Tests**: New reducer tests for `LOAD_FILE` and `CLEAR_LOAD_MESSAGE` actions. Test for file-load mode entry/exit.
+- **Code**: `src/core/types.ts` (new actions, new mode state, fileLoadInput, fileLoadError fields), `src/app.tsx` (mode handling, input routing, file loading logic), new `src/components/FileLoadOverlay.tsx` component, `src/components/HelpOverlay.tsx` (new shortcut entry).
+- **Tests**: Reducer tests for new action types, overlay rendering test.
 - **Docs**: `README.md` — add `o` to keyboard shortcuts table.
