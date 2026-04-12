@@ -33,7 +33,7 @@ type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTION
 ### Request Line
 - Format: `METHOD URL [HTTP/VERSION]`
 - METHOD is case-insensitive, normalized to uppercase
-- URL can contain `{{variable}}` placeholders
+- URL can contain `{{variable}}` placeholders, including expressions with space-separated arguments (e.g., `{{$randomInt 1 100}}`)
 - HTTP version is optional and ignored (always use HTTP/1.1 via undici)
 
 ### Headers
