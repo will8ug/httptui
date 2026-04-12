@@ -14,6 +14,8 @@ httptui is a fast, keyboard-driven REST client that lives in your terminal. It p
 - **Response Inspection**: Colorized status codes, headers, and pretty-printed JSON.
 - **Fast**: Built with Ink and undici for a lightweight, responsive experience.
 
+![httptui shortcuts](assets/httptui-shortcuts.jpg)
+
 ## Installation
 
 ```bash
