@@ -52,6 +52,12 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 - Single line, full width
 - Dimmed text
 
+### Help Overlay
+- Lists all keyboard shortcuts from the centralized `SHORTCUTS` data source (including those not shown in the status bar)
+- Key displayed in yellow (padded to 8 characters), description in white
+- Toggled by pressing `?`
+- Closed by pressing `Escape` or `?`
+
 ## Keyboard Shortcuts
 
 | Key | Context | Action |
