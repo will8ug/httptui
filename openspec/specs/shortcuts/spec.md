@@ -7,7 +7,7 @@ Centralized keyboard shortcut registry that serves as the single source of truth
 ## Requirements
 
 ### Requirement: Centralized shortcut registry
-The system SHALL define all keyboard shortcuts in a single source of truth at `src/core/shortcuts.ts`. Each shortcut SHALL have a `key` (display key), `label` (short label for status bar), `description` (full description for help overlay), and `showInBar` (boolean controlling status bar visibility) field.
+The system SHALL define all keyboard shortcuts in a single source of truth at `src/core/shortcuts.ts`. Each shortcut SHALL have a `key` (display key), `label` (short label for status bar), `description` (full description for help overlay), and `showInBar` (boolean controlling status bar visibility) field. The registry SHALL include entries for `←/h` (scroll left) and `→/l` (scroll right) with `showInBar: true`.
 
 #### Scenario: All shortcuts are defined in one place
 - **WHEN** a developer needs to add, remove, or modify a keyboard shortcut
@@ -17,8 +17,12 @@ The system SHALL define all keyboard shortcuts in a single source of truth at `s
 - **WHEN** the `SHORTCUTS` array is imported
 - **THEN** each entry SHALL conform to the `Shortcut` interface with `key: string`, `label: string`, `description: string`, and `showInBar: boolean`
 
-### Requirement: Status bar shows exactly 6 shortcuts
-The status bar SHALL display exactly the 6 shortcuts where `showInBar` is `true`: `[Enter] Send`, `[j/k] Nav`, `[Tab] Panel`, `[v] Verbose`, `[q] Quit`, `[?] Help` — in that order.
+#### Scenario: Horizontal scroll shortcuts present in registry
+- **WHEN** the `SHORTCUTS` array is inspected
+- **THEN** it SHALL contain entries for left and right horizontal scrolling with keys `←/h` and `→/l` respectively, each with `showInBar: true`
+
+### Requirement: Status bar shows bar-visible shortcuts
+The status bar SHALL display all shortcuts where `showInBar` is `true`: `[Enter] Send`, `[j/k] Nav`, `[←/→] Scroll`, `[Tab] Panel`, `[v] Verbose`, `[q] Quit`, `[?] Help` — in that order.
 
 #### Scenario: Status bar rendering from data source
 - **WHEN** the StatusBar component renders

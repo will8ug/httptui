@@ -24,7 +24,7 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 │                    │   }                                    │
 │                    │                                        │
 ├────────────────────┴───────────────────────────────────────┤
-│ [Enter] Send  [j/k] Nav  [Tab] Panel  [v] Verbose  [q] Quit  [?] Help│
+│ [Enter] Send  [j/k] Nav  [←/→] Scroll  [Tab] Panel  [v] Verbose  [q] Quit  [?] Help│
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -34,7 +34,8 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 - Shows all parsed requests from the file
 - Each entry: `METHOD /path` (truncated to fit width)
 - Selected request highlighted with `▸` prefix and bold/color
-- Scroll when requests exceed panel height
+- Scroll when requests exceed panel height (vertically with ↑/↓/j/k)
+- Scroll horizontally with ←/→/h/l when content exceeds panel width
 - Focused state: bordered with accent color
 
 ### Response Panel (right)
@@ -43,7 +44,8 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
   - 2xx: green, 3xx: yellow, 4xx: orange, 5xx: red
 - Headers section: shown only in verbose mode (dimmed text)
 - Body section: pretty-printed JSON (with syntax colors) or raw text
-- Scroll when content exceeds panel height
+- Scroll when content exceeds panel height (vertically with ↑/↓/j/k)
+- Scroll horizontally with ←/→/h/l when content exceeds panel width
 - Empty state: "Select a request and press Enter to send"
 
 ### Status Bar (bottom)
@@ -66,6 +68,8 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 | `↓` or `j` | Request list focused | Select next request |
 | `↑` or `k` | Response focused | Scroll response up |
 | `↓` or `j` | Response focused | Scroll response down |
+| `←` or `h` | Any (no overlay) | Scroll focused panel left |
+| `→` or `l` | Any (no overlay) | Scroll focused panel right |
 | `Enter` | Any | Send currently selected request |
 | `Tab` | Any | Switch focus between panels |
 | `v` | Any | Toggle verbose mode (show/hide headers) |
@@ -88,6 +92,13 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 ### Focus States
 - **Request list focused**: bordered with accent color, keyboard controls list
 - **Response focused**: bordered with accent color, keyboard controls scroll
+
+### Horizontal Scroll States
+- Both panels track a `horizontalOffset` (default `0`) that shifts content left by that many characters
+- `requestHorizontalOffset` resets to `0` on `SELECT_REQUEST` and `MOVE_SELECTION`
+- `responseHorizontalOffset` resets to `0` on `SEND_REQUEST`
+- When `horizontalOffset` is `0`, rendering is identical to current behavior (colors preserved)
+- When `horizontalOffset` is greater than `0`, colored content is flattened to plain text and shifted
 
 ## Startup
 
