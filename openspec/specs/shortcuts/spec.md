@@ -7,7 +7,7 @@ Centralized keyboard shortcut registry that serves as the single source of truth
 ## Requirements
 
 ### Requirement: Centralized shortcut registry
-The system SHALL define all keyboard shortcuts in a single source of truth at `src/core/shortcuts.ts`. Each shortcut SHALL have a `key` (display key), `label` (short label for status bar), `description` (full description for help overlay), and `showInBar` (boolean controlling status bar visibility) field. The registry SHALL include entries for `←/h` (scroll left) and `→/l` (scroll right) with `showInBar: true`.
+The system SHALL define all keyboard shortcuts in a single source of truth at `src/core/shortcuts.ts`. Each shortcut SHALL have a `key` (display key), `label` (short label for status bar), `description` (full description for help overlay), and `showInBar` (boolean controlling status bar visibility) field. The registry SHALL include a combined entry with key `h/j/k/l`, label `Nav`, and `showInBar: true` that covers both vertical navigation and horizontal scrolling. The individual entries for `← / h` and `→ / l` with `showInBar: false` SHALL remain for the help overlay.
 
 #### Scenario: All shortcuts are defined in one place
 - **WHEN** a developer needs to add, remove, or modify a keyboard shortcut
@@ -17,12 +17,13 @@ The system SHALL define all keyboard shortcuts in a single source of truth at `s
 - **WHEN** the `SHORTCUTS` array is imported
 - **THEN** each entry SHALL conform to the `Shortcut` interface with `key: string`, `label: string`, `description: string`, and `showInBar: boolean`
 
-#### Scenario: Horizontal scroll shortcuts present in registry
+#### Scenario: Combined navigation shortcut in registry
 - **WHEN** the `SHORTCUTS` array is inspected
-- **THEN** it SHALL contain entries for left and right horizontal scrolling with keys `←/h` and `→/l` respectively, each with `showInBar: true`
+- **THEN** it SHALL contain a single entry with key `h/j/k/l`, label `Nav`, description `Navigate requests and scroll panels`, and `showInBar: true`
+- **AND** it SHALL NOT contain separate `showInBar: true` entries for `j/k` (Nav) or `←/→` (Scroll)
 
 ### Requirement: Status bar shows bar-visible shortcuts
-The status bar SHALL display all shortcuts where `showInBar` is `true`: `[Enter] Send`, `[j/k] Nav`, `[←/→] Scroll`, `[Tab] Panel`, `[v] Verbose`, `[q] Quit`, `[?] Help` — in that order.
+The status bar SHALL display all shortcuts where `showInBar` is `true`: `[Enter] Send`, `[h/j/k/l] Nav`, `[Tab] Panel`, `[v] Verbose`, `[q] Quit`, `[?] Help` — in that order.
 
 #### Scenario: Status bar rendering from data source
 - **WHEN** the StatusBar component renders
@@ -31,6 +32,11 @@ The status bar SHALL display all shortcuts where `showInBar` is `true`: `[Enter]
 #### Scenario: Status bar includes help shortcut
 - **WHEN** the status bar is rendered
 - **THEN** `[?] Help` SHALL appear as the last (rightmost) item
+
+#### Scenario: Merged navigation entry replaces separate entries
+- **WHEN** the status bar is rendered
+- **THEN** `[h/j/k/l] Nav` SHALL appear where `[j/k] Nav` previously appeared
+- **AND** `[←/→] Scroll` SHALL NOT appear in the status bar
 
 #### Scenario: Truncation preserves existing behavior
 - **WHEN** the terminal width is too narrow to show all shortcuts
