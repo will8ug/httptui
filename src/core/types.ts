@@ -72,6 +72,8 @@ export interface AppState {
   filePath: string;
   responseScrollOffset: number;
   requestScrollOffset: number;
+  requestHorizontalOffset: number;
+  responseHorizontalOffset: number;
   reloadMessage: string | null;
   mode: AppMode;
   fileLoadInput: string;
@@ -88,6 +90,7 @@ export type Action =
   | { type: 'TOGGLE_VERBOSE' }
   | { type: 'TOGGLE_HELP' }
   | { type: 'SCROLL'; direction: 'up' | 'down' }
+  | { type: 'SCROLL_HORIZONTAL'; direction: 'left' | 'right' }
   | { type: 'CLOSE_HELP' }
   | { type: 'RELOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[] }
   | { type: 'CLEAR_RELOAD_MESSAGE' }

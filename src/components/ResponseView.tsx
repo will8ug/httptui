@@ -12,6 +12,7 @@ interface ResponseViewProps {
   verbose: boolean;
   focused: boolean;
   scrollOffset: number;
+  horizontalOffset: number;
 }
 
 function getLeftPanelWidth(columns: number): number {
@@ -48,6 +49,16 @@ function isJson(value: string): boolean {
   }
 }
 
+function shiftLine(line: string, offset: number, maxWidth: number): string {
+  if (offset <= 0) {
+    return line;
+  }
+
+  const shifted = line.slice(offset);
+
+  return truncateText(shifted, maxWidth);
+}
+
 function renderJsonLine(line: string, key: string): React.ReactElement {
   const segments = colorizeJson(line);
 
@@ -73,6 +84,7 @@ export function ResponseView({
   verbose,
   focused,
   scrollOffset,
+  horizontalOffset,
 }: ResponseViewProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || 80;
@@ -95,45 +107,79 @@ export function ResponseView({
     const isJsonBody = isJson(responseBody);
     const responseLines: React.ReactNode[] = [];
 
-    responseLines.push(
-      <Text key="status">
-        <Text color="gray">HTTP/1.1 </Text>
-        <Text color={getStatusColor(response.statusCode)}>
-          {response.statusCode} {response.statusText}
-        </Text>
-        <Text color="gray">  {Math.round(response.timing.durationMs)}ms</Text>
-      </Text>,
-    );
+    if (horizontalOffset > 0) {
+      // Horizontal scroll: must flatten to plain text before shifting, losing per-segment colors
+      const statusText = `HTTP/1.1 ${response.statusCode} ${response.statusText}  ${Math.round(response.timing.durationMs)}ms`;
+      responseLines.push(
+        <Text key="status" color={getStatusColor(response.statusCode)}>
+          {shiftLine(statusText, horizontalOffset, contentWidth)}
+        </Text>,
+      );
 
-    if (verbose) {
-      for (const [headerName, headerValue] of Object.entries(response.headers)) {
-        responseLines.push(
-          <Text key={`header-${headerName}`} color="gray">
-            {truncateText(`${headerName}: ${headerValue}`, contentWidth)}
-          </Text>,
-        );
+      if (verbose) {
+        for (const [headerName, headerValue] of Object.entries(response.headers)) {
+          const headerLine = `${headerName}: ${headerValue}`;
+          responseLines.push(
+            <Text key={`header-${headerName}`} color="gray">
+              {shiftLine(truncateText(headerLine, contentWidth + horizontalOffset), horizontalOffset, contentWidth)}
+            </Text>,
+          );
+        }
       }
-    }
-
-    responseLines.push(
-      <Text key="separator" color="gray">
-        {'─'.repeat(contentWidth)}
-      </Text>,
-    );
-
-    const bodyLines = responseBody.split('\n');
-
-    bodyLines.forEach((line, index) => {
-      const displayLine = line === '' ? ' ' : truncateText(line, contentWidth);
 
       responseLines.push(
-        isJsonBody
-          ? renderJsonLine(displayLine, `body-${index}`)
-          : (
-            <Text key={`body-${index}`}>{displayLine}</Text>
-          ),
+        <Text key="separator" color="gray">
+          {shiftLine('─'.repeat(contentWidth + horizontalOffset), horizontalOffset, contentWidth)}
+        </Text>,
       );
-    });
+
+      const bodyLines = responseBody.split('\n');
+
+      bodyLines.forEach((line, index) => {
+        const displayLine = shiftLine(line === '' ? ' ' : line, horizontalOffset, contentWidth);
+        responseLines.push(<Text key={`body-${index}`}>{displayLine}</Text>);
+      });
+    } else {
+      responseLines.push(
+        <Text key="status">
+          <Text color="gray">HTTP/1.1 </Text>
+          <Text color={getStatusColor(response.statusCode)}>
+            {response.statusCode} {response.statusText}
+          </Text>
+          <Text color="gray">  {Math.round(response.timing.durationMs)}ms</Text>
+        </Text>,
+      );
+
+      if (verbose) {
+        for (const [headerName, headerValue] of Object.entries(response.headers)) {
+          responseLines.push(
+            <Text key={`header-${headerName}`} color="gray">
+              {truncateText(`${headerName}: ${headerValue}`, contentWidth)}
+            </Text>,
+          );
+        }
+      }
+
+      responseLines.push(
+        <Text key="separator" color="gray">
+          {'─'.repeat(contentWidth)}
+        </Text>,
+      );
+
+      const bodyLines = responseBody.split('\n');
+
+      bodyLines.forEach((line, index) => {
+        const displayLine = line === '' ? ' ' : truncateText(line, contentWidth);
+
+        responseLines.push(
+          isJsonBody
+            ? renderJsonLine(displayLine, `body-${index}`)
+            : (
+              <Text key={`body-${index}`}>{displayLine}</Text>
+            ),
+        );
+      });
+    }
 
     content = responseLines.slice(scrollOffset, scrollOffset + visibleHeight);
   }

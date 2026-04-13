@@ -9,6 +9,7 @@ interface RequestListProps {
   selectedIndex: number;
   focused: boolean;
   scrollOffset: number;
+  horizontalOffset: number;
 }
 
 function getLeftPanelWidth(columns: number): number {
@@ -47,6 +48,7 @@ export function RequestList({
   selectedIndex,
   focused,
   scrollOffset,
+  horizontalOffset,
 }: RequestListProps): React.ReactElement {
   const { stdout } = useStdout();
   const panelWidth = getLeftPanelWidth(stdout.columns || 80);
@@ -72,6 +74,19 @@ export function RequestList({
         const prefix = isSelected ? '▸ ' : '  ';
         const methodLabel = request.method.padEnd(7, ' ');
         const target = getRequestTarget(request.url);
+
+        if (horizontalOffset > 0) {
+          const fullLine = `${prefix}${methodLabel}${target}`;
+          const shiftedLine = fullLine.slice(horizontalOffset);
+          const displayLine = truncateText(shiftedLine, contentWidth);
+
+          return (
+            <Text key={`${request.lineNumber}-${request.method}-${request.url}`} bold={isSelected}>
+              <Text color={isSelected ? 'cyanBright' : 'white'}>{displayLine}</Text>
+            </Text>
+          );
+        }
+
         const availableTargetWidth = Math.max(4, contentWidth - prefix.length - methodLabel.length - 1);
 
         return (

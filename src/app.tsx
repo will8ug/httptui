@@ -49,6 +49,7 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         selectedIndex: nextIndex,
         requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset),
+        requestHorizontalOffset: 0,
       };
     }
 
@@ -60,6 +61,7 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         selectedIndex: nextIndex,
         requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset),
+        requestHorizontalOffset: 0,
       };
     }
 
@@ -69,6 +71,7 @@ function reducer(state: AppState, action: Action): AppState {
         isLoading: true,
         error: null,
         responseScrollOffset: 0,
+        responseHorizontalOffset: 0,
       };
 
     case 'RECEIVE_RESPONSE':
@@ -126,6 +129,22 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         requestScrollOffset: Math.max(0, state.requestScrollOffset + delta),
+      };
+    }
+
+    case 'SCROLL_HORIZONTAL': {
+      const horizontalDelta = action.direction === 'left' ? -2 : 2;
+
+      if (state.focusedPanel === 'response') {
+        return {
+          ...state,
+          responseHorizontalOffset: Math.max(0, state.responseHorizontalOffset + horizontalDelta),
+        };
+      }
+
+      return {
+        ...state,
+        requestHorizontalOffset: Math.max(0, state.requestHorizontalOffset + horizontalDelta),
       };
     }
 
@@ -237,6 +256,8 @@ function createInitialState(props: AppProps): AppState {
     filePath: props.filePath,
     responseScrollOffset: 0,
     requestScrollOffset: 0,
+    requestHorizontalOffset: 0,
+    responseHorizontalOffset: 0,
     insecure: props.executorConfig.insecure,
     reloadMessage: null,
     mode: 'normal',
@@ -386,6 +407,13 @@ export function App(props: AppProps): React.ReactElement {
 
     const isUp = input === 'k' || key.upArrow;
     const isDown = input === 'j' || key.downArrow;
+    const isLeft = input === 'h' || key.leftArrow;
+    const isRight = input === 'l' || key.rightArrow;
+
+    if (isLeft || isRight) {
+      dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right' });
+      return;
+    }
 
     if (!isUp && !isDown) {
       return;
@@ -407,6 +435,7 @@ export function App(props: AppProps): React.ReactElement {
           selectedIndex={state.selectedIndex}
           focused={state.focusedPanel === 'requests'}
           scrollOffset={state.requestScrollOffset}
+          horizontalOffset={state.requestHorizontalOffset}
         />
       }
       right={
@@ -417,6 +446,7 @@ export function App(props: AppProps): React.ReactElement {
           verbose={state.verbose}
           focused={state.focusedPanel === 'response'}
           scrollOffset={state.responseScrollOffset}
+          horizontalOffset={state.responseHorizontalOffset}
         />
       }
       bottom={
