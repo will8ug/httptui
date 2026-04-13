@@ -14,6 +14,36 @@ import { executeRequest, isRequestError } from './core/executor';
 import type { Action, AppState, ExecutorConfig, FileVariable, ParsedRequest, RequestError } from './core/types';
 import { parseHttpFile } from './core/parser';
 import { resolveVariables } from './core/variables';
+import { getRequestTarget } from './utils/request';
+
+function getMaxRequestLineWidth(requests: readonly ParsedRequest[]): number {
+  if (requests.length === 0) {
+    return 0;
+  }
+
+  return Math.max(...requests.map((r) => 2 + 7 + getRequestTarget(r.url).length));
+}
+
+function getMaxResponseLineWidth(state: AppState): number {
+  if (!state.response) {
+    return 0;
+  }
+
+  const lines: string[] = [];
+  const res = state.response;
+
+  lines.push(`HTTP/1.1 ${res.statusCode} ${res.statusText}  ${Math.round(res.timing.durationMs)}ms`);
+
+  if (state.verbose) {
+    for (const [name, value] of Object.entries(res.headers)) {
+      lines.push(`${name}: ${value}`);
+    }
+  }
+
+  lines.push(...res.body.split('\n'));
+
+  return Math.max(0, ...lines.map((l) => l.length));
+}
 
 interface AppProps {
   filePath: string;
@@ -136,15 +166,17 @@ function reducer(state: AppState, action: Action): AppState {
       const horizontalDelta = action.direction === 'left' ? -2 : 2;
 
       if (state.focusedPanel === 'response') {
+        const maxOffset = Math.max(0, getMaxResponseLineWidth(state) - 1);
         return {
           ...state,
-          responseHorizontalOffset: Math.max(0, state.responseHorizontalOffset + horizontalDelta),
+          responseHorizontalOffset: Math.min(Math.max(0, state.responseHorizontalOffset + horizontalDelta), maxOffset),
         };
       }
 
+      const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests) - 1);
       return {
         ...state,
-        requestHorizontalOffset: Math.max(0, state.requestHorizontalOffset + horizontalDelta),
+        requestHorizontalOffset: Math.min(Math.max(0, state.requestHorizontalOffset + horizontalDelta), maxOffset),
       };
     }
 

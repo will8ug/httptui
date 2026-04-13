@@ -3,6 +3,7 @@ import { Box, Text, useStdout } from 'ink';
 
 import type { ParsedRequest } from '../core/types';
 import { getMethodColor } from '../utils/colors';
+import { getRequestTarget } from '../utils/request';
 
 interface RequestListProps {
   requests: ParsedRequest[];
@@ -31,16 +32,6 @@ function truncateText(value: string, maxWidth: number): string {
   }
 
   return `${value.slice(0, maxWidth - 1)}…`;
-}
-
-function getRequestTarget(url: string): string {
-  try {
-    const parsedUrl = new URL(url);
-    const target = `${parsedUrl.pathname || '/'}${parsedUrl.search}`;
-    return target === '' ? '/' : target;
-  } catch {
-    return url;
-  }
 }
 
 export function RequestList({
