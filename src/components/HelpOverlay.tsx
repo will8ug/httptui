@@ -31,7 +31,7 @@ export function HelpOverlay({ visible }: HelpOverlayProps): React.ReactElement |
         </Text>
         <Text color="gray">Navigate requests, send them, and inspect responses.</Text>
         <Text>{' '}</Text>
-        {SHORTCUTS.map((shortcut) => (
+        {SHORTCUTS.filter((s) => s.showInHelp).map((shortcut) => (
           <Text key={shortcut.key}>
             <Text color="yellow">{shortcut.key.padEnd(8, ' ')}</Text>
             <Text color="white"> {shortcut.description}</Text>
