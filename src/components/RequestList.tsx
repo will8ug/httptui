@@ -78,7 +78,7 @@ export function RequestList({
         if (horizontalOffset > 0) {
           const fullLine = `${prefix}${methodLabel}${target}`;
           const shiftedLine = fullLine.slice(horizontalOffset);
-          const displayLine = truncateText(shiftedLine, contentWidth);
+          const displayLine = shiftedLine === '' ? ' ' : truncateText(shiftedLine, contentWidth);
 
           return (
             <Text key={`${request.lineNumber}-${request.method}-${request.url}`} bold={isSelected}>

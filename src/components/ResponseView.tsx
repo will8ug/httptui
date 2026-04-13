@@ -56,7 +56,7 @@ function shiftLine(line: string, offset: number, maxWidth: number): string {
 
   const shifted = line.slice(offset);
 
-  return truncateText(shifted, maxWidth);
+  return shifted === '' ? ' ' : truncateText(shifted, maxWidth);
 }
 
 function renderJsonLine(line: string, key: string): React.ReactElement {
