@@ -47,6 +47,9 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 - Scroll when content exceeds panel height (vertically with ↑/↓/j/k)
 - Scroll horizontally with ←/→/h/l when content exceeds panel width
 - Empty state: "Select a request and press Enter to send"
+- Two display modes controlled by `wrapMode` in `AppState`:
+  - **nowrap** (default): Lines are truncated to panel width with `…` ellipsis; horizontal scrolling supported
+  - **wrap**: Long lines wrap at the panel boundary (word boundaries preferred); JSON syntax coloring preserved across wrapped lines; horizontal scrolling disabled; panel title shows `Response [wrap]`
 
 ### Status Bar (bottom)
 - Left side: keyboard shortcut hints (rendered from centralized shortcuts data, showing only items with `showInBar: true`; at most 6 shortcuts in the status bar — new shortcuts should default to `showInBar: false`)
@@ -73,6 +76,7 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 | `Enter` | Any | Send currently selected request |
 | `Tab` | Any | Switch focus between panels |
 | `v` | Any | Toggle verbose mode (show/hide headers) |
+| `w` | Any (no overlay) | Toggle text wrapping in response panel |
 | `R` | Any | Reload file from disk |
 | `o` | Any | Open a different .http file |
 | `?` | Any | Toggle help overlay |
@@ -83,11 +87,11 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 ## States
 
 ### Application States
-- **Idle**: Request selected, no response yet (or previous response shown)
-- **Loading**: Request in flight (show spinner in response panel)
-- **Success**: Response received, displaying it
-- **Error**: Network/connection error (show error message in response panel)
-- **File-load**: File-load overlay open, keystrokes routed to text input
+- **Idle**: Request selected, no response yet (or previous response shown). `wrapMode` persists across requests.
+- **Loading**: Request in flight (show spinner in response panel). `wrapMode` is preserved.
+- **Success**: Response received, displaying it. Rendering respects `wrapMode`.
+- **Error**: Network/connection error (show error message in response panel). `wrapMode` is preserved.
+- **File-load**: File-load overlay open, keystrokes routed to text input. `wrapMode` is preserved.
 
 ### Focus States
 - **Request list focused**: bordered with accent color, keyboard controls list
@@ -99,6 +103,7 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 - `responseHorizontalOffset` resets to `0` on `SEND_REQUEST`
 - When `horizontalOffset` is `0`, rendering is identical to current behavior (colors preserved)
 - When `horizontalOffset` is greater than `0`, colored content is flattened to plain text and shifted
+- When `wrapMode` is `'wrap'`, `horizontalOffset` is treated as `0` and `←`/`→`/`h`/`l` do not scroll the response panel horizontally
 
 ## Startup
 
