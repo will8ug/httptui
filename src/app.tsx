@@ -163,6 +163,10 @@ function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'SCROLL_HORIZONTAL': {
+      if (state.focusedPanel === 'response' && state.wrapMode === 'wrap') {
+        return state;
+      }
+
       const horizontalDelta = action.direction === 'left' ? -2 : 2;
 
       if (state.focusedPanel === 'response') {
@@ -179,6 +183,14 @@ function reducer(state: AppState, action: Action): AppState {
         requestHorizontalOffset: Math.min(Math.max(0, state.requestHorizontalOffset + horizontalDelta), maxOffset),
       };
     }
+
+    case 'TOGGLE_WRAP':
+      return {
+        ...state,
+        wrapMode: state.wrapMode === 'nowrap' ? 'wrap' : 'nowrap',
+        responseScrollOffset: 0,
+        responseHorizontalOffset: 0,
+      };
 
     case 'RELOAD_FILE': {
       const currentRequestName = state.requests[state.selectedIndex]?.name;
@@ -295,6 +307,7 @@ function createInitialState(props: AppProps): AppState {
     mode: 'normal',
     fileLoadInput: '',
     fileLoadError: null,
+    wrapMode: 'nowrap',
   };
 }
 
@@ -414,6 +427,11 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (input === 'w') {
+      dispatch({ type: 'TOGGLE_WRAP' });
+      return;
+    }
+
     if (input === 'o') {
       dispatch({ type: 'ENTER_FILE_LOAD' });
       return;
@@ -479,6 +497,7 @@ export function App(props: AppProps): React.ReactElement {
           focused={state.focusedPanel === 'response'}
           scrollOffset={state.responseScrollOffset}
           horizontalOffset={state.responseHorizontalOffset}
+          wrapMode={state.wrapMode}
         />
       }
       bottom={

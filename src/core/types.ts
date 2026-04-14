@@ -57,6 +57,7 @@ export interface ExecutorConfig {
 
 export type FocusedPanel = 'requests' | 'response';
 export type AppMode = 'normal' | 'fileLoad';
+export type WrapMode = 'nowrap' | 'wrap';
 
 export interface AppState {
   requests: ParsedRequest[];
@@ -78,6 +79,7 @@ export interface AppState {
   mode: AppMode;
   fileLoadInput: string;
   fileLoadError: string | null;
+  wrapMode: WrapMode;
 }
 
 export type Action =
@@ -98,4 +100,5 @@ export type Action =
   | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string }
   | { type: 'SET_FILE_LOAD_ERROR'; error: string }
   | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string }
-  | { type: 'CANCEL_FILE_LOAD' };
+  | { type: 'CANCEL_FILE_LOAD' }
+  | { type: 'TOGGLE_WRAP' };
