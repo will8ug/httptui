@@ -16,7 +16,7 @@ The response panel currently truncates long lines with `…` and requires horizo
 - `text-wrap-toggle`: Keyboard shortcut (`w`) and state management for toggling between truncated (horizontal-scroll) and wrapped text display in the response panel
 
 ### Modified Capabilities
-- `shortcuts`: Add `w` shortcut entry (`label: "Wrap"`, `showInBar: true`, `showInHelp: true`)
+- `shortcuts`: Add `w` shortcut entry (`label: "Wrap"`, `showInBar: false`, `showInHelp: true`)
 - `tui`: Add wrap-mode state and rendering behavior to response panel; disable horizontal scroll in wrap mode
 
 ## Impact

@@ -23,7 +23,7 @@ The system SHALL define all keyboard shortcuts in a single source of truth at `s
 - **AND** it SHALL NOT contain separate `showInBar: true` entries for `j/k` (Nav) or `←/→` (Scroll)
 
 ### Requirement: Status bar shows bar-visible shortcuts
-The status bar SHALL display all shortcuts where `showInBar` is `true`: `[Enter] Send`, `[h/j/k/l] Nav`, `[Tab] Panel`, `[v] Verbose`, `[q] Quit`, `[?] Help` — in that order.
+The status bar SHALL display at most 6 shortcuts where `showInBar` is `true`. New shortcuts that are not essential for the status bar SHOULD use `showInBar: false` and `showInHelp: true` so they appear only in the help overlay. The current 6 bar-visible shortcuts are: `[Enter] Send`, `[h/j/k/l] Nav`, `[Tab] Panel`, `[v] Verbose`, `[q] Quit`, `[?] Help` — in that order.
 
 #### Scenario: Status bar rendering from data source
 - **WHEN** the StatusBar component renders

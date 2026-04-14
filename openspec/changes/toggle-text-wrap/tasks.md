@@ -2,7 +2,7 @@
 
 - [x] 1.1 Add `wrapMode: 'nowrap' | 'wrap'` to `AppState` in `src/core/types.ts`, defaulting to `'nowrap'`
 - [x] 1.2 Add `{ type: 'TOGGLE_WRAP' }` to the `Action` discriminated union in `src/core/types.ts`
-- [x] 1.3 Add wrap toggle shortcut entry to `src/core/shortcuts.ts`: `{ key: 'w', label: 'Wrap', description: 'Toggle text wrapping in response panel', showInBar: true, showInHelp: true }`
+- [x] 1.3 Add wrap toggle shortcut entry to `src/core/shortcuts.ts`: `{ key: 'w', label: 'Wrap', description: 'Toggle text wrapping in response panel', showInBar: false, showInHelp: true }`
 
 ## 2. Reducer & Key Handling
 

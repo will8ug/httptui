@@ -36,7 +36,7 @@ Key existing files:
 
 ### 2. Key binding: `w`
 
-**Decision**: Use `w` for wrap toggle. Label: `Wrap`. `showInBar: true`, `showInHelp: true`.
+**Decision**: Use `w` for wrap toggle. Label: `Wrap`. `showInBar: false` (status bar limited to 6 shortcuts; wrap is discoverable via help overlay), `showInHelp: true`.
 
 **Rationale**: Intuitive (w for wrap), not currently bound, and consistent with other toggle shortcuts (`v` for verbose).
 

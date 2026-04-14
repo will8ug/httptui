@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Centralized shortcut registry
-The system SHALL define all keyboard shortcuts in a single source of truth at `src/core/shortcuts.ts`. Each shortcut SHALL have a `key` (display key), `label` (short label for status bar), `description` (full description for help overlay), `showInBar` (boolean controlling status bar visibility), and `showInHelp` (boolean controlling help overlay visibility) field. The registry SHALL include a combined entry with key `h/j/k/l`, label `Nav`, and `showInBar: true` that covers both vertical navigation and horizontal scrolling. The individual entries for `← / h` and `→ / l` with `showInBar: false` SHALL remain for the help overlay. The registry SHALL include an entry for the wrap toggle shortcut with key `w`, label `Wrap`, description `Toggle text wrapping in response panel`, `showInBar: true`, and `showInHelp: true`.
+The system SHALL define all keyboard shortcuts in a single source of truth at `src/core/shortcuts.ts`. Each shortcut SHALL have a `key` (display key), `label` (short label for status bar), `description` (full description for help overlay), `showInBar` (boolean controlling status bar visibility), and `showInHelp` (boolean controlling help overlay visibility) field. The registry SHALL include a combined entry with key `h/j/k/l`, label `Nav`, and `showInBar: true` that covers both vertical navigation and horizontal scrolling. The individual entries for `← / h` and `→ / l` with `showInBar: false` SHALL remain for the help overlay. The registry SHALL include an entry for the wrap toggle shortcut with key `w`, label `Wrap`, description `Toggle text wrapping in response panel`, `showInBar: false`, and `showInHelp: true`. The wrap toggle uses `showInBar: false` because the status bar is limited to 6 bar-visible shortcuts and wrap is a secondary action best discovered via the help overlay.
 
 #### Scenario: All shortcuts are defined in one place
 - **WHEN** a developer needs to add, remove, or modify a keyboard shortcut
@@ -18,18 +18,18 @@ The system SHALL define all keyboard shortcuts in a single source of truth at `s
 
 #### Scenario: Wrap toggle shortcut in registry
 - **WHEN** the `SHORTCUTS` array is inspected
-- **THEN** it SHALL contain an entry with key `w`, label `Wrap`, description `Toggle text wrapping in response panel`, `showInBar: true`, and `showInHelp: true`
+- **THEN** it SHALL contain an entry with key `w`, label `Wrap`, description `Toggle text wrapping in response panel`, `showInBar: false`, and `showInHelp: true`
 
 ### Requirement: Status bar shows bar-visible shortcuts
-The status bar SHALL display all shortcuts where `showInBar` is `true`: `[Enter] Send`, `[h/j/k/l] Nav`, `[Tab] Panel`, `[v] Verbose`, `[w] Wrap`, `[q] Quit`, `[?] Help` — in that order.
+The status bar SHALL display all shortcuts where `showInBar` is `true`: `[Enter] Send`, `[h/j/k/l] Nav`, `[Tab] Panel`, `[v] Verbose`, `[q] Quit`, `[?] Help` — in that order. (The `w` Wrap shortcut has `showInBar: false` and does not appear in the status bar.)
 
 #### Scenario: Status bar rendering from data source
 - **WHEN** the StatusBar component renders
 - **THEN** it SHALL filter shortcuts where `showInBar === true` and render them as `[key] label` pairs separated by two spaces, in array order
 
-#### Scenario: Status bar includes wrap shortcut
+#### Scenario: Status bar does not include wrap shortcut
 - **WHEN** the status bar is rendered
-- **THEN** `[w] Wrap` SHALL appear between `[v] Verbose` and `[q] Quit`
+- **THEN** `[w] Wrap` SHALL NOT appear in the status bar (it has `showInBar: false`)
 
 #### Scenario: Status bar includes help shortcut
 - **WHEN** the status bar is rendered

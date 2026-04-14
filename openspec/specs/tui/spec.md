@@ -49,7 +49,7 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 - Empty state: "Select a request and press Enter to send"
 
 ### Status Bar (bottom)
-- Left side: keyboard shortcut hints (rendered from centralized shortcuts data, showing only items with `showInBar: true`)
+- Left side: keyboard shortcut hints (rendered from centralized shortcuts data, showing only items with `showInBar: true`; at most 6 shortcuts in the status bar — new shortcuts should default to `showInBar: false`)
 - Right side: file name, request count
 - Single line, full width
 - Dimmed text
