@@ -21,4 +21,5 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'o', label: '', description: 'Open a different file', showInBar: false, showInHelp: true },
   { key: 'R', label: '', description: 'Reload file from disk', showInBar: false, showInHelp: true },
   { key: 'Escape', label: '', description: 'Close current overlay', showInBar: false, showInHelp: true },
+  { key: 'd', label: 'Details', description: 'Toggle request details panel', showInBar: false, showInHelp: true },
 ] as const;

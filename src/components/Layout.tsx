@@ -8,9 +8,10 @@ interface LayoutProps {
   right: React.ReactNode;
   bottom: React.ReactNode;
   overlay?: React.ReactNode;
+  detailPanel?: React.ReactNode;
 }
 
-export function Layout({ left, right, bottom, overlay }: LayoutProps): React.ReactElement {
+export function Layout({ left, right, bottom, overlay, detailPanel }: LayoutProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || 80;
   const rows = stdout.rows || 24;
@@ -28,8 +29,11 @@ export function Layout({ left, right, bottom, overlay }: LayoutProps): React.Rea
             <Box width={leftPanelWidth} flexShrink={0} height="100%">
               {left}
             </Box>
-            <Box flexGrow={1} height="100%">
-              {right}
+            <Box flexDirection="column" flexGrow={1} height="100%">
+              {detailPanel}
+              <Box flexGrow={1}>
+                {right}
+              </Box>
             </Box>
           </>
         )}

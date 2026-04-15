@@ -8,6 +8,7 @@ import { FileLoadOverlay } from './components/FileLoadOverlay';
 import { HelpOverlay } from './components/HelpOverlay';
 import { Layout } from './components/Layout';
 import { RequestList } from './components/RequestList';
+import { RequestDetailsView } from './components/RequestDetailsView';
 import { ResponseView } from './components/ResponseView';
 import { StatusBar } from './components/StatusBar';
 import { executeRequest, isRequestError } from './core/executor';
@@ -196,6 +197,12 @@ function reducer(state: AppState, action: Action): AppState {
         responseHorizontalOffset: 0,
       };
 
+    case 'TOGGLE_REQUEST_DETAILS':
+      return {
+        ...state,
+        showRequestDetails: !state.showRequestDetails,
+      };
+
     case 'RELOAD_FILE': {
       const currentRequestName = state.requests[state.selectedIndex]?.name;
       const newIndex = currentRequestName
@@ -312,6 +319,7 @@ function createInitialState(props: AppProps): AppState {
     fileLoadInput: '',
     fileLoadError: null,
     wrapMode: 'nowrap',
+    showRequestDetails: false,
   };
 }
 
@@ -437,6 +445,11 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (input === 'd') {
+      dispatch({ type: 'TOGGLE_REQUEST_DETAILS' });
+      return;
+    }
+
     if (input === 'o') {
       dispatch({ type: 'ENTER_FILE_LOAD' });
       return;
@@ -515,6 +528,13 @@ export function App(props: AppProps): React.ReactElement {
         />
       }
       overlay={state.showHelp ? <HelpOverlay visible={state.showHelp} /> : state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> : undefined}
+      detailPanel={state.showRequestDetails && state.requests[state.selectedIndex] ? (
+        <RequestDetailsView
+          request={state.requests[state.selectedIndex]}
+          variables={state.variables}
+          maxHeight={10}
+        />
+      ) : undefined}
     />
   );
 }

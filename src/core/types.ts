@@ -80,6 +80,7 @@ export interface AppState {
   fileLoadInput: string;
   fileLoadError: string | null;
   wrapMode: WrapMode;
+  showRequestDetails: boolean;
 }
 
 export type Action =
@@ -101,4 +102,5 @@ export type Action =
   | { type: 'SET_FILE_LOAD_ERROR'; error: string }
   | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string }
   | { type: 'CANCEL_FILE_LOAD' }
-  | { type: 'TOGGLE_WRAP' };
+  | { type: 'TOGGLE_WRAP' }
+  | { type: 'TOGGLE_REQUEST_DETAILS' };
