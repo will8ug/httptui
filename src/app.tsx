@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import React, { useReducer } from 'react';
-import { useApp, useInput } from 'ink';
+import { useApp, useInput, useStdout } from 'ink';
 
 import { FileLoadOverlay } from './components/FileLoadOverlay';
 import { HelpOverlay } from './components/HelpOverlay';
@@ -14,6 +14,7 @@ import { executeRequest, isRequestError } from './core/executor';
 import type { Action, AppState, ExecutorConfig, FileVariable, ParsedRequest, RequestError } from './core/types';
 import { parseHttpFile } from './core/parser';
 import { resolveVariables } from './core/variables';
+import { getRequestContentWidth, getResponseContentWidth } from './utils/layout';
 import { getRequestTarget } from './utils/request';
 
 function getMaxRequestLineWidth(requests: readonly ParsedRequest[]): number {
@@ -167,17 +168,20 @@ function reducer(state: AppState, action: Action): AppState {
         return state;
       }
 
+      const columns = action.columns ?? 80;
       const horizontalDelta = action.direction === 'left' ? -2 : 2;
 
       if (state.focusedPanel === 'response') {
-        const maxOffset = Math.max(0, getMaxResponseLineWidth(state) - 1);
+        const contentWidth = getResponseContentWidth(columns);
+        const maxOffset = Math.max(0, getMaxResponseLineWidth(state) - contentWidth);
         return {
           ...state,
           responseHorizontalOffset: Math.min(Math.max(0, state.responseHorizontalOffset + horizontalDelta), maxOffset),
         };
       }
 
-      const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests) - 1);
+      const contentWidth = getRequestContentWidth(columns);
+      const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests) - contentWidth);
       return {
         ...state,
         requestHorizontalOffset: Math.min(Math.max(0, state.requestHorizontalOffset + horizontalDelta), maxOffset),
@@ -313,6 +317,7 @@ function createInitialState(props: AppProps): AppState {
 
 export function App(props: AppProps): React.ReactElement {
   const { exit } = useApp();
+  const { stdout } = useStdout();
   const [state, dispatch] = useReducer(reducer, props, createInitialState);
 
   const sendSelectedRequest = async (): Promise<void> => {
@@ -461,7 +466,7 @@ export function App(props: AppProps): React.ReactElement {
     const isRight = input === 'l' || key.rightArrow;
 
     if (isLeft || isRight) {
-      dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right' });
+      dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right', columns: stdout.columns || 80 });
       return;
     }
 

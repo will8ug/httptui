@@ -3,6 +3,8 @@ import { Box, Text, useStdout } from 'ink';
 
 import type { ParsedRequest } from '../core/types';
 import { getMethodColor } from '../utils/colors';
+import { getLeftPanelWidth } from '../utils/layout';
+import { getRequestContentWidth } from '../utils/layout';
 import { getRequestTarget } from '../utils/request';
 
 interface RequestListProps {
@@ -11,11 +13,6 @@ interface RequestListProps {
   focused: boolean;
   scrollOffset: number;
   horizontalOffset: number;
-}
-
-function getLeftPanelWidth(columns: number): number {
-  const proportionalWidth = Math.floor(columns * 0.3);
-  return Math.max(25, Math.min(proportionalWidth, 36));
 }
 
 function truncateText(value: string, maxWidth: number): string {
@@ -43,7 +40,7 @@ export function RequestList({
 }: RequestListProps): React.ReactElement {
   const { stdout } = useStdout();
   const panelWidth = getLeftPanelWidth(stdout.columns || 80);
-  const contentWidth = Math.max(10, panelWidth - 4);
+  const contentWidth = getRequestContentWidth(stdout.columns || 80);
   const visibleHeight = Math.max(1, (stdout.rows || 24) - 5);
   const visibleRequests = requests.slice(scrollOffset, scrollOffset + visibleHeight);
 

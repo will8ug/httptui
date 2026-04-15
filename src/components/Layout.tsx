@@ -1,16 +1,13 @@
 import React from 'react';
 import { Box, useStdout } from 'ink';
 
+import { getLeftPanelWidth } from '../utils/layout';
+
 interface LayoutProps {
   left: React.ReactNode;
   right: React.ReactNode;
   bottom: React.ReactNode;
   overlay?: React.ReactNode;
-}
-
-function getLeftPanelWidth(columns: number): number {
-  const proportionalWidth = Math.floor(columns * 0.3);
-  return Math.max(25, Math.min(proportionalWidth, 36));
 }
 
 export function Layout({ left, right, bottom, overlay }: LayoutProps): React.ReactElement {

@@ -4,6 +4,8 @@ import { Box, Text, useStdout } from 'ink';
 
 import type { RequestError, ResponseData, WrapMode } from '../core/types';
 import { colorizeJson, getStatusColor } from '../utils/colors';
+import { getLeftPanelWidth } from '../utils/layout';
+import { getResponseContentWidth } from '../utils/layout';
 import { wrapLine, wrapColorizedSegments } from '../utils/wrap';
 
 interface ResponseViewProps {
@@ -15,11 +17,6 @@ interface ResponseViewProps {
   scrollOffset: number;
   horizontalOffset: number;
   wrapMode: WrapMode;
-}
-
-function getLeftPanelWidth(columns: number): number {
-  const proportionalWidth = Math.floor(columns * 0.3);
-  return Math.max(25, Math.min(proportionalWidth, 36));
 }
 
 function truncateText(value: string, maxWidth: number): string {
@@ -119,7 +116,7 @@ export function ResponseView({
   const columns = stdout.columns || 80;
   const rows = stdout.rows || 24;
   const leftPanelWidth = getLeftPanelWidth(columns);
-  const contentWidth = Math.max(20, columns - leftPanelWidth - 6);
+  const contentWidth = getResponseContentWidth(columns);
   const visibleHeight = Math.max(1, rows - 5);
 
   let content: React.ReactNode;

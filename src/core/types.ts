@@ -92,7 +92,7 @@ export type Action =
   | { type: 'TOGGLE_VERBOSE' }
   | { type: 'TOGGLE_HELP' }
   | { type: 'SCROLL'; direction: 'up' | 'down' }
-  | { type: 'SCROLL_HORIZONTAL'; direction: 'left' | 'right' }
+  | { type: 'SCROLL_HORIZONTAL'; direction: 'left' | 'right'; columns?: number }
   | { type: 'CLOSE_HELP' }
   | { type: 'RELOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[] }
   | { type: 'CLEAR_RELOAD_MESSAGE' }
