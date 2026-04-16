@@ -7,6 +7,9 @@ import { colorizeJson, getStatusColor } from '../utils/colors';
 import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
 import { wrapLine, wrapColorizedSegments } from '../utils/wrap';
 
+/** Top border (1) + title row (1) + bottom border (1) */
+const RESPONSE_PANEL_VERTICAL_CHROME = 3;
+
 interface ResponseViewProps {
   response: ResponseData | null;
   error: RequestError | null;
@@ -116,7 +119,7 @@ export function ResponseView({
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
   const contentWidth = getResponseContentWidth(columns);
-  const visibleHeight = Math.max(1, availableHeight - 3);
+  const visibleHeight = Math.max(1, availableHeight - RESPONSE_PANEL_VERTICAL_CHROME);
 
   let content: React.ReactNode;
 

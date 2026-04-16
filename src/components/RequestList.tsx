@@ -3,9 +3,12 @@ import { Box, Text, useStdout } from 'ink';
 
 import type { ParsedRequest } from '../core/types';
 import { getMethodColor } from '../utils/colors';
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getLeftPanelWidth } from '../utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS } from '../utils/layout';
 import { getRequestContentWidth } from '../utils/layout';
 import { getRequestTarget } from '../utils/request';
+
+/** Panel chrome (border top + title + border bottom = 3) + status bar (1) + layout flex rounding (1) */
+const REQUEST_LIST_VERTICAL_OVERHEAD = 5;
 
 interface RequestListProps {
   requests: ParsedRequest[];
@@ -39,9 +42,8 @@ export function RequestList({
   horizontalOffset,
 }: RequestListProps): React.ReactElement {
   const { stdout } = useStdout();
-  const panelWidth = getLeftPanelWidth(stdout.columns || DEFAULT_TERMINAL_COLUMNS);
   const contentWidth = getRequestContentWidth(stdout.columns || DEFAULT_TERMINAL_COLUMNS);
-  const visibleHeight = Math.max(1, (stdout.rows || DEFAULT_TERMINAL_ROWS) - 5);
+  const visibleHeight = Math.max(1, (stdout.rows || DEFAULT_TERMINAL_ROWS) - REQUEST_LIST_VERTICAL_OVERHEAD);
   const visibleRequests = requests.slice(scrollOffset, scrollOffset + visibleHeight);
 
   return (
