@@ -15,7 +15,7 @@ import { executeRequest, isRequestError } from './core/executor';
 import type { Action, AppState, ExecutorConfig, FileVariable, ParsedRequest, RequestError } from './core/types';
 import { parseHttpFile } from './core/parser';
 import { resolveVariables } from './core/variables';
-import { getRequestContentWidth, getResponseContentWidth } from './utils/layout';
+import { getDetailPanelHeight, getRequestContentWidth, getResponseContentWidth } from './utils/layout';
 import { getRequestTarget } from './utils/request';
 
 function getMaxRequestLineWidth(requests: readonly ParsedRequest[]): number {
@@ -495,6 +495,18 @@ export function App(props: AppProps): React.ReactElement {
     dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down' });
   });
 
+  const rows = stdout.rows || 24;
+  const selectedRequest = state.requests[state.selectedIndex];
+  const detailPanelMaxContent = 10;
+  let detailPanelHeight = 0;
+  if (state.showRequestDetails && selectedRequest) {
+    const resolved = resolveVariables(selectedRequest, state.variables);
+    const headerCount = Object.keys(resolved.headers).length;
+    const bodyLineCount = resolved.body !== undefined ? resolved.body.split('\n').length : 0;
+    detailPanelHeight = getDetailPanelHeight(headerCount, bodyLineCount, detailPanelMaxContent);
+  }
+  const responseAvailableHeight = rows - 1 - detailPanelHeight;
+
   return (
     <Layout
       left={
@@ -516,6 +528,7 @@ export function App(props: AppProps): React.ReactElement {
           scrollOffset={state.responseScrollOffset}
           horizontalOffset={state.responseHorizontalOffset}
           wrapMode={state.wrapMode}
+          availableHeight={responseAvailableHeight}
         />
       }
       bottom={
@@ -528,11 +541,11 @@ export function App(props: AppProps): React.ReactElement {
         />
       }
       overlay={state.showHelp ? <HelpOverlay visible={state.showHelp} /> : state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> : undefined}
-      detailPanel={state.showRequestDetails && state.requests[state.selectedIndex] ? (
+      detailPanel={state.showRequestDetails && selectedRequest ? (
         <RequestDetailsView
-          request={state.requests[state.selectedIndex]}
+          request={selectedRequest}
           variables={state.variables}
-          maxHeight={10}
+          maxHeight={detailPanelMaxContent}
         />
       ) : undefined}
     />

@@ -1,33 +1,47 @@
 ## Context
 
-The request-details-panel feature introduced a layout change in `Layout.tsx` that wraps the right column in a `flexDirection="column"` Box to accommodate the optional detail panel above the response view. The inner Box wrapping `{right}` (the `ResponseView`) was given `flexGrow={1}` but no explicit `height`, while `ResponseView` itself uses `height="100%"` on its bordered container.
+The request-details-panel feature introduced a layout change in `Layout.tsx` that wraps the right column in a `flexDirection="column"` Box to accommodate the optional detail panel above the response view. This caused two problems:
 
-In Yoga (the Flexbox layout engine used by Ink), `height: 100%` must resolve against an ancestor with an explicit height. The previous layout had `height="100%"` on the right-column Box, so `ResponseView`'s `height="100%"` resolved correctly. The new layout replaced that with `flexGrow={1}` only, breaking the resolution chain.
+1. **ResponseView's `visibleHeight` used global `stdout.rows`**: The calculation `visibleHeight = rows - 5` didn't account for the ResponseView's own chrome (2 border rows + 1 title row) or the space consumed by RequestDetailsView when visible. Ink has no `overflow: hidden`, so excess content lines overflowed the box, pushing the title out of the visible terminal area.
 
-This manifests as the "Response" title (and "Request Details" title when visible) disappearing when rendering large response bodies, because Yoga cannot correctly compute the bordered Box's height. Small responses still work because the content-based minimum height is sufficient to show the title.
+2. **`height="100%"` on the inner wrapper Box**: The wrapper around `{right}` had `height="100%"` which resolved to the parent column's full height, ignoring the space already taken by the detail panel above it. This caused the ResponseView to claim more vertical space than available.
+
+Both issues manifested as the "Response" and "Request Details" titles disappearing when rendering large response bodies. Small responses worked because the content fit within the incorrectly-sized container.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Restore correct layout rendering for the response view title and content regardless of response body size
-- Maintain the detail panel above the response view when toggled on
+- Restore correct layout rendering for both the response view and request details panel titles regardless of response body size
+- Ensure content line counts respect the actual available space, accounting for all layout components
 
 **Non-Goals:**
-- Changing the Layout API or component structure beyond the height fix
-- Addressing any other layout edge cases not related to this bug
+- Changing the overall Layout component structure
+- Adding overflow clipping to Ink (not supported by the framework)
 
 ## Decisions
 
-### 1. Add `height="100%"` to the inner wrapping Box
+### 1. Calculate `visibleHeight` from actual available space
 
-**Decision**: Add `height="100%"` to the `<Box flexGrow={1}>` that wraps `{right}` in `Layout.tsx`.
+**Decision**: Replace the hardcoded `rows - 5` in ResponseView with `availableHeight - 3`, where `availableHeight` is passed as a prop from App and accounts for the status bar and detail panel height.
 
-**Rationale**: This restores the explicit height chain that existed before (`height="100%"` → `height="100%"` → `height="100%"`). Yoga needs an explicit height on the parent for percentage-based heights on children to resolve correctly. `flexGrow={1}` alone does not provide this.
+**Rationale**: The previous calculation used global terminal rows without subtracting the space consumed by other layout elements. Since Ink has no overflow clipping, the only way to prevent content from pushing titles out of view is to limit the rendered content to fit the actual available space.
+
+### 2. Add `getDetailPanelHeight` utility
+
+**Decision**: Create a utility function in `src/utils/layout.ts` that mirrors RequestDetailsView's line-counting logic to compute its total rendered height (content lines + 2 border rows).
+
+**Rationale**: App.tsx needs to know the detail panel's height to compute the remaining space for ResponseView. Extracting this as a pure function avoids duplicating the line-counting logic and keeps the calculation testable.
+
+### 3. Remove `height="100%"` from the inner wrapper Box in Layout
+
+**Decision**: Use only `flexGrow={1}` (without `height="100%"`) on the `<Box>` wrapping `{right}` in Layout.tsx.
+
+**Rationale**: With `height="100%"`, Yoga resolved the wrapper to the parent column's full height, ignoring the detail panel's space. With `flexGrow={1}` alone, Yoga correctly allocates only the remaining space after the detail panel.
 
 **Alternatives considered**:
-- *Only render the column structure when detailPanel is present*: This would require conditional rendering and duplicate JSX, increasing complexity for no benefit.
-- *Remove `height="100%"` from ResponseView and use `flexGrow` instead*: This would require changing ResponseView's sizing strategy, which is a larger change with more risk.
+- *Only render the column structure when detailPanel is present*: Conditional rendering with duplicate JSX — added complexity for no benefit.
+- *Adding `height="100%"` to the wrapper (initial attempt)*: Didn't solve the problem because `height="100%"` resolves to the parent's full height, not the remaining space.
 
 ## Risks / Trade-offs
 
-- **[Minimal risk]** The fix is a single attribute addition. The `height="100%"` on the inner Box simply ensures Yoga's percentage resolution chain is intact — it does not change the visual layout when the detail panel is absent (the Box already fills available space via `flexGrow`).
+- **[Low risk]** The `getDetailPanelHeight` utility duplicates RequestDetailsView's line-counting logic as a pure function. If the component's rendering logic changes, the utility must be updated in sync. This is acceptable for a small, stable component.
