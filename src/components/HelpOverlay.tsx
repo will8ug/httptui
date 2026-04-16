@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
 import { SHORTCUTS } from '../core/shortcuts';
+import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
 
 interface HelpOverlayProps {
   visible: boolean;
@@ -14,7 +15,7 @@ export function HelpOverlay({ visible }: HelpOverlayProps): React.ReactElement |
     return null;
   }
 
-  const width = Math.min(72, Math.max(48, (stdout.columns || 80) - 6));
+  const width = Math.min(72, Math.max(48, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - 6));
 
   return (
     <Box width="100%" height="100%" justifyContent="center" alignItems="center">

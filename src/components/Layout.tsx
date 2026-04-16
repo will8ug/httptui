@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, useStdout } from 'ink';
 
-import { getLeftPanelWidth } from '../utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getLeftPanelWidth } from '../utils/layout';
 
 interface LayoutProps {
   left: React.ReactNode;
@@ -13,8 +13,8 @@ interface LayoutProps {
 
 export function Layout({ left, right, bottom, overlay, detailPanel }: LayoutProps): React.ReactElement {
   const { stdout } = useStdout();
-  const columns = stdout.columns || 80;
-  const rows = stdout.rows || 24;
+  const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
+  const rows = stdout.rows || DEFAULT_TERMINAL_ROWS;
   const leftPanelWidth = getLeftPanelWidth(columns);
 
   return (

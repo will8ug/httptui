@@ -15,7 +15,7 @@ import { executeRequest, isRequestError } from './core/executor';
 import type { Action, AppState, ExecutorConfig, FileVariable, ParsedRequest, RequestError } from './core/types';
 import { parseHttpFile } from './core/parser';
 import { resolveVariables } from './core/variables';
-import { getDetailPanelHeight, getRequestContentWidth, getResponseContentWidth } from './utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getRequestContentWidth, getResponseContentWidth } from './utils/layout';
 import { getRequestTarget } from './utils/request';
 
 function getMaxRequestLineWidth(requests: readonly ParsedRequest[]): number {
@@ -479,7 +479,7 @@ export function App(props: AppProps): React.ReactElement {
     const isRight = input === 'l' || key.rightArrow;
 
     if (isLeft || isRight) {
-      dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right', columns: stdout.columns || 80 });
+      dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right', columns: stdout.columns || DEFAULT_TERMINAL_COLUMNS });
       return;
     }
 
@@ -495,7 +495,7 @@ export function App(props: AppProps): React.ReactElement {
     dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down' });
   });
 
-  const rows = stdout.rows || 24;
+  const rows = stdout.rows || DEFAULT_TERMINAL_ROWS;
   const selectedRequest = state.requests[state.selectedIndex];
   const detailPanelMaxContent = 10;
   let detailPanelHeight = 0;

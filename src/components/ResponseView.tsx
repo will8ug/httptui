@@ -4,7 +4,7 @@ import { Box, Text, useStdout } from 'ink';
 
 import type { RequestError, ResponseData, WrapMode } from '../core/types';
 import { colorizeJson, getStatusColor } from '../utils/colors';
-import { getResponseContentWidth } from '../utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
 import { wrapLine, wrapColorizedSegments } from '../utils/wrap';
 
 interface ResponseViewProps {
@@ -114,7 +114,7 @@ export function ResponseView({
   availableHeight,
 }: ResponseViewProps): React.ReactElement {
   const { stdout } = useStdout();
-  const columns = stdout.columns || 80;
+  const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
   const contentWidth = getResponseContentWidth(columns);
   const visibleHeight = Math.max(1, availableHeight - 3);
 

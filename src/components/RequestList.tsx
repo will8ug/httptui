@@ -3,7 +3,7 @@ import { Box, Text, useStdout } from 'ink';
 
 import type { ParsedRequest } from '../core/types';
 import { getMethodColor } from '../utils/colors';
-import { getLeftPanelWidth } from '../utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getLeftPanelWidth } from '../utils/layout';
 import { getRequestContentWidth } from '../utils/layout';
 import { getRequestTarget } from '../utils/request';
 
@@ -39,9 +39,9 @@ export function RequestList({
   horizontalOffset,
 }: RequestListProps): React.ReactElement {
   const { stdout } = useStdout();
-  const panelWidth = getLeftPanelWidth(stdout.columns || 80);
-  const contentWidth = getRequestContentWidth(stdout.columns || 80);
-  const visibleHeight = Math.max(1, (stdout.rows || 24) - 5);
+  const panelWidth = getLeftPanelWidth(stdout.columns || DEFAULT_TERMINAL_COLUMNS);
+  const contentWidth = getRequestContentWidth(stdout.columns || DEFAULT_TERMINAL_COLUMNS);
+  const visibleHeight = Math.max(1, (stdout.rows || DEFAULT_TERMINAL_ROWS) - 5);
   const visibleRequests = requests.slice(scrollOffset, scrollOffset + visibleHeight);
 
   return (

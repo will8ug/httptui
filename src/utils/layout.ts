@@ -1,3 +1,6 @@
+export const DEFAULT_TERMINAL_COLUMNS = 80;
+export const DEFAULT_TERMINAL_ROWS = 24;
+
 export function getLeftPanelWidth(columns: number): number {
   const proportionalWidth = Math.floor(columns * 0.3);
   return Math.max(25, Math.min(proportionalWidth, 36));

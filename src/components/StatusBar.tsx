@@ -4,6 +4,7 @@ import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
 import { SHORTCUTS } from '../core/shortcuts';
+import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
 
 interface StatusBarProps {
   filePath: string;
@@ -37,7 +38,7 @@ export function StatusBar({
   reloadMessage,
 }: StatusBarProps): React.ReactElement {
   const { stdout } = useStdout();
-  const columns = stdout.columns || 80;
+  const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
   const barShortcuts = SHORTCUTS.filter((s) => s.showInBar);
   const leftText = barShortcuts.map((s) => `[${s.key}] ${s.label}`).join('  ');
   const rightText = `${basename(filePath)}  ${selectedIndex + 1}/${requestCount}`;
