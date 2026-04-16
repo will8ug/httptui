@@ -81,6 +81,7 @@ export interface AppState {
   fileLoadError: string | null;
   wrapMode: WrapMode;
   showRequestDetails: boolean;
+  rawMode: boolean;
 }
 
 export type Action =
@@ -103,4 +104,5 @@ export type Action =
   | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string }
   | { type: 'CANCEL_FILE_LOAD' }
   | { type: 'TOGGLE_WRAP' }
+  | { type: 'TOGGLE_RAW' }
   | { type: 'TOGGLE_REQUEST_DETAILS' };

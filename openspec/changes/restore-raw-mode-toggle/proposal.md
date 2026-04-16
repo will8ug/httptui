@@ -11,7 +11,6 @@ The `r` key raw response mode toggle was removed in `2026-04-12-remove-raw-mode-
 - **Add** `r` shortcut entry to the `SHORTCUTS` array in `shortcuts.ts`
 - **Modify** `ResponseView` to accept a `rawMode` prop — when `true`, skip JSON pretty-printing and colorization, render body as-is
 - **Modify** response panel title to indicate raw mode (e.g., `Response [raw]`)
-- **Add** 2 unit tests for the `TOGGLE_RAW` reducer action
 
 ## Capabilities
 
@@ -30,4 +29,3 @@ _(None — restoring a previously existing capability)_
 - `src/app.tsx` — Add `TOGGLE_RAW` reducer case, `r` key handler, `rawMode` initial state, pass `rawMode` prop to `ResponseView`
 - `src/components/ResponseView.tsx` — Add `rawMode` prop, skip JSON colorization when active, update panel title
 - `openspec/specs/tui/spec.md` — Add `r` to keyboard shortcuts table and document raw mode behavior
-- `test/raw-toggle.test.ts` — New test file with 2 unit test cases for `TOGGLE_RAW` reducer

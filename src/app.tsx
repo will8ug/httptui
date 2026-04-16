@@ -197,6 +197,12 @@ function reducer(state: AppState, action: Action): AppState {
         responseHorizontalOffset: 0,
       };
 
+    case 'TOGGLE_RAW':
+      return {
+        ...state,
+        rawMode: !state.rawMode,
+      };
+
     case 'TOGGLE_REQUEST_DETAILS':
       return {
         ...state,
@@ -320,6 +326,7 @@ function createInitialState(props: AppProps): AppState {
     fileLoadError: null,
     wrapMode: 'nowrap',
     showRequestDetails: false,
+    rawMode: false,
   };
 }
 
@@ -445,6 +452,11 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (input === 'r') {
+      dispatch({ type: 'TOGGLE_RAW' });
+      return;
+    }
+
     if (input === 'd') {
       dispatch({ type: 'TOGGLE_REQUEST_DETAILS' });
       return;
@@ -528,6 +540,7 @@ export function App(props: AppProps): React.ReactElement {
           scrollOffset={state.responseScrollOffset}
           horizontalOffset={state.responseHorizontalOffset}
           wrapMode={state.wrapMode}
+          rawMode={state.rawMode}
           availableHeight={responseAvailableHeight}
         />
       }

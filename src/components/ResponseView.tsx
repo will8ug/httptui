@@ -19,6 +19,7 @@ interface ResponseViewProps {
   scrollOffset: number;
   horizontalOffset: number;
   wrapMode: WrapMode;
+  rawMode: boolean;
   availableHeight: number;
 }
 
@@ -114,6 +115,7 @@ export function ResponseView({
   scrollOffset,
   horizontalOffset,
   wrapMode,
+  rawMode,
   availableHeight,
 }: ResponseViewProps): React.ReactElement {
   const { stdout } = useStdout();
@@ -132,7 +134,7 @@ export function ResponseView({
     content = <Text color="gray">Press Enter to send a request</Text>;
   } else {
     const responseBody = response.body;
-    const isJsonBody = isJson(responseBody);
+    const isJsonBody = !rawMode && isJson(responseBody);
     const responseLines: React.ReactNode[] = [];
 
     if (wrapMode === 'wrap') {
@@ -292,7 +294,7 @@ export function ResponseView({
       height="100%"
     >
       <Text color={focused ? 'cyanBright' : 'gray'} bold>
-        {wrapMode === 'wrap' ? 'Response [wrap]' : 'Response'}
+        {rawMode && wrapMode === 'wrap' ? 'Response [raw] [wrap]' : rawMode ? 'Response [raw]' : wrapMode === 'wrap' ? 'Response [wrap]' : 'Response'}
       </Text>
       {content}
     </Box>

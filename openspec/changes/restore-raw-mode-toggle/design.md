@@ -12,7 +12,6 @@ The existing toggle pattern (`wrapMode` / `TOGGLE_WRAP` / `w` key) provides the 
 - Restore the `r` key shortcut to toggle raw response body rendering
 - When raw mode is active, display the response body exactly as received (no JSON pretty-printing, no colorization)
 - Provide a visual indicator in the response panel title when raw mode is active
-- Add 2 unit tests for the `TOGGLE_RAW` reducer action
 - Follow the existing `TOGGLE_WRAP` pattern exactly for consistency
 
 **Non-Goals:**
@@ -30,8 +29,6 @@ The existing toggle pattern (`wrapMode` / `TOGGLE_WRAP` / `w` key) provides the 
 3. **Show `Response [raw]` in panel title** — Mirrors the existing `Response [wrap]` pattern for `wrapMode`. When both are active, show `Response [raw] [wrap]`. This keeps the indicator consistent and discoverable.
 
 4. **`r` shortcut with `showInBar: false, showInHelp: true`** — The status bar already has 6 shortcuts (the documented maximum). The `r` shortcut appears in the help overlay (`?`) but not in the status bar. This matches shortcuts like `w`, `o`, `R`, and `d`.
-
-5. **Test file follows `wrap-toggle.test.ts` pattern** — New file `test/raw-toggle.test.ts` with a local `createInitialState()` and minimal local reducer handling only `TOGGLE_RAW`. Two test cases: toggle on and toggle off. This matches the established convention where each test file duplicates only the reducer logic it tests.
 
 ## Risks / Trade-offs
 

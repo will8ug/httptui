@@ -11,6 +11,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'h/j/k/l', label: 'Nav', description: 'Navigate requests and scroll panels', showInBar: true, showInHelp: false },
   { key: 'Tab', label: 'Panel', description: 'Switch focused panel', showInBar: true, showInHelp: true },
   { key: 'v', label: 'Verbose', description: 'Toggle verbose headers', showInBar: true, showInHelp: true },
+  { key: 'r', label: 'Raw', description: 'Toggle raw response mode (no JSON formatting)', showInBar: false, showInHelp: true },
   { key: 'w', label: 'Wrap', description: 'Toggle text wrapping in response panel', showInBar: false, showInHelp: true },
   { key: 'q', label: 'Quit', description: 'Quit application', showInBar: true, showInHelp: true },
   { key: '?', label: 'Help', description: 'Toggle this help overlay', showInBar: true, showInHelp: true },

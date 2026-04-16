@@ -50,6 +50,10 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 - Two display modes controlled by `wrapMode` in `AppState`:
   - **nowrap** (default): Lines are truncated to panel width with `…` ellipsis; horizontal scrolling supported
   - **wrap**: Long lines wrap at the panel boundary (word boundaries preferred); JSON syntax coloring preserved across wrapped lines; horizontal scrolling disabled; panel title shows `Response [wrap]`
+- Raw mode controlled by `rawMode` boolean in `AppState`:
+  - **formatted** (default, `rawMode: false`): JSON responses are pretty-printed with syntax colorization
+  - **raw** (`rawMode: true`): Response body is rendered as plain text without JSON formatting or colorization; panel title shows `Response [raw]`
+  - When both `rawMode` and `wrapMode === 'wrap'` are active, panel title shows `Response [raw] [wrap]`
 
 #### Requirement: Response panel title visibility
 The response panel SHALL render its title ("Response" or "Response [wrap]"), status line, headers, and body content correctly regardless of response body size. The bordered Box containing the response view SHALL maintain its full height within the right column layout, ensuring the title is always visible.
@@ -87,6 +91,7 @@ The response panel SHALL render its title ("Response" or "Response [wrap]"), sta
 | `Enter` | Any | Send currently selected request |
 | `Tab` | Any | Switch focus between panels |
 | `v` | Any | Toggle verbose mode (show/hide headers) |
+| `r` | Any (no overlay) | Toggle raw response mode (no JSON formatting) |
 | `w` | Any (no overlay) | Toggle text wrapping in response panel |
 | `R` | Any | Reload file from disk |
 | `o` | Any | Open a different .http file |
