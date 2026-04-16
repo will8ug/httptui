@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, useStdout } from 'ink';
 
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getLeftPanelWidth } from '../utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, MIN_CONTENT_AREA_ROWS, getLeftPanelWidth } from '../utils/layout';
 
 interface LayoutProps {
   left: React.ReactNode;
@@ -19,7 +19,7 @@ export function Layout({ left, right, bottom, overlay, detailPanel }: LayoutProp
 
   return (
     <Box flexDirection="column" width={columns} height={rows}>
-      <Box flexDirection="row" flexGrow={1} height={Math.max(3, rows - 1)}>
+      <Box flexDirection="row" flexGrow={1} height={Math.max(MIN_CONTENT_AREA_ROWS, rows - 1)}>
         {overlay ? (
           <Box width="100%" height="100%">
             {overlay}
