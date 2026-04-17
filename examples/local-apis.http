@@ -1,2 +1,5 @@
 ### Mock 502 from Nginx
 GET http://localhost:10001/nginx-502
+
+### Raw json response
+GET http://localhost:10001/raw-json-simple
