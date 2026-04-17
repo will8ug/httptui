@@ -68,15 +68,16 @@ export function RequestDetailsView({
     );
   }
 
-  const visibleHeight = maxHeight;
-  const visibleLines = allLines.slice(scrollOffset, scrollOffset + visibleHeight);
   const totalLines = allLines.length;
+  const visibleHeight = maxHeight;
+  const clampedOffset = Math.min(scrollOffset, Math.max(0, totalLines - visibleHeight));
+  const visibleLines = allLines.slice(clampedOffset, clampedOffset + visibleHeight);
   const hasOverflow = totalLines > visibleHeight;
 
   if (hasOverflow) {
     visibleLines.push(
       <Text key="scroll-indicator" color="gray" dimColor>
-        ↕ {scrollOffset + 1}/{totalLines} lines
+        ↕ {clampedOffset + 1}/{totalLines} lines
       </Text>,
     );
   }

@@ -27,31 +27,9 @@ export function getResponseContentWidth(columns: number): number {
 }
 
 export function getDetailPanelHeight(
-  headerCount: number,
-  bodyLineCount: number,
+  totalContentLines: number,
   maxContentLines: number,
 ): number {
-  const FIXED_LINES = 3;
   const BORDER_ROWS = 2;
-  const headerSeparator = headerCount > 0 ? 1 : 0;
-  const available = maxContentLines - FIXED_LINES - headerSeparator;
-
-  let contentLines = FIXED_LINES;
-  let remaining = available;
-
-  if (headerCount > 0 && remaining > 0) {
-    const shown = Math.min(headerCount, remaining);
-    contentLines += shown;
-    remaining -= shown;
-    if (remaining > 0) {
-      contentLines += 1;
-      remaining -= 1;
-    }
-  }
-
-  if (bodyLineCount > 0 && remaining > 0) {
-    contentLines += Math.min(bodyLineCount, remaining);
-  }
-
-  return contentLines + BORDER_ROWS;
+  return Math.min(totalContentLines, maxContentLines) + BORDER_ROWS;
 }

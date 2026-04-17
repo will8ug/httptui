@@ -579,9 +579,12 @@ export function App(props: AppProps): React.ReactElement {
   let detailPanelHeight = 0;
   if (state.showRequestDetails && selectedRequest) {
     const resolved = resolveVariables(selectedRequest, state.variables);
-    const headerCount = Object.keys(resolved.headers).length;
-    const bodyLineCount = resolved.body !== undefined ? resolved.body.split('\n').length : 0;
-    detailPanelHeight = getDetailPanelHeight(headerCount, bodyLineCount, detailPanelMaxContent);
+    const headerEntries = Object.entries(resolved.headers);
+    const bodyLines = resolved.body !== undefined ? resolved.body.split('\n') : [];
+    const headerSeparator = headerEntries.length > 0 ? 1 : 0;
+    // title + method/URL + separator + headers + header separator + body lines
+    const totalContentLines = 3 + headerEntries.length + headerSeparator + bodyLines.length;
+    detailPanelHeight = getDetailPanelHeight(totalContentLines, detailPanelMaxContent);
   }
   const responseAvailableHeight = rows - 1 - detailPanelHeight;
 

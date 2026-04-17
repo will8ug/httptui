@@ -3,3 +3,16 @@ GET http://localhost:10001/nginx-502
 
 ### Raw json response
 GET http://localhost:10001/raw-json-simple
+
+### Request with Large Body
+POST http://localhost:10001/non-exist-req
+
+{
+  "name": "John Doe",
+  "username": "johndoe",
+  "email": "john@example.com",
+  "address": "irrelevant-address",
+  "age": 30,
+  "title": "Architect",
+  "Hobit": "Coding"
+}

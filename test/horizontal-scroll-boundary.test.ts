@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Action, AppState, ParsedRequest } from '../src/core/types';
-import { getRequestContentWidth, getLeftPanelWidth, getResponseContentWidth } from '../src/utils/layout';
+import { getRequestContentWidth, getLeftPanelWidth, getResponseContentWidth, getDetailPanelHeight } from '../src/utils/layout';
 import { getRequestTarget } from '../src/utils/request';
 
 function getMaxRequestLineWidth(requests: readonly ParsedRequest[]): number {
@@ -133,6 +133,14 @@ describe('Layout utilities', () => {
     expect(getResponseContentWidth(100)).toBe(64); // 100 - 30 - 6 = 64
     expect(getResponseContentWidth(80)).toBe(49); // 80 - 25 - 6 = 49
     expect(getResponseContentWidth(50)).toBe(20); // 50 - 25(max(15,25)) - 6 = 19, min 20
+  });
+
+  it('getDetailPanelHeight returns min(total, max) + 2 border rows', () => {
+    expect(getDetailPanelHeight(10, 10)).toBe(12);
+    expect(getDetailPanelHeight(5, 10)).toBe(7);
+    expect(getDetailPanelHeight(15, 10)).toBe(12);
+    expect(getDetailPanelHeight(0, 10)).toBe(2);
+    expect(getDetailPanelHeight(3, 3)).toBe(5);
   });
 });
 
