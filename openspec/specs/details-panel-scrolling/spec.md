@@ -42,31 +42,19 @@ The request details panel SHALL display focus state using the same visual patter
 - **THEN** the details panel border SHALL be `gray` and the title text SHALL be `gray`
 
 ### Requirement: Vertical scrolling in request details panel
-The request details panel SHALL support vertical scrolling when the panel is focused and the resolved request content (method line, URL, headers, body) exceeds the panel's visible height. Scrolling SHALL use `j/k` and `↑/↓` keys. The scroll offset SHALL be tracked as `detailsScrollOffset` in `AppState`.
+The request details panel SHALL support vertical scrolling when the panel is focused and the resolved request content (method line, URL, headers, body) exceeds the panel's visible height. Scrolling SHALL use `j/k` and `↑/↓` keys. The scroll offset SHALL be tracked as `detailsScrollOffset` in `AppState`. The scroll offset SHALL be clamped so that the number of visible lines remains constant — `slice(clampedOffset, clampedOffset + visibleHeight)` SHALL always return exactly `min(totalLines, visibleHeight)` lines.
 
 #### Scenario: Scroll down through long request body
 - **WHEN** `focusedPanel` is `details` and the resolved request body has more lines than the visible height, and the user presses `j` or `↓`
 - **THEN** the panel content SHALL scroll down by one line, revealing hidden content below
 
-#### Scenario: Scroll up after scrolling down
-- **WHEN** `focusedPanel` is `details` and the user has scrolled down and presses `k` or `↑`
-- **THEN** the panel content SHALL scroll up by one line
-
-#### Scenario: Scroll offset clamped at top
-- **WHEN** `focusedPanel` is `details` and the details scroll offset is 0 and the user presses `k` or `↑`
-- **THEN** the scroll offset SHALL remain at 0 (no negative scrolling)
-
 #### Scenario: Scroll offset clamped at bottom
-- **WHEN** `focusedPanel` is `details` and the details scroll offset is at the maximum value (total content lines minus visible height) and the user presses `j` or `↓`
-- **THEN** the scroll offset SHALL not increase beyond the maximum
+- **WHEN** `focusedPanel` is `details` and the details scroll offset is at the maximum value (`totalLines - visibleHeight`) and the user presses `j` or `↓`
+- **THEN** the scroll offset SHALL not increase beyond the maximum, and the panel SHALL continue to display exactly `visibleHeight` lines
 
-#### Scenario: Content fits within panel height
-- **WHEN** `focusedPanel` is `details` and the total content lines fit within the visible height
-- **THEN** scrolling keys SHALL have no visible effect on the details panel content
-
-#### Scenario: j/k scrolls response when details visible but response focused
-- **WHEN** `showRequestDetails` is true and `focusedPanel` is `response` and the user presses `j`
-- **THEN** the system SHALL increment `responseScrollOffset` (not `detailsScrollOffset`)
+#### Scenario: Panel height remains stable during scrolling
+- **WHEN** the user scrolls through the details panel content
+- **THEN** the panel height SHALL remain constant regardless of the scroll offset — the visible line count SHALL never change for a given request
 
 ### Requirement: Horizontal scrolling in request details panel
 The request details panel SHALL support horizontal scrolling when the panel is focused, using `h/l` and `←/→` keys. The horizontal offset SHALL be tracked as `detailsHorizontalOffset` in `AppState`.
