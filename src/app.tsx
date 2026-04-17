@@ -47,6 +47,28 @@ function getMaxResponseLineWidth(state: AppState): number {
   return Math.max(0, ...lines.map((l) => l.length));
 }
 
+function getMaxDetailsLineWidth(state: AppState): number {
+  const request = state.requests[state.selectedIndex];
+  if (!request) {
+    return 0;
+  }
+
+  const resolved = resolveVariables(request, state.variables);
+  const lines: string[] = [];
+
+  lines.push(`${resolved.method} ${resolved.url}`);
+
+  for (const [name, value] of Object.entries(resolved.headers)) {
+    lines.push(`${name}: ${value}`);
+  }
+
+  if (resolved.body !== undefined) {
+    lines.push(...resolved.body.split('\n'));
+  }
+
+  return Math.max(0, ...lines.map((l) => l.length));
+}
+
 interface AppProps {
   filePath: string;
   requests: ParsedRequest[];
@@ -82,6 +104,8 @@ function reducer(state: AppState, action: Action): AppState {
         selectedIndex: nextIndex,
         requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset),
         requestHorizontalOffset: 0,
+        detailsScrollOffset: 0,
+        detailsHorizontalOffset: 0,
       };
     }
 
@@ -94,6 +118,8 @@ function reducer(state: AppState, action: Action): AppState {
         selectedIndex: nextIndex,
         requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset),
         requestHorizontalOffset: 0,
+        detailsScrollOffset: 0,
+        detailsHorizontalOffset: 0,
       };
     }
 
@@ -124,11 +150,22 @@ function reducer(state: AppState, action: Action): AppState {
         responseScrollOffset: 0,
       };
 
-    case 'SWITCH_PANEL':
+    case 'SWITCH_PANEL': {
+      const nextPanel = (() => {
+        switch (state.focusedPanel) {
+          case 'requests':
+            return state.showRequestDetails ? 'details' : 'response';
+          case 'details':
+            return 'response';
+          case 'response':
+            return 'requests';
+        }
+      })();
       return {
         ...state,
-        focusedPanel: state.focusedPanel === 'requests' ? 'response' : 'requests',
+        focusedPanel: nextPanel,
       };
+    }
 
     case 'TOGGLE_VERBOSE':
       return {
@@ -151,6 +188,13 @@ function reducer(state: AppState, action: Action): AppState {
     case 'SCROLL': {
       const delta = action.direction === 'up' ? -1 : 1;
 
+      if (state.focusedPanel === 'details') {
+        return {
+          ...state,
+          detailsScrollOffset: Math.max(0, state.detailsScrollOffset + delta),
+        };
+      }
+
       if (state.focusedPanel === 'response') {
         return {
           ...state,
@@ -171,6 +215,15 @@ function reducer(state: AppState, action: Action): AppState {
 
       const columns = action.columns ?? 80;
       const horizontalDelta = action.direction === 'left' ? -2 : 2;
+
+      if (state.focusedPanel === 'details') {
+        const contentWidth = getResponseContentWidth(columns);
+        const maxOffset = Math.max(0, getMaxDetailsLineWidth(state) - contentWidth);
+        return {
+          ...state,
+          detailsHorizontalOffset: Math.min(Math.max(0, state.detailsHorizontalOffset + horizontalDelta), maxOffset),
+        };
+      }
 
       if (state.focusedPanel === 'response') {
         const contentWidth = getResponseContentWidth(columns);
@@ -203,11 +256,18 @@ function reducer(state: AppState, action: Action): AppState {
         rawMode: !state.rawMode,
       };
 
-    case 'TOGGLE_REQUEST_DETAILS':
+    case 'TOGGLE_REQUEST_DETAILS': {
+      const hiding = state.showRequestDetails;
       return {
         ...state,
         showRequestDetails: !state.showRequestDetails,
+        ...(hiding && {
+          detailsScrollOffset: 0,
+          detailsHorizontalOffset: 0,
+          ...(state.focusedPanel === 'details' && { focusedPanel: 'response' as const }),
+        }),
       };
+    }
 
     case 'RELOAD_FILE': {
       const currentRequestName = state.requests[state.selectedIndex]?.name;
@@ -224,6 +284,8 @@ function reducer(state: AppState, action: Action): AppState {
         error: null,
         responseScrollOffset: 0,
         requestScrollOffset: 0,
+        detailsScrollOffset: 0,
+        detailsHorizontalOffset: 0,
         reloadMessage: 'Reloaded',
       };
     }
@@ -270,6 +332,8 @@ function reducer(state: AppState, action: Action): AppState {
         error: null,
         responseScrollOffset: 0,
         requestScrollOffset: 0,
+        detailsScrollOffset: 0,
+        detailsHorizontalOffset: 0,
         mode: 'normal',
         fileLoadInput: '',
         fileLoadError: null,
@@ -319,6 +383,8 @@ function createInitialState(props: AppProps): AppState {
     requestScrollOffset: 0,
     requestHorizontalOffset: 0,
     responseHorizontalOffset: 0,
+    detailsScrollOffset: 0,
+    detailsHorizontalOffset: 0,
     insecure: props.executorConfig.insecure,
     reloadMessage: null,
     mode: 'normal',
@@ -559,6 +625,9 @@ export function App(props: AppProps): React.ReactElement {
           request={selectedRequest}
           variables={state.variables}
           maxHeight={detailPanelMaxContent}
+          focused={state.focusedPanel === 'details'}
+          scrollOffset={state.detailsScrollOffset}
+          horizontalOffset={state.detailsHorizontalOffset}
         />
       ) : undefined}
     />

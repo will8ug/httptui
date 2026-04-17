@@ -55,7 +55,7 @@ export interface ExecutorConfig {
   insecure: boolean;
 }
 
-export type FocusedPanel = 'requests' | 'response';
+export type FocusedPanel = 'requests' | 'details' | 'response';
 export type AppMode = 'normal' | 'fileLoad';
 export type WrapMode = 'nowrap' | 'wrap';
 
@@ -75,6 +75,8 @@ export interface AppState {
   requestScrollOffset: number;
   requestHorizontalOffset: number;
   responseHorizontalOffset: number;
+  detailsScrollOffset: number;
+  detailsHorizontalOffset: number;
   reloadMessage: string | null;
   mode: AppMode;
   fileLoadInput: string;

@@ -18,7 +18,16 @@ function createInitialState(): AppState {
     filePath: 'test.http',
     responseScrollOffset: 0,
     requestScrollOffset: 0,
+    requestHorizontalOffset: 0,
+    responseHorizontalOffset: 0,
+    detailsScrollOffset: 0,
+    detailsHorizontalOffset: 0,
     reloadMessage: null,
+    mode: 'normal' as const,
+    fileLoadInput: '',
+    fileLoadError: null,
+    wrapMode: 'nowrap' as const,
+    showRequestDetails: false,
   };
 }
 

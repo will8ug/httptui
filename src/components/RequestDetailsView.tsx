@@ -9,31 +9,32 @@ interface RequestDetailsViewProps {
   request: ParsedRequest;
   variables: FileVariable[];
   maxHeight: number;
+  focused: boolean;
+  scrollOffset: number;
+  horizontalOffset: number;
 }
 
 export function RequestDetailsView({
   request,
   variables,
   maxHeight,
+  focused,
+  scrollOffset,
+  horizontalOffset,
 }: RequestDetailsViewProps): React.ReactElement {
   const resolved = resolveVariables(request, variables);
   const headerEntries = Object.entries(resolved.headers);
   const bodyLines = resolved.body !== undefined ? resolved.body.split('\n') : [];
 
-  const FIXED_LINE_COUNT = 3;
-  const HEADER_SEPARATOR_COUNT = headerEntries.length > 0 ? 1 : 0;
-  const availableForContent = maxHeight - FIXED_LINE_COUNT - HEADER_SEPARATOR_COUNT;
+  const allLines: React.ReactNode[] = [];
 
-  let remainingLines = availableForContent;
-  const lines: React.ReactNode[] = [];
-
-  lines.push(
-    <Text key="title" color="cyanBright" bold>
+  allLines.push(
+    <Text key="title" color={focused ? 'cyanBright' : 'gray'} bold>
       Request Details
     </Text>,
   );
 
-  lines.push(
+  allLines.push(
     <Text key="request-line">
       <Text color={getMethodColor(resolved.method)} bold>{resolved.method}</Text>
       <Text> </Text>
@@ -41,15 +42,13 @@ export function RequestDetailsView({
     </Text>,
   );
 
-  lines.push(
+  allLines.push(
     <Text key="separator-request" color="gray">{'─'.repeat(40)}</Text>,
   );
 
-  if (headerEntries.length > 0 && remainingLines > 0) {
-    const headersToShow = Math.min(headerEntries.length, remainingLines);
-    for (let i = 0; i < headersToShow; i += 1) {
-      const [name, value] = headerEntries[i];
-      lines.push(
+  if (headerEntries.length > 0) {
+    for (const [name, value] of headerEntries) {
+      allLines.push(
         <Text key={`header-${name}`}>
           <Text color="cyan">{name}</Text>
           <Text color="gray">: </Text>
@@ -57,42 +56,42 @@ export function RequestDetailsView({
         </Text>,
       );
     }
-    remainingLines -= headersToShow;
 
-    if (remainingLines > 0) {
-      lines.push(
-        <Text key="separator-headers" color="gray">{'─'.repeat(40)}</Text>,
-      );
-      remainingLines -= 1;
-    }
+    allLines.push(
+      <Text key="separator-headers" color="gray">{'─'.repeat(40)}</Text>,
+    );
   }
 
-  if (bodyLines.length > 0 && remainingLines > 0) {
-    const bodyToShow = Math.min(bodyLines.length, remainingLines);
-    for (let i = 0; i < bodyToShow; i += 1) {
-      lines.push(
-        <Text key={`body-${i}`}>{bodyLines[i] || ' '}</Text>,
-      );
-    }
+  for (let i = 0; i < bodyLines.length; i += 1) {
+    allLines.push(
+      <Text key={`body-${i}`}>{bodyLines[i] || ' '}</Text>,
+    );
+  }
 
-    if (bodyLines.length > bodyToShow) {
-      lines[lines.length - 1] = (
-        <Text key="body-truncated" color="gray">
-          … ({bodyLines.length - bodyToShow} more lines)
-        </Text>,
-      );
-    }
+  const visibleHeight = maxHeight;
+  const visibleLines = allLines.slice(scrollOffset, scrollOffset + visibleHeight);
+  const totalLines = allLines.length;
+  const hasOverflow = totalLines > visibleHeight;
+
+  if (hasOverflow) {
+    visibleLines.push(
+      <Text key="scroll-indicator" color="gray" dimColor>
+        ↕ {scrollOffset + 1}/{totalLines} lines
+      </Text>,
+    );
   }
 
   return (
     <Box
       borderStyle="round"
-      borderColor="gray"
+      borderColor={focused ? 'cyanBright' : 'gray'}
       flexDirection="column"
       paddingX={1}
       width="100%"
     >
-      {lines}
+      <Box flexDirection="column" marginLeft={horizontalOffset > 0 ? -horizontalOffset : 0}>
+        {visibleLines}
+      </Box>
     </Box>
   );
 }
