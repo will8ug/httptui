@@ -15,7 +15,7 @@
     "format": "prettier --write 'src/**/*.{ts,tsx}' 'test/**/*.ts'"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "keywords": [
     "http",

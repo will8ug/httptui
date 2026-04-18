@@ -16,6 +16,10 @@ httptui is a fast, keyboard-driven REST client that lives in your terminal. It p
 
 ![httptui shortcuts](assets/httptui-shortcuts.jpg)
 
+## Requirements
+
+- **Node.js 20 or newer.** httptui declares `engines.node: ">=20"`; installing on older Node versions will trigger an `EBADENGINE` warning from npm and is not supported.
+
 ## Installation
 
 ```bash

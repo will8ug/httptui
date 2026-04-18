@@ -69,5 +69,5 @@ src/
 - **Alternate screen**: `cli.tsx` switches to alternate screen buffer (`\x1B[?1049h`) on startup and restores on exit. TUI tests cannot run in a non-TTY environment without faking `isTTY`.
 - **`package-lock.json` is in `.gitignore`** — this is intentional for an npm global-install tool.
 - **`tsup.config.ts` externalizes** `react`, `ink`, `@inkjs/ui`, `undici` — these are NOT bundled into dist.
-- **Node ≥18 required** (`engines.node`), but the shebang is `#!/usr/bin/env node` (not `--use-system-ca` — see `FUTURE.md`).
+- **Node ≥20 required** (`engines.node`), but the shebang is `#!/usr/bin/env node` (not `--use-system-ca` — see `FUTURE.md`).
 - **Stale `rawMode` in test fixtures**: `test/file-load.test.ts` and `test/reload.test.ts` define `rawMode: false` in `createInitialState()`, but `rawMode` was removed from the actual `AppState` type in `src/core/types.ts`. These test files duplicate the reducer logic instead of importing from `app.tsx`, so the drift won't cause runtime failures, but it's misleading when reading tests.

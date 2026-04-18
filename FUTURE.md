@@ -12,6 +12,6 @@ Ideas deferred from current work. Pick these up when the time is right.
 
 **Where**: `tsup.config.ts` line 11, `banner.js` field.
 
-**Blocked by**: Requires bumping `engines.node` from `>=18` to `>=23.8`. The `-S` flag in env shebang also needs GNU coreutils (works on macOS/Linux, not all minimal Docker images).
+**Blocked by**: Requires bumping `engines.node` from `>=20` to `>=23.8`. The `-S` flag in env shebang also needs GNU coreutils (works on macOS/Linux, not all minimal Docker images).
 
-**When to revisit**: When Node.js 18 and 20 reach EOL, or when the user base is predominantly on Node 23.8+.
+**When to revisit**: When Node.js 20 reaches EOL, or when the user base is predominantly on Node 23.8+.
