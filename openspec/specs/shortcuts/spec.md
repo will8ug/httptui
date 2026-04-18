@@ -1,6 +1,6 @@
 # Spec: Shortcuts
 
-## Overview
+## Purpose
 
 Centralized keyboard shortcut registry that serves as the single source of truth for all shortcut definitions, consumed by both StatusBar and HelpOverlay.
 

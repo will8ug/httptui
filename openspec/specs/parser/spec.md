@@ -1,8 +1,35 @@
 # Spec: .http File Parser
 
-## Overview
+## Purpose
 
 Parse `.http` and `.rest` files into a structured array of `ParsedRequest` objects. The parser is a line-by-line state machine with zero external dependencies.
+
+## Requirements
+
+### Requirement: Request separation
+The parser SHALL use `###` (three or more `#` characters) to separate requests. Text after `###` on the same line SHALL be the request name. The first request in a file SHALL NOT require a preceding `###`.
+
+#### Scenario: Multiple requests separated by ### delimiter
+- **WHEN** a `.http` file contains two requests separated by a `###` line
+- **THEN** both requests SHALL be parsed as separate `ParsedRequest` objects
+
+#### Scenario: Request name extracted from delimiter line
+- **WHEN** a `###` line contains text after the hashes (e.g., `### Get all users`)
+- **THEN** the text SHALL be used as the request name
+
+### Requirement: File variables
+File-level variables SHALL be declared with `@name = value` syntax outside any request block. Variable names SHALL be alphanumeric plus underscore. Values SHALL be trimmed. File variables MAY reference system variables.
+
+#### Scenario: File variable declaration and reference
+- **WHEN** a file contains `@hostname = api.example.com` and a request URL contains `{{hostname}}`
+- **THEN** the `{{hostname}}` placeholder SHALL be replaced with `api.example.com`
+
+### Requirement: Comments
+Lines starting with `#` (but NOT `###`) SHALL be treated as comments and ignored. Lines starting with `//` SHALL also be treated as comments. Comments MAY appear anywhere in the file.
+
+#### Scenario: Comment lines ignored
+- **WHEN** a `.http` file contains `# this is a comment` and `// another comment`
+- **THEN** both lines SHALL be ignored during parsing
 
 ## Input
 

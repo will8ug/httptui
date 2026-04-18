@@ -1,6 +1,6 @@
 # Spec: Text Wrap Toggle
 
-## Overview
+## Purpose
 
 Toggle between nowrap (truncate + horizontal scroll) and wrap (word-wrap at panel boundary) display modes in the response panel, controlled by the `w` key.
 

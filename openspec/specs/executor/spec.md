@@ -1,8 +1,32 @@
 # Spec: HTTP Executor
 
-## Overview
+## Purpose
 
 Takes a fully-resolved `ParsedRequest` (variables already substituted) and executes it using `undici`. Returns a structured `ResponseData` object.
+
+## Requirements
+
+### Requirement: Request execution behavior
+The executor SHALL use `undici.request()` for HTTP calls, set `Content-Type: application/json` only if the body looks like JSON and no Content-Type header is explicitly set, NOT follow redirects, use a 30-second timeout, and NOT retry failed requests.
+
+#### Scenario: JSON content type auto-detection
+- **WHEN** a request has a body that looks like JSON and no explicit Content-Type header
+- **THEN** the executor SHALL set `Content-Type: application/json`
+
+#### Scenario: Non-JSON body without explicit Content-Type
+- **WHEN** a request has a body that does not look like JSON and no explicit Content-Type header
+- **THEN** the executor SHALL NOT set `Content-Type: application/json`
+
+### Requirement: Error handling behavior
+The executor SHALL return error objects for network errors (DNS failure, connection refused, timeout) without crashing. Non-2xx status codes SHALL be treated as valid responses, not errors.
+
+#### Scenario: Network error returns error object
+- **WHEN** a request fails due to a network error (DNS failure, connection refused, or timeout)
+- **THEN** the executor SHALL return a `RequestError` object and SHALL NOT crash
+
+#### Scenario: Non-2xx status is a valid response
+- **WHEN** a server responds with a non-2xx status code
+- **THEN** the executor SHALL return it as a valid `ResponseData` object, not an error
 
 ## Input
 

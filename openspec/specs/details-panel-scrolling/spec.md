@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Details Panel Scrolling
+
+## Purpose
+
+Focus, scrolling, and keyboard navigation for the request details panel — including Tab cycling, vertical and horizontal scrolling, offset clamping, and scroll position indicators.
+
+## Requirements
 
 ### Requirement: Details panel focus via Tab cycling
 The request details panel SHALL participate in the Tab focus cycle as a focusable panel. The `FocusedPanel` type SHALL be expanded to include `'details'` alongside `'requests'` and `'response'`. When `showRequestDetails` is true, Tab SHALL cycle: `requests → details → response → requests`. When `showRequestDetails` is false, Tab SHALL skip `'details'`: `requests → response → requests`.

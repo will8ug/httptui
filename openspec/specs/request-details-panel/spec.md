@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Request Details Panel
+
+## Purpose
+
+A toggleable panel showing resolved request details (method, URL, headers, body) for the currently selected request.
+
+## Requirements
 
 ### Requirement: Toggle request details panel visibility
 The system SHALL provide a toggleable panel that shows or hides request details for the currently selected request. Pressing the `d` key SHALL toggle the panel visibility. The panel SHALL be hidden by default when the application starts.

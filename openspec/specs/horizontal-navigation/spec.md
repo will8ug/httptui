@@ -1,6 +1,6 @@
 # Spec: Horizontal Navigation
 
-## Overview
+## Purpose
 
 Horizontal scroll offset tracking and rendering for both RequestList and ResponseView panels, allowing users to view truncated content by scrolling left/right within the focused panel.
 
