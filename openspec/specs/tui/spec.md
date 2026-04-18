@@ -113,6 +113,21 @@ The response panel SHALL render its title ("Response" or "Response [wrap]"), sta
 - **Request list focused**: bordered with accent color, keyboard controls list
 - **Response focused**: bordered with accent color, keyboard controls scroll
 
+### Vertical Scroll Offset Clamping
+All vertical scroll offsets (`responseScrollOffset`, `detailsScrollOffset`) SHALL be clamped to `[0, maxOffset]` within the reducer. The `maxOffset` value SHALL be computed in the component layer (where terminal dimensions and content line counts are available) and passed as a payload field on the `SCROLL` action. The reducer SHALL apply `Math.min(Math.max(0, offset + delta), maxOffset)` clamping, consistent with the existing `SCROLL_HORIZONTAL` pattern. When `maxOffset` is not provided in the action (e.g., in tests), the reducer SHALL fall back to `Math.max(0, offset + delta)` to maintain backward compatibility.
+
+#### Scenario: Response scroll offset clamped at bottom
+- **WHEN** `focusedPanel` is `response` and `responseScrollOffset` is at `maxOffset` and the user presses `j` or `↓`
+- **THEN** `responseScrollOffset` SHALL remain at `maxOffset` (it SHALL NOT increase beyond the boundary)
+
+#### Scenario: Immediate upward scroll in response panel after bottoming out
+- **WHEN** `focusedPanel` is `response` and `responseScrollOffset` is at `maxOffset`, the user presses `j` multiple times, then presses `k`
+- **THEN** `responseScrollOffset` SHALL decrease by 1 from `maxOffset` immediately (no invisible offset accumulation)
+
+#### Scenario: SCROLL action without maxOffset falls back to lower-bound clamping
+- **WHEN** a `SCROLL` action is dispatched without a `maxOffset` field
+- **THEN** the reducer SHALL apply only `Math.max(0, offset + delta)` clamping (preserving current behavior for backward compatibility)
+
 ### Horizontal Scroll States
 - Both panels track a `horizontalOffset` (default `0`) that shifts content left by that many characters
 - `requestHorizontalOffset` resets to `0` on `SELECT_REQUEST` and `MOVE_SELECTION`
@@ -120,6 +135,7 @@ The response panel SHALL render its title ("Response" or "Response [wrap]"), sta
 - When `horizontalOffset` is `0`, rendering is identical to current behavior (colors preserved)
 - When `horizontalOffset` is greater than `0`, colored content is flattened to plain text and shifted
 - When `wrapMode` is `'wrap'`, `horizontalOffset` is treated as `0` and `←`/`→`/`h`/`l` do not scroll the response panel horizontally
+- Vertical scroll offsets (`responseScrollOffset`, `detailsScrollOffset`) are also clamped to an upper bound computed from content lines and visible height, using the same two-way clamp pattern applied to horizontal offsets. This replaces the previous behavior where vertical offsets were only clamped to the lower bound (`≥ 0`).
 
 ## Startup
 
