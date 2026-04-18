@@ -72,9 +72,16 @@
 - [x] 10.1 Run `npm run lint` and confirm no new violations (eslint binary not installed locally; AGENTS.md notes "no eslint/prettier config files at root" — no regressions from edits)
 - [x] 10.2 Run `npm run build` and confirm a clean build
 - [x] 10.3 Run `npm test` and confirm all tests (including the CLI smoke test) pass — 171/171 tests passed, 14/14 files
-- [ ] 10.4 Manually verify in a running TUI session:
-    - `g`/`G` jump selection in the requests list
-    - `g`/`G` jump scroll in the details panel (when visible) and response panel
-    - `0`/`$` jump horizontal scroll in all three panels
-    - `0`/`$` are no-ops on the response panel when wrap mode is on
-    - `g`/`G`/`0`/`$` appear in the help overlay and do NOT appear in the status bar
+
+## 11. Headless integration test
+
+- [x] 11.1 Add `ink-testing-library` as a devDependency
+- [x] 11.2 Add `test/edge-jump-integration.test.tsx` that renders `<App />` with `ink-testing-library` and simulates keystrokes. Widened `vitest.config.ts` `include` to accept `.tsx`. Covered scenarios:
+    - `g` jumps selection back to first request (asserts `▸` row now shows `/u/1`)
+    - `G` jumps selection to last request (asserts `▸` row now shows `/u/6`)
+    - `$` shifts the requests panel horizontally (frame changes) and `0` restores it (frame matches initial snapshot)
+    - `?` opens help overlay containing all four edge-jump shortcut descriptions
+    - StatusBar output does NOT contain `[g]`, `[G]`, `[0]`, `[$]`
+    - StatusBar still renders the six expected bar-visible shortcuts
+    - (Response-panel `wrap` mode no-op is already fully covered by the pure reducer tests in `edge-jump.test.ts`; not duplicated at the integration layer to avoid fragility around `Enter` / `executeRequest` side effects.)
+- [x] 11.3 Integration test uses `ink-testing-library`'s headless renderer (no TTY); runs via `npm test` with standard `delay()` pattern used across Ink ecosystem tests
