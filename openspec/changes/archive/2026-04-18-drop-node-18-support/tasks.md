@@ -29,4 +29,4 @@
 ## 6. Post-merge hygiene
 
 - [ ] 6.1 Call out "Minimum supported Node.js version is now 20 (was 18)" as a BREAKING change in the release notes / CHANGELOG entry for the next published version. _(Deferred: no CHANGELOG file exists in the repo; this task is a reminder for whoever cuts the next release — not executable during `openspec apply`.)_
-- [ ] 6.2 After the change is archived via `openspec archive drop-node-18-support`, confirm `openspec/specs/runtime/spec.md` exists and contains the three requirements defined in this change. _(Deferred: runs after `/opsx-archive`, not during `/opsx-apply`.)_
+- [x] 6.2 After the change is archived via `openspec archive drop-node-18-support`, confirm `openspec/specs/runtime/spec.md` exists and contains the three requirements defined in this change. _Verified during `/opsx-archive`: the delta was synced into `openspec/specs/runtime/spec.md` with all three requirements (Minimum Node.js runtime version, Build target matches minimum runtime, Documentation advertises the supported runtime) and their eight scenarios intact._
