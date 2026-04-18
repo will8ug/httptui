@@ -2,6 +2,7 @@ import React from 'react';
 import { Spinner } from '@inkjs/ui';
 import { Box, Text, useStdout } from 'ink';
 
+import { formatResponseBody } from "../core/formatter";
 import type { RequestError, ResponseData, WrapMode } from '../core/types';
 import { colorizeJson, getStatusColor } from '../utils/colors';
 import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
@@ -131,8 +132,8 @@ export function ResponseView({
   } else if (!response) {
     content = <Text color="gray">Press Enter to send a request</Text>;
   } else {
-    const responseBody = response.body;
-    const isJsonBody = !rawMode && isJson(responseBody);
+    const formattedBody = formatResponseBody(response.body, rawMode);
+    const isJsonBody = isJson(formattedBody);
     const responseLines: React.ReactNode[] = [];
 
     if (wrapMode === 'wrap') {
@@ -189,7 +190,7 @@ export function ResponseView({
         </Text>,
       );
 
-      const bodyLines = responseBody.split('\n');
+      const bodyLines = formattedBody.split('\n');
 
       bodyLines.forEach((line, index) => {
         if (isJsonBody) {
@@ -231,7 +232,7 @@ export function ResponseView({
         </Text>,
       );
 
-      const bodyLines = responseBody.split('\n');
+      const bodyLines = formattedBody.split('\n');
 
       bodyLines.forEach((line, index) => {
         const displayLine = shiftLine(line === '' ? ' ' : line, horizontalOffset, contentWidth);
@@ -264,7 +265,7 @@ export function ResponseView({
         </Text>,
       );
 
-      const bodyLines = responseBody.split('\n');
+      const bodyLines = formattedBody.split('\n');
 
       bodyLines.forEach((line, index) => {
         const displayLine = line === '' ? ' ' : truncateText(line, contentWidth);
