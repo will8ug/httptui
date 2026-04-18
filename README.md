@@ -66,6 +66,12 @@ httptui -k path/to/api.http
 |-----|--------|
 | `↑` / `k` | Select previous request / Scroll response up |
 | `↓` / `j` | Select next request / Scroll response down |
+| `←` / `h` | Scroll focused panel left |
+| `→` / `l` | Scroll focused panel right |
+| `g` | Jump to top of focused panel |
+| `G` | Jump to bottom of focused panel |
+| `0` | Jump to horizontal start of focused panel |
+| `$` | Jump to horizontal end of focused panel |
 | `Enter` | Send currently selected request |
 | `Tab` | Switch focus between panels |
 | `v` | Toggle verbose mode (show/hide headers) |

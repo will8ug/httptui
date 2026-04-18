@@ -107,4 +107,6 @@ export type Action =
   | { type: 'CANCEL_FILE_LOAD' }
   | { type: 'TOGGLE_WRAP' }
   | { type: 'TOGGLE_RAW' }
-  | { type: 'TOGGLE_REQUEST_DETAILS' };
+  | { type: 'TOGGLE_REQUEST_DETAILS' }
+  | { type: 'JUMP_VERTICAL'; direction: 'start' | 'end'; maxOffset?: number }
+  | { type: 'JUMP_HORIZONTAL'; direction: 'start' | 'end'; columns?: number };

@@ -105,6 +105,10 @@ All vertical scroll offsets (`responseScrollOffset`, `detailsScrollOffset`) SHAL
 | `↓` or `j` | Response focused | Scroll response down |
 | `←` or `h` | Any (no overlay) | Scroll focused panel left |
 | `→` or `l` | Any (no overlay) | Scroll focused panel right |
+| `g` | Any (no overlay) | Jump to top of focused panel |
+| `G` | Any (no overlay) | Jump to bottom of focused panel |
+| `0` | Any (no overlay) | Jump to horizontal start of focused panel |
+| `$` | Any (no overlay) | Jump to horizontal end of focused panel |
 | `Enter` | Any | Send currently selected request |
 | `Tab` | Any | Switch focus between panels |
 | `v` | Any | Toggle verbose mode (show/hide headers) |

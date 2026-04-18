@@ -23,4 +23,8 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'R', label: '', description: 'Reload file from disk', showInBar: false, showInHelp: true },
   { key: 'Escape', label: '', description: 'Close current overlay', showInBar: false, showInHelp: true },
   { key: 'd', label: 'Details', description: 'Toggle request details panel', showInBar: false, showInHelp: true },
+  { key: 'g', label: '', description: 'Jump to top of focused panel', showInBar: false, showInHelp: true },
+  { key: 'G', label: '', description: 'Jump to bottom of focused panel', showInBar: false, showInHelp: true },
+  { key: '0', label: '', description: 'Jump to horizontal start of focused panel', showInBar: false, showInHelp: true },
+  { key: '$', label: '', description: 'Jump to horizontal end of focused panel', showInBar: false, showInHelp: true },
 ] as const;

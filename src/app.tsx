@@ -70,6 +70,42 @@ function getMaxDetailsLineWidth(state: AppState): number {
   return Math.max(0, ...lines.map((l) => l.length));
 }
 
+function computeVerticalMaxOffset(
+  state: AppState,
+  columns: number,
+  responseAvailableHeight: number,
+  detailPanelMaxContent: number,
+): number | undefined {
+  if (state.focusedPanel === 'details') {
+    const request = state.requests[state.selectedIndex];
+    if (!request) {
+      return undefined;
+    }
+    const resolved = resolveVariables(request, state.variables);
+    const totalContentLines = getDetailsTotalLines({
+      method: resolved.method,
+      url: resolved.url,
+      headers: resolved.headers,
+      body: resolved.body,
+    });
+    return getMaxScrollOffset(totalContentLines, detailPanelMaxContent);
+  }
+
+  if (state.focusedPanel === 'response' && state.response) {
+    const totalLines = getResponseTotalLines({
+      response: state.response,
+      verbose: state.verbose,
+      rawMode: state.rawMode,
+      wrapMode: state.wrapMode,
+      columns,
+    });
+    const visibleHeight = Math.max(1, responseAvailableHeight - RESPONSE_PANEL_VERTICAL_CHROME);
+    return getMaxScrollOffset(totalLines, visibleHeight);
+  }
+
+  return undefined;
+}
+
 interface AppProps {
   filePath: string;
   requests: ParsedRequest[];
@@ -263,6 +299,80 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         rawMode: !state.rawMode,
       };
+
+    case 'JUMP_VERTICAL': {
+      if (state.focusedPanel === 'requests') {
+        const lastIndex = Math.max(0, state.requests.length - 1);
+        const nextIndex = action.direction === 'start' ? 0 : lastIndex;
+        return {
+          ...state,
+          selectedIndex: nextIndex,
+          requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset),
+          requestHorizontalOffset: 0,
+          detailsScrollOffset: 0,
+          detailsHorizontalOffset: 0,
+        };
+      }
+
+      if (state.focusedPanel === 'details') {
+        if (action.direction === 'start') {
+          return { ...state, detailsScrollOffset: 0 };
+        }
+        if (action.maxOffset === undefined) {
+          return state;
+        }
+        return { ...state, detailsScrollOffset: Math.max(0, action.maxOffset) };
+      }
+
+      if (state.focusedPanel === 'response') {
+        if (action.direction === 'start') {
+          return { ...state, responseScrollOffset: 0 };
+        }
+        if (action.maxOffset === undefined) {
+          return state;
+        }
+        return { ...state, responseScrollOffset: Math.max(0, action.maxOffset) };
+      }
+
+      return state;
+    }
+
+    case 'JUMP_HORIZONTAL': {
+      if (state.focusedPanel === 'response' && state.wrapMode === 'wrap') {
+        return state;
+      }
+
+      const columns = action.columns ?? 80;
+
+      if (state.focusedPanel === 'requests') {
+        if (action.direction === 'start') {
+          return { ...state, requestHorizontalOffset: 0 };
+        }
+        const contentWidth = getRequestContentWidth(columns);
+        const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests) - contentWidth);
+        return { ...state, requestHorizontalOffset: maxOffset };
+      }
+
+      if (state.focusedPanel === 'details') {
+        if (action.direction === 'start') {
+          return { ...state, detailsHorizontalOffset: 0 };
+        }
+        const contentWidth = getResponseContentWidth(columns);
+        const maxOffset = Math.max(0, getMaxDetailsLineWidth(state) - contentWidth);
+        return { ...state, detailsHorizontalOffset: maxOffset };
+      }
+
+      if (state.focusedPanel === 'response') {
+        if (action.direction === 'start') {
+          return { ...state, responseHorizontalOffset: 0 };
+        }
+        const contentWidth = getResponseContentWidth(columns);
+        const maxOffset = Math.max(0, getMaxResponseLineWidth(state) - contentWidth);
+        return { ...state, responseHorizontalOffset: maxOffset };
+      }
+
+      return state;
+    }
 
     case 'TOGGLE_REQUEST_DETAILS': {
       const hiding = state.showRequestDetails;
@@ -576,6 +686,27 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (input === 'g') {
+      dispatch({ type: 'JUMP_VERTICAL', direction: 'start' });
+      return;
+    }
+
+    if (input === 'G') {
+      const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
+      dispatch({ type: 'JUMP_VERTICAL', direction: 'end', maxOffset });
+      return;
+    }
+
+    if (input === '0') {
+      dispatch({ type: 'JUMP_HORIZONTAL', direction: 'start', columns });
+      return;
+    }
+
+    if (input === '$') {
+      dispatch({ type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+      return;
+    }
+
     const isUp = input === 'k' || key.upArrow;
     const isDown = input === 'j' || key.downArrow;
     const isLeft = input === 'h' || key.leftArrow;
@@ -596,28 +727,13 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (state.focusedPanel === 'details' && selectedRequest) {
-      const resolved = resolveVariables(selectedRequest, state.variables);
-      const totalContentLines = getDetailsTotalLines({
-        method: resolved.method,
-        url: resolved.url,
-        headers: resolved.headers,
-        body: resolved.body,
-      });
-      const maxOffset = getMaxScrollOffset(totalContentLines, detailPanelMaxContent);
+      const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
       dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
       return;
     }
 
     if (state.focusedPanel === 'response' && state.response) {
-      const totalLines = getResponseTotalLines({
-        response: state.response,
-        verbose: state.verbose,
-        rawMode: state.rawMode,
-        wrapMode: state.wrapMode,
-        columns,
-      });
-      const visibleHeight = Math.max(1, responseAvailableHeight - RESPONSE_PANEL_VERTICAL_CHROME);
-      const maxOffset = getMaxScrollOffset(totalLines, visibleHeight);
+      const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
       dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
       return;
     }
