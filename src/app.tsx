@@ -17,6 +17,7 @@ import { parseHttpFile } from './core/parser';
 import { resolveVariables } from './core/variables';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getRequestContentWidth, getResponseContentWidth } from './utils/layout';
 import { getRequestTarget } from './utils/request';
+import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from './utils/scroll';
 
 function getMaxRequestLineWidth(requests: readonly ParsedRequest[]): number {
   if (requests.length === 0) {
@@ -187,18 +188,25 @@ function reducer(state: AppState, action: Action): AppState {
 
     case 'SCROLL': {
       const delta = action.direction === 'up' ? -1 : 1;
+      const maxOffset = action.maxOffset;
 
       if (state.focusedPanel === 'details') {
+        const next = state.detailsScrollOffset + delta;
         return {
           ...state,
-          detailsScrollOffset: Math.max(0, state.detailsScrollOffset + delta),
+          detailsScrollOffset: maxOffset !== undefined
+            ? Math.min(Math.max(0, next), maxOffset)
+            : Math.max(0, next),
         };
       }
 
       if (state.focusedPanel === 'response') {
+        const next = state.responseScrollOffset + delta;
         return {
           ...state,
-          responseScrollOffset: Math.max(0, state.responseScrollOffset + delta),
+          responseScrollOffset: maxOffset !== undefined
+            ? Math.min(Math.max(0, next), maxOffset)
+            : Math.max(0, next),
         };
       }
 
@@ -401,6 +409,23 @@ export function App(props: AppProps): React.ReactElement {
   const { stdout } = useStdout();
   const [state, dispatch] = useReducer(reducer, props, createInitialState);
 
+  const rows = stdout.rows || DEFAULT_TERMINAL_ROWS;
+  const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
+  const selectedRequest = state.requests[state.selectedIndex];
+  const detailPanelMaxContent = 10;
+  let detailPanelHeight = 0;
+  if (state.showRequestDetails && selectedRequest) {
+    const resolved = resolveVariables(selectedRequest, state.variables);
+    const totalContentLines = getDetailsTotalLines({
+      method: resolved.method,
+      url: resolved.url,
+      headers: resolved.headers,
+      body: resolved.body,
+    });
+    detailPanelHeight = getDetailPanelHeight(totalContentLines, detailPanelMaxContent);
+  }
+  const responseAvailableHeight = rows - 1 - detailPanelHeight;
+
   const sendSelectedRequest = async (): Promise<void> => {
     if (state.isLoading) {
       return;
@@ -557,7 +582,7 @@ export function App(props: AppProps): React.ReactElement {
     const isRight = input === 'l' || key.rightArrow;
 
     if (isLeft || isRight) {
-      dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right', columns: stdout.columns || DEFAULT_TERMINAL_COLUMNS });
+      dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right', columns });
       return;
     }
 
@@ -570,23 +595,35 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (state.focusedPanel === 'details' && selectedRequest) {
+      const resolved = resolveVariables(selectedRequest, state.variables);
+      const totalContentLines = getDetailsTotalLines({
+        method: resolved.method,
+        url: resolved.url,
+        headers: resolved.headers,
+        body: resolved.body,
+      });
+      const maxOffset = getMaxScrollOffset(totalContentLines, detailPanelMaxContent);
+      dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
+      return;
+    }
+
+    if (state.focusedPanel === 'response' && state.response) {
+      const totalLines = getResponseTotalLines({
+        response: state.response,
+        verbose: state.verbose,
+        rawMode: state.rawMode,
+        wrapMode: state.wrapMode,
+        columns,
+      });
+      const visibleHeight = Math.max(1, responseAvailableHeight - RESPONSE_PANEL_VERTICAL_CHROME);
+      const maxOffset = getMaxScrollOffset(totalLines, visibleHeight);
+      dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
+      return;
+    }
+
     dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down' });
   });
-
-  const rows = stdout.rows || DEFAULT_TERMINAL_ROWS;
-  const selectedRequest = state.requests[state.selectedIndex];
-  const detailPanelMaxContent = 10;
-  let detailPanelHeight = 0;
-  if (state.showRequestDetails && selectedRequest) {
-    const resolved = resolveVariables(selectedRequest, state.variables);
-    const headerEntries = Object.entries(resolved.headers);
-    const bodyLines = resolved.body !== undefined ? resolved.body.split('\n') : [];
-    const headerSeparator = headerEntries.length > 0 ? 1 : 0;
-    // title + method/URL + separator + headers + header separator + body lines
-    const totalContentLines = 3 + headerEntries.length + headerSeparator + bodyLines.length;
-    detailPanelHeight = getDetailPanelHeight(totalContentLines, detailPanelMaxContent);
-  }
-  const responseAvailableHeight = rows - 1 - detailPanelHeight;
 
   return (
     <Layout

@@ -95,7 +95,7 @@ export type Action =
   | { type: 'SWITCH_PANEL' }
   | { type: 'TOGGLE_VERBOSE' }
   | { type: 'TOGGLE_HELP' }
-  | { type: 'SCROLL'; direction: 'up' | 'down' }
+  | { type: 'SCROLL'; direction: 'up' | 'down'; maxOffset?: number }
   | { type: 'SCROLL_HORIZONTAL'; direction: 'left' | 'right'; columns?: number }
   | { type: 'CLOSE_HELP' }
   | { type: 'RELOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[] }

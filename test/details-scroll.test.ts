@@ -68,18 +68,25 @@ function reducer(state: AppState, action: Action): AppState {
 
     case 'SCROLL': {
       const delta = action.direction === 'up' ? -1 : 1;
+      const maxOffset = action.maxOffset;
 
       if (state.focusedPanel === 'details') {
+        const next = state.detailsScrollOffset + delta;
         return {
           ...state,
-          detailsScrollOffset: Math.max(0, state.detailsScrollOffset + delta),
+          detailsScrollOffset: maxOffset !== undefined
+            ? Math.min(Math.max(0, next), maxOffset)
+            : Math.max(0, next),
         };
       }
 
       if (state.focusedPanel === 'response') {
+        const next = state.responseScrollOffset + delta;
         return {
           ...state,
-          responseScrollOffset: Math.max(0, state.responseScrollOffset + delta),
+          responseScrollOffset: maxOffset !== undefined
+            ? Math.min(Math.max(0, next), maxOffset)
+            : Math.max(0, next),
         };
       }
 
@@ -491,6 +498,92 @@ describe('request details scrolling reducer behavior', () => {
       const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'left' });
 
       expect(result.detailsHorizontalOffset).toBe(0);
+    });
+  });
+
+  describe('SCROLL with maxOffset clamping', () => {
+    it('clamps detailsScrollOffset to maxOffset when scrolling down at boundary', () => {
+      const state = createInitialState({ focusedPanel: 'details', detailsScrollOffset: 5 });
+
+      const result = reducer(state, { type: 'SCROLL', direction: 'down', maxOffset: 5 });
+
+      expect(result.detailsScrollOffset).toBe(5);
+    });
+
+    it('does not exceed maxOffset when scrolling down past boundary', () => {
+      const state = createInitialState({ focusedPanel: 'details', detailsScrollOffset: 5 });
+
+      const result = reducer(state, { type: 'SCROLL', direction: 'down', maxOffset: 5 });
+
+      expect(result.detailsScrollOffset).toBe(5);
+    });
+
+    it('immediately scrolls up from maxOffset without excess offset accumulation', () => {
+      const state = createInitialState({ focusedPanel: 'details', detailsScrollOffset: 5 });
+
+      const scrolledDown = reducer(state, { type: 'SCROLL', direction: 'down', maxOffset: 5 });
+      expect(scrolledDown.detailsScrollOffset).toBe(5);
+
+      const scrolledUp = reducer(scrolledDown, { type: 'SCROLL', direction: 'up', maxOffset: 5 });
+      expect(scrolledUp.detailsScrollOffset).toBe(4);
+    });
+
+    it('clamps responseScrollOffset to maxOffset when scrolling down at boundary', () => {
+      const state = createInitialState({ focusedPanel: 'response', responseScrollOffset: 10 });
+
+      const result = reducer(state, { type: 'SCROLL', direction: 'down', maxOffset: 10 });
+
+      expect(result.responseScrollOffset).toBe(10);
+    });
+
+    it('immediately scrolls up from maxOffset in response panel', () => {
+      const state = createInitialState({ focusedPanel: 'response', responseScrollOffset: 10 });
+
+      const result = reducer(state, { type: 'SCROLL', direction: 'up', maxOffset: 10 });
+
+      expect(result.responseScrollOffset).toBe(9);
+    });
+
+    it('preserves backward compatibility when maxOffset is absent (details)', () => {
+      const state = createInitialState({ focusedPanel: 'details', detailsScrollOffset: 3 });
+
+      const result = reducer(state, { type: 'SCROLL', direction: 'down' });
+
+      expect(result.detailsScrollOffset).toBe(4);
+    });
+
+    it('preserves backward compatibility when maxOffset is absent (response)', () => {
+      const state = createInitialState({ focusedPanel: 'response', responseScrollOffset: 7 });
+
+      const result = reducer(state, { type: 'SCROLL', direction: 'down' });
+
+      expect(result.responseScrollOffset).toBe(8);
+    });
+
+    it('preserves backward compatibility: lower-bound clamp still works without maxOffset', () => {
+      const state = createInitialState({ focusedPanel: 'details', detailsScrollOffset: 0 });
+
+      const result = reducer(state, { type: 'SCROLL', direction: 'up' });
+
+      expect(result.detailsScrollOffset).toBe(0);
+    });
+
+    it('scrolls normally within bounds with maxOffset', () => {
+      const state = createInitialState({ focusedPanel: 'details', detailsScrollOffset: 2 });
+
+      const up = reducer(state, { type: 'SCROLL', direction: 'up', maxOffset: 5 });
+      expect(up.detailsScrollOffset).toBe(1);
+
+      const down = reducer(state, { type: 'SCROLL', direction: 'down', maxOffset: 5 });
+      expect(down.detailsScrollOffset).toBe(3);
+    });
+
+    it('clamps to 0 when scrolling up at offset 0 with maxOffset', () => {
+      const state = createInitialState({ focusedPanel: 'details', detailsScrollOffset: 0 });
+
+      const result = reducer(state, { type: 'SCROLL', direction: 'up', maxOffset: 5 });
+
+      expect(result.detailsScrollOffset).toBe(0);
     });
   });
 });

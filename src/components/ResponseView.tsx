@@ -5,10 +5,8 @@ import { Box, Text, useStdout } from 'ink';
 import type { RequestError, ResponseData, WrapMode } from '../core/types';
 import { colorizeJson, getStatusColor } from '../utils/colors';
 import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
+import { RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
 import { wrapLine, wrapColorizedSegments } from '../utils/wrap';
-
-/** Top border (1) + title row (1) + bottom border (1) */
-const RESPONSE_PANEL_VERTICAL_CHROME = 3;
 
 interface ResponseViewProps {
   response: ResponseData | null;
