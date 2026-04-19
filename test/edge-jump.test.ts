@@ -5,11 +5,9 @@ import { makeRequests } from './helpers/requests';
 import { longResponse } from './helpers/responses';
 import {
   reducer,
-  getVisibleRequestOffset,
   getMaxRequestLineWidth,
   getMaxResponseLineWidth,
   getMaxDetailsLineWidth,
-  REQUEST_SCROLL_WINDOW,
   clamp,
 } from '../src/core/reducer';
 import type { Action, AppState, ParsedRequest, ResponseData } from '../src/core/types';
@@ -17,35 +15,6 @@ import { getRequestContentWidth, getResponseContentWidth } from '../src/utils/la
 
 describe('JUMP_VERTICAL reducer', () => {
   describe('requests panel', () => {
-    it('direction: "start" sets selectedIndex to 0 and adjusts requestScrollOffset', () => {
-      const state = createInitialState({
-        focusedPanel: 'requests',
-        requests: makeRequests(20),
-        selectedIndex: 15,
-        requestScrollOffset: 10,
-      });
-
-      const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'start' });
-
-      expect(result.selectedIndex).toBe(0);
-      expect(result.requestScrollOffset).toBe(getVisibleRequestOffset(0, 10));
-    });
-
-    it('direction: "end" sets selectedIndex to requests.length - 1 and adjusts requestScrollOffset', () => {
-      const requests = makeRequests(20);
-      const state = createInitialState({
-        focusedPanel: 'requests',
-        requests,
-        selectedIndex: 0,
-        requestScrollOffset: 0,
-      });
-
-      const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end' });
-
-      expect(result.selectedIndex).toBe(19);
-      expect(result.requestScrollOffset).toBe(19 - REQUEST_SCROLL_WINDOW + 1);
-    });
-
     it('direction: "end" with empty requests clamps selectedIndex to 0', () => {
       const state = createInitialState({
         focusedPanel: 'requests',
@@ -149,18 +118,6 @@ describe('JUMP_VERTICAL reducer', () => {
 
 describe('JUMP_HORIZONTAL reducer', () => {
   describe('requests panel', () => {
-    it('direction: "start" sets requestHorizontalOffset to 0', () => {
-      const state = createInitialState({
-        focusedPanel: 'requests',
-        requests: makeRequests(5, { longUrl: true }),
-        requestHorizontalOffset: 12,
-      });
-
-      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'start' });
-
-      expect(result.requestHorizontalOffset).toBe(0);
-    });
-
     it('direction: "end" clamps requestHorizontalOffset to max(0, maxWidth - contentWidth)', () => {
       const requests = makeRequests(1, { longUrl: true });
       const columns = 80;

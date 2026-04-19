@@ -60,10 +60,18 @@ src/
 ## Testing
 
 - **Framework**: Vitest with `globals: true` — no need to import `describe`/`it`/`expect` (but all test files currently import them explicitly anyway).
-- **Test location**: `test/` directory, pattern `test/**/*.test.ts`.
-- **Unit tests**: Pure logic (parser, variables, executor with mocked undici, reducer actions) — no TUI rendering.
+- **Test location**: `test/` directory. Patterns: `test/**/*.test.ts` and `test/**/*.test.tsx`.
+- **Three tiers**:
+  1. **Pure unit tests** — `test/*.test.ts` for utilities (parser, variables, executor with mocked undici, scroll, wrap, cli-args, shortcuts). Fast, no Ink rendering.
+  2. **Reducer unit tests** — `test/*.test.ts` that dispatch `Action` values against the real `reducer` from `src/core/reducer.ts` and assert on resulting state. Cover boundary math, clamping logic, and exhaustive edge cases that would be expensive to exercise via integration.
+  3. **Integration tests** — `test/integration/*.test.tsx` that render the real `<App>` via `ink-testing-library`, press keys via `stdin.write`, and assert on `lastFrame()` content. Cover the `useInput` dispatch layer (keypress → action) and rendered UI.
+- **Integration helpers**: `test/helpers/integration.tsx` exports `renderApp(overrides?)`, `press(stdin, key)`, `delay(ms)`, `selectedLine(frame)`, `KEY_DELAY_MS`, plus request factories. All integration tests import from here.
 - **Smoke test**: `test/cli-smoke.test.ts` spawns `dist/cli.js` as a child process. Requires `npm run build` first.
 - **Executor tests**: Use `vi.hoisted()` + `vi.mock('undici')` to mock the HTTP layer.
+- **When to add which tier**:
+  - New reducer action → add reducer UT for each action payload shape + boundary case.
+  - New keybinding → add integration test verifying keypress → visible effect.
+  - New utility function → add pure unit test.
 
 ## Gotchas
 
