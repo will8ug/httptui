@@ -155,6 +155,22 @@ When in search mode, `ResponseView` SHALL display a search bar at the bottom of 
 - **WHEN** `lastSearchQuery` is empty and the app is in normal mode
 - **THEN** no search bar SHALL be displayed
 
+### Requirement: Dismiss search results with Escape
+In normal mode, when search results are active (non-empty `searchMatches` or non-empty `lastSearchQuery`), pressing Escape SHALL clear all search state and remove the search bar and match indicators. If no search results are active, Escape SHALL have no effect.
+
+#### Scenario: Escape dismisses active matches
+- **WHEN** the app is in normal mode with active search matches
+- **THEN** pressing Escape SHALL clear all search state (`searchQuery`, `searchMatches`, `currentMatchIndex`, `lastSearchQuery`)
+- **AND** the search bar and match indicators SHALL no longer be displayed
+
+#### Scenario: Escape dismisses no-match search bar
+- **WHEN** the app is in normal mode with `lastSearchQuery` set but `searchMatches` empty (no matches found)
+- **THEN** pressing Escape SHALL clear all search state
+
+#### Scenario: Escape with no search state is a no-op
+- **WHEN** the app is in normal mode with no active search state
+- **THEN** pressing Escape SHALL have no effect
+
 ### Requirement: Search state cleared on response change
 All search state (`searchQuery`, `searchMatches`, `currentMatchIndex`, `lastSearchQuery`) SHALL be cleared when a new request is sent (`SEND_REQUEST`), a new response is received (`RECEIVE_RESPONSE`), a request error occurs (`REQUEST_ERROR`), a different request is selected (`SELECT_REQUEST`, `MOVE_SELECTION`), or raw mode is toggled (`TOGGLE_RAW`).
 

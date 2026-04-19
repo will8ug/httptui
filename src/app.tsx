@@ -774,6 +774,11 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (key.escape && (state.searchMatches.length > 0 || state.lastSearchQuery)) {
+      dispatch({ type: 'CANCEL_SEARCH' });
+      return;
+    }
+
     if ((key.ctrl && input === 'c') || input === 'q') {
       exit();
       return;

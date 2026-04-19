@@ -520,3 +520,29 @@ describe('Search state clearing reducer cases', () => {
     expectClearedSearchState(result);
   });
 });
+
+describe('Escape dismisses active search results in normal mode', () => {
+  it('CANCEL_SEARCH clears search state when in normal mode with active matches', () => {
+    const state = stateWithActiveSearch();
+    expect(state.mode).toBe('normal');
+    expect(state.searchMatches.length).toBeGreaterThan(0);
+
+    const result = reducer(state, { type: 'CANCEL_SEARCH' });
+
+    expect(result.mode).toBe('normal');
+    expectClearedSearchState(result);
+  });
+
+  it('CANCEL_SEARCH clears search state when only lastSearchQuery is set (no matches)', () => {
+    const state: AppState = {
+      ...stateWithResponse('{"name":"John"}'),
+      lastSearchQuery: 'xyz',
+      searchMatches: [],
+      currentMatchIndex: 0,
+    };
+
+    const result = reducer(state, { type: 'CANCEL_SEARCH' });
+
+    expectClearedSearchState(result);
+  });
+});
