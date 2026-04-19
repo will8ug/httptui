@@ -5,7 +5,7 @@
 Centralized keyboard shortcut registry that serves as the single source of truth for all shortcut definitions, consumed by both StatusBar and HelpOverlay.
 ## Requirements
 ### Requirement: Centralized shortcut registry
-The system SHALL define all keyboard shortcuts in a single source of truth at `src/core/shortcuts.ts`. Each shortcut SHALL have a `key` (display key), `label` (short label for status bar), `description` (full description for help overlay), `showInBar` (boolean controlling status bar visibility), and `showInHelp` (boolean controlling help overlay visibility) field. The registry SHALL include a combined entry with key `h/j/k/l`, label `Nav`, and `showInBar: true` that covers both vertical navigation and horizontal scrolling. The individual entries for `← / h` and `→ / l` with `showInBar: false` SHALL remain for the help overlay. The registry SHALL include an entry for the wrap toggle shortcut with key `w`, label `Wrap`, description `Toggle text wrapping in response panel`, `showInBar: false`, and `showInHelp: true`.
+The system SHALL define all keyboard shortcuts in a single source of truth at `src/core/shortcuts.ts`. Each shortcut SHALL have a `key` (display key), `label` (short label for status bar), `description` (full description for help overlay), `showInBar` (boolean controlling status bar visibility), and `showInHelp` (boolean controlling help overlay visibility) field. The registry SHALL include a combined entry with key `h/j/k/l`, label `Nav`, and `showInBar: true` that covers both vertical navigation and horizontal scrolling. The individual entries for `← / h` and `→ / l` with `showInBar: false` SHALL remain for the help overlay. The registry SHALL include an entry for the wrap toggle shortcut with key `w`, label `Wrap`, description `Toggle text wrapping in response panel`, `showInBar: false`, and `showInHelp: true`. The registry SHALL include entries for the three search-related shortcuts: `/` (start search), `n` (next match), and `N` (previous match), all with `showInBar: false` and `showInHelp: true`.
 
 #### Scenario: All shortcuts are defined in one place
 - **WHEN** a developer needs to add, remove, or modify a keyboard shortcut
@@ -23,6 +23,18 @@ The system SHALL define all keyboard shortcuts in a single source of truth at `s
 #### Scenario: Wrap toggle shortcut in registry
 - **WHEN** the `SHORTCUTS` array is inspected
 - **THEN** it SHALL contain an entry with key `w`, label `Wrap`, description `Toggle text wrapping in response panel`, `showInBar: false`, and `showInHelp: true`
+
+#### Scenario: Search shortcut in registry
+- **WHEN** the `SHORTCUTS` array is inspected
+- **THEN** it SHALL contain an entry with key `/`, description `Search response body`, `showInBar: false`, and `showInHelp: true`
+
+#### Scenario: Next match shortcut in registry
+- **WHEN** the `SHORTCUTS` array is inspected
+- **THEN** it SHALL contain an entry with key `n`, description `Go to next search match`, `showInBar: false`, and `showInHelp: true`
+
+#### Scenario: Previous match shortcut in registry
+- **WHEN** the `SHORTCUTS` array is inspected
+- **THEN** it SHALL contain an entry with key `N`, description `Go to previous search match`, `showInBar: false`, and `showInHelp: true`
 
 ### Requirement: Status bar shows bar-visible shortcuts
 The status bar SHALL display at most 6 shortcuts where `showInBar` is `true`. New shortcuts that are not essential for the status bar SHOULD use `showInBar: false` and `showInHelp: true` so they appear only in the help overlay. The current 6 bar-visible shortcuts are: `[Enter] Send`, `[h/j/k/l] Nav`, `[Tab] Panel`, `[v] Verbose`, `[q] Quit`, `[?] Help` — in that order.
