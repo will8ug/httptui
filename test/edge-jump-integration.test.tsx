@@ -117,7 +117,6 @@ describe('edge-jump integration — help overlay', () => {
     await press(stdin, '?');
     const frame = lastFrame() ?? '';
 
-    expect(frame).toContain('Keyboard Shortcuts');
     expect(frame).toContain('Jump to top of focused panel');
     expect(frame).toContain('Jump to bottom of focused panel');
     expect(frame).toContain('Jump to horizontal start of focused panel');

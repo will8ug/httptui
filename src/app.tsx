@@ -12,6 +12,7 @@ import { RequestDetailsView } from './components/RequestDetailsView';
 import { ResponseView } from './components/ResponseView';
 import { StatusBar } from './components/StatusBar';
 import { executeRequest, isRequestError } from './core/executor';
+import { formatResponseBody } from './core/formatter';
 import type { Action, AppState, ExecutorConfig, FileVariable, ParsedRequest, RequestError } from './core/types';
 import { parseHttpFile } from './core/parser';
 import { resolveVariables } from './core/variables';
@@ -131,6 +132,21 @@ function getVisibleRequestOffset(selectedIndex: number, currentOffset: number): 
   return currentOffset;
 }
 
+const CLEAR_SEARCH_STATE = {
+  searchQuery: '',
+  searchMatches: [] as number[],
+  currentMatchIndex: 0,
+  lastSearchQuery: '',
+};
+
+function computeSearchScrollOffset(bodyLineIndex: number, headerOffset: number, maxOffset?: number): number {
+  const targetOffset = bodyLineIndex + headerOffset;
+  if (maxOffset !== undefined) {
+    return Math.min(Math.max(0, targetOffset), maxOffset);
+  }
+  return Math.max(0, targetOffset);
+}
+
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'SELECT_REQUEST': {
@@ -143,6 +159,7 @@ function reducer(state: AppState, action: Action): AppState {
         requestHorizontalOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
+        ...CLEAR_SEARCH_STATE,
       };
     }
 
@@ -157,6 +174,7 @@ function reducer(state: AppState, action: Action): AppState {
         requestHorizontalOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
+        ...CLEAR_SEARCH_STATE,
       };
     }
 
@@ -167,6 +185,7 @@ function reducer(state: AppState, action: Action): AppState {
         error: null,
         responseScrollOffset: 0,
         responseHorizontalOffset: 0,
+        ...CLEAR_SEARCH_STATE,
       };
 
     case 'RECEIVE_RESPONSE':
@@ -176,6 +195,7 @@ function reducer(state: AppState, action: Action): AppState {
         error: null,
         isLoading: false,
         responseScrollOffset: 0,
+        ...CLEAR_SEARCH_STATE,
       };
 
     case 'REQUEST_ERROR':
@@ -185,6 +205,7 @@ function reducer(state: AppState, action: Action): AppState {
         error: action.error,
         isLoading: false,
         responseScrollOffset: 0,
+        ...CLEAR_SEARCH_STATE,
       };
 
     case 'SWITCH_PANEL': {
@@ -298,6 +319,7 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         rawMode: !state.rawMode,
+        ...CLEAR_SEARCH_STATE,
       };
 
     case 'JUMP_VERTICAL': {
@@ -467,6 +489,101 @@ function reducer(state: AppState, action: Action): AppState {
         fileLoadError: null,
       };
 
+    case 'ENTER_SEARCH': {
+      if (!state.response) {
+        return state;
+      }
+      return {
+        ...state,
+        mode: 'search',
+        focusedPanel: 'response',
+        searchQuery: '',
+        searchMatches: [],
+        currentMatchIndex: 0,
+      };
+    }
+
+    case 'UPDATE_SEARCH_INPUT':
+      return {
+        ...state,
+        searchQuery: action.value,
+      };
+
+    case 'CONFIRM_SEARCH': {
+      if (!state.searchQuery || !state.response) {
+        return {
+          ...state,
+          mode: 'normal',
+          ...CLEAR_SEARCH_STATE,
+        };
+      }
+
+      const formattedBody = formatResponseBody(state.response.body, state.rawMode);
+      const bodyLines = formattedBody.split('\n');
+      const queryLower = state.searchQuery.toLowerCase();
+      const matches: number[] = [];
+
+      for (let i = 0; i < bodyLines.length; i++) {
+        if (bodyLines[i].toLowerCase().includes(queryLower)) {
+          matches.push(i);
+        }
+      }
+
+      const scrollOffset = matches.length > 0
+        ? computeSearchScrollOffset(matches[0], action.headerOffset, action.maxOffset)
+        : state.responseScrollOffset;
+
+      return {
+        ...state,
+        mode: 'normal',
+        searchMatches: matches,
+        currentMatchIndex: 0,
+        lastSearchQuery: state.searchQuery,
+        responseScrollOffset: scrollOffset,
+      };
+    }
+
+    case 'CANCEL_SEARCH':
+      return {
+        ...state,
+        mode: 'normal',
+        ...CLEAR_SEARCH_STATE,
+      };
+
+    case 'NEXT_MATCH': {
+      if (state.searchMatches.length === 0) {
+        return state;
+      }
+      const nextIndex = (state.currentMatchIndex + 1) % state.searchMatches.length;
+      const scrollOffset = computeSearchScrollOffset(
+        state.searchMatches[nextIndex],
+        action.headerOffset,
+        action.maxOffset,
+      );
+      return {
+        ...state,
+        currentMatchIndex: nextIndex,
+        responseScrollOffset: scrollOffset,
+      };
+    }
+
+    case 'PREV_MATCH': {
+      if (state.searchMatches.length === 0) {
+        return state;
+      }
+      const prevIndex = (state.currentMatchIndex - 1 + state.searchMatches.length) % state.searchMatches.length;
+      const scrollOffset = computeSearchScrollOffset(
+        state.searchMatches[prevIndex],
+        action.headerOffset,
+        action.maxOffset,
+      );
+      return {
+        ...state,
+        currentMatchIndex: prevIndex,
+        responseScrollOffset: scrollOffset,
+      };
+    }
+
     default:
       return state;
   }
@@ -511,6 +628,10 @@ function createInitialState(props: AppProps): AppState {
     wrapMode: 'nowrap',
     showRequestDetails: false,
     rawMode: false,
+    searchQuery: '',
+    searchMatches: [],
+    currentMatchIndex: 0,
+    lastSearchQuery: '',
   };
 }
 
@@ -628,6 +749,31 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (state.mode === 'search') {
+      if (key.escape) {
+        dispatch({ type: 'CANCEL_SEARCH' });
+        return;
+      }
+
+      if (key.return) {
+        const headerOffset = 1 + (state.verbose && state.response ? Object.keys(state.response.headers).length : 0) + 1;
+        const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
+        dispatch({ type: 'CONFIRM_SEARCH', headerOffset, maxOffset });
+        return;
+      }
+
+      if (key.backspace || key.delete) {
+        dispatch({ type: 'UPDATE_SEARCH_INPUT', value: state.searchQuery.slice(0, -1) });
+        return;
+      }
+
+      if (input && !key.ctrl && !key.meta) {
+        dispatch({ type: 'UPDATE_SEARCH_INPUT', value: state.searchQuery + input });
+      }
+
+      return;
+    }
+
     if ((key.ctrl && input === 'c') || input === 'q') {
       exit();
       return;
@@ -665,6 +811,25 @@ export function App(props: AppProps): React.ReactElement {
 
     if (input === 'o') {
       dispatch({ type: 'ENTER_FILE_LOAD' });
+      return;
+    }
+
+    if (input === '/') {
+      dispatch({ type: 'ENTER_SEARCH' });
+      return;
+    }
+
+    if (input === 'n' && state.searchMatches.length > 0) {
+      const headerOffset = 1 + (state.verbose && state.response ? Object.keys(state.response.headers).length : 0) + 1;
+      const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
+      dispatch({ type: 'NEXT_MATCH', headerOffset, maxOffset });
+      return;
+    }
+
+    if (input === 'N' && state.searchMatches.length > 0) {
+      const headerOffset = 1 + (state.verbose && state.response ? Object.keys(state.response.headers).length : 0) + 1;
+      const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
+      dispatch({ type: 'PREV_MATCH', headerOffset, maxOffset });
       return;
     }
 
@@ -764,6 +929,11 @@ export function App(props: AppProps): React.ReactElement {
           wrapMode={state.wrapMode}
           rawMode={state.rawMode}
           availableHeight={responseAvailableHeight}
+          searchMatches={state.searchMatches}
+          currentMatchIndex={state.currentMatchIndex}
+          isSearchMode={state.mode === 'search'}
+          lastSearchQuery={state.lastSearchQuery}
+          searchQuery={state.searchQuery}
         />
       }
       bottom={

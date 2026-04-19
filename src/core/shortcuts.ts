@@ -27,4 +27,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'G', label: '', description: 'Jump to bottom of focused panel', showInBar: false, showInHelp: true },
   { key: '0', label: '', description: 'Jump to horizontal start of focused panel', showInBar: false, showInHelp: true },
   { key: '$', label: '', description: 'Jump to horizontal end of focused panel', showInBar: false, showInHelp: true },
+  { key: '/', label: '', description: 'Search response body', showInBar: false, showInHelp: true },
+  { key: 'n', label: '', description: 'Go to next search match', showInBar: false, showInHelp: true },
+  { key: 'N', label: '', description: 'Go to previous search match', showInBar: false, showInHelp: true },
 ] as const;

@@ -56,7 +56,7 @@ export interface ExecutorConfig {
 }
 
 export type FocusedPanel = 'requests' | 'details' | 'response';
-export type AppMode = 'normal' | 'fileLoad';
+export type AppMode = 'normal' | 'fileLoad' | 'search';
 export type WrapMode = 'nowrap' | 'wrap';
 
 export interface AppState {
@@ -84,6 +84,10 @@ export interface AppState {
   wrapMode: WrapMode;
   showRequestDetails: boolean;
   rawMode: boolean;
+  searchQuery: string;
+  searchMatches: number[];
+  currentMatchIndex: number;
+  lastSearchQuery: string;
 }
 
 export type Action =
@@ -109,4 +113,10 @@ export type Action =
   | { type: 'TOGGLE_RAW' }
   | { type: 'TOGGLE_REQUEST_DETAILS' }
   | { type: 'JUMP_VERTICAL'; direction: 'start' | 'end'; maxOffset?: number }
-  | { type: 'JUMP_HORIZONTAL'; direction: 'start' | 'end'; columns?: number };
+  | { type: 'JUMP_HORIZONTAL'; direction: 'start' | 'end'; columns?: number }
+  | { type: 'ENTER_SEARCH' }
+  | { type: 'UPDATE_SEARCH_INPUT'; value: string }
+  | { type: 'CONFIRM_SEARCH'; headerOffset: number; maxOffset?: number }
+  | { type: 'CANCEL_SEARCH' }
+  | { type: 'NEXT_MATCH'; headerOffset: number; maxOffset?: number }
+  | { type: 'PREV_MATCH'; headerOffset: number; maxOffset?: number };

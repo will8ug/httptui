@@ -20,6 +20,11 @@ interface ResponseViewProps {
   wrapMode: WrapMode;
   rawMode: boolean;
   availableHeight: number;
+  searchMatches: number[];
+  currentMatchIndex: number;
+  isSearchMode: boolean;
+  lastSearchQuery: string;
+  searchQuery: string;
 }
 
 function truncateText(value: string, maxWidth: number): string {
@@ -116,11 +121,18 @@ export function ResponseView({
   wrapMode,
   rawMode,
   availableHeight,
+  searchMatches,
+  currentMatchIndex,
+  isSearchMode,
+  lastSearchQuery,
+  searchQuery,
 }: ResponseViewProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
   const contentWidth = getResponseContentWidth(columns);
-  const visibleHeight = Math.max(1, availableHeight - RESPONSE_PANEL_VERTICAL_CHROME);
+  const showSearchBar = isSearchMode || (lastSearchQuery !== '' && searchMatches.length >= 0 && lastSearchQuery.length > 0);
+  const searchBarHeight = showSearchBar ? 1 : 0;
+  const visibleHeight = Math.max(1, availableHeight - RESPONSE_PANEL_VERTICAL_CHROME - searchBarHeight);
 
   let content: React.ReactNode;
 
@@ -280,7 +292,47 @@ export function ResponseView({
       });
     }
 
-    content = responseLines.slice(scrollOffset, scrollOffset + visibleHeight);
+    const headerCount = verbose && response ? Object.keys(response.headers).length : 0;
+    const headerOffset = 1 + headerCount + 1;
+
+    const currentMatchVisualIndex = searchMatches.length > 0
+      ? searchMatches[currentMatchIndex] + headerOffset
+      : -1;
+    const matchVisualIndices = new Set(searchMatches.map(i => i + headerOffset));
+
+    const sliced = responseLines.slice(scrollOffset, scrollOffset + visibleHeight);
+    content = sliced.map((line, sliceIndex) => {
+      const visualIndex = scrollOffset + sliceIndex;
+      if (matchVisualIndices.has(visualIndex)) {
+        const isCurrent = visualIndex === currentMatchVisualIndex;
+        return (
+          <Box key={`search-${visualIndex}`} flexDirection="row">
+            <Text color={isCurrent ? 'cyanBright' : 'gray'}>{isCurrent ? '►' : '·'}</Text>
+            {line}
+          </Box>
+        );
+      }
+      return line;
+    });
+  }
+
+  let searchBar: React.ReactNode = null;
+  if (isSearchMode) {
+    searchBar = (
+      <Text color="cyanBright">
+        /{searchQuery}<Text color="white" bold>_</Text>
+      </Text>
+    );
+  } else if (lastSearchQuery) {
+    const matchInfo = searchMatches.length > 0
+      ? `[${currentMatchIndex + 1}/${searchMatches.length}]`
+      : '[No matches]';
+    searchBar = (
+      <Text>
+        <Text color="gray">/{lastSearchQuery}</Text>
+        <Text color={searchMatches.length > 0 ? 'cyanBright' : 'yellow'}> {matchInfo}</Text>
+      </Text>
+    );
   }
 
   return (
@@ -296,6 +348,7 @@ export function ResponseView({
         {rawMode && wrapMode === 'wrap' ? 'Response [raw] [wrap]' : rawMode ? 'Response [raw]' : wrapMode === 'wrap' ? 'Response [wrap]' : 'Response'}
       </Text>
       {content}
+      {searchBar}
     </Box>
   );
 }
