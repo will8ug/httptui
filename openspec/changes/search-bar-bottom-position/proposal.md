@@ -6,7 +6,7 @@ The search bar in the response panel currently flows immediately after the respo
 
 - Modify the `ResponseView` component's layout so the search bar is always rendered at the very bottom of the response panel, regardless of content height.
 - The response body content should fill the remaining vertical space above the search bar using Ink's flex layout (`flexGrow`).
-- No behavioral changes to search functionality — only the visual position of the search bar within the panel.
+- Add a dimmed Escape hint to the search bar: `(Esc to cancel)` during active search input, `(Esc to dismiss)` when showing search results. Consistent with existing hint style used in `FileLoadOverlay` and `HelpOverlay`.
 
 ## Capabilities
 

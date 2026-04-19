@@ -321,6 +321,7 @@ export function ResponseView({
     searchBar = (
       <Text color="cyanBright">
         /{searchQuery}<Text color="white" bold>_</Text>
+        <Text color="gray">  (Esc to cancel)</Text>
       </Text>
     );
   } else if (lastSearchQuery) {
@@ -331,6 +332,7 @@ export function ResponseView({
       <Text>
         <Text color="gray">/{lastSearchQuery}</Text>
         <Text color={searchMatches.length > 0 ? 'cyanBright' : 'yellow'}> {matchInfo}</Text>
+        <Text color="gray">  (Esc to dismiss)</Text>
       </Text>
     );
   }
@@ -347,7 +349,9 @@ export function ResponseView({
       <Text color={focused ? 'cyanBright' : 'gray'} bold>
         {rawMode && wrapMode === 'wrap' ? 'Response [raw] [wrap]' : rawMode ? 'Response [raw]' : wrapMode === 'wrap' ? 'Response [wrap]' : 'Response'}
       </Text>
-      {content}
+      <Box flexGrow={1} flexDirection="column">
+        {content}
+      </Box>
       {searchBar}
     </Box>
   );
