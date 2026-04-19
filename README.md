@@ -76,8 +76,14 @@ httptui -k path/to/api.http
 | `Tab` | Switch focus between panels |
 | `v` | Toggle verbose mode (show/hide headers) |
 | `r` | Toggle raw mode (no JSON formatting) |
+| `w` | Toggle text wrapping in response panel |
+| `d` | Toggle request details panel |
 | `o` | Open a different .http file |
 | `R` | Reload file from disk |
+| `/` | Search response body |
+| `n` | Go to next search match |
+| `N` | Go to previous search match |
+| `Escape` | Close current overlay |
 | `?` | Toggle help overlay |
 | `q` | Quit application |
 
