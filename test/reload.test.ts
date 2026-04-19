@@ -1,93 +1,30 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Action, AppState, ParsedRequest, FileVariable } from '../src/core/types';
-
-function createInitialState(): AppState {
-  return {
-    requests: [],
-    variables: [],
-    selectedIndex: 0,
-    focusedPanel: 'requests' as const,
-    response: null,
-    isLoading: false,
-    error: null,
-    insecure: false,
-    verbose: false,
-    rawMode: false,
-    showHelp: false,
-    filePath: 'test.http',
-    responseScrollOffset: 0,
-    requestScrollOffset: 0,
-    requestHorizontalOffset: 0,
-    responseHorizontalOffset: 0,
-    detailsScrollOffset: 0,
-    detailsHorizontalOffset: 0,
-    reloadMessage: null,
-    mode: 'normal' as const,
-    fileLoadInput: '',
-    fileLoadError: null,
-    wrapMode: 'nowrap' as const,
-    showRequestDetails: false,
-  };
-}
-
-function reducer(state: AppState, action: Action): AppState {
-  switch (action.type) {
-    case 'RELOAD_FILE': {
-      const currentRequestName = state.requests[state.selectedIndex]?.name;
-      const newIndex = currentRequestName
-        ? action.requests.findIndex((req) => req.name === currentRequestName)
-        : -1;
-
-      return {
-        ...state,
-        requests: action.requests,
-        variables: action.variables,
-        selectedIndex: newIndex >= 0 ? newIndex : 0,
-        response: null,
-        error: null,
-        responseScrollOffset: 0,
-        requestScrollOffset: 0,
-        reloadMessage: 'Reloaded',
-      };
-    }
-
-    case 'CLEAR_RELOAD_MESSAGE':
-      return {
-        ...state,
-        reloadMessage: null,
-      };
-
-    default:
-      return state;
-  }
-}
+import { createRequest } from './helpers/requests';
+import { createInitialState, reducer } from './helpers/state';
 
 const sampleRequests: ParsedRequest[] = [
-  {
+  createRequest({
     name: 'Get users',
     method: 'GET',
     url: 'https://api.example.com/users',
-    headers: {},
-    body: undefined,
     lineNumber: 1,
-  },
-  {
+  }),
+  createRequest({
     name: 'Create user',
     method: 'POST',
     url: 'https://api.example.com/users',
     headers: { 'Content-Type': 'application/json' },
     body: '{"name":"John"}',
     lineNumber: 8,
-  },
-  {
+  }),
+  createRequest({
     name: 'Delete user',
     method: 'DELETE',
     url: 'https://api.example.com/users/1',
-    headers: {},
-    body: undefined,
     lineNumber: 15,
-  },
+  }),
 ];
 
 const sampleVariables: FileVariable[] = [
@@ -97,11 +34,12 @@ const sampleVariables: FileVariable[] = [
 describe('RELOAD_FILE reducer', () => {
   it('replaces requests and variables', () => {
     const state = createInitialState();
-    const result = reducer(state, {
+    const action: Action = {
       type: 'RELOAD_FILE',
       requests: sampleRequests,
       variables: sampleVariables,
-    });
+    };
+    const result = reducer(state, action);
 
     expect(result.requests).toEqual(sampleRequests);
     expect(result.variables).toEqual(sampleVariables);

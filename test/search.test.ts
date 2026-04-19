@@ -1,227 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
+import { createInitialState } from './helpers/state';
+import { createMockResponse } from './helpers/responses';
 import { formatResponseBody } from '../src/core/formatter';
-import type { Action, AppState } from '../src/core/types';
-
-const CLEAR_SEARCH_STATE = {
-  searchQuery: '',
-  searchMatches: [] as number[],
-  currentMatchIndex: 0,
-  lastSearchQuery: '',
-};
-
-function createInitialState(): AppState {
-  return {
-    requests: [],
-    variables: [],
-    selectedIndex: 0,
-    focusedPanel: 'requests',
-    response: null,
-    isLoading: false,
-    error: null,
-    insecure: false,
-    verbose: false,
-    showHelp: false,
-    filePath: 'test.http',
-    responseScrollOffset: 0,
-    requestScrollOffset: 0,
-    requestHorizontalOffset: 0,
-    responseHorizontalOffset: 0,
-    detailsScrollOffset: 0,
-    detailsHorizontalOffset: 0,
-    reloadMessage: null,
-    mode: 'normal',
-    fileLoadInput: '',
-    fileLoadError: null,
-    wrapMode: 'nowrap',
-    showRequestDetails: false,
-    rawMode: false,
-    searchQuery: '',
-    searchMatches: [],
-    currentMatchIndex: 0,
-    lastSearchQuery: '',
-  };
-}
-
-function computeSearchScrollOffset(bodyLineIndex: number, headerOffset: number, maxOffset?: number): number {
-  const targetOffset = bodyLineIndex + headerOffset;
-  if (maxOffset !== undefined) {
-    return Math.min(Math.max(0, targetOffset), maxOffset);
-  }
-
-  return Math.max(0, targetOffset);
-}
-
-function reducer(state: AppState, action: Action): AppState {
-  switch (action.type) {
-    case 'ENTER_SEARCH': {
-      if (!state.response) {
-        return state;
-      }
-
-      return {
-        ...state,
-        mode: 'search',
-        focusedPanel: 'response',
-        searchQuery: '',
-        searchMatches: [],
-        currentMatchIndex: 0,
-      };
-    }
-
-    case 'UPDATE_SEARCH_INPUT':
-      return {
-        ...state,
-        searchQuery: action.value,
-      };
-
-    case 'CONFIRM_SEARCH': {
-      if (!state.searchQuery || !state.response) {
-        return {
-          ...state,
-          mode: 'normal',
-          ...CLEAR_SEARCH_STATE,
-        };
-      }
-
-      const formattedBody = formatResponseBody(state.response.body, state.rawMode);
-      const bodyLines = formattedBody.split('\n');
-      const queryLower = state.searchQuery.toLowerCase();
-      const matches: number[] = [];
-
-      for (let i = 0; i < bodyLines.length; i++) {
-        if (bodyLines[i].toLowerCase().includes(queryLower)) {
-          matches.push(i);
-        }
-      }
-
-      const scrollOffset = matches.length > 0
-        ? computeSearchScrollOffset(matches[0], action.headerOffset, action.maxOffset)
-        : state.responseScrollOffset;
-
-      return {
-        ...state,
-        mode: 'normal',
-        searchMatches: matches,
-        currentMatchIndex: 0,
-        lastSearchQuery: state.searchQuery,
-        responseScrollOffset: scrollOffset,
-      };
-    }
-
-    case 'CANCEL_SEARCH':
-      return {
-        ...state,
-        mode: 'normal',
-        ...CLEAR_SEARCH_STATE,
-      };
-
-    case 'NEXT_MATCH': {
-      if (state.searchMatches.length === 0) {
-        return state;
-      }
-
-      const nextIndex = (state.currentMatchIndex + 1) % state.searchMatches.length;
-      const scrollOffset = computeSearchScrollOffset(
-        state.searchMatches[nextIndex],
-        action.headerOffset,
-        action.maxOffset,
-      );
-
-      return {
-        ...state,
-        currentMatchIndex: nextIndex,
-        responseScrollOffset: scrollOffset,
-      };
-    }
-
-    case 'PREV_MATCH': {
-      if (state.searchMatches.length === 0) {
-        return state;
-      }
-
-      const prevIndex = (state.currentMatchIndex - 1 + state.searchMatches.length) % state.searchMatches.length;
-      const scrollOffset = computeSearchScrollOffset(
-        state.searchMatches[prevIndex],
-        action.headerOffset,
-        action.maxOffset,
-      );
-
-      return {
-        ...state,
-        currentMatchIndex: prevIndex,
-        responseScrollOffset: scrollOffset,
-      };
-    }
-
-    case 'SEND_REQUEST':
-      return {
-        ...state,
-        isLoading: true,
-        error: null,
-        responseScrollOffset: 0,
-        responseHorizontalOffset: 0,
-        ...CLEAR_SEARCH_STATE,
-      };
-
-    case 'RECEIVE_RESPONSE':
-      return {
-        ...state,
-        response: action.response,
-        error: null,
-        isLoading: false,
-        responseScrollOffset: 0,
-        ...CLEAR_SEARCH_STATE,
-      };
-
-    case 'REQUEST_ERROR':
-      return {
-        ...state,
-        response: null,
-        error: action.error,
-        isLoading: false,
-        responseScrollOffset: 0,
-        ...CLEAR_SEARCH_STATE,
-      };
-
-    case 'SELECT_REQUEST':
-      return {
-        ...state,
-        selectedIndex: action.index,
-        ...CLEAR_SEARCH_STATE,
-      };
-
-    case 'MOVE_SELECTION':
-      return {
-        ...state,
-        selectedIndex: action.direction === 'up' ? Math.max(0, state.selectedIndex - 1) : state.selectedIndex + 1,
-        ...CLEAR_SEARCH_STATE,
-      };
-
-    case 'TOGGLE_RAW':
-      return {
-        ...state,
-        rawMode: !state.rawMode,
-        ...CLEAR_SEARCH_STATE,
-      };
-
-    default:
-      return state;
-  }
-}
+import { reducer, CLEAR_SEARCH_STATE, computeSearchScrollOffset } from '../src/core/reducer';
+import type { Action, AppState, ResponseData } from '../src/core/types';
 
 function stateWithResponse(body: string): AppState {
-  return {
-    ...createInitialState(),
-    response: {
-      statusCode: 200,
-      statusText: 'OK',
-      headers: { 'content-type': 'application/json' },
-      body,
-      timing: { durationMs: 100 },
-      size: { bodyBytes: body.length },
-    },
-  };
+  const response: ResponseData = createMockResponse({
+    headers: { 'content-type': 'application/json' },
+    body,
+    size: { bodyBytes: body.length },
+  });
+
+  return createInitialState({ response });
 }
 
 function stateWithActiveSearch(): AppState {
@@ -235,16 +27,19 @@ function stateWithActiveSearch(): AppState {
 }
 
 function expectClearedSearchState(state: AppState): void {
-  expect(state.searchQuery).toBe('');
-  expect(state.searchMatches).toEqual([]);
-  expect(state.currentMatchIndex).toBe(0);
-  expect(state.lastSearchQuery).toBe('');
+  expect({
+    searchQuery: state.searchQuery,
+    searchMatches: state.searchMatches,
+    currentMatchIndex: state.currentMatchIndex,
+    lastSearchQuery: state.lastSearchQuery,
+  }).toEqual(CLEAR_SEARCH_STATE);
 }
 
 describe('ENTER_SEARCH reducer', () => {
   it('sets mode to search, focuses response, and clears searchQuery when response exists', () => {
     const state = stateWithResponse('{"name":"John"}');
-    const result = reducer(state, { type: 'ENTER_SEARCH' });
+    const action: Action = { type: 'ENTER_SEARCH' };
+    const result = reducer(state, action);
 
     expect(result.mode).toBe('search');
     expect(result.focusedPanel).toBe('response');
@@ -379,7 +174,7 @@ describe('CONFIRM_SEARCH reducer', () => {
     const result = reducer(state, { type: 'CONFIRM_SEARCH', headerOffset: 4 });
 
     expect(result.searchMatches).toEqual([1]);
-    expect(result.responseScrollOffset).toBe(5);
+    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(1, 4));
   });
 
   it('finds matches across multiple lines', () => {
@@ -439,7 +234,7 @@ describe('NEXT_MATCH reducer', () => {
     const result = reducer(state, { type: 'NEXT_MATCH', headerOffset: 3 });
 
     expect(result.currentMatchIndex).toBe(2);
-    expect(result.responseScrollOffset).toBe(8);
+    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(5, 3));
   });
 });
 
@@ -470,7 +265,7 @@ describe('PREV_MATCH reducer', () => {
     const result = reducer(state, { type: 'PREV_MATCH', headerOffset: 4 });
 
     expect(result.currentMatchIndex).toBe(0);
-    expect(result.responseScrollOffset).toBe(4);
+    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(0, 4));
   });
 });
 
@@ -481,16 +276,16 @@ describe('Search state clearing reducer cases', () => {
   });
 
   it('RECEIVE_RESPONSE clears all search state', () => {
+    const response: ResponseData = createMockResponse({
+      headers: { 'content-type': 'application/json' },
+      body: '{"updated":true}',
+      timing: { durationMs: 50 },
+      size: { bodyBytes: 16 },
+    });
+
     const result = reducer(stateWithActiveSearch(), {
       type: 'RECEIVE_RESPONSE',
-      response: {
-        statusCode: 200,
-        statusText: 'OK',
-        headers: { 'content-type': 'application/json' },
-        body: '{"updated":true}',
-        timing: { durationMs: 50 },
-        size: { bodyBytes: 16 },
-      },
+      response,
     });
 
     expectClearedSearchState(result);

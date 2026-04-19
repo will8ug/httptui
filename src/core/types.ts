@@ -90,6 +90,13 @@ export interface AppState {
   lastSearchQuery: string;
 }
 
+export interface AppProps {
+  filePath: string;
+  requests: ParsedRequest[];
+  variables: FileVariable[];
+  executorConfig: ExecutorConfig;
+}
+
 export type Action =
   | { type: 'SELECT_REQUEST'; index: number }
   | { type: 'MOVE_SELECTION'; direction: 'up' | 'down' }

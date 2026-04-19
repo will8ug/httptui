@@ -1,111 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
+import { createRequest } from './helpers/requests';
+import { createInitialState, reducer } from './helpers/state';
 import type { Action, AppState, ParsedRequest, FileVariable } from '../src/core/types';
 
-function createInitialState(): AppState {
-  return {
-    requests: [],
-    variables: [],
-    selectedIndex: 0,
-    focusedPanel: 'requests' as const,
-    response: null,
-    isLoading: false,
-    error: null,
-    insecure: false,
-    verbose: false,
-    rawMode: false,
-    showHelp: false,
-    filePath: 'test.http',
-    responseScrollOffset: 0,
-    requestScrollOffset: 0,
-    requestHorizontalOffset: 0,
-    responseHorizontalOffset: 0,
-    detailsScrollOffset: 0,
-    detailsHorizontalOffset: 0,
-    reloadMessage: null,
-    mode: 'normal',
-    fileLoadInput: '',
-    fileLoadError: null,
-    wrapMode: 'nowrap' as const,
-    showRequestDetails: false,
-  };
-}
-
-function reducer(state: AppState, action: Action): AppState {
-  switch (action.type) {
-    case 'ENTER_FILE_LOAD':
-      return {
-        ...state,
-        mode: 'fileLoad',
-        fileLoadInput: '',
-        fileLoadError: null,
-      };
-
-    case 'UPDATE_FILE_LOAD_INPUT':
-      return {
-        ...state,
-        fileLoadInput: action.value,
-      };
-
-    case 'SET_FILE_LOAD_ERROR':
-      return {
-        ...state,
-        fileLoadError: action.error,
-      };
-
-    case 'LOAD_FILE': {
-      const currentRequestName = state.requests[state.selectedIndex]?.name;
-      const newIndex = currentRequestName
-        ? action.requests.findIndex((req) => req.name === currentRequestName)
-        : -1;
-
-      return {
-        ...state,
-        requests: action.requests,
-        variables: action.variables,
-        filePath: action.filePath,
-        selectedIndex: newIndex >= 0 ? newIndex : 0,
-        response: null,
-        error: null,
-        responseScrollOffset: 0,
-        requestScrollOffset: 0,
-        mode: 'normal',
-        fileLoadInput: '',
-        fileLoadError: null,
-        reloadMessage: `Loaded: ${action.filePath.split('/').pop()}`,
-      };
-    }
-
-    case 'CANCEL_FILE_LOAD':
-      return {
-        ...state,
-        mode: 'normal',
-        fileLoadInput: '',
-        fileLoadError: null,
-      };
-
-    default:
-      return state;
-  }
-}
-
 const sampleRequests: ParsedRequest[] = [
-  {
-    name: 'Get users',
-    method: 'GET',
-    url: 'https://api.example.com/users',
-    headers: {},
-    body: undefined,
-    lineNumber: 1,
-  },
-  {
+  createRequest({ name: 'Get users', method: 'GET', url: 'https://api.example.com/users', lineNumber: 1 }),
+  createRequest({
     name: 'Create user',
     method: 'POST',
     url: 'https://api.example.com/users',
     headers: { 'Content-Type': 'application/json' },
     body: '{"name":"John"}',
     lineNumber: 8,
-  },
+  }),
 ];
 
 const sampleVariables: FileVariable[] = [
@@ -115,7 +23,8 @@ const sampleVariables: FileVariable[] = [
 describe('ENTER_FILE_LOAD reducer', () => {
   it('sets mode to fileLoad and clears input and error', () => {
     const state = createInitialState();
-    const result = reducer(state, { type: 'ENTER_FILE_LOAD' });
+    const action: Action = { type: 'ENTER_FILE_LOAD' };
+    const result = reducer(state, action);
 
     expect(result.mode).toBe('fileLoad');
     expect(result.fileLoadInput).toBe('');

@@ -22,14 +22,15 @@ npm run format        # prettier --write src/**/*.ts src/**/*.tsx test/**/*.ts
 ```
 src/
   cli.tsx              # Entrypoint — arg parsing, file loading, alternate screen setup, renders <App>
-  app.tsx              # Main component — useReducer state machine, useInput key handling, orchestrates all components
+  app.tsx              # Main component — useReducer state machine (with reducer from core/reducer), useInput key handling, orchestrates all components
   args.ts              # CLI arg parser (--insecure/-k, positional file path)
   core/
-    types.ts           # All shared types: ParsedRequest, ResolvedRequest, AppState, Action (discriminated union), etc.
+    types.ts           # All shared types: ParsedRequest, ResolvedRequest, AppState, Action (discriminated union), AppProps, etc.
+    reducer.ts         # Exported reducer, createInitialState, and layout-measurement helpers (clamp, getVisibleRequestOffset, getMax*, computeVerticalMaxOffset, computeSearchScrollOffset, CLEAR_SEARCH_STATE, REQUEST_SCROLL_WINDOW)
     parser.ts          # .http file parser → ParseResult { requests, variables }
-    executor.ts        # HTTP executor (undici request + TLS handling + error classification)
-    variables.ts       # Variable resolution: file vars, $timestamp, $guid, $randomInt, $processEnv, $dotenv
-    shortcuts.ts       # Keyboard shortcut definitions (keys → labels → descriptions)
+    executor.ts         # HTTP executor (undici request + TLS handling + error classification)
+    variables.ts        # Variable resolution: file vars, $timestamp, $guid, $randomInt, $processEnv, $dotenv
+    shortcuts.ts        # Keyboard shortcut definitions (keys → labels → descriptions)
   components/
     Layout.tsx         # Two-column + status bar layout (left: request list, right: response, bottom: status)
     RequestList.tsx     # Left panel — renders request list with selection
@@ -46,7 +47,8 @@ src/
 
 ## Key Patterns
 
-- **State management**: Single `useReducer` in `app.tsx` with `Action` discriminated union. No external state library.
+- **State management**: Reducer exported from `src/core/reducer.ts` (pure function, no React dependency). `App` component imports and uses it via `useReducer`. Tests import the same reducer directly — no duplication.
+- **Test helpers**: Shared factories in `test/helpers/state.ts` (`createInitialState` with test-friendly defaults + overrides), `test/helpers/requests.ts` (`makeRequests`, `createRequest`, `createResolvedRequest`), and `test/helpers/responses.ts` (`createMockResponse`, `longResponse`).
 - **Component rendering**: Ink (React-like) components. All `.tsx` files use `React.ReactElement` return types.
 - **Module system**: Pure ESM (`"type": "module"` in package.json, tsup outputs ESM only, `.js` extensions in imports within `variables.ts`).
 - **Path aliases**: `@/*` maps to `./src/*` in tsconfig but NOT used in current source — imports use relative paths.
@@ -70,4 +72,4 @@ src/
 - **`package-lock.json` is in `.gitignore`** — this is intentional for an npm global-install tool.
 - **`tsup.config.ts` externalizes** `react`, `ink`, `@inkjs/ui`, `undici` — these are NOT bundled into dist.
 - **Node ≥20 required** (`engines.node`), but the shebang is `#!/usr/bin/env node` (not `--use-system-ca` — see `FUTURE.md`).
-- **Stale `rawMode` in test fixtures**: `test/file-load.test.ts` and `test/reload.test.ts` define `rawMode: false` in `createInitialState()`, but `rawMode` was removed from the actual `AppState` type in `src/core/types.ts`. These test files duplicate the reducer logic instead of importing from `app.tsx`, so the drift won't cause runtime failures, but it's misleading when reading tests.
+- **Stale `rawMode` note**: `rawMode` IS present in `AppState` (at `src/core/types.ts:86`). Tests now import the real reducer from `src/core/reducer.ts` instead of duplicating it, so this kind of drift is no longer possible.

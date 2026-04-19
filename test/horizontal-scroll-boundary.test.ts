@@ -1,121 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import { getMaxRequestLineWidth, getMaxResponseLineWidth } from '../src/core/reducer';
 import type { Action, AppState, ParsedRequest } from '../src/core/types';
 import { getRequestContentWidth, getLeftPanelWidth, getResponseContentWidth, getDetailPanelHeight } from '../src/utils/layout';
-import { getRequestTarget } from '../src/utils/request';
+import { createInitialState, reducer } from './helpers/state';
+import { makeRequests } from './helpers/requests';
 
-function getMaxRequestLineWidth(requests: readonly ParsedRequest[]): number {
-  if (requests.length === 0) {
-    return 0;
-  }
-
-  return Math.max(...requests.map((r) => 2 + 7 + getRequestTarget(r.url).length));
-}
-
-function getMaxResponseLineWidth(state: Pick<AppState, 'response' | 'verbose'>): number {
-  if (!state.response) {
-    return 0;
-  }
-
-  const lines: string[] = [];
-  const res = state.response;
-
-  lines.push(`HTTP/1.1 ${res.statusCode} ${res.statusText}  ${Math.round(res.timing.durationMs)}ms`);
-
-  if (state.verbose) {
-    for (const [name, value] of Object.entries(res.headers)) {
-      lines.push(`${name}: ${value}`);
-    }
-  }
-
-  lines.push(...res.body.split('\n'));
-
-  return Math.max(0, ...lines.map((l) => l.length));
-}
-
-function reducer(state: AppState, action: Action): AppState {
-  switch (action.type) {
-    case 'SCROLL_HORIZONTAL': {
-      if (state.focusedPanel === 'response' && state.wrapMode === 'wrap') {
-        return state;
-      }
-
-      const columns = action.columns ?? 80;
-      const horizontalDelta = action.direction === 'left' ? -2 : 2;
-
-      if (state.focusedPanel === 'response') {
-        const contentWidth = getResponseContentWidth(columns);
-        const maxOffset = Math.max(0, getMaxResponseLineWidth(state) - contentWidth);
-        return {
-          ...state,
-          responseHorizontalOffset: Math.min(Math.max(0, state.responseHorizontalOffset + horizontalDelta), maxOffset),
-        };
-      }
-
-      const contentWidth = getRequestContentWidth(columns);
-      const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests) - contentWidth);
-      return {
-        ...state,
-        requestHorizontalOffset: Math.min(Math.max(0, state.requestHorizontalOffset + horizontalDelta), maxOffset),
-      };
-    }
-
-    default:
-      return state;
-  }
-}
-
-function createInitialState(overrides: Partial<AppState> = {}): AppState {
-  return {
-    requests: [],
-    variables: [],
-    selectedIndex: 0,
-    focusedPanel: 'requests',
-    response: null,
-    isLoading: false,
-    error: null,
-    insecure: false,
-    verbose: false,
-    showHelp: false,
-    filePath: 'test.http',
-    responseScrollOffset: 0,
-    requestScrollOffset: 0,
-    requestHorizontalOffset: 0,
-    responseHorizontalOffset: 0,
-    showRequestDetails: false,
-    rawMode: false,
-    detailsScrollOffset: 0,
-    detailsHorizontalOffset: 0,
-    reloadMessage: null,
-    mode: 'normal',
-    fileLoadInput: '',
-    fileLoadError: null,
-    wrapMode: 'nowrap',
-    ...overrides,
-  };
-}
-
-const longUrlRequests: ParsedRequest[] = [
-  {
-    name: 'Get users',
-    method: 'GET',
-    url: 'https://api.example.com/users/very-long-path/that/exceeds/panel/width',
-    headers: {},
-    body: undefined,
-    lineNumber: 1,
-  },
-];
-
-const shortUrlRequests: ParsedRequest[] = [
-  {
-    name: 'Get',
-    method: 'GET',
-    url: 'https://a.co/b',
-    headers: {},
-    body: undefined,
-    lineNumber: 1,
-  },
-];
+const longUrlRequests: ParsedRequest[] = makeRequests(1, { longUrl: true });
+const shortUrlRequests: ParsedRequest[] = makeRequests(1);
 
 describe('Layout utilities', () => {
   it('getLeftPanelWidth returns proportional width clamped to [25, 36]', () => {
@@ -197,7 +89,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
   });
 
   describe('response panel', () => {
-    const longResponse = {
+    const longResponse: NonNullable<AppState['response']> = {
       statusCode: 200,
       statusText: 'OK',
       headers: {} as Record<string, string>,
@@ -272,12 +164,14 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
 
   describe('defaults columns to 80', () => {
     it('uses 80 columns when columns is not provided in action', () => {
+      const defaultAction: Action = { type: 'SCROLL_HORIZONTAL', direction: 'right' };
+
       const state = createInitialState({
         focusedPanel: 'requests',
         requests: longUrlRequests,
       });
 
-      const resultWithDefault = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
+      const resultWithDefault = reducer(state, defaultAction);
       const resultWithExplicit = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 });
 
       expect(resultWithDefault.requestHorizontalOffset).toBe(resultWithExplicit.requestHorizontalOffset);
