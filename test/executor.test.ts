@@ -262,4 +262,89 @@ describe('executeRequest', () => {
       'set-cookie': 'a=1, b=2',
     });
   });
+
+  it('normalizes CRLF line endings in response body', async () => {
+    requestMock.mockResolvedValue(createMockResponse({ body: 'line1\r\nline2\r\nline3' }));
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isRequestError(result)).toBe(false);
+    if (isRequestError(result)) {
+      throw new Error('Expected successful response');
+    }
+
+    expect(result.body).toBe('line1\nline2\nline3');
+    expect(result.body).not.toContain('\r');
+    expect(result.size.bodyBytes).toBe(Buffer.byteLength('line1\nline2\nline3', 'utf-8')); 
+  });
+
+  it('normalizes lone CR in response body', async () => {
+    requestMock.mockResolvedValue(createMockResponse({ body: 'line1\rline2\rline3' }));
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isRequestError(result)).toBe(false);
+    if (isRequestError(result)) {
+      throw new Error('Expected successful response');
+    }
+
+    expect(result.body).toBe('line1\nline2\nline3');
+    expect(result.size.bodyBytes).toBe(Buffer.byteLength('line1\nline2\nline3', 'utf-8'));
+  });
+
+  it('normalizes mixed CRLF, CR, and LF line endings', async () => {
+    requestMock.mockResolvedValue(createMockResponse({ body: 'a\r\nb\rc\nd\r\ne' }));
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isRequestError(result)).toBe(false);
+    if (isRequestError(result)) {
+      throw new Error('Expected successful response');
+    }
+
+    expect(result.body).toBe('a\nb\nc\nd\ne');
+    expect(result.size.bodyBytes).toBe(Buffer.byteLength('a\nb\nc\nd\ne', 'utf-8'));
+  });
+
+  it('leaves LF-only body byte-identical', async () => {
+    requestMock.mockResolvedValue(createMockResponse({ body: 'line1\nline2\n' }));
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isRequestError(result)).toBe(false);
+    if (isRequestError(result)) {
+      throw new Error('Expected successful response');
+    }
+
+    expect(result.body).toBe('line1\nline2\n');
+    expect(result.size.bodyBytes).toBe(Buffer.byteLength('line1\nline2\n', 'utf-8'));
+  });
+
+  it('handles empty body', async () => {
+    requestMock.mockResolvedValue(createMockResponse({ body: '' }));
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isRequestError(result)).toBe(false);
+    if (isRequestError(result)) {
+      throw new Error('Expected successful response');
+    }
+
+    expect(result.body).toBe('');
+    expect(result.size.bodyBytes).toBe(0);
+  });
+
+  it('reports bodyBytes based on normalized body', async () => {
+    requestMock.mockResolvedValue(createMockResponse({ body: 'a\r\nb' }));
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isRequestError(result)).toBe(false);
+    if (isRequestError(result)) {
+      throw new Error('Expected successful response');
+    }
+
+    expect(result.body).toBe('a\nb');
+    expect(result.size.bodyBytes).toBe(3);
+  });
 });

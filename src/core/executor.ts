@@ -110,7 +110,8 @@ export async function executeRequest(
       dispatcher,
     });
 
-    const body = await response.body.text();
+    const rawBody = await response.body.text();
+    const body = rawBody.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const endTime = performance.now();
 
     return {
