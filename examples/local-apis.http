@@ -1,6 +1,9 @@
 ### Mock 502 from Nginx
 GET http://localhost:10001/nginx-502
 
+### Mock 503 response with CRLF
+GET http://localhost:10001/nginx-503-crlf
+
 ### Raw json response
 GET http://localhost:10001/raw-json-simple
 
