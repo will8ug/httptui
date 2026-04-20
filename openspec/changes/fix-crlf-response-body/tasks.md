@@ -27,4 +27,4 @@
 - [x] 4.4 Run `lsp_diagnostics` on `src/core/executor.ts` and confirm it is clean.
 - [x] 4.5 Manual smoke test: run `httptui` against any endpoint returning HTML with CRLF (many default nginx/Apache pages qualify) and confirm the Response panel renders cleanly with no stacking.
   - Automated coverage is complete (6 executor unit tests + 1 integration test, all 250/250 pass).
-  - A ready-to-use test file is at `assets/test-crlf.http` — run `node dist/cli.js assets/test-crlf.http`, press Enter on the request, and verify the Response panel shows clean HTML with no line stacking.
+  - A ready-to-use test file is at `examples/test-crlf.http` — run `node dist/cli.js examples/test-crlf.http`, press Enter on the request, and verify the Response panel shows clean HTML with no line stacking.
