@@ -5,6 +5,7 @@ import { Box, Text, useStdout } from 'ink';
 
 import { SHORTCUTS } from '../core/shortcuts';
 import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
+import { truncateText } from '../utils/text';
 
 interface StatusBarProps {
   filePath: string;
@@ -12,22 +13,6 @@ interface StatusBarProps {
   selectedIndex: number;
   insecure: boolean;
   reloadMessage: string | null;
-}
-
-function truncateText(value: string, maxWidth: number): string {
-  if (maxWidth <= 0) {
-    return '';
-  }
-
-  if (value.length <= maxWidth) {
-    return value;
-  }
-
-  if (maxWidth === 1) {
-    return '…';
-  }
-
-  return `${value.slice(0, maxWidth - 1)}…`;
 }
 
 export function StatusBar({

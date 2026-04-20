@@ -1,5 +1,6 @@
 import type { Action, AppState, AppProps } from './types';
 import { formatResponseBody } from './formatter';
+import { formatStatusLine } from './responseLayout';
 import { resolveVariables } from './variables';
 import { getRequestContentWidth, getResponseContentWidth } from '../utils/layout';
 import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
@@ -46,7 +47,7 @@ export function getMaxResponseLineWidth(state: AppState): number {
   const lines: string[] = [];
   const res = state.response;
 
-  lines.push(`HTTP/1.1 ${res.statusCode} ${res.statusText}  ${Math.round(res.timing.durationMs)}ms`);
+  lines.push(formatStatusLine(res).map((segment) => segment.text).join(''));
 
   if (state.verbose) {
     for (const [name, value] of Object.entries(res.headers)) {

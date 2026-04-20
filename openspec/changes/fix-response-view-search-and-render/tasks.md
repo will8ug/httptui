@@ -72,19 +72,19 @@
 
 ## 5. Add wrap-mode integration test for search marker placement
 
-- [ ] 5.1 Create `test/integration/response-search-wrap.test.tsx` following the patterns in `test/helpers/integration.tsx`:
+- [x] 5.1 Create `test/integration/response-search-wrap.test.tsx` following the patterns in `test/helpers/integration.tsx`:
   - Render `<App>` with a mocked executor that returns a response containing (a) a verbose header longer than `contentWidth` (e.g., synthetic `x-trace-id` 120 chars) and (b) a body line longer than `contentWidth` before the match line.
   - Press `Enter` to send the request; wait for the response.
   - Press `v` to enable verbose; `w` to enable wrap.
   - Press `/`, type a query matching a known body line, press `Enter`.
   - Assert the `►` character appears on the line whose text contains the search query in `lastFrame()` output. (Use a line-by-line scan of `lastFrame()` to find the `►`-prefixed line and assert it contains the query substring.)
-- [ ] 5.2 Add a negative test: with the same setup but wrap disabled, confirm the marker still lands correctly (regression guard that the refactor didn't break nowrap).
-- [ ] 5.3 Run `npm test` (integration + units); confirm green.
+- [x] 5.2 Add a negative test: with the same setup but wrap disabled, confirm the marker still lands correctly (regression guard that the refactor didn't break nowrap).
+- [x] 5.3 Run `npm test` (integration + units); confirm green.
 
 ## 6. Final verification and cleanup
 
-- [ ] 6.1 Run `npm run build && npm test && npm run lint && npm run format` one last time; confirm all green.
-- [ ] 6.2 Grep the repo for lingering `1 + headerCount + 1` or `headerOffset` scalar arithmetic tied to search — confirm no stale call sites remain.
-- [ ] 6.3 Grep the repo for duplicate `truncateText` / `isJson` / `isJsonString` / status-line template literals — confirm each has exactly one definition and all call sites import it.
-- [ ] 6.4 Manual smoke test: run `httptui` against a sample `.http` file with a long `Set-Cookie`-style header, enable verbose + wrap, run `/foo` against a body value, confirm `►` visually lands on the matching line and `n`/`N` navigate correctly.
-- [ ] 6.5 Run `openspec validate fix-response-view-search-and-render --strict` (or equivalent) to confirm the change is archive-ready.
+- [x] 6.1 Run `npm run build && npm test && npm run lint && npm run format` one last time; confirm all green.
+- [x] 6.2 Grep the repo for lingering `1 + headerCount + 1` or `headerOffset` scalar arithmetic tied to search — confirm no stale call sites remain.
+- [x] 6.3 Grep the repo for duplicate `truncateText` / `isJson` / `isJsonString` / status-line template literals — confirm each has exactly one definition and all call sites import it.
+- [x] 6.4 Manual smoke test: run `httptui` against a sample `.http` file with a long `Set-Cookie`-style header, enable verbose + wrap, run `/foo` against a body value, confirm `►` visually lands on the matching line and `n`/`N` navigate correctly.
+- [x] 6.5 Run `openspec validate fix-response-view-search-and-render --strict` (or equivalent) to confirm the change is archive-ready.
