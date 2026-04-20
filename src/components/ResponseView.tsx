@@ -3,12 +3,12 @@ import { Spinner } from '@inkjs/ui';
 import { Box, Text, useStdout } from 'ink';
 
 import { formatResponseBody } from "../core/formatter";
+import { computeResponseLayout } from '../core/responseLayout';
 import type { RequestError, ResponseData, WrapMode } from '../core/types';
-import { colorizeJson, getStatusColor, isJsonString } from '../utils/colors';
 import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
 import { RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
 import { truncateText } from '../utils/text';
-import { wrapLine, wrapColorizedSegments } from '../utils/wrap';
+import type { ColorSegment } from '../utils/wrap';
 
 interface ResponseViewProps {
   response: ResponseData | null;
@@ -28,58 +28,68 @@ interface ResponseViewProps {
   searchQuery: string;
 }
 
-function shiftLine(line: string, offset: number, maxWidth: number): string {
-  if (offset <= 0) {
-    return line;
+type LineTransform =
+  | { kind: 'pass' }
+  | { kind: 'truncate'; maxWidth: number }
+  | { kind: 'shift'; offset: number; maxWidth: number };
+
+function flattenSegmentText(segments: ColorSegment[]): string {
+  let text = '';
+  for (const segment of segments) {
+    text += segment.text;
   }
+  return text;
+}
 
-  const shifted = line.slice(offset);
-
+function shiftAndTruncate(segments: ColorSegment[], offset: number, maxWidth: number): string {
+  const flat = flattenSegmentText(segments);
+  if (offset <= 0) {
+    return flat;
+  }
+  const shifted = flat.slice(offset);
   return shifted === '' ? ' ' : truncateText(shifted, maxWidth);
 }
 
-function renderJsonLine(line: string, key: string): React.ReactElement {
-  const segments = colorizeJson(line);
+function truncateSegments(segments: ColorSegment[], maxWidth: number): ColorSegment[] {
+  const flat = flattenSegmentText(segments);
+  if (flat.length <= maxWidth) {
+    return segments;
+  }
+  const truncated = truncateText(flat, maxWidth);
+  return [{ text: truncated, color: segments[0]?.color ?? 'white' }];
+}
 
-  if (segments.length === 0) {
+function renderVisualLine(
+  segments: ColorSegment[],
+  transform: LineTransform,
+  key: string,
+): React.ReactElement {
+  if (transform.kind === 'shift') {
+    const displayText = shiftAndTruncate(segments, transform.offset, transform.maxWidth);
+    return <Text key={key}>{displayText}</Text>;
+  }
+
+  const finalSegments = transform.kind === 'truncate'
+    ? truncateSegments(segments, transform.maxWidth)
+    : segments;
+
+  if (finalSegments.length === 0) {
     return <Text key={key}>{' '}</Text>;
+  }
+
+  if (finalSegments.length === 1) {
+    return <Text key={key} color={finalSegments[0].color}>{finalSegments[0].text}</Text>;
   }
 
   return (
     <Text key={key}>
-      {segments.map((segment, index) => (
+      {finalSegments.map((segment, index) => (
         <Text key={`${key}-${index}`} color={segment.color}>
           {segment.text}
         </Text>
       ))}
     </Text>
   );
-}
-
-function renderWrappedJsonLine(
-  segments: Array<{ text: string; color: string }>,
-  contentWidth: number,
-  keyPrefix: string,
-): React.ReactElement[] {
-  const visualLines = wrapColorizedSegments(segments, contentWidth);
-
-  return visualLines.map((lineSegments, lineIndex) => {
-    const lineKey = `${keyPrefix}-w${lineIndex}`;
-
-    if (lineSegments.length === 0) {
-      return <Text key={lineKey}>{' '}</Text>;
-    }
-
-    return (
-      <Text key={lineKey}>
-        {lineSegments.map((segment, segIndex) => (
-          <Text key={`${lineKey}-${segIndex}`} color={segment.color}>
-            {segment.text}
-          </Text>
-        ))}
-      </Text>
-    );
-  });
 }
 
 export function ResponseView({
@@ -117,168 +127,44 @@ export function ResponseView({
     content = <Text color="gray">Press Enter to send a request</Text>;
   } else {
     const formattedBody = formatResponseBody(response.body, rawMode);
-    const isJsonBody = isJsonString(formattedBody);
-    const responseLines: React.ReactNode[] = [];
+    const layout = computeResponseLayout({
+      response,
+      verbose,
+      rawMode,
+      wrapMode,
+      contentWidth,
+      formattedBody,
+    });
 
-    if (wrapMode === 'wrap') {
-      const statusText = `HTTP/1.1 ${response.statusCode} ${response.statusText}  ${Math.round(response.timing.durationMs)}ms`;
+    const transform: LineTransform =
+      wrapMode === 'wrap'
+        ? { kind: 'pass' }
+        : horizontalOffset > 0
+          ? { kind: 'shift', offset: horizontalOffset, maxWidth: contentWidth }
+          : { kind: 'truncate', maxWidth: contentWidth };
 
-      if (statusText.length <= contentWidth) {
-        responseLines.push(
-          <Text key="status">
-            <Text color="gray">HTTP/1.1 </Text>
-            <Text color={getStatusColor(response.statusCode)}>
-              {response.statusCode} {response.statusText}
-            </Text>
-            <Text color="gray">  {Math.round(response.timing.durationMs)}ms</Text>
-          </Text>,
-        );
-      } else {
-        const statusVisualLines = wrapLine(statusText, contentWidth);
-
-        statusVisualLines.forEach((line, index) => {
-          if (index === 0) {
-            responseLines.push(
-              <Text key={`status-w${index}`} color={getStatusColor(response.statusCode)}>
-                {line}
-              </Text>,
-            );
-          } else {
-            responseLines.push(
-              <Text key={`status-w${index}`} color={getStatusColor(response.statusCode)}>
-                {line}
-              </Text>,
-            );
-          }
-        });
+    const responseLines: React.ReactElement[] = [];
+    let visualIndex = 0;
+    for (const section of layout.sections) {
+      for (let i = 0; i < section.visualLines.length; i += 1) {
+        const key = `vl-${visualIndex}`;
+        responseLines.push(renderVisualLine(section.visualLines[i], transform, key));
+        visualIndex += 1;
       }
-
-      if (verbose) {
-        for (const [headerName, headerValue] of Object.entries(response.headers)) {
-          const headerLine = `${headerName}: ${headerValue}`;
-          const headerVisualLines = wrapLine(headerLine, contentWidth);
-
-          headerVisualLines.forEach((line, index) => {
-            responseLines.push(
-              <Text key={`header-${headerName}-w${index}`} color="gray">
-                {line}
-              </Text>,
-            );
-          });
-        }
-      }
-
-      responseLines.push(
-        <Text key="separator" color="gray">
-          {'─'.repeat(contentWidth)}
-        </Text>,
-      );
-
-      const bodyLines = formattedBody.split('\n');
-
-      bodyLines.forEach((line, index) => {
-        if (isJsonBody) {
-          const segments = colorizeJson(line === '' ? ' ' : line);
-          const wrappedLines = renderWrappedJsonLine(segments, contentWidth, `body-${index}`);
-          for (const wrappedLine of wrappedLines) {
-            responseLines.push(wrappedLine);
-          }
-        } else {
-          const visualLines = wrapLine(line === '' ? ' ' : line, contentWidth);
-          visualLines.forEach((visualLine, vIdx) => {
-            responseLines.push(<Text key={`body-${index}-w${vIdx}`}>{visualLine}</Text>);
-          });
-        }
-      });
-    } else if (horizontalOffset > 0) {
-      // Horizontal scroll: must flatten to plain text before shifting, losing per-segment colors
-      const statusText = `HTTP/1.1 ${response.statusCode} ${response.statusText}  ${Math.round(response.timing.durationMs)}ms`;
-      responseLines.push(
-        <Text key="status" color={getStatusColor(response.statusCode)}>
-          {shiftLine(statusText, horizontalOffset, contentWidth)}
-        </Text>,
-      );
-
-      if (verbose) {
-        for (const [headerName, headerValue] of Object.entries(response.headers)) {
-          const headerLine = `${headerName}: ${headerValue}`;
-          responseLines.push(
-            <Text key={`header-${headerName}`} color="gray">
-              {shiftLine(truncateText(headerLine, contentWidth + horizontalOffset), horizontalOffset, contentWidth)}
-            </Text>,
-          );
-        }
-      }
-
-      responseLines.push(
-        <Text key="separator" color="gray">
-          {shiftLine('─'.repeat(contentWidth + horizontalOffset), horizontalOffset, contentWidth)}
-        </Text>,
-      );
-
-      const bodyLines = formattedBody.split('\n');
-
-      bodyLines.forEach((line, index) => {
-        const displayLine = shiftLine(line === '' ? ' ' : line, horizontalOffset, contentWidth);
-        responseLines.push(<Text key={`body-${index}`}>{displayLine}</Text>);
-      });
-    } else {
-      responseLines.push(
-        <Text key="status">
-          <Text color="gray">HTTP/1.1 </Text>
-          <Text color={getStatusColor(response.statusCode)}>
-            {response.statusCode} {response.statusText}
-          </Text>
-          <Text color="gray">  {Math.round(response.timing.durationMs)}ms</Text>
-        </Text>,
-      );
-
-      if (verbose) {
-        for (const [headerName, headerValue] of Object.entries(response.headers)) {
-          responseLines.push(
-            <Text key={`header-${headerName}`} color="gray">
-              {truncateText(`${headerName}: ${headerValue}`, contentWidth)}
-            </Text>,
-          );
-        }
-      }
-
-      responseLines.push(
-        <Text key="separator" color="gray">
-          {'─'.repeat(contentWidth)}
-        </Text>,
-      );
-
-      const bodyLines = formattedBody.split('\n');
-
-      bodyLines.forEach((line, index) => {
-        const displayLine = line === '' ? ' ' : truncateText(line, contentWidth);
-
-        responseLines.push(
-          isJsonBody
-            ? renderJsonLine(displayLine, `body-${index}`)
-            : (
-              <Text key={`body-${index}`}>{displayLine}</Text>
-            ),
-        );
-      });
     }
 
-    const headerCount = verbose && response ? Object.keys(response.headers).length : 0;
-    const headerOffset = 1 + headerCount + 1;
-
     const currentMatchVisualIndex = searchMatches.length > 0
-      ? searchMatches[currentMatchIndex] + headerOffset
+      ? layout.bodyVisualStart[searchMatches[currentMatchIndex]]
       : -1;
-    const matchVisualIndices = new Set(searchMatches.map(i => i + headerOffset));
+    const matchVisualIndices = new Set(searchMatches.map((i) => layout.bodyVisualStart[i]));
 
     const sliced = responseLines.slice(scrollOffset, scrollOffset + visibleHeight);
     content = sliced.map((line, sliceIndex) => {
-      const visualIndex = scrollOffset + sliceIndex;
-      if (matchVisualIndices.has(visualIndex)) {
-        const isCurrent = visualIndex === currentMatchVisualIndex;
+      const absoluteVisualIndex = scrollOffset + sliceIndex;
+      if (matchVisualIndices.has(absoluteVisualIndex)) {
+        const isCurrent = absoluteVisualIndex === currentMatchVisualIndex;
         return (
-          <Box key={`search-${visualIndex}`} flexDirection="row">
+          <Box key={`search-${absoluteVisualIndex}`} flexDirection="row">
             <Text color={isCurrent ? 'cyanBright' : 'gray'}>{isCurrent ? '►' : '·'}</Text>
             {line}
           </Box>

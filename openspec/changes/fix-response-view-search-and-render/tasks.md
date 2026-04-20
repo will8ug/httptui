@@ -55,20 +55,20 @@
 
 ## 4. Collapse `ResponseView` to a single-pipeline renderer
 
-- [ ] 4.1 Inside `ResponseView`, replace the three-branch `if (wrapMode === 'wrap') … else if (horizontalOffset > 0) … else …` body with:
+- [x] 4.1 Inside `ResponseView`, replace the three-branch `if (wrapMode === 'wrap') … else if (horizontalOffset > 0) … else …` body with:
   - Compute `layout = computeResponseLayout({...})` using `formattedBody` and current props.
   - Determine `transform: LineTransform` from (`wrapMode`, `horizontalOffset`): `{kind:'pass'}` in wrap mode; `{kind:'shift', offset, maxWidth}` when `horizontalOffset > 0`; `{kind:'truncate', maxWidth}` otherwise.
   - Flatten `layout.sections.flatMap(s => s.visualLines)` into a single array of `ColorSegment[]`, apply `transform` per visual line, emit one `<Text>` per visual line. Preserve the segmented colors produced by the ledger (this fixes the dead `if (index === 0)` branch — the gray `HTTP/1.1 ` prefix rides along as a segment).
   - For `shift` transform: concatenate segments to a flat string, apply `shiftLine`, re-emit as a single-color `<Text>` (matching today's behavior — horizontal shift intentionally loses per-segment colors, documented in the existing comment).
   - For `truncate` transform: trim each visual line's flat text via `truncateText(contentWidth)`, re-emit with segments preserved when they fit, single-color otherwise.
-- [ ] 4.2 Drive match decoration from the ledger:
+- [x] 4.2 Drive match decoration from the ledger:
   - Build `currentMatchVisualIndex = searchMatches.length > 0 ? layout.bodyVisualStart[searchMatches[currentMatchIndex]] + 0 : -1`.
   - Build `matchVisualIndices = new Set(searchMatches.map(i => layout.bodyVisualStart[i]))`.
   - Preserve the existing `►` / `·` rendering and color choices.
   - Remove the `headerOffset = 1 + headerCount + 1` arithmetic from `ResponseView`.
-- [ ] 4.3 Remove now-unused private helpers `renderJsonLine`, `renderWrappedJsonLine`, `shiftLine` (or move any still-needed variants to `src/utils/wrap.ts` / `src/utils/text.ts` if they're genuinely reused).
-- [ ] 4.4 Keep the 17-prop interface unchanged (non-goal per proposal); only the function body changes.
-- [ ] 4.5 Run full test suite; confirm green. Run `npm run build` to verify tsup output.
+- [x] 4.3 Remove now-unused private helpers `renderJsonLine`, `renderWrappedJsonLine`, `shiftLine` (or move any still-needed variants to `src/utils/wrap.ts` / `src/utils/text.ts` if they're genuinely reused).
+- [x] 4.4 Keep the 17-prop interface unchanged (non-goal per proposal); only the function body changes.
+- [x] 4.5 Run full test suite; confirm green. Run `npm run build` to verify tsup output.
 
 ## 5. Add wrap-mode integration test for search marker placement
 
