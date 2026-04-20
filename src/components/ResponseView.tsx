@@ -4,9 +4,10 @@ import { Box, Text, useStdout } from 'ink';
 
 import { formatResponseBody } from "../core/formatter";
 import type { RequestError, ResponseData, WrapMode } from '../core/types';
-import { colorizeJson, getStatusColor } from '../utils/colors';
+import { colorizeJson, getStatusColor, isJsonString } from '../utils/colors';
 import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
 import { RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
+import { truncateText } from '../utils/text';
 import { wrapLine, wrapColorizedSegments } from '../utils/wrap';
 
 interface ResponseViewProps {
@@ -25,35 +26,6 @@ interface ResponseViewProps {
   isSearchMode: boolean;
   lastSearchQuery: string;
   searchQuery: string;
-}
-
-function truncateText(value: string, maxWidth: number): string {
-  if (maxWidth <= 0) {
-    return '';
-  }
-
-  if (value.length <= maxWidth) {
-    return value;
-  }
-
-  if (maxWidth === 1) {
-    return '…';
-  }
-
-  return `${value.slice(0, maxWidth - 1)}…`;
-}
-
-function isJson(value: string): boolean {
-  if (value.trim() === '') {
-    return false;
-  }
-
-  try {
-    JSON.parse(value);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function shiftLine(line: string, offset: number, maxWidth: number): string {
@@ -145,7 +117,7 @@ export function ResponseView({
     content = <Text color="gray">Press Enter to send a request</Text>;
   } else {
     const formattedBody = formatResponseBody(response.body, rawMode);
-    const isJsonBody = isJson(formattedBody);
+    const isJsonBody = isJsonString(formattedBody);
     const responseLines: React.ReactNode[] = [];
 
     if (wrapMode === 'wrap') {

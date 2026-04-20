@@ -1,20 +1,8 @@
-import { colorizeJson } from './colors';
+import { colorizeJson, isJsonString } from './colors';
 import { getResponseContentWidth } from './layout';
 import { wrapColorizedSegments, wrapLine } from './wrap';
 
 export const RESPONSE_PANEL_VERTICAL_CHROME = 3;
-
-function isJsonString(value: string): boolean {
-  if (value.trim() === '') {
-    return false;
-  }
-  try {
-    JSON.parse(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export function getResponseTotalLines(options: {
   response: { body: string; statusCode: number; statusText: string; headers: Record<string, string>; timing: { durationMs: number } };

@@ -1,15 +1,15 @@
 ## 1. Deduplicate shared helpers (pure code motion)
 
-- [ ] 1.1 Create `src/utils/text.ts` exporting `truncateText(value: string, maxWidth: number): string` with the current implementation (from `ResponseView.tsx`, which is identical to the copy in `RequestList.tsx`).
-- [ ] 1.2 Remove the local `truncateText` from `src/components/ResponseView.tsx`; import from `../utils/text`.
-- [ ] 1.3 Remove the local `truncateText` from `src/components/RequestList.tsx`; import from `../utils/text`.
-- [ ] 1.4 Add `src/utils/text.test.ts` covering: `maxWidth <= 0` → `''`; `value.length <= maxWidth` → `value`; `maxWidth === 1` → `'…'`; normal truncation yields `value.slice(0, maxWidth - 1) + '…'`.
-- [ ] 1.5 Run `npm run build && npm test && npm run lint`; confirm green.
-- [ ] 1.6 Add `isJsonString(value: string): boolean` to `src/utils/colors.ts`, reusing the existing implementation from `src/utils/scroll.ts`.
-- [ ] 1.7 Update `src/utils/scroll.ts` to import and use `isJsonString` from `./colors` (drop the local copy).
-- [ ] 1.8 Remove the `isJson` helper from `src/components/ResponseView.tsx`; import `isJsonString` from `../utils/colors`; update call sites.
-- [ ] 1.9 Add unit tests for `isJsonString` in `test/colors.test.ts` (or wherever JSON-helper tests live): empty/whitespace → `false`, invalid JSON → `false`, valid object/array/primitive JSON → `true`.
-- [ ] 1.10 Run `npm run build && npm test && npm run lint`; confirm green.
+- [x] 1.1 Create `src/utils/text.ts` exporting `truncateText(value: string, maxWidth: number): string` with the current implementation (from `ResponseView.tsx`, which is identical to the copy in `RequestList.tsx`).
+- [x] 1.2 Remove the local `truncateText` from `src/components/ResponseView.tsx`; import from `../utils/text`.
+- [x] 1.3 Remove the local `truncateText` from `src/components/RequestList.tsx`; import from `../utils/text`.
+- [x] 1.4 Add `src/utils/text.test.ts` covering: `maxWidth <= 0` → `''`; `value.length <= maxWidth` → `value`; `maxWidth === 1` → `'…'`; normal truncation yields `value.slice(0, maxWidth - 1) + '…'`.
+- [x] 1.5 Run `npm run build && npm test && npm run lint`; confirm green.
+- [x] 1.6 Add `isJsonString(value: string): boolean` to `src/utils/colors.ts`, reusing the existing implementation from `src/utils/scroll.ts`.
+- [x] 1.7 Update `src/utils/scroll.ts` to import and use `isJsonString` from `./colors` (drop the local copy).
+- [x] 1.8 Remove the `isJson` helper from `src/components/ResponseView.tsx`; import `isJsonString` from `../utils/colors`; update call sites.
+- [x] 1.9 Add unit tests for `isJsonString` in `test/colors.test.ts` (or wherever JSON-helper tests live): empty/whitespace → `false`, invalid JSON → `false`, valid object/array/primitive JSON → `true`.
+- [x] 1.10 Run `npm run build && npm test && npm run lint`; confirm green.
 
 ## 2. Introduce the response-layout ledger
 

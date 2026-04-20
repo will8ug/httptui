@@ -6,6 +6,7 @@ import { getMethodColor } from '../utils/colors';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS } from '../utils/layout';
 import { getRequestContentWidth } from '../utils/layout';
 import { getRequestTarget } from '../utils/request';
+import { truncateText } from '../utils/text';
 
 /** Panel chrome (border top + title + border bottom = 3) + status bar (1) + layout flex rounding (1) */
 const REQUEST_LIST_VERTICAL_OVERHEAD = 5;
@@ -16,22 +17,6 @@ interface RequestListProps {
   focused: boolean;
   scrollOffset: number;
   horizontalOffset: number;
-}
-
-function truncateText(value: string, maxWidth: number): string {
-  if (maxWidth <= 0) {
-    return '';
-  }
-
-  if (value.length <= maxWidth) {
-    return value;
-  }
-
-  if (maxWidth === 1) {
-    return '…';
-  }
-
-  return `${value.slice(0, maxWidth - 1)}…`;
 }
 
 export function RequestList({

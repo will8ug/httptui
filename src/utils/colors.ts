@@ -46,6 +46,19 @@ export function getMethodColor(method: string): string {
   }
 }
 
+export function isJsonString(value: string): boolean {
+  if (value.trim() === '') {
+    return false;
+  }
+
+  try {
+    JSON.parse(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function colorizeJson(json: string): Array<{ text: string; color: string }> {
   if (json.length === 0) {
     return [];
