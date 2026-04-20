@@ -13,18 +13,18 @@
 
 ## 2. Introduce the response-layout ledger
 
-- [ ] 2.1 Create `src/core/responseLayout.ts` with:
+- [x] 2.1 Create `src/core/responseLayout.ts` with:
   - `type VisualSection` discriminated union (`status | header | separator | body`) carrying `visualLines: ColorSegment[][]` (and `rawBodyIndex: number` on body sections).
   - `interface ResponseLayout { sections: VisualSection[]; totalVisualLines: number; bodyStartVisualIndex: number; bodyVisualStart: number[] }`.
   - `formatStatusLine(response: ResponseData): ColorSegment[]` returning the 3-segment structure (gray prefix, status-code color, gray duration suffix).
   - `computeResponseLayout(options: { response: ResponseData; verbose: boolean; rawMode: boolean; wrapMode: WrapMode; contentWidth: number; formattedBody: string }): ResponseLayout` — consumes a pre-formatted body (do NOT call `formatResponseBody` inside).
-- [ ] 2.2 Internal implementation notes for 2.1:
+- [x] 2.2 Internal implementation notes for 2.1:
   - Build status segments via `formatStatusLine`; in `wrap` mode, call `wrapColorizedSegments(segments, contentWidth)` to derive `visualLines`; in `nowrap` mode, emit a single visual line of those segments (consumer handles truncate/shift).
   - For verbose headers, build per-header `ColorSegment[]` in gray and wrap similarly in `wrap` mode; in `nowrap` mode, emit a single visual line of the header segments.
   - Separator is a single visual line of `{text: '─'.repeat(contentWidth), color: 'gray'}`.
   - For each raw body line, in `wrap` mode and `isJsonBody` true: use `colorizeJson(line || ' ')` then `wrapColorizedSegments`. Otherwise `wrapLine(line || ' ', contentWidth)` → single-color segments. In `nowrap` mode emit a single visual line (consumer handles truncate/shift).
   - `bodyVisualStart[i]` = first visual line index of raw body line `i`; `bodyStartVisualIndex` = the visual index where the first body section starts (= sum of visual lines in status + headers + separator).
-- [ ] 2.3 Create `test/responseLayout.test.ts` covering:
+- [x] 2.3 Create `test/responseLayout.test.ts` covering:
   - Nowrap + no-verbose + short body ⇒ `bodyStartVisualIndex === 2`, `bodyVisualStart` equals `[2, 3, 4, …]`, `totalVisualLines === 2 + bodyLines.length`.
   - Nowrap + verbose + N headers ⇒ `bodyStartVisualIndex === 2 + N`.
   - Wrap + short status + short headers + short body ⇒ identical to nowrap case.
@@ -32,8 +32,8 @@
   - Wrap + verbose with one header exceeding `contentWidth` ⇒ header section emits multiple visual lines; `bodyStartVisualIndex` reflects expansion.
   - Wrap + body line 0 longer than `contentWidth` ⇒ `bodyVisualStart[1] - bodyVisualStart[0] > 1`.
   - Public shape snapshot: for a representative input, assert the keys on `ResponseLayout` and the `kind` discriminators on `sections`.
-- [ ] 2.4 Port `getResponseTotalLines` in `src/utils/scroll.ts` to delegate to `computeResponseLayout(...).totalVisualLines`. Keep the exported signature; adjust callers that supply `response.body` vs. the formatted body (`formatResponseBody` called at the layer that has `rawMode`).
-- [ ] 2.5 Run existing `test/scroll.test.ts` (and all others); confirm green. No behavior change expected.
+- [x] 2.4 Port `getResponseTotalLines` in `src/utils/scroll.ts` to delegate to `computeResponseLayout(...).totalVisualLines`. Keep the exported signature; adjust callers that supply `response.body` vs. the formatted body (`formatResponseBody` called at the layer that has `rawMode`).
+- [x] 2.5 Run existing `test/scroll.test.ts` (and all others); confirm green. No behavior change expected.
 
 ## 3. Fix dispatcher / reducer to use ledger-derived visual indices
 

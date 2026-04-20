@@ -1,11 +1,12 @@
-import { colorizeJson, isJsonString } from './colors';
+import { computeResponseLayout } from '../core/responseLayout';
+import type { ResponseForLayout } from '../core/responseLayout';
+import { formatResponseBody } from '../core/formatter';
 import { getResponseContentWidth } from './layout';
-import { wrapColorizedSegments, wrapLine } from './wrap';
 
 export const RESPONSE_PANEL_VERTICAL_CHROME = 3;
 
 export function getResponseTotalLines(options: {
-  response: { body: string; statusCode: number; statusText: string; headers: Record<string, string>; timing: { durationMs: number } };
+  response: ResponseForLayout & { body: string };
   verbose: boolean;
   rawMode: boolean;
   wrapMode: 'nowrap' | 'wrap';
@@ -13,36 +14,16 @@ export function getResponseTotalLines(options: {
 }): number {
   const { response, verbose, rawMode, wrapMode, columns } = options;
   const contentWidth = getResponseContentWidth(columns);
-  const isJsonBody = !rawMode && isJsonString(response.body);
-  const statusText = `HTTP/1.1 ${response.statusCode} ${response.statusText}  ${Math.round(response.timing.durationMs)}ms`;
-
-  if (wrapMode === 'wrap') {
-    let count = statusText.length <= contentWidth ? 1 : wrapLine(statusText, contentWidth).length;
-
-    if (verbose) {
-      for (const [name, value] of Object.entries(response.headers)) {
-        count += wrapLine(`${name}: ${value}`, contentWidth).length;
-      }
-    }
-
-    count += 1;
-
-    for (const line of response.body.split('\n')) {
-      if (isJsonBody) {
-        const segments = colorizeJson(line === '' ? ' ' : line);
-        count += wrapColorizedSegments(segments, contentWidth).length;
-      } else {
-        count += wrapLine(line === '' ? ' ' : line, contentWidth).length;
-      }
-    }
-
-    return count;
-  }
-
-  return 1
-    + (verbose ? Object.keys(response.headers).length : 0)
-    + 1
-    + response.body.split('\n').length;
+  const formattedBody = formatResponseBody(response.body, rawMode);
+  const layout = computeResponseLayout({
+    response,
+    verbose,
+    rawMode,
+    wrapMode,
+    contentWidth,
+    formattedBody,
+  });
+  return layout.totalVisualLines;
 }
 
 export function getDetailsTotalLines(options: {
