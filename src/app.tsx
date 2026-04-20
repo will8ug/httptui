@@ -12,12 +12,43 @@ import { RequestDetailsView } from './components/RequestDetailsView';
 import { ResponseView } from './components/ResponseView';
 import { StatusBar } from './components/StatusBar';
 import { executeRequest, isRequestError } from './core/executor';
+import { formatResponseBody } from './core/formatter';
 import { computeVerticalMaxOffset, createInitialState, reducer } from './core/reducer';
-import type { Action, AppProps, RequestError } from './core/types';
+import { computeResponseLayout } from './core/responseLayout';
+import type { Action, AppProps, AppState, RequestError, ResponseData } from './core/types';
 import { parseHttpFile } from './core/parser';
 import { resolveVariables } from './core/variables';
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight } from './utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getResponseContentWidth } from './utils/layout';
 import { getDetailsTotalLines } from './utils/scroll';
+
+function findMatchIndices(response: ResponseData, rawMode: boolean, query: string): number[] {
+  const formattedBody = formatResponseBody(response.body, rawMode);
+  const bodyLines = formattedBody.split('\n');
+  const queryLower = query.toLowerCase();
+  const matches: number[] = [];
+  for (let i = 0; i < bodyLines.length; i += 1) {
+    if (bodyLines[i].toLowerCase().includes(queryLower)) {
+      matches.push(i);
+    }
+  }
+  return matches;
+}
+
+function getBodyVisualStart(state: AppState, columns: number): number[] | null {
+  if (!state.response) {
+    return null;
+  }
+  const formattedBody = formatResponseBody(state.response.body, state.rawMode);
+  const layout = computeResponseLayout({
+    response: state.response,
+    verbose: state.verbose,
+    rawMode: state.rawMode,
+    wrapMode: state.wrapMode,
+    contentWidth: getResponseContentWidth(columns),
+    formattedBody,
+  });
+  return layout.bodyVisualStart;
+}
 
 function toRequestError(error: unknown): RequestError {
   if (error instanceof Error) {
@@ -153,9 +184,18 @@ export function App(props: AppProps): React.ReactElement {
       }
 
       if (key.return) {
-        const headerOffset = 1 + (state.verbose && state.response ? Object.keys(state.response.headers).length : 0) + 1;
         const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
-        dispatch({ type: 'CONFIRM_SEARCH', headerOffset, maxOffset });
+        let firstMatchVisualIndex: number | undefined;
+        if (state.response && state.searchQuery) {
+          const matches = findMatchIndices(state.response, state.rawMode, state.searchQuery);
+          if (matches.length > 0) {
+            const bodyVisualStart = getBodyVisualStart(state, columns);
+            if (bodyVisualStart) {
+              firstMatchVisualIndex = bodyVisualStart[matches[0]];
+            }
+          }
+        }
+        dispatch({ type: 'CONFIRM_SEARCH', firstMatchVisualIndex, maxOffset });
         return;
       }
 
@@ -222,16 +262,22 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'n' && state.searchMatches.length > 0) {
-      const headerOffset = 1 + (state.verbose && state.response ? Object.keys(state.response.headers).length : 0) + 1;
       const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
-      dispatch({ type: 'NEXT_MATCH', headerOffset, maxOffset });
+      const bodyVisualStart = getBodyVisualStart(state, columns);
+      const nextIndex = (state.currentMatchIndex + 1) % state.searchMatches.length;
+      const targetRawIndex = state.searchMatches[nextIndex];
+      const targetVisualIndex = bodyVisualStart ? bodyVisualStart[targetRawIndex] : targetRawIndex;
+      dispatch({ type: 'NEXT_MATCH', targetVisualIndex, maxOffset });
       return;
     }
 
     if (input === 'N' && state.searchMatches.length > 0) {
-      const headerOffset = 1 + (state.verbose && state.response ? Object.keys(state.response.headers).length : 0) + 1;
       const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
-      dispatch({ type: 'PREV_MATCH', headerOffset, maxOffset });
+      const bodyVisualStart = getBodyVisualStart(state, columns);
+      const prevIndex = (state.currentMatchIndex - 1 + state.searchMatches.length) % state.searchMatches.length;
+      const targetRawIndex = state.searchMatches[prevIndex];
+      const targetVisualIndex = bodyVisualStart ? bodyVisualStart[targetRawIndex] : targetRawIndex;
+      dispatch({ type: 'PREV_MATCH', targetVisualIndex, maxOffset });
       return;
     }
 

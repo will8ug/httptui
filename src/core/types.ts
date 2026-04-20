@@ -123,7 +123,7 @@ export type Action =
   | { type: 'JUMP_HORIZONTAL'; direction: 'start' | 'end'; columns?: number }
   | { type: 'ENTER_SEARCH' }
   | { type: 'UPDATE_SEARCH_INPUT'; value: string }
-  | { type: 'CONFIRM_SEARCH'; headerOffset: number; maxOffset?: number }
+  | { type: 'CONFIRM_SEARCH'; firstMatchVisualIndex?: number; maxOffset?: number }
   | { type: 'CANCEL_SEARCH' }
-  | { type: 'NEXT_MATCH'; headerOffset: number; maxOffset?: number }
-  | { type: 'PREV_MATCH'; headerOffset: number; maxOffset?: number };
+  | { type: 'NEXT_MATCH'; targetVisualIndex: number; maxOffset?: number }
+  | { type: 'PREV_MATCH'; targetVisualIndex: number; maxOffset?: number };

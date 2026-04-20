@@ -117,12 +117,11 @@ export function computeVerticalMaxOffset(
   return undefined;
 }
 
-export function computeSearchScrollOffset(bodyLineIndex: number, headerOffset: number, maxOffset?: number): number {
-  const targetOffset = bodyLineIndex + headerOffset;
+export function computeSearchScrollOffset(visualIndex: number, maxOffset?: number): number {
   if (maxOffset !== undefined) {
-    return Math.min(Math.max(0, targetOffset), maxOffset);
+    return Math.min(Math.max(0, visualIndex), maxOffset);
   }
-  return Math.max(0, targetOffset);
+  return Math.max(0, visualIndex);
 }
 
 export function reducer(state: AppState, action: Action): AppState {
@@ -507,8 +506,8 @@ export function reducer(state: AppState, action: Action): AppState {
         }
       }
 
-      const scrollOffset = matches.length > 0
-        ? computeSearchScrollOffset(matches[0], action.headerOffset, action.maxOffset)
+      const scrollOffset = action.firstMatchVisualIndex !== undefined
+        ? computeSearchScrollOffset(action.firstMatchVisualIndex, action.maxOffset)
         : state.responseScrollOffset;
 
       return {
@@ -533,11 +532,7 @@ export function reducer(state: AppState, action: Action): AppState {
         return state;
       }
       const nextIndex = (state.currentMatchIndex + 1) % state.searchMatches.length;
-      const scrollOffset = computeSearchScrollOffset(
-        state.searchMatches[nextIndex],
-        action.headerOffset,
-        action.maxOffset,
-      );
+      const scrollOffset = computeSearchScrollOffset(action.targetVisualIndex, action.maxOffset);
       return {
         ...state,
         currentMatchIndex: nextIndex,
@@ -550,11 +545,7 @@ export function reducer(state: AppState, action: Action): AppState {
         return state;
       }
       const prevIndex = (state.currentMatchIndex - 1 + state.searchMatches.length) % state.searchMatches.length;
-      const scrollOffset = computeSearchScrollOffset(
-        state.searchMatches[prevIndex],
-        action.headerOffset,
-        action.maxOffset,
-      );
+      const scrollOffset = computeSearchScrollOffset(action.targetVisualIndex, action.maxOffset);
       return {
         ...state,
         currentMatchIndex: prevIndex,

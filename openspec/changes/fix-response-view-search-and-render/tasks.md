@@ -37,21 +37,21 @@
 
 ## 3. Fix dispatcher / reducer to use ledger-derived visual indices
 
-- [ ] 3.1 Change action payloads in `src/core/types.ts`:
+- [x] 3.1 Change action payloads in `src/core/types.ts`:
   - `CONFIRM_SEARCH`: replace `headerOffset: number` with `firstMatchVisualIndex?: number` (undefined when `searchMatches` is empty), keep `maxOffset`.
   - `NEXT_MATCH`: replace `headerOffset: number` with `targetVisualIndex: number`, keep `maxOffset`.
   - `PREV_MATCH`: replace `headerOffset: number` with `targetVisualIndex: number`, keep `maxOffset`.
-- [ ] 3.2 Update `computeSearchScrollOffset` in `src/core/reducer.ts` to accept a `visualIndex: number` directly (rename the first param from `bodyLineIndex` to `visualIndex`); the implementation reduces to `Math.min(Math.max(0, visualIndex), maxOffset ?? visualIndex)` semantics equivalent to today's clamp. Export a second helper only if needed.
-- [ ] 3.3 Update `CONFIRM_SEARCH`, `NEXT_MATCH`, `PREV_MATCH` handlers in `src/core/reducer.ts` to consume the new payloads.
-- [ ] 3.4 Update `src/app.tsx` dispatch sites (lines ~156, ~227, ~232 in the current tree):
+- [x] 3.2 Update `computeSearchScrollOffset` in `src/core/reducer.ts` to accept a `visualIndex: number` directly (rename the first param from `bodyLineIndex` to `visualIndex`); the implementation reduces to `Math.min(Math.max(0, visualIndex), maxOffset ?? visualIndex)` semantics equivalent to today's clamp. Export a second helper only if needed.
+- [x] 3.3 Update `CONFIRM_SEARCH`, `NEXT_MATCH`, `PREV_MATCH` handlers in `src/core/reducer.ts` to consume the new payloads.
+- [x] 3.4 Update `src/app.tsx` dispatch sites (lines ~156, ~227, ~232 in the current tree):
   - Compute `layout = computeResponseLayout({...})` once per relevant effect/callback, gated on `state.response != null`.
   - On `/` Enter (`CONFIRM_SEARCH`): compute matches against `formattedBody` → map matches to visual indices → dispatch `firstMatchVisualIndex = matches.length > 0 ? layout.bodyVisualStart[matches[0]] : undefined`.
   - On `n` / `N`: compute the target raw index from `(currentMatchIndex ± 1) mod matches.length` → dispatch `targetVisualIndex = layout.bodyVisualStart[matches[target]]`.
   - Ensure `contentWidth` is derived consistently with `ResponseView` (use `getResponseContentWidth(stdout.columns || DEFAULT_TERMINAL_COLUMNS)`).
-- [ ] 3.5 Update `test/search.test.ts`:
+- [x] 3.5 Update `test/search.test.ts`:
   - Replace `headerOffset: N` literals in existing tests with `firstMatchVisualIndex: N+offset` / `targetVisualIndex: N+offset` as appropriate; the reducer-only tests keep a simple numeric contract.
   - Add new reducer tests that use `computeResponseLayout` to derive `firstMatchVisualIndex` / `targetVisualIndex` and verify scroll correctness for: wrap + long status; wrap + verbose + long header; wrap + wrapped preceding body line.
-- [ ] 3.6 Run full test suite; confirm green.
+- [x] 3.6 Run full test suite; confirm green.
 
 ## 4. Collapse `ResponseView` to a single-pipeline renderer
 
