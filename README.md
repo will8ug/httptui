@@ -35,6 +35,7 @@ Or
 
 cd <project-folder>
 npm install
+npm run build
 npm link
 
 # npm unlink httptui
