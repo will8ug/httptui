@@ -15,7 +15,7 @@ import { executeRequest, isRequestError } from './core/executor';
 import { formatResponseBody } from './core/formatter';
 import { computeVerticalMaxOffset, createInitialState, reducer } from './core/reducer';
 import { computeResponseLayout } from './core/responseLayout';
-import type { Action, AppProps, AppState, RequestError, ResponseData } from './core/types';
+import type { AppProps, AppState, RequestError, ResponseData } from './core/types';
 import { parseHttpFile } from './core/parser';
 import { resolveVariables } from './core/variables';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getResponseContentWidth } from './utils/layout';
@@ -73,6 +73,7 @@ export function App(props: AppProps): React.ReactElement {
   const selectedRequest = state.requests[state.selectedIndex];
   const detailPanelMaxContent = 10;
   let detailPanelHeight = 0;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
   if (state.showRequestDetails && selectedRequest) {
     const resolved = resolveVariables(selectedRequest, state.variables);
     const totalContentLines = getDetailsTotalLines({
@@ -92,6 +93,7 @@ export function App(props: AppProps): React.ReactElement {
 
     const request = state.requests[state.selectedIndex];
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
     if (!request) {
       return;
     }
@@ -157,7 +159,7 @@ export function App(props: AppProps): React.ReactElement {
             variables: parseResult.variables,
             filePath: resolvedPath,
           });
-          setTimeout(() => dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }), 2000);
+          setTimeout(() => { dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }); }, 2000);
         } catch (error) {
           dispatch({ type: 'SET_FILE_LOAD_ERROR', error: toRequestError(error).message });
         }
@@ -286,7 +288,7 @@ export function App(props: AppProps): React.ReactElement {
         const content = readFileSync(state.filePath, 'utf8');
         const parseResult = parseHttpFile(content);
         dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
-        setTimeout(() => dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }), 2000);
+        setTimeout(() => { dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }); }, 2000);
       } catch (error) {
         dispatch({ type: 'REQUEST_ERROR', error: toRequestError(error) });
       }
@@ -339,6 +341,7 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
     if (state.focusedPanel === 'details' && selectedRequest) {
       const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
       dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
@@ -394,6 +397,7 @@ export function App(props: AppProps): React.ReactElement {
         />
       }
       overlay={state.showHelp ? <HelpOverlay visible={state.showHelp} /> : state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> : undefined}
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
       detailPanel={state.showRequestDetails && selectedRequest ? (
         <RequestDetailsView
           request={selectedRequest}

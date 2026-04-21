@@ -4,7 +4,7 @@ export function formatResponseBody(body: string, raw: boolean): string {
   }
 
   try {
-    const parsed = JSON.parse(body);
+    const parsed: unknown = JSON.parse(body);
     return JSON.stringify(parsed, null, 2);
   } catch {
     return body;

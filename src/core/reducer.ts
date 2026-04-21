@@ -62,6 +62,7 @@ export function getMaxResponseLineWidth(state: AppState): number {
 
 export function getMaxDetailsLineWidth(state: AppState): number {
   const request = state.requests[state.selectedIndex];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
   if (!request) {
     return 0;
   }
@@ -90,6 +91,7 @@ export function computeVerticalMaxOffset(
 ): number | undefined {
   if (state.focusedPanel === 'details') {
     const request = state.requests[state.selectedIndex];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
     if (!request) {
       return undefined;
     }
@@ -324,6 +326,7 @@ export function reducer(state: AppState, action: Action): AppState {
         return { ...state, detailsScrollOffset: Math.max(0, action.maxOffset) };
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- discriminated union narrowing is correct but TS infers always-true
       if (state.focusedPanel === 'response') {
         if (action.direction === 'start') {
           return { ...state, responseScrollOffset: 0 };
@@ -362,6 +365,7 @@ export function reducer(state: AppState, action: Action): AppState {
         return { ...state, detailsHorizontalOffset: maxOffset };
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- discriminated union narrowing is correct but TS infers always-true
       if (state.focusedPanel === 'response') {
         if (action.direction === 'start') {
           return { ...state, responseHorizontalOffset: 0 };
@@ -455,7 +459,7 @@ export function reducer(state: AppState, action: Action): AppState {
         mode: 'normal',
         fileLoadInput: '',
         fileLoadError: null,
-        reloadMessage: `Loaded: ${action.filePath.split('/').pop()}`,
+        reloadMessage: `Loaded: ${action.filePath.split('/').pop() ?? ''}`,
       };
     }
 

@@ -101,6 +101,7 @@ function addHeader(builder: RequestBuilder, line: string): void {
   const previousName = builder.headerNames.get(normalizedName);
 
   if (previousName && previousName !== name) {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- header normalization requires removing old key
     delete builder.headers[previousName];
   }
 
@@ -230,6 +231,7 @@ export function parseHttpFile(content: string): ParseResult {
       continue;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- parser state machine check
     if (state === 'HEADERS' && currentRequest) {
       addHeader(currentRequest, line);
     }

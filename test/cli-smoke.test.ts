@@ -39,6 +39,7 @@ function createTtyPreloadModule(): string {
 }
 
 function stripAnsi(value: string): string {
+  // eslint-disable-next-line no-control-regex -- intentionally matching ANSI escape sequences
   return value.replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, '');
 }
 

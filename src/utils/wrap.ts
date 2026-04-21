@@ -95,6 +95,7 @@ export function wrapColorizedSegments(
       if (sliceText.length > 0) {
         const lastLineSegment = lineSegments[lineSegments.length - 1];
 
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for empty array
         if (lastLineSegment && lastLineSegment.color === segment.color) {
           lastLineSegment.text += sliceText;
         } else {
