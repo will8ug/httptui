@@ -98,8 +98,8 @@ export interface AppProps {
 }
 
 export type Action =
-  | { type: 'SELECT_REQUEST'; index: number }
-  | { type: 'MOVE_SELECTION'; direction: 'up' | 'down' }
+  | { type: 'SELECT_REQUEST'; index: number; rows?: number }
+  | { type: 'MOVE_SELECTION'; direction: 'up' | 'down'; rows?: number }
   | { type: 'SEND_REQUEST' }
   | { type: 'RECEIVE_RESPONSE'; response: ResponseData }
   | { type: 'REQUEST_ERROR'; error: RequestError }
@@ -119,7 +119,7 @@ export type Action =
   | { type: 'TOGGLE_WRAP' }
   | { type: 'TOGGLE_RAW' }
   | { type: 'TOGGLE_REQUEST_DETAILS' }
-  | { type: 'JUMP_VERTICAL'; direction: 'start' | 'end'; maxOffset?: number }
+  | { type: 'JUMP_VERTICAL'; direction: 'start' | 'end'; maxOffset?: number; rows?: number }
   | { type: 'JUMP_HORIZONTAL'; direction: 'start' | 'end'; columns?: number }
   | { type: 'ENTER_SEARCH' }
   | { type: 'UPDATE_SEARCH_INPUT'; value: string }

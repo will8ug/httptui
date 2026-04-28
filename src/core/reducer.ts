@@ -2,23 +2,21 @@ import type { Action, AppState, AppProps } from './types';
 import { formatResponseBody } from './formatter';
 import { formatStatusLine } from './responseLayout';
 import { resolveVariables } from './variables';
-import { getRequestContentWidth, getResponseContentWidth } from '../utils/layout';
+import { DEFAULT_TERMINAL_ROWS, getRequestContentWidth, getRequestVisibleHeight, getResponseContentWidth } from '../utils/layout';
 import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
 import { getRequestTarget } from '../utils/request';
-
-export const REQUEST_SCROLL_WINDOW = 12;
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-export function getVisibleRequestOffset(selectedIndex: number, currentOffset: number): number {
+export function getVisibleRequestOffset(selectedIndex: number, currentOffset: number, visibleCount: number): number {
   if (selectedIndex < currentOffset) {
     return selectedIndex;
   }
 
-  if (selectedIndex >= currentOffset + REQUEST_SCROLL_WINDOW) {
-    return selectedIndex - REQUEST_SCROLL_WINDOW + 1;
+  if (selectedIndex >= currentOffset + visibleCount) {
+    return selectedIndex - visibleCount + 1;
   }
 
   return currentOffset;
@@ -131,11 +129,12 @@ export function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'SELECT_REQUEST': {
       const nextIndex = clamp(action.index, 0, state.requests.length - 1);
+      const visibleCount = getRequestVisibleHeight(action.rows ?? DEFAULT_TERMINAL_ROWS);
 
       return {
         ...state,
         selectedIndex: nextIndex,
-        requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset),
+        requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset, visibleCount),
         requestHorizontalOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
@@ -146,11 +145,12 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'MOVE_SELECTION': {
       const delta = action.direction === 'up' ? -1 : 1;
       const nextIndex = clamp(state.selectedIndex + delta, 0, state.requests.length - 1);
+      const visibleCount = getRequestVisibleHeight(action.rows ?? DEFAULT_TERMINAL_ROWS);
 
       return {
         ...state,
         selectedIndex: nextIndex,
-        requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset),
+        requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset, visibleCount),
         requestHorizontalOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
@@ -306,10 +306,11 @@ export function reducer(state: AppState, action: Action): AppState {
       if (state.focusedPanel === 'requests') {
         const lastIndex = Math.max(0, state.requests.length - 1);
         const nextIndex = action.direction === 'start' ? 0 : lastIndex;
+        const visibleCount = getRequestVisibleHeight(action.rows ?? DEFAULT_TERMINAL_ROWS);
         return {
           ...state,
           selectedIndex: nextIndex,
-          requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset),
+          requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset, visibleCount),
           requestHorizontalOffset: 0,
           detailsScrollOffset: 0,
           detailsHorizontalOffset: 0,

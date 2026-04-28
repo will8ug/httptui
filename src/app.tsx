@@ -302,13 +302,13 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'g') {
-      dispatch({ type: 'JUMP_VERTICAL', direction: 'start' });
+      dispatch({ type: 'JUMP_VERTICAL', direction: 'start', rows });
       return;
     }
 
     if (input === 'G') {
       const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
-      dispatch({ type: 'JUMP_VERTICAL', direction: 'end', maxOffset });
+      dispatch({ type: 'JUMP_VERTICAL', direction: 'end', maxOffset, rows });
       return;
     }
 
@@ -337,7 +337,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (state.focusedPanel === 'requests') {
-      dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down' });
+      dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down', rows });
       return;
     }
 

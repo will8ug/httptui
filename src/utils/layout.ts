@@ -8,6 +8,9 @@ const LEFT_PANEL_MAX_WIDTH = 36;
 const MIN_REQUEST_CONTENT_WIDTH = 10;
 const MIN_RESPONSE_CONTENT_WIDTH = 20;
 
+/** Panel chrome (border top + title + border bottom = 3) + status bar (1) + layout flex rounding (1) */
+export const REQUEST_LIST_VERTICAL_OVERHEAD = 5;
+
 /** Border (1 + 1) + paddingX (1 + 1) for the request list panel */
 const REQUEST_PANEL_CHROME = 4;
 /** Border (1 + 1) + paddingX (1 + 1) for the response panel, plus 2 for adjacent panel border overlap */
@@ -24,6 +27,10 @@ export function getRequestContentWidth(columns: number): number {
 
 export function getResponseContentWidth(columns: number): number {
   return Math.max(MIN_RESPONSE_CONTENT_WIDTH, columns - getLeftPanelWidth(columns) - RESPONSE_PANEL_CHROME);
+}
+
+export function getRequestVisibleHeight(rows: number): number {
+  return Math.max(1, rows - REQUEST_LIST_VERTICAL_OVERHEAD);
 }
 
 export function getDetailPanelHeight(

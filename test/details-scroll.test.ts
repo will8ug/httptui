@@ -54,7 +54,7 @@ describe('request details scrolling reducer behavior', () => {
       const initialState = createInitialState({
         showRequestDetails: true,
         focusedPanel: 'requests',
-        requestScrollOffset: getVisibleRequestOffset(0, 0),
+        requestScrollOffset: getVisibleRequestOffset(0, 0, 19),
       });
 
       const detailsState = reduce(initialState, { type: 'SWITCH_PANEL' });
