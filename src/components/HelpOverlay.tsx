@@ -1,11 +1,26 @@
 import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
-import { SHORTCUTS } from '../core/shortcuts';
+import { SHORTCUTS, SHORTCUT_GROUP_ORDER, SHORTCUT_GROUP_LABELS } from '../core/shortcuts';
+import type { ShortcutGroup } from '../core/shortcuts';
 import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
 
 interface HelpOverlayProps {
   visible: boolean;
+}
+
+function groupShortcutsByGroup(): Map<ShortcutGroup, typeof SHORTCUTS[number][]> {
+  const groups = new Map<ShortcutGroup, typeof SHORTCUTS[number][]>();
+  for (const shortcut of SHORTCUTS) {
+    if (!shortcut.showInHelp) continue;
+    const existing = groups.get(shortcut.group);
+    if (existing) {
+      existing.push(shortcut);
+    } else {
+      groups.set(shortcut.group, [shortcut]);
+    }
+  }
+  return groups;
 }
 
 export function HelpOverlay({ visible }: HelpOverlayProps): React.ReactElement | null {
@@ -16,6 +31,7 @@ export function HelpOverlay({ visible }: HelpOverlayProps): React.ReactElement |
   }
 
   const width = Math.min(72, Math.max(48, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - 6));
+  const grouped = groupShortcutsByGroup();
 
   return (
     <Box width="100%" height="100%" justifyContent="center" alignItems="center">
@@ -32,13 +48,24 @@ export function HelpOverlay({ visible }: HelpOverlayProps): React.ReactElement |
         </Text>
         <Text color="gray">Navigate requests, send them, and inspect responses.</Text>
         <Text>{' '}</Text>
-        {SHORTCUTS.filter((s) => s.showInHelp).map((shortcut) => (
-          <Text key={shortcut.key}>
-            <Text color="yellow">{shortcut.key.padEnd(8, ' ')}</Text>
-            <Text color="white"> {shortcut.description}</Text>
-          </Text>
-        ))}
-        <Text>{' '}</Text>
+        {SHORTCUT_GROUP_ORDER.map((groupKey) => {
+          const shortcuts = grouped.get(groupKey);
+          if (!shortcuts?.length) return null;
+          return (
+            <React.Fragment key={groupKey}>
+              <Text color="cyanBright" bold>
+                {SHORTCUT_GROUP_LABELS[groupKey]}
+              </Text>
+              {shortcuts.map((shortcut) => (
+                <Text key={shortcut.key}>
+                  <Text color="yellow">{shortcut.key.padEnd(8, ' ')}</Text>
+                  <Text color="white"> {shortcut.description}</Text>
+                </Text>
+              ))}
+              <Text>{' '}</Text>
+            </React.Fragment>
+          );
+        })}
         <Text color="gray">Press Escape or ? to close this overlay</Text>
       </Box>
     </Box>
