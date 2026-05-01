@@ -22,7 +22,7 @@ describe('SHORTCUTS registry — edge-jump entries', () => {
   it('contains the `0` entry (jump to horizontal start)', () => {
     const entry = SHORTCUTS.find((s) => s.key === '0');
     expect(entry).toBeDefined();
-    expect(entry?.description).toBe('Jump to horizontal start of focused panel');
+    expect(entry?.description).toBe('Jump to horizontal start');
     expect(entry?.showInBar).toBe(false);
     expect(entry?.showInHelp).toBe(true);
   });
@@ -30,7 +30,7 @@ describe('SHORTCUTS registry — edge-jump entries', () => {
   it('contains the `$` entry (jump to horizontal end)', () => {
     const entry = SHORTCUTS.find((s) => s.key === '$');
     expect(entry).toBeDefined();
-    expect(entry?.description).toBe('Jump to horizontal end of focused panel');
+    expect(entry?.description).toBe('Jump to horizontal end');
     expect(entry?.showInBar).toBe(false);
     expect(entry?.showInHelp).toBe(true);
   });

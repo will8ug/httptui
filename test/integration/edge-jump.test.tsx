@@ -72,8 +72,8 @@ describe('edge-jump integration — help overlay', () => {
 
     expect(frame).toContain('Jump to top of focused panel');
     expect(frame).toContain('Jump to bottom of focused panel');
-    expect(frame).toContain('Jump to horizontal start of focused panel');
-    expect(frame).toContain('Jump to horizontal end of focused panel');
+    expect(frame).toContain('Jump to horizontal start');
+    expect(frame).toContain('Jump to horizontal end');
   });
 });
 

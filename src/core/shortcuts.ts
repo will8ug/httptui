@@ -16,6 +16,11 @@ export const SHORTCUT_GROUP_LABELS: Record<ShortcutGroup, string> = {
   general: 'General',
 };
 
+export const HELP_COLUMN_GROUPS: readonly ShortcutGroup[][] = [
+  ['general', 'navigation'],
+  ['request', 'display', 'search'],
+];
+
 export interface Shortcut {
   key: string;
   label: string;
@@ -39,10 +44,10 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: '→ / l', label: '', description: 'Scroll focused panel right', showInBar: false, showInHelp: true, group: 'navigation' },
   { key: 'g', label: '', description: 'Jump to top of focused panel', showInBar: false, showInHelp: true, group: 'navigation' },
   { key: 'G', label: '', description: 'Jump to bottom of focused panel', showInBar: false, showInHelp: true, group: 'navigation' },
-  { key: '0', label: '', description: 'Jump to horizontal start of focused panel', showInBar: false, showInHelp: true, group: 'navigation' },
-  { key: '$', label: '', description: 'Jump to horizontal end of focused panel', showInBar: false, showInHelp: true, group: 'navigation' },
-  { key: 'r', label: 'Raw', description: 'Toggle raw response mode (no JSON formatting)', showInBar: false, showInHelp: true, group: 'display' },
-  { key: 'w', label: 'Wrap', description: 'Toggle text wrapping in response panel', showInBar: false, showInHelp: true, group: 'display' },
+  { key: '0', label: '', description: 'Jump to horizontal start', showInBar: false, showInHelp: true, group: 'navigation' },
+  { key: '$', label: '', description: 'Jump to horizontal end', showInBar: false, showInHelp: true, group: 'navigation' },
+  { key: 'r', label: 'Raw', description: 'Toggle raw response (no JSON)', showInBar: false, showInHelp: true, group: 'display' },
+  { key: 'w', label: 'Wrap', description: 'Toggle text wrapping', showInBar: false, showInHelp: true, group: 'display' },
   { key: 'd', label: 'Details', description: 'Toggle request details panel', showInBar: false, showInHelp: true, group: 'display' },
   { key: 'R', label: '', description: 'Reload file from disk', showInBar: false, showInHelp: true, group: 'request' },
   { key: '/', label: '', description: 'Search response body', showInBar: false, showInHelp: true, group: 'search' },
