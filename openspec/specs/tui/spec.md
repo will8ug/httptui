@@ -91,35 +91,14 @@ All vertical scroll offsets (`responseScrollOffset`, `detailsScrollOffset`) SHAL
 
 ### Help Overlay
 - Lists all keyboard shortcuts from the centralized `SHORTCUTS` data source (including those not shown in the status bar)
+- Rendered in a two-column grouped layout (see **shortcuts** spec for layout details)
 - Key displayed in yellow (padded to 8 characters), description in white
 - Toggled by pressing `?`
 - Closed by pressing `Escape` or `?` (closes current overlay)
 
 ## Keyboard Shortcuts
 
-| Key | Context | Action |
-|-----|---------|--------|
-| `↑` or `k` | Request list focused | Select previous request |
-| `↓` or `j` | Request list focused | Select next request |
-| `↑` or `k` | Response focused | Scroll response up |
-| `↓` or `j` | Response focused | Scroll response down |
-| `←` or `h` | Any (no overlay) | Scroll focused panel left |
-| `→` or `l` | Any (no overlay) | Scroll focused panel right |
-| `g` | Any (no overlay) | Jump to top of focused panel |
-| `G` | Any (no overlay) | Jump to bottom of focused panel |
-| `0` | Any (no overlay) | Jump to horizontal start of focused panel |
-| `$` | Any (no overlay) | Jump to horizontal end of focused panel |
-| `Enter` | Any | Send currently selected request |
-| `Tab` | Any | Switch focus between panels |
-| `v` | Any | Toggle verbose mode (show/hide headers) |
-| `r` | Any (no overlay) | Toggle raw response mode (no JSON formatting) |
-| `w` | Any (no overlay) | Toggle text wrapping in response panel |
-| `R` | Any | Reload file from disk |
-| `o` | Any | Open a different .http file |
-| `?` | Any | Toggle help overlay |
-| `q` | Any (no overlay) | Quit application |
-| `Escape` | Help overlay open | Close current overlay |
-| `Escape` | File-load overlay open | Close current overlay |
+Keyboard shortcuts are defined in the centralized `SHORTCUTS` registry (`src/core/shortcuts.ts`). See the **shortcuts** spec for the full shortcut catalog and rendering rules. For navigation-specific keybindings (scrolling, edge-jump, Tab focus cycling), see the **navigation** spec.
 
 ## States
 
@@ -133,15 +112,11 @@ All vertical scroll offsets (`responseScrollOffset`, `detailsScrollOffset`) SHAL
 ### Focus States
 - **Request list focused**: bordered with accent color, keyboard controls list
 - **Response focused**: bordered with accent color, keyboard controls scroll
+- **Details focused**: bordered with accent color (see **request-details** spec for full details panel behavior)
+- Focus cycling (Tab) behavior: see **navigation** spec
 
-### Horizontal Scroll States
-- Both panels track a `horizontalOffset` (default `0`) that shifts content left by that many characters
-- `requestHorizontalOffset` resets to `0` on `SELECT_REQUEST` and `MOVE_SELECTION`
-- `responseHorizontalOffset` resets to `0` on `SEND_REQUEST`
-- When `horizontalOffset` is `0`, rendering is identical to current behavior (colors preserved)
-- When `horizontalOffset` is greater than `0`, colored content is flattened to plain text and shifted
-- When `wrapMode` is `'wrap'`, `horizontalOffset` is treated as `0` and `←`/`→`/`h`/`l` do not scroll the response panel horizontally
-- Vertical scroll offsets (`responseScrollOffset`, `detailsScrollOffset`) are also clamped to an upper bound computed from content lines and visible height, using the same two-way clamp pattern applied to horizontal offsets. This replaces the previous behavior where vertical offsets were only clamped to the lower bound (`≥ 0`).
+### Navigation States
+Horizontal and vertical scroll offset tracking and clamping are delegated to the **navigation** spec. The TUI spec only defines the _visible consequences_: panels support scrolling when content exceeds visible area, and navigation keys change which portion of content is displayed.
 
 ## Startup
 

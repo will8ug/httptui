@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: ESLint Configuration
+
+## Purpose
+
+ESLint flat config (`eslint.config.js`) providing TypeScript-aware linting with React/Ink rules, Prettier compatibility, and test file rule overrides.
+
+## Requirements
 
 ### Requirement: ESLint flat config file exists and is valid
 The project SHALL contain an `eslint.config.js` file at the project root using the ESLint flat config format with `export default`. The config SHALL be valid ESM (compatible with the project's `"type": "module"`).

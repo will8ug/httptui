@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Response Search
+
+## Purpose
+
+Search within the response body via `/` key, with case-insensitive matching, match navigation (`n`/`N`), and an inline search bar with position indicators.
+
+## Requirements
 
 ### Requirement: Enter search mode with `/` key
 The system SHALL enter search mode when the user presses `/` in normal mode. Search mode SHALL only be enterable when the response panel has a response (i.e., `state.response` is not null). Upon entering search mode, the focused panel SHALL be set to `response` and the search query SHALL be initialized to an empty string.
