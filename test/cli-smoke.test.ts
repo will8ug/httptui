@@ -68,11 +68,18 @@ function runCli(args: string[], timeoutMs = 2_000): Promise<CliRunResult> {
   });
 }
 
+type InteractiveCliOptions = {
+  killAfterMs?: number;
+  forceKillAfterMs?: number;
+  waitForStderr?: string;
+};
+
 function runInteractiveCliWithKill(
   args: string[],
-  killAfterMs = 500,
-  forceKillAfterMs = 2_000,
+  options: InteractiveCliOptions = {},
 ): Promise<KilledCliRunResult> {
+  const { killAfterMs = 500, forceKillAfterMs = 2_000, waitForStderr } = options;
+
   return new Promise((resolve) => {
     const child = spawn(nodeExecutable, ['--import', ttyPreloadModule, builtCliRelativePath, ...args], {
       cwd: projectRoot,
@@ -82,14 +89,19 @@ function runInteractiveCliWithKill(
     let stdout = '';
     let stderr = '';
     let wasAliveAtKill = false;
+    let killTimer: ReturnType<typeof setTimeout> | undefined;
 
-    const killTimer = setTimeout(() => {
+    const performKill = (): void => {
       wasAliveAtKill = child.exitCode === null && !child.killed;
 
       if (wasAliveAtKill) {
         child.kill('SIGTERM');
       }
-    }, killAfterMs);
+    };
+
+    if (!waitForStderr) {
+      killTimer = setTimeout(performKill, killAfterMs);
+    }
 
     const forceKillTimer = setTimeout(() => {
       if (child.exitCode === null && !child.killed) {
@@ -103,10 +115,14 @@ function runInteractiveCliWithKill(
 
     child.stderr.on('data', (data: Buffer) => {
       stderr += data.toString();
+
+      if (waitForStderr && stderr.includes(waitForStderr)) {
+        performKill();
+      }
     });
 
     child.on('close', (code, signal) => {
-      clearTimeout(killTimer);
+      if (killTimer) clearTimeout(killTimer);
       clearTimeout(forceKillTimer);
       resolve({ code, stdout, stderr, signal, wasAliveAtKill });
     });
@@ -137,7 +153,9 @@ describe('CLI smoke tests', { timeout: 10_000 }, () => {
   });
 
   it('prints the insecure warning to stderr', async () => {
-    const result = await runInteractiveCliWithKill(['--insecure', 'examples/basic.http']);
+    const result = await runInteractiveCliWithKill(['--insecure', 'examples/basic.http'], {
+      waitForStderr: 'TLS certificate verification disabled',
+    });
 
     expect(result.wasAliveAtKill).toBe(true);
     expect(stripAnsi(result.stderr)).toContain('TLS certificate verification disabled');
