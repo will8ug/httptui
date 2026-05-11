@@ -1,14 +1,19 @@
+@baseUrl = http://localhost:10001
+
+### Mock 400 from Nginx
+GET {{baseUrl}}/nginx-400
+
 ### Mock 502 from Nginx
-GET http://localhost:10001/nginx-502
+GET {{baseUrl}}/nginx-502
 
 ### Mock 503 response with CRLF
-GET http://localhost:10001/nginx-503-crlf
+GET {{baseUrl}}/nginx-503-crlf
 
 ### Raw json response
-GET http://localhost:10001/raw-json-simple
+GET {{baseUrl}}/raw-json-simple
 
 ### Request with Large Body
-POST http://localhost:10001/non-exist-req
+POST {{baseUrl}}/non-exist-req
 
 {
   "name": "John Doe",
@@ -21,31 +26,31 @@ POST http://localhost:10001/non-exist-req
 }
 
 ### Make a long list below (larger than 13 requests)
-GET http://localhost:10001/ping
+GET {{baseUrl}}/ping
 
 ### 002
-GET http://localhost:10001/ping
+GET {{baseUrl}}/ping
 
 ### 003
-GET http://localhost:10001/ping
+GET {{baseUrl}}/ping
 
 ### 004
-GET http://localhost:10001/ping
+GET {{baseUrl}}/ping
 
 ### 005
-GET http://localhost:10001/ping
+GET {{baseUrl}}/ping
 
 ### 006
-GET http://localhost:10001/ping
+GET {{baseUrl}}/ping
 
 ### 007
-GET http://localhost:10001/ping
+GET {{baseUrl}}/ping
 
 ### 008
-GET http://localhost:10001/ping
+GET {{baseUrl}}/ping
 
 ### 009
-GET http://localhost:10001/ping
+GET {{baseUrl}}/ping
 
 ### 010
-GET http://localhost:10001/ping
+GET {{baseUrl}}/ping
