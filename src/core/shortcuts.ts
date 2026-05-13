@@ -1,13 +1,5 @@
 export type ShortcutGroup = 'navigation' | 'request' | 'display' | 'search' | 'general';
 
-export const SHORTCUT_GROUP_ORDER: readonly ShortcutGroup[] = [
-  'navigation',
-  'request',
-  'display',
-  'search',
-  'general',
-];
-
 export const SHORTCUT_GROUP_LABELS: Record<ShortcutGroup, string> = {
   navigation: 'Navigation',
   request: 'Request',
