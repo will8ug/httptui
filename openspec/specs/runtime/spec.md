@@ -8,43 +8,47 @@ Declares the Node.js runtime requirements for httptui: the minimum supported run
 
 ### Requirement: Minimum Node.js runtime version
 
-The project SHALL declare Node.js 20 as its minimum supported runtime version. The `engines.node` field in `package.json` SHALL be set to `">=20"`. Node.js 18 SHALL no longer be supported.
+The project SHALL declare Node.js 24 as its minimum supported runtime version. The `engines.node` field in `package.json` SHALL be set to `">=24"`. Node.js 20 and 22 SHALL no longer be supported.
 
-#### Scenario: package.json declares Node 20 as the minimum
+#### Scenario: package.json declares Node 24 as the minimum
 - **WHEN** `package.json` is read
-- **THEN** the `engines.node` field SHALL equal `">=20"` (or an equivalent range that excludes all versions below 20.0.0)
+- **THEN** the `engines.node` field SHALL equal `">=24"` (or an equivalent range that excludes all versions below 24.0.0)
 
-#### Scenario: Installing on Node 18 produces an npm engines warning
-- **WHEN** a user runs `npm install -g httptui` on a Node.js 18.x runtime
+#### Scenario: Installing on Node 22 produces an npm engines warning
+- **WHEN** a user runs `npm install -g httptui` on a Node.js 22.x runtime
 - **THEN** npm SHALL emit an `EBADENGINE` warning indicating the installed Node version does not satisfy the declared engines requirement
 
-#### Scenario: Installing on Node 20 or newer succeeds without engines warnings
-- **WHEN** a user runs `npm install -g httptui` on Node.js 20.0.0 or any newer release
+#### Scenario: Installing on Node 24 or newer succeeds without engines warnings
+- **WHEN** a user runs `npm install -g httptui` on Node.js 24.0.0 or any newer release
 - **THEN** npm SHALL NOT emit an `EBADENGINE` warning for httptui's declared engines
 
 ### Requirement: Build target matches minimum runtime
 
-The build tool SHALL emit JavaScript compatible with the declared minimum Node.js version. The `target` field in `tsup.config.ts` SHALL be set to `node20` so emitted code may use syntax and APIs available in Node 20+ but not in Node 18.
+The build tool SHALL emit JavaScript compatible with the declared minimum Node.js version. The `target` field in `tsup.config.ts` SHALL be set to `node24` so emitted code may use syntax and APIs available in Node 24+.
 
 #### Scenario: tsup target aligns with engines floor
 - **WHEN** `tsup.config.ts` is read
-- **THEN** the `target` option SHALL equal `"node20"`
+- **THEN** the `target` option SHALL equal `"node24"`
 
-#### Scenario: Build produces output runnable on Node 20
-- **WHEN** `npm run build` completes successfully on a Node 20+ developer environment
-- **THEN** `dist/cli.js` SHALL execute without syntax errors on Node 20 (verified by the existing `test/cli-smoke.test.ts` smoke test)
+#### Scenario: Build produces output runnable on Node 24
+- **WHEN** `npm run build` completes successfully on a Node 24+ developer environment
+- **THEN** `dist/cli.js` SHALL execute without syntax errors on Node 24 (verified by the existing `test/cli-smoke.test.ts` smoke test)
+
+### Requirement: TypeScript compilation target
+
+The TypeScript configuration SHALL target ES2024 to allow the use of ES2024 syntax features (`Object.groupBy`, `Promise.withResolvers`, `Array.fromAsync`) without downleveling. The `target` field in `tsconfig.json` SHALL be set to `"ES2024"`.
+
+#### Scenario: tsconfig target is ES2024
+- **WHEN** `tsconfig.json` is read
+- **THEN** the `compilerOptions.target` field SHALL equal `"ES2024"`
 
 ### Requirement: Documentation advertises the supported runtime
 
-User-facing and contributor-facing documentation SHALL state that Node.js 20 or newer is required. Specifically, `README.md` SHALL contain a "Requirements" (or equivalently-named) section listing the minimum Node.js version, and `AGENTS.md` SHALL state the same minimum in its environment/prerequisites notes.
+User-facing documentation SHALL state that Node.js 24 or newer is required. Specifically, `README.md` SHALL contain a "Requirements" (or equivalently-named) section listing the minimum Node.js version.
 
-#### Scenario: README lists Node 20 as the minimum
+#### Scenario: README lists Node 24 as the minimum
 - **WHEN** a user reads `README.md`
-- **THEN** the document SHALL state that Node.js 20 or newer is required to install and run httptui
-
-#### Scenario: AGENTS.md lists Node 20 as the minimum
-- **WHEN** a contributor reads `AGENTS.md`
-- **THEN** the document SHALL state "Node ≥20 required" (or equivalent) in place of the previous "Node ≥18 required" note
+- **THEN** the document SHALL state that Node.js 24 or newer is required to install and run httptui
 
 ## MODIFIED Requirements (refactor-test-reducer-extraction)
 

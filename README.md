@@ -18,7 +18,7 @@ httptui is a fast, keyboard-driven REST client that lives in your terminal. It p
 
 ## Requirements
 
-- **Node.js 20 or newer.** httptui declares `engines.node: ">=20"`; installing on older Node versions will trigger an `EBADENGINE` warning from npm and is not supported.
+- **Node.js 24 or newer.** httptui declares `engines.node: ">=24"`; installing on older Node versions will trigger an `EBADENGINE` warning from npm and is not supported.
 
 ## Installation
 
@@ -168,29 +168,21 @@ DELETE https://jsonplaceholder.typicode.com/users/1
 
 ## TLS Troubleshooting
 
-If you encounter certificate errors like `UNABLE_TO_VERIFY_LEAF_SIGNATURE` or `SELF_SIGNED_CERT_IN_CHAIN`, try these solutions in order:
+httptui loads system CA certificates by default. This means certificates from your OS certificate store (macOS Keychain, Windows Certificate Store, Linux OpenSSL directories) are trusted automatically — the same behavior as browsers and VS Code REST Client.
 
-### 1. Use system CA certificates (Node.js 23.8+)
+If you still encounter certificate errors like `UNABLE_TO_VERIFY_LEAF_SIGNATURE` or `SELF_SIGNED_CERT_IN_CHAIN`, try these solutions:
 
-If your Node.js version is 23.8 or later, pass the `--use-system-ca` flag via `NODE_OPTIONS`:
+### 1. Point to your CA certificate file
 
-```bash
-NODE_OPTIONS=--use-system-ca httptui api.http
-```
-
-This tells Node.js to trust certificates from your OS certificate store (macOS Keychain, Windows Certificate Store, etc.), which is the same behavior as browsers and VS Code REST Client.
-
-### 2. Point to your CA certificate file
-
-If you have a custom CA certificate (e.g., from a corporate proxy), use `NODE_EXTRA_CA_CERTS`:
+If you have a custom CA certificate not in your OS store (e.g., a self-signed dev cert), use `NODE_EXTRA_CA_CERTS`:
 
 ```bash
 NODE_EXTRA_CA_CERTS=/path/to/your-ca.pem httptui api.http
 ```
 
-This works with all Node.js versions. The file should be PEM-encoded and can contain multiple certificates.
+The file should be PEM-encoded and can contain multiple certificates.
 
-### 3. Skip certificate verification (not recommended)
+### 2. Skip certificate verification (not recommended)
 
 As a last resort, disable TLS verification entirely:
 
@@ -200,6 +192,22 @@ httptui -k api.http
 ```
 
 **Warning**: This disables all certificate checks, making connections vulnerable to man-in-the-middle attacks. Use only for local development or trusted networks.
+
+### Disabling system CA loading
+
+If you need to revert to Node.js's default bundled CA list (e.g., for reproducible CI environments), opt out with:
+
+```bash
+NODE_USE_SYSTEM_CA=0 httptui api.http
+```
+
+### OpenSSL 3.5 restrictions (Node.js 24+)
+
+Node.js 24 ships OpenSSL 3.5 with security level 2 by default. This means:
+- **RSA, DSA, and DH keys shorter than 2048 bits are rejected.**
+- **RC4 cipher suites are prohibited.**
+
+If you connect to a legacy server with weak certificates, you may see new TLS errors that didn't occur on earlier Node.js versions. The fix is to upgrade the server's certificates to use at least 2048-bit RSA keys.
 
 ## Tech Stack
 
