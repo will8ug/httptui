@@ -25,7 +25,7 @@ POST {{baseUrl}}/non-exist-req
   "Hobit": "Coding"
 }
 
-### Make a long list below (larger than 13 requests)
+### Make a long list below (more than 13 requests)
 GET {{baseUrl}}/ping
 
 ### 002
