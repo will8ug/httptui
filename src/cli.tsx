@@ -50,7 +50,9 @@ if (insecure) {
 }
 
 try {
-  tls.setDefaultCACertificates(tls.getCACertificates('system'));
+  const bundled = tls.getCACertificates('bundled');
+  const system = tls.getCACertificates('system');
+  tls.setDefaultCACertificates([...bundled, ...system]);
 } catch {
   // Silently fall back to bundled CAs
 }
