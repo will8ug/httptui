@@ -8,7 +8,7 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   banner: {
-    js: '#!/usr/bin/env node\nprocess.env.NODE_USE_SYSTEM_CA ??= "1";',
+    js: '#!/usr/bin/env node',
   },
   external: ['react', 'ink', '@inkjs/ui', 'undici'],
 });

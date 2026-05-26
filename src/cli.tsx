@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import tls from 'node:tls';
 
 import { render } from 'ink';
 
@@ -46,6 +47,12 @@ if (process.stdout.isTTY) {
 
 if (insecure) {
   process.stderr.write('\x1b[33m⚠ TLS certificate verification disabled (--insecure)\x1b[0m\n');
+}
+
+try {
+  tls.setDefaultCACertificates(tls.getCACertificates('system'));
+} catch {
+  // Silently fall back to bundled CAs
 }
 
 const app = render(

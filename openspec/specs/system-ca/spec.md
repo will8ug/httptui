@@ -7,21 +7,20 @@ Declares how httptui loads operating-system CA certificates by default, eliminat
 ## Requirements
 
 ### Requirement: System CA certificates loaded by default
-httptui SHALL set `NODE_USE_SYSTEM_CA=1` in the process environment before any TLS connections are made. This causes Node.js to load certificates from the operating system's CA certificate store (macOS Keychain, Windows Certificate Store, Linux OpenSSL directories) automatically, eliminating TLS verification failures for users behind corporate proxies or with locally-installed root CAs.
+httptui SHALL load system CA certificates at runtime via `tls.setDefaultCACertificates(tls.getCACertificates('system'))`, called once during startup before any HTTP requests are made. This causes Node.js to use certificates from the operating system's CA certificate store (macOS Keychain, Windows Certificate Store, Linux OpenSSL directories) for all TLS connections, eliminating TLS verification failures for users behind corporate proxies or with locally-installed root CAs. If the call fails (e.g., OS certificate store is inaccessible), httptui SHALL silently fall back to Node.js's default bundled CA certificates.
 
 #### Scenario: Corporate proxy CA is trusted without user action
 - **WHEN** a user runs `httptui api.http` on a system with a corporate proxy CA installed in the OS certificate store
-- **AND** the user has NOT set any `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA` environment variables
 - **THEN** HTTPS requests to endpoints using the corporate proxy CA SHALL succeed without certificate errors
 
-#### Scenario: dist/cli.js contains the env var setup
-- **WHEN** `dist/cli.js` is examined after `npm run build`
-- **THEN** the file SHALL contain `process.env.NODE_USE_SYSTEM_CA ??= "1"` on the line immediately after the shebang
+#### Scenario: cli.tsx calls tls.setDefaultCACertificates at startup
+- **WHEN** `src/cli.tsx` is examined after the change
+- **THEN** it SHALL contain a call to `tls.setDefaultCACertificates(tls.getCACertificates('system'))` before the application starts rendering
+- **AND** the call SHALL be wrapped in a try/catch that silently ignores errors
 
-#### Scenario: User can opt out of system CA loading
-- **WHEN** a user runs `NODE_USE_SYSTEM_CA=0 httptui api.http`
-- **THEN** Node.js SHALL NOT load system CA certificates (reverting to Node's default bundled CA list)
-- **AND** requests to endpoints requiring system CAs SHALL fail with a certificate error
+#### Scenario: dist/cli.js does NOT contain NODE_USE_SYSTEM_CA env var setup
+- **WHEN** `dist/cli.js` is examined after `npm run build`
+- **THEN** the file SHALL NOT contain `process.env.NODE_USE_SYSTEM_CA` in the banner (first two lines)
 
 ### Requirement: OpenSSL 3.5 behavior documented
 The README SHALL document that Node.js 24 ships OpenSSL 3.5 with security level 2, which rejects RSA/DSA/DH keys shorter than 2048 bits and prohibits RC4 cipher suites. This affects connections to legacy servers with weak certificates.

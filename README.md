@@ -193,14 +193,6 @@ httptui -k api.http
 
 **Warning**: This disables all certificate checks, making connections vulnerable to man-in-the-middle attacks. Use only for local development or trusted networks.
 
-### Disabling system CA loading
-
-If you need to revert to Node.js's default bundled CA list (e.g., for reproducible CI environments), opt out with:
-
-```bash
-NODE_USE_SYSTEM_CA=0 httptui api.http
-```
-
 ### OpenSSL 3.5 restrictions (Node.js 24+)
 
 Node.js 24 ships OpenSSL 3.5 with security level 2 by default. This means:
