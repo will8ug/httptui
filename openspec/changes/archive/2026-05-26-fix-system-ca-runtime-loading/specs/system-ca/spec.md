@@ -1,10 +1,4 @@
-# Spec: System CA
-
-## Purpose
-
-Declares how httptui loads operating-system CA certificates by default, eliminating TLS friction for users behind corporate proxies or with locally-installed root CAs. Also documents Node.js 24's OpenSSL 3.5 security defaults.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: System CA certificates loaded by default
 httptui SHALL load system CA certificates at runtime by merging Node.js's bundled Mozilla CA certificates with OS-level certificates via `tls.setDefaultCACertificates([...tls.getCACertificates('bundled'), ...tls.getCACertificates('system')])`, called once during startup before any HTTP requests are made. This ensures both standard internet root CAs (Mozilla bundle) and locally-installed CAs (macOS Keychain, Windows Certificate Store, Linux OpenSSL directories) are trusted, eliminating TLS verification failures for users behind corporate proxies without breaking connections to public endpoints. If the call fails (e.g., OS certificate store is inaccessible), httptui SHALL silently fall back to Node.js's default bundled CA certificates.
@@ -22,10 +16,8 @@ httptui SHALL load system CA certificates at runtime by merging Node.js's bundle
 - **WHEN** `dist/cli.js` is examined after `npm run build`
 - **THEN** the file SHALL NOT contain `process.env.NODE_USE_SYSTEM_CA` in the banner (first two lines)
 
-### Requirement: OpenSSL 3.5 behavior documented
-The README SHALL document that Node.js 24 ships OpenSSL 3.5 with security level 2, which rejects RSA/DSA/DH keys shorter than 2048 bits and prohibits RC4 cipher suites. This affects connections to legacy servers with weak certificates.
+## REMOVED Requirements
 
-#### Scenario: README mentions OpenSSL 3.5 restrictions
-- **WHEN** a user reads the TLS Troubleshooting section of `README.md`
-- **THEN** the document SHALL mention that RSA keys shorter than 2048 bits are rejected by Node.js 24's OpenSSL 3.5 defaults
-- **AND** the document SHALL mention that RC4 cipher suites are prohibited
+### Requirement: User can opt out of system CA loading
+**Reason**: The `NODE_USE_SYSTEM_CA=0` opt-out was tied to the env var mechanism which does not work. With programmatic loading via `tls.setDefaultCACertificates`, there is no env var to unset. Users who need to skip certificate verification can use the existing `--insecure` flag.
+**Migration**: Use `httptui --insecure` (or `-k`) to disable TLS certificate verification entirely.
