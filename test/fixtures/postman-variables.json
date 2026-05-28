@@ -1,0 +1,60 @@
+{
+  "info": {
+    "name": "Variables Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Resource",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}"]
+        },
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ]
+      }
+    },
+    {
+      "name": "Submit Form",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "{{baseUrl}}/submit" },
+        "header": [
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "name", "value": "Alice" },
+            { "key": "email", "value": "alice@example.com" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "API Key Auth",
+      "request": {
+        "auth": {
+          "type": "apikey",
+          "apikey": [
+            { "key": "key", "value": "X-API-Key" },
+            { "key": "value", "value": "secret-api-key" },
+            { "key": "in", "value": "header" }
+          ]
+        },
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/secure" },
+        "header": []
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "https://api.example.com" },
+    { "key": "userId", "value": "42" },
+    { "key": "token", "value": "{{$guid}}" }
+  ]
+}

@@ -17,6 +17,7 @@ import { computeVerticalMaxOffset, createInitialState, reducer } from './core/re
 import { computeResponseLayout } from './core/responseLayout';
 import type { AppProps, AppState, RequestError, ResponseData } from './core/types';
 import { parseHttpFile } from './core/parser';
+import { detectFormat, parsePostmanCollection } from './core/postman-parser';
 import { resolveVariables } from './core/variables';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getResponseContentWidth } from './utils/layout';
 import { getDetailsTotalLines } from './utils/scroll';
@@ -146,7 +147,10 @@ export function App(props: AppProps): React.ReactElement {
 
         try {
           const content = readFileSync(resolvedPath, 'utf8');
-          const parseResult = parseHttpFile(content);
+          const parseResult =
+            detectFormat(resolvedPath, content) === 'postman'
+              ? parsePostmanCollection(content)
+              : parseHttpFile(content);
 
           if (parseResult.requests.length === 0) {
             dispatch({ type: 'SET_FILE_LOAD_ERROR', error: `No requests found in ${inputPath}` });
@@ -286,7 +290,10 @@ export function App(props: AppProps): React.ReactElement {
     if (input === 'R') {
       try {
         const content = readFileSync(state.filePath, 'utf8');
-        const parseResult = parseHttpFile(content);
+        const parseResult =
+          detectFormat(state.filePath, content) === 'postman'
+            ? parsePostmanCollection(content)
+            : parseHttpFile(content);
         dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
         setTimeout(() => { dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }); }, 2000);
       } catch (error) {

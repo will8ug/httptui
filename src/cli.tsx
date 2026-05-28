@@ -6,6 +6,8 @@ import { render } from 'ink';
 import { App } from './app';
 import { parseArgs } from './args';
 import { parseHttpFile } from './core/parser';
+import { detectFormat, parsePostmanCollection } from './core/postman-parser';
+import type { ParseResult } from './core/types';
 
 function exitWithError(message: string): never {
   console.error(message);
@@ -23,7 +25,10 @@ if (!existsSync(filePath)) {
 }
 
 const content = readFileSync(filePath, 'utf8');
-const parseResult = parseHttpFile(content);
+const parseResult: ParseResult =
+  detectFormat(filePath, content) === 'postman'
+    ? parsePostmanCollection(content)
+    : parseHttpFile(content);
 
 if (parseResult.requests.length === 0) {
   exitWithError(`No requests found in ${filePath}`);

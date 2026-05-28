@@ -30,6 +30,7 @@
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "ink": "^6.0.0",
+    "postman-collection": "^4.5.0",
     "react": "^19.0.0",
     "undici": "^7.0.0"
   },
