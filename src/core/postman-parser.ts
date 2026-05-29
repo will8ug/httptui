@@ -142,9 +142,9 @@ function convertBody(item: any): string | undefined {
     const mode = body.mode;
 
     if (mode === 'raw') {
-      const raw = body.raw;
+      const normalizedContent = body.raw.replace(/\r\n|\r/g, '\n');
 
-      return raw && raw.length > 0 ? raw : undefined;
+      return normalizedContent && normalizedContent.length > 0 ? normalizedContent : undefined;
     }
 
     if (mode === 'urlencoded') {
@@ -181,7 +181,8 @@ function convertBody(item: any): string | undefined {
 
     // unknown body mode — best effort: try raw
     if (body.raw && body.raw.length > 0) {
-      return body.raw;
+      const normalizedContent = body.raw.replace(/\r\n|\r/g, '\n');
+      return normalizedContent && normalizedContent.length > 0 ? normalizedContent : undefined;
     }
   } catch {
     // body parsing is best-effort
