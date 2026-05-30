@@ -6,8 +6,8 @@
 
 ## 2. Shortcut Registry
 
-- [x] 2.1 Add fullscreen shortcut entry to `SHORTCUTS` array in `src/core/shortcuts.ts`: `{ key: 'f', label: '', description: 'Toggle fullscreen for focused panel', showInBar: false, showInHelp: true, group: 'display' }`
-- [x] 2.2 Update `shortcuts.test.ts` to assert the `f` entry exists with correct properties (key, description, showInBar, showInHelp, group)
+- [x] 2.1 Add fullscreen shortcut entry to `SHORTCUTS` array in `src/core/shortcuts.ts`: `{ key: 'f', label: '', description: 'Toggle fullscreen', showInBar: false, showInHelp: true, group: 'display' }`
+- [x] 2.2 Update `shortcuts.test.ts` to assert the `f` entry exists with description `'Toggle fullscreen'`
 
 ## 3. Keyboard Input Handling
 

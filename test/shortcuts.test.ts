@@ -58,7 +58,7 @@ describe('SHORTCUTS registry — fullscreen entry', () => {
   it('contains the `f` entry (toggle fullscreen)', () => {
     const entry = SHORTCUTS.find((s) => s.key === 'f');
     expect(entry).toBeDefined();
-    expect(entry?.description).toBe('Toggle fullscreen for focused panel');
+    expect(entry?.description).toBe('Toggle fullscreen');
     expect(entry?.showInBar).toBe(false);
     expect(entry?.showInHelp).toBe(true);
     expect(entry?.group).toBe('display');

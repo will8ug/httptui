@@ -48,7 +48,7 @@ Horizontal offset resets per panel:
 - **THEN** `maximizedPanel` SHALL become `null` and `detailsHorizontalOffset` SHALL become `0`
 
 ### Requirement: Fullscreen keyboard binding
-The system SHALL bind the `f` key in `useInput` to dispatch `TOGGLE_FULLSCREEN` when no overlay is open and the application is in normal mode.
+The system SHALL bind the `f` key in `useInput` to dispatch `TOGGLE_FULLSCREEN` when no overlay is open and the application is in normal mode. The shortcut entry SHALL have `description: 'Toggle fullscreen'`.
 
 #### Scenario: Pressing f in normal mode toggles fullscreen
 - **WHEN** the application is in normal mode, no overlay is open, and the user presses `f`
