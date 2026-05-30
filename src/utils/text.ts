@@ -13,3 +13,12 @@ export function truncateText(value: string, maxWidth: number): string {
 
   return `${value.slice(0, maxWidth - 1)}…`;
 }
+
+export function shiftText(value: string, offset: number, maxWidth: number): string {
+  if (offset <= 0) {
+    return truncateText(value, maxWidth);
+  }
+
+  const shifted = value.slice(offset);
+  return shifted === '' ? ' ' : truncateText(shifted, maxWidth);
+}

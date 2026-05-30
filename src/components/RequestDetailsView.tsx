@@ -1,9 +1,11 @@
 import React from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useStdout } from 'ink';
 
 import type { FileVariable, ParsedRequest } from '../core/types';
 import { resolveVariables } from '../core/variables';
 import { getMethodColor } from '../utils/colors';
+import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
+import { shiftText, truncateText } from '../utils/text';
 
 interface RequestDetailsViewProps {
   request: ParsedRequest;
@@ -22,6 +24,10 @@ export function RequestDetailsView({
   scrollOffset,
   horizontalOffset,
 }: RequestDetailsViewProps): React.ReactElement {
+  const { stdout } = useStdout();
+  const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
+  const contentWidth = getResponseContentWidth(columns);
+
   const resolved = resolveVariables(request, variables);
   const headerEntries = Object.entries(resolved.headers);
   const bodyLines = resolved.body !== undefined ? resolved.body.split('\n') : [];
@@ -34,37 +40,53 @@ export function RequestDetailsView({
     </Text>,
   );
 
-  allLines.push(
-    <Text key="request-line">
-      <Text color={getMethodColor(resolved.method)} bold>{resolved.method}</Text>
-      <Text> </Text>
-      <Text color="white">{resolved.url}</Text>
-    </Text>,
-  );
+  const requestLineText = `${resolved.method} ${resolved.url}`;
+  if (horizontalOffset > 0) {
+    allLines.push(
+      <Text key="request-line">{shiftText(requestLineText, horizontalOffset, contentWidth)}</Text>,
+    );
+  } else {
+    const availableUrlWidth = Math.max(0, contentWidth - resolved.method.length - 1);
+    allLines.push(
+      <Text key="request-line">
+        <Text color={getMethodColor(resolved.method)} bold>{resolved.method}</Text>
+        <Text> </Text>
+        <Text color="white">{truncateText(resolved.url, availableUrlWidth)}</Text>
+      </Text>,
+    );
+  }
 
   allLines.push(
-    <Text key="separator-request" color="gray">{'─'.repeat(40)}</Text>,
+    <Text key="separator-request" color="gray">{truncateText('─'.repeat(40), contentWidth)}</Text>,
   );
 
   if (headerEntries.length > 0) {
     for (const [name, value] of headerEntries) {
-      allLines.push(
-        <Text key={`header-${name}`}>
-          <Text color="cyan">{name}</Text>
-          <Text color="gray">: </Text>
-          <Text color="gray">{value}</Text>
-        </Text>,
-      );
+      const headerText = `${name}: ${value}`;
+      if (horizontalOffset > 0) {
+        allLines.push(
+          <Text key={`header-${name}`}>{shiftText(headerText, horizontalOffset, contentWidth)}</Text>,
+        );
+      } else {
+        const availableValueWidth = Math.max(0, contentWidth - name.length - 2);
+        allLines.push(
+          <Text key={`header-${name}`}>
+            <Text color="cyan">{name}</Text>
+            <Text color="gray">: </Text>
+            <Text color="gray">{truncateText(value, availableValueWidth)}</Text>
+          </Text>,
+        );
+      }
     }
 
     allLines.push(
-      <Text key="separator-headers" color="gray">{'─'.repeat(40)}</Text>,
+      <Text key="separator-headers" color="gray">{truncateText('─'.repeat(40), contentWidth)}</Text>,
     );
   }
 
   for (let i = 0; i < bodyLines.length; i += 1) {
     allLines.push(
-      <Text key={`body-${i}`}>{bodyLines[i] || ' '}</Text>,
+      <Text key={`body-${i}`}>{shiftText(bodyLines[i] || ' ', horizontalOffset, contentWidth)}</Text>,
     );
   }
 
@@ -89,7 +111,7 @@ export function RequestDetailsView({
       paddingX={1}
       width="100%"
     >
-      <Box flexDirection="column" marginLeft={horizontalOffset > 0 ? -horizontalOffset : 0}>
+      <Box flexDirection="column">
         {visibleLines}
       </Box>
     </Box>
