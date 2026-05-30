@@ -53,8 +53,35 @@ All vertical scroll offsets (`responseScrollOffset`, `detailsScrollOffset`) SHAL
 │                    │                                        │
 ├────────────────────┴───────────────────────────────────────┤
 │ [Enter] Send  [j/k] Nav  [←/→] Scroll  [Tab] Panel  [v] Verbose  [q] Quit  [?] Help│
-└─────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+### Fullscreen Layout
+
+When `maximizedPanel` is not `null`, the `Layout` component renders only the maximized panel at full width/height plus the status bar. The `maximizedPanel` prop controls which panel is shown:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│   Response (fullscreen)                                     │
+│   HTTP/1.1 200 OK        247ms                             │
+│                                                             │
+│   Content-Type: application/json                           │
+│   X-Req-Id: abc-123                                        │
+│                                                             │
+│   {                                                         │
+│     "users": [                                              │
+│       { "id": 1, "name": "Alice" }                        │
+│     ]                                                       │
+│   }                                                         │
+│                                                             │
+├────────────────────────────────────────────────────────────┤
+│ [f] Max  [Enter] Send  [v] Verbose  [q] Quit  [?] Help   │
+└────────────────────────────────────────────────────────────┘
+```
+
+The `Layout` component SHALL accept a `maximizedPanel` prop of type `FocusedPanel | null`. When `maximizedPanel` is set, only that panel and the status bar SHALL be rendered. When `maximizedPanel` is `null`, the normal split-panel layout SHALL be rendered.
+
+The `App` component SHALL pass `state.maximizedPanel` as the `maximizedPanel` prop to `Layout`. The `App` component SHALL also pass `focused={true}` for the maximized panel (or the normal `focusedPanel` when not in fullscreen) for border highlighting.
 
 ## Panels
 
@@ -114,6 +141,13 @@ Keyboard shortcuts are defined in the centralized `SHORTCUTS` registry (`src/cor
 - **Response focused**: bordered with accent color, keyboard controls scroll
 - **Details focused**: bordered with accent color (see **request-details** spec for full details panel behavior)
 - Focus cycling (Tab) behavior: see **navigation** spec
+
+### Fullscreen States
+- **Fullscreen mode**: When `maximizedPanel` is not `null`, the focused panel expands to fill the entire content area (full terminal width and height minus one row for the status bar). All other panels are hidden.
+- Entering fullscreen: press `f` while focused on any panel (see **fullscreen-panel** spec for all keyboard bindings).
+- Exiting fullscreen: press `f` again or press `Escape` (see **navigation** spec for Escape priority chain).
+- `Tab` is a no-op in fullscreen mode (no panel to switch to).
+- `d` on the details panel in fullscreen is a no-op (cannot collapse the only visible panel).
 
 ### Navigation States
 Horizontal and vertical scroll offset tracking and clamping are delegated to the **navigation** spec. The TUI spec only defines the _visible consequences_: panels support scrolling when content exceeds visible area, and navigation keys change which portion of content is displayed.
