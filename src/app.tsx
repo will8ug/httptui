@@ -19,7 +19,7 @@ import type { AppProps, AppState, RequestError, ResponseData } from './core/type
 import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
 import { resolveVariables } from './core/variables';
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getResponseContentWidth } from './utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
 import { getDetailsTotalLines } from './utils/scroll';
 
 function findMatchIndices(response: ResponseData, rawMode: boolean, query: string): number[] {
@@ -86,11 +86,12 @@ export function App(props: AppProps): React.ReactElement {
     detailPanelHeight = getDetailPanelHeight(totalContentLines, detailPanelMaxContent);
   }
   const responseAvailableHeight = rows - 1 - detailPanelHeight;
+  const fullscreenAvailableHeight = rows - 1;
   const fullscreenContentWidth = getFullscreenContentWidth(columns);
   const fullscreenRequestContentWidth = getFullscreenRequestContentWidth(columns);
-  const fullscreenAvailableHeight = rows - 1;
+  const fullscreenVisibleHeight = getFullscreenVisibleHeight(fullscreenAvailableHeight);
   const effectiveResponseHeight = state.maximizedPanel === 'response' ? fullscreenAvailableHeight : responseAvailableHeight;
-  const effectiveDetailMaxContent = state.maximizedPanel === 'details' ? fullscreenAvailableHeight : detailPanelMaxContent;
+  const effectiveDetailMaxContent = state.maximizedPanel === 'details' ? fullscreenVisibleHeight : detailPanelMaxContent;
 
   const sendSelectedRequest = async (): Promise<void> => {
     if (state.isLoading) {
@@ -389,7 +390,7 @@ return (
           scrollOffset={state.requestScrollOffset}
           horizontalOffset={state.requestHorizontalOffset}
           contentWidthOverride={state.maximizedPanel === 'requests' ? fullscreenRequestContentWidth : undefined}
-          visibleHeightOverride={state.maximizedPanel === 'requests' ? fullscreenAvailableHeight : undefined}
+          visibleHeightOverride={state.maximizedPanel === 'requests' ? fullscreenVisibleHeight : undefined}
         />
       }
       right={

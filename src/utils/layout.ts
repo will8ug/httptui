@@ -48,3 +48,10 @@ export function getFullscreenContentWidth(columns: number): number {
 export function getFullscreenRequestContentWidth(columns: number): number {
   return Math.max(MIN_REQUEST_CONTENT_WIDTH, columns - REQUEST_PANEL_CHROME);
 }
+
+/** Vertical chrome (border top + title + border bottom) inside any Ink Box with borderStyle="round" */
+export const PANEL_VERTICAL_CHROME = 3;
+
+export function getFullscreenVisibleHeight(availableHeight: number): number {
+  return Math.max(1, availableHeight - PANEL_VERTICAL_CHROME);
+}

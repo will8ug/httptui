@@ -108,19 +108,25 @@ When `maximizedPanel` is `'details'`, pressing `d` SHALL NOT dispatch `TOGGLE_RE
 - **THEN** a `TOGGLE_REQUEST_DETAILS` action SHALL be dispatched and `showRequestDetails` SHALL become `true`
 
 ### Requirement: Fullscreen layout rendering
-When `maximizedPanel` is not `null`, the `Layout` component SHALL render only the maximized panel at full terminal width and full terminal height minus one row for the status bar. The status bar SHALL remain visible at the bottom. The non-maximized panels SHALL NOT be rendered.
+When `maximizedPanel` is not `null`, the `Layout` component SHALL render only the maximized panel at full terminal width and full terminal height minus one row for the status bar. The status bar SHALL remain visible at the bottom. The non-maximized panels SHALL NOT be rendered. The `PANEL_VERTICAL_CHROME` constant (value: 3) represents the vertical space consumed by a panel's border top, title, and border bottom rows. Fullscreen panels SHALL subtract this chrome from their available height/visible count to prevent content overflow from pushing the panel title off-screen.
 
 #### Scenario: Fullscreen response panel renders full width
 - **WHEN** `maximizedPanel` is `'response'`
-- **THEN** the `ResponseView` component SHALL be rendered with the full terminal width and `rows - 1` height, and the `RequestList` and `RequestDetailsView` components SHALL NOT be rendered
+- **THEN** the `ResponseView` component SHALL be rendered with `availableHeight` equal to `rows - 1` (full content area) and `contentWidthOverride` set to the full terminal width minus `RESPONSE_PANEL_CHROME`, and the `RequestList` and `RequestDetailsView` components SHALL NOT be rendered
 
-#### Scenario: Fullscreen requests panel renders full width
+#### Scenario: Fullscreen requests panel renders with correct visible height
 - **WHEN** `maximizedPanel` is `'requests'`
-- **THEN** the `RequestList` component SHALL be rendered with the full terminal width and `rows - 1` height, and the `ResponseView` and `RequestDetailsView` components SHALL NOT be rendered
+- **THEN** the `RequestList` component SHALL be rendered with `contentWidthOverride` set to the full terminal width minus `REQUEST_PANEL_CHROME`, `visibleHeightOverride` set to `rows - 1 - PANEL_VERTICAL_CHROME` (full content area minus panel border and title), and the `ResponseView` and `RequestDetailsView` components SHALL NOT be rendered
 
-#### Scenario: Fullscreen details panel renders full width
+#### Scenario: Fullscreen details panel renders with correct max height
 - **WHEN** `maximizedPanel` is `'details'`
-- **THEN** the `RequestDetailsView` component SHALL be rendered with the full terminal width and `rows - 1` height, and the `RequestList` and `ResponseView` components SHALL NOT be rendered
+- **THEN** the `RequestDetailsView` component SHALL be rendered with `contentWidthOverride` set to the full terminal width minus `RESPONSE_PANEL_CHROME`, `maxHeight` set to `rows - 1 - PANEL_VERTICAL_CHROME` (full content area minus panel border and title, reserving room for potential scroll indicator), and the `RequestList` and `ResponseView` components SHALL NOT be rendered
+
+#### Scenario: Fullscreen panel titles remain visible
+- **WHEN** `maximizedPanel` is `'requests'` and the request list has many items
+- **THEN** the "Requests" title SHALL remain visible at the top of the fullscreen panel (content SHALL NOT overflow the bordered box)
+- **WHEN** `maximizedPanel` is `'details'` and the request details have many lines
+- **THEN** the "Request Details" title SHALL remain visible at the top of the fullscreen panel (content SHALL NOT overflow the bordered box)
 
 ### Requirement: Fullscreen state preserved across overlays and mode changes
 When `maximizedPanel` is not `null` and the user opens an overlay (help via `?`, file load via `o`), the `maximizedPanel` state SHALL be preserved. When the overlay is dismissed, the fullscreen view SHALL be restored.
