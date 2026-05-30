@@ -19,7 +19,7 @@ import type { AppProps, AppState, RequestError, ResponseData } from './core/type
 import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
 import { resolveVariables } from './core/variables';
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getResponseContentWidth } from './utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getResponseContentWidth } from './utils/layout';
 import { getDetailsTotalLines } from './utils/scroll';
 
 function findMatchIndices(response: ResponseData, rawMode: boolean, query: string): number[] {
@@ -86,6 +86,11 @@ export function App(props: AppProps): React.ReactElement {
     detailPanelHeight = getDetailPanelHeight(totalContentLines, detailPanelMaxContent);
   }
   const responseAvailableHeight = rows - 1 - detailPanelHeight;
+  const fullscreenContentWidth = getFullscreenContentWidth(columns);
+  const fullscreenRequestContentWidth = getFullscreenRequestContentWidth(columns);
+  const fullscreenAvailableHeight = rows - 1;
+  const effectiveResponseHeight = state.maximizedPanel === 'response' ? fullscreenAvailableHeight : responseAvailableHeight;
+  const effectiveDetailMaxContent = state.maximizedPanel === 'details' ? fullscreenAvailableHeight : detailPanelMaxContent;
 
   const sendSelectedRequest = async (): Promise<void> => {
     if (state.isLoading) {
@@ -190,7 +195,7 @@ export function App(props: AppProps): React.ReactElement {
       }
 
       if (key.return) {
-        const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
+        const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
         let firstMatchVisualIndex: number | undefined;
         if (state.response && state.searchQuery) {
           const matches = findMatchIndices(state.response, state.rawMode, state.searchQuery);
@@ -217,6 +222,11 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (key.escape && state.maximizedPanel !== null) {
+      dispatch({ type: 'TOGGLE_FULLSCREEN' });
+      return;
+    }
+
     if (key.escape && (state.searchMatches.length > 0 || state.lastSearchQuery)) {
       dispatch({ type: 'CANCEL_SEARCH' });
       return;
@@ -232,7 +242,7 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
-    if (key.tab) {
+    if (key.tab && state.maximizedPanel === null) {
       dispatch({ type: 'SWITCH_PANEL' });
       return;
     }
@@ -252,8 +262,13 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
-    if (input === 'd') {
+    if (input === 'd' && state.maximizedPanel !== 'details') {
       dispatch({ type: 'TOGGLE_REQUEST_DETAILS' });
+      return;
+    }
+
+    if (input === 'f') {
+      dispatch({ type: 'TOGGLE_FULLSCREEN' });
       return;
     }
 
@@ -268,7 +283,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'n' && state.searchMatches.length > 0) {
-      const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
+      const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
       const bodyVisualStart = getBodyVisualStart(state, columns);
       const nextIndex = (state.currentMatchIndex + 1) % state.searchMatches.length;
       const targetRawIndex = state.searchMatches[nextIndex];
@@ -278,7 +293,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'N' && state.searchMatches.length > 0) {
-      const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
+      const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
       const bodyVisualStart = getBodyVisualStart(state, columns);
       const prevIndex = (state.currentMatchIndex - 1 + state.searchMatches.length) % state.searchMatches.length;
       const targetRawIndex = state.searchMatches[prevIndex];
@@ -314,7 +329,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'G') {
-      const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
+      const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
       dispatch({ type: 'JUMP_VERTICAL', direction: 'end', maxOffset, rows });
       return;
     }
@@ -350,13 +365,13 @@ export function App(props: AppProps): React.ReactElement {
 
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
     if (state.focusedPanel === 'details' && selectedRequest) {
-      const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
+      const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
       dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
       return;
     }
 
     if (state.focusedPanel === 'response' && state.response) {
-      const maxOffset = computeVerticalMaxOffset(state, columns, responseAvailableHeight, detailPanelMaxContent);
+      const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
       dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
       return;
     }
@@ -364,15 +379,17 @@ export function App(props: AppProps): React.ReactElement {
     dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down' });
   });
 
-  return (
+return (
     <Layout
       left={
         <RequestList
           requests={state.requests}
           selectedIndex={state.selectedIndex}
-          focused={state.focusedPanel === 'requests'}
+          focused={state.focusedPanel === 'requests' || state.maximizedPanel === 'requests'}
           scrollOffset={state.requestScrollOffset}
           horizontalOffset={state.requestHorizontalOffset}
+          contentWidthOverride={state.maximizedPanel === 'requests' ? fullscreenRequestContentWidth : undefined}
+          visibleHeightOverride={state.maximizedPanel === 'requests' ? fullscreenAvailableHeight : undefined}
         />
       }
       right={
@@ -381,17 +398,18 @@ export function App(props: AppProps): React.ReactElement {
           error={state.error}
           isLoading={state.isLoading}
           verbose={state.verbose}
-          focused={state.focusedPanel === 'response'}
+          focused={state.focusedPanel === 'response' || state.maximizedPanel === 'response'}
           scrollOffset={state.responseScrollOffset}
           horizontalOffset={state.responseHorizontalOffset}
           wrapMode={state.wrapMode}
           rawMode={state.rawMode}
-          availableHeight={responseAvailableHeight}
+          availableHeight={state.maximizedPanel === 'response' ? effectiveResponseHeight : responseAvailableHeight}
           searchMatches={state.searchMatches}
           currentMatchIndex={state.currentMatchIndex}
           isSearchMode={state.mode === 'search'}
           lastSearchQuery={state.lastSearchQuery}
           searchQuery={state.searchQuery}
+          contentWidthOverride={state.maximizedPanel === 'response' ? fullscreenContentWidth : undefined}
         />
       }
       bottom={
@@ -409,12 +427,14 @@ export function App(props: AppProps): React.ReactElement {
         <RequestDetailsView
           request={selectedRequest}
           variables={state.variables}
-          maxHeight={detailPanelMaxContent}
-          focused={state.focusedPanel === 'details'}
+          maxHeight={state.maximizedPanel === 'details' ? effectiveDetailMaxContent : detailPanelMaxContent}
+          focused={state.focusedPanel === 'details' || state.maximizedPanel === 'details'}
           scrollOffset={state.detailsScrollOffset}
           horizontalOffset={state.detailsHorizontalOffset}
+          contentWidthOverride={state.maximizedPanel === 'details' ? fullscreenContentWidth : undefined}
         />
       ) : undefined}
+      maximizedPanel={state.maximizedPanel}
     />
   );
 }

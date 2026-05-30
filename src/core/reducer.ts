@@ -559,6 +559,28 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     }
 
+    case 'TOGGLE_FULLSCREEN': {
+      if (state.maximizedPanel === null) {
+        const panel = state.focusedPanel;
+        return {
+          ...state,
+          maximizedPanel: panel,
+          ...(panel === 'requests' ? { requestHorizontalOffset: 0 } : {}),
+          ...(panel === 'response' ? { responseHorizontalOffset: 0 } : {}),
+          ...(panel === 'details' ? { detailsHorizontalOffset: 0 } : {}),
+        };
+      }
+
+      const previousPanel = state.maximizedPanel;
+      return {
+        ...state,
+        maximizedPanel: null,
+        ...(previousPanel === 'requests' ? { requestHorizontalOffset: 0 } : {}),
+        ...(previousPanel === 'response' ? { responseHorizontalOffset: 0 } : {}),
+        ...(previousPanel === 'details' ? { detailsHorizontalOffset: 0 } : {}),
+      };
+    }
+
     default:
       return state;
   }
@@ -594,5 +616,6 @@ export function createInitialState(props: AppProps): AppState {
     searchMatches: [],
     currentMatchIndex: 0,
     lastSearchQuery: '',
+    maximizedPanel: null,
   };
 }

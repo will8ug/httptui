@@ -40,3 +40,11 @@ export function getDetailPanelHeight(
   const BORDER_ROWS = 2;
   return Math.min(totalContentLines, maxContentLines) + BORDER_ROWS;
 }
+
+export function getFullscreenContentWidth(columns: number): number {
+  return Math.max(MIN_RESPONSE_CONTENT_WIDTH, columns - RESPONSE_PANEL_CHROME);
+}
+
+export function getFullscreenRequestContentWidth(columns: number): number {
+  return Math.max(MIN_REQUEST_CONTENT_WIDTH, columns - REQUEST_PANEL_CHROME);
+}

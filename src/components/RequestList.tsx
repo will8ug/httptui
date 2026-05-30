@@ -13,6 +13,8 @@ interface RequestListProps {
   focused: boolean;
   scrollOffset: number;
   horizontalOffset: number;
+  contentWidthOverride?: number;
+  visibleHeightOverride?: number;
 }
 
 export function RequestList({
@@ -21,10 +23,12 @@ export function RequestList({
   focused,
   scrollOffset,
   horizontalOffset,
+  contentWidthOverride,
+  visibleHeightOverride,
 }: RequestListProps): React.ReactElement {
   const { stdout } = useStdout();
-  const contentWidth = getRequestContentWidth(stdout.columns || DEFAULT_TERMINAL_COLUMNS);
-  const visibleHeight = getRequestVisibleHeight(stdout.rows || DEFAULT_TERMINAL_ROWS);
+  const contentWidth = contentWidthOverride ?? getRequestContentWidth(stdout.columns || DEFAULT_TERMINAL_COLUMNS);
+  const visibleHeight = visibleHeightOverride ?? getRequestVisibleHeight(stdout.rows || DEFAULT_TERMINAL_ROWS);
   const visibleRequests = requests.slice(scrollOffset, scrollOffset + visibleHeight);
 
   return (

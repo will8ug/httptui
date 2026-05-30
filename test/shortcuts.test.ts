@@ -53,3 +53,19 @@ describe('SHORTCUTS registry — status bar budget', () => {
     expect(barKeys).not.toContain('$');
   });
 });
+
+describe('SHORTCUTS registry — fullscreen entry', () => {
+  it('contains the `f` entry (toggle fullscreen)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'f');
+    expect(entry).toBeDefined();
+    expect(entry?.description).toBe('Toggle fullscreen for focused panel');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('display');
+  });
+
+  it('does not appear in the status bar', () => {
+    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
+    expect(barKeys).not.toContain('f');
+  });
+});

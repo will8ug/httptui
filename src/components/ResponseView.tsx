@@ -26,6 +26,7 @@ interface ResponseViewProps {
   isSearchMode: boolean;
   lastSearchQuery: string;
   searchQuery: string;
+  contentWidthOverride?: number;
 }
 
 type LineTransform =
@@ -108,10 +109,11 @@ export function ResponseView({
   isSearchMode,
   lastSearchQuery,
   searchQuery,
+  contentWidthOverride,
 }: ResponseViewProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
-  const contentWidth = getResponseContentWidth(columns);
+  const contentWidth = contentWidthOverride ?? getResponseContentWidth(columns);
   const showSearchBar = isSearchMode || (lastSearchQuery !== '' && searchMatches.length >= 0 && lastSearchQuery.length > 0);
   const searchBarHeight = showSearchBar ? 1 : 0;
   const visibleHeight = Math.max(1, availableHeight - RESPONSE_PANEL_VERTICAL_CHROME - searchBarHeight);

@@ -14,6 +14,7 @@ interface RequestDetailsViewProps {
   focused: boolean;
   scrollOffset: number;
   horizontalOffset: number;
+  contentWidthOverride?: number;
 }
 
 export function RequestDetailsView({
@@ -23,10 +24,11 @@ export function RequestDetailsView({
   focused,
   scrollOffset,
   horizontalOffset,
+  contentWidthOverride,
 }: RequestDetailsViewProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
-  const contentWidth = getResponseContentWidth(columns);
+  const contentWidth = contentWidthOverride ?? getResponseContentWidth(columns);
 
   const resolved = resolveVariables(request, variables);
   const headerEntries = Object.entries(resolved.headers);

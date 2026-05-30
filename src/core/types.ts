@@ -88,6 +88,7 @@ export interface AppState {
   searchMatches: number[];
   currentMatchIndex: number;
   lastSearchQuery: string;
+  maximizedPanel: FocusedPanel | null;
 }
 
 export interface AppProps {
@@ -126,4 +127,5 @@ export type Action =
   | { type: 'CONFIRM_SEARCH'; firstMatchVisualIndex?: number; maxOffset?: number }
   | { type: 'CANCEL_SEARCH' }
   | { type: 'NEXT_MATCH'; targetVisualIndex: number; maxOffset?: number }
-  | { type: 'PREV_MATCH'; targetVisualIndex: number; maxOffset?: number };
+  | { type: 'PREV_MATCH'; targetVisualIndex: number; maxOffset?: number }
+  | { type: 'TOGGLE_FULLSCREEN' };
