@@ -4,6 +4,7 @@ import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
 import { SHORTCUTS } from '../core/shortcuts';
+import type { FocusedPanel } from '../core/types';
 import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
 import { truncateText } from '../utils/text';
 
@@ -13,6 +14,34 @@ interface StatusBarProps {
   selectedIndex: number;
   insecure: boolean;
   reloadMessage: string | null;
+  focusedPanel: FocusedPanel;
+  detailsScrollOffset: number;
+  detailsTotalLines: number;
+  responseScrollOffset: number;
+  responseTotalLines: number;
+  hasResponse: boolean;
+}
+
+function getStatusText(props: StatusBarProps): string {
+  const fileName = basename(props.filePath);
+
+  switch (props.focusedPanel) {
+    case 'requests': {
+      return `${fileName} | ${props.selectedIndex + 1}/${props.requestCount}`;
+    }
+    case 'details': {
+      return `${fileName} | ↕ ${props.detailsScrollOffset + 1}/${props.detailsTotalLines} lines`;
+    }
+    case 'response': {
+      if (!props.hasResponse) {
+        return fileName;
+      }
+      return `${fileName} | ↕ ${props.responseScrollOffset + 1}/${props.responseTotalLines} lines`;
+    }
+    default: {
+      return fileName;
+    }
+  }
 }
 
 export function StatusBar({
@@ -21,12 +50,30 @@ export function StatusBar({
   selectedIndex,
   insecure,
   reloadMessage,
+  focusedPanel,
+  detailsScrollOffset,
+  detailsTotalLines,
+  responseScrollOffset,
+  responseTotalLines,
+  hasResponse,
 }: StatusBarProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
   const barShortcuts = SHORTCUTS.filter((s) => s.showInBar);
   const leftText = barShortcuts.map((s) => `[${s.key}] ${s.label}`).join('  ');
-  const rightText = `${basename(filePath)}  ${selectedIndex + 1}/${requestCount}`;
+  const rightText = getStatusText({
+    filePath,
+    requestCount,
+    selectedIndex,
+    insecure,
+    reloadMessage,
+    focusedPanel,
+    detailsScrollOffset,
+    detailsTotalLines,
+    responseScrollOffset,
+    responseTotalLines,
+    hasResponse,
+  });
   const insecureLabelWidth = insecure ? 10 : 0;
   const reloadLabelWidth = reloadMessage ? reloadMessage.length + 2 : 0;
   const availableLeftWidth = Math.max(0, columns - rightText.length - insecureLabelWidth - reloadLabelWidth - 1);

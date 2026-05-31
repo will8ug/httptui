@@ -20,7 +20,8 @@ import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
 import { resolveVariables } from './core/variables';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
-import { getDetailsTotalLines } from './utils/scroll';
+import { resolveRequestDetails } from './utils/request';
+import { getResponseTotalLines } from './utils/scroll';
 
 function findMatchIndices(response: ResponseData, rawMode: boolean, query: string): number[] {
   const formattedBody = formatResponseBody(response.body, rawMode);
@@ -74,16 +75,12 @@ export function App(props: AppProps): React.ReactElement {
   const selectedRequest = state.requests[state.selectedIndex];
   const detailPanelMaxContent = 10;
   let detailPanelHeight = 0;
+  let detailsTotalLines = 0;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
   if (state.showRequestDetails && selectedRequest) {
-    const resolved = resolveVariables(selectedRequest, state.variables);
-    const totalContentLines = getDetailsTotalLines({
-      method: resolved.method,
-      url: resolved.url,
-      headers: resolved.headers,
-      body: resolved.body,
-    });
-    detailPanelHeight = getDetailPanelHeight(totalContentLines, detailPanelMaxContent);
+    const resolved = resolveRequestDetails(selectedRequest, state.variables);
+    detailsTotalLines = resolved.totalContentLines;
+    detailPanelHeight = getDetailPanelHeight(detailsTotalLines, detailPanelMaxContent);
   }
   const responseAvailableHeight = rows - 1 - detailPanelHeight;
   const fullscreenAvailableHeight = rows - 1;
@@ -420,6 +417,18 @@ return (
           selectedIndex={state.selectedIndex}
           insecure={state.insecure}
           reloadMessage={state.reloadMessage}
+          focusedPanel={state.focusedPanel}
+          detailsScrollOffset={state.detailsScrollOffset}
+          detailsTotalLines={detailsTotalLines}
+          responseScrollOffset={state.responseScrollOffset}
+          responseTotalLines={state.response ? getResponseTotalLines({
+            response: state.response,
+            verbose: state.verbose,
+            rawMode: state.rawMode,
+            wrapMode: state.wrapMode,
+            columns,
+          }) : 0}
+          hasResponse={!!state.response}
         />
       }
       overlay={state.showHelp ? <HelpOverlay visible={state.showHelp} /> : state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> : undefined}

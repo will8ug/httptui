@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
 import type { FileVariable, ParsedRequest } from '../core/types';
-import { resolveVariables } from '../core/variables';
+import { resolveRequestDetails } from '../utils/request';
 import { getMethodColor } from '../utils/colors';
 import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
 import { shiftText, truncateText } from '../utils/text';
@@ -30,7 +30,7 @@ export function RequestDetailsView({
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
   const contentWidth = contentWidthOverride ?? getResponseContentWidth(columns);
 
-  const resolved = resolveVariables(request, variables);
+  const resolved = resolveRequestDetails(request, variables);
   const headerEntries = Object.entries(resolved.headers);
   const bodyLines = resolved.body !== undefined ? resolved.body.split('\n') : [];
 
@@ -95,15 +95,6 @@ export function RequestDetailsView({
   const totalLines = allLines.length;
   const visibleHeight = maxHeight;
   const visibleLines = allLines.slice(scrollOffset, scrollOffset + visibleHeight);
-  const hasOverflow = totalLines > visibleHeight;
-
-  if (hasOverflow) {
-    visibleLines.push(
-      <Text key="scroll-indicator" color="gray" dimColor>
-        ↕ {scrollOffset + 1}/{totalLines} lines
-      </Text>,
-    );
-  }
 
   return (
     <Box
