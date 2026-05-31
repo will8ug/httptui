@@ -153,17 +153,6 @@ Both `detailsScrollOffset` and `detailsHorizontalOffset` SHALL be reset to 0 on 
 - **WHEN** the user loads a new file via `o`
 - **THEN** `detailsScrollOffset` and `detailsHorizontalOffset` SHALL be reset to 0
 
-### Requirement: Scroll position indicator
-When the request details panel content exceeds the visible height, the panel SHALL display a scroll position indicator showing the user's position within the content.
-
-#### Scenario: Indicator shown when content overflows
-- **WHEN** the details panel has more content lines than the visible window
-- **THEN** the panel SHALL display an indicator in dim text showing current scroll position relative to total lines (e.g., `↕ 1/25 lines`)
-
-#### Scenario: Indicator hidden when content fits
-- **WHEN** the details panel content fits entirely within the visible height
-- **THEN** no scroll position indicator SHALL be displayed
-
 ### Requirement: Enter sends request regardless of focused panel
 The `Enter` key SHALL send the currently selected request regardless of which panel has focus. This existing behavior SHALL be preserved with the addition of the `'details'` focus state.
 

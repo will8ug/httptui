@@ -112,7 +112,11 @@ The `App` component SHALL pass `state.maximizedPanel` as the `maximizedPanel` pr
 
 ### Status Bar (bottom)
 - Left side: keyboard shortcut hints (rendered from centralized shortcuts data, showing only items with `showInBar: true`; at most 6 shortcuts in the status bar — new shortcuts should default to `showInBar: false`)
-- Right side: file name, request count
+- Right side: file name, context-aware panel information. The file name is always visible, followed by a `|` separator and panel-specific status text based on the focused panel
+- When requests panel is focused: `{fileName} | {selectedIndex + 1}/{requestCount}`
+- When details panel is focused and content overflows: `{fileName} | ↕ {detailsScrollOffset + 1}/{detailsTotalLines} lines`
+- When response panel is focused and a response is displayed: `{fileName} | ↕ {responseScrollOffset + 1}/{responseTotalLines} lines`
+- When response panel is focused but no response has been sent yet: `{fileName}`
 - Single line, full width
 - Dimmed text
 
