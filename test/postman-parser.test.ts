@@ -218,6 +218,93 @@ describe('parsePostmanCollection', () => {
     expect(request.body).toBeUndefined();
     expect(request.formdataFields).toBeUndefined();
   });
+
+  it('injects Content-Type: application/json for raw body with JSON language hint', () => {
+    const content = readFixture('postman-raw-content-type.json');
+    const result = parsePostmanCollection(content);
+
+    const request = result.requests.find((r) => r.name === 'Raw JSON Body');
+    expect(request).toBeDefined();
+    if (!request) {
+      throw new Error('Expected request to be defined');
+    }
+    expect(request.headers['Content-Type']).toBe('application/json');
+  });
+
+  it('injects Content-Type: application/xml for raw body with XML language hint', () => {
+    const content = readFixture('postman-raw-content-type.json');
+    const result = parsePostmanCollection(content);
+
+    const request = result.requests.find((r) => r.name === 'Raw XML Body');
+    expect(request).toBeDefined();
+    if (!request) {
+      throw new Error('Expected request to be defined');
+    }
+    expect(request.headers['Content-Type']).toBe('application/xml');
+  });
+
+  it('injects Content-Type: text/plain for raw body with text language hint', () => {
+    const content = readFixture('postman-raw-content-type.json');
+    const result = parsePostmanCollection(content);
+
+    const request = result.requests.find((r) => r.name === 'Raw Text Body');
+    expect(request).toBeDefined();
+    if (!request) {
+      throw new Error('Expected request to be defined');
+    }
+    expect(request.headers['Content-Type']).toBe('text/plain');
+  });
+
+  it('injects Content-Type: text/html for raw body with HTML language hint', () => {
+    const content = readFixture('postman-raw-content-type.json');
+    const result = parsePostmanCollection(content);
+
+    const request = result.requests.find((r) => r.name === 'Raw HTML Body');
+    expect(request).toBeDefined();
+    if (!request) {
+      throw new Error('Expected request to be defined');
+    }
+    expect(request.headers['Content-Type']).toBe('text/html');
+  });
+
+  it('preserves explicit Content-Type header and does not override', () => {
+    const content = readFixture('postman-raw-content-type.json');
+    const result = parsePostmanCollection(content);
+
+    const request = result.requests.find((r) => r.name === 'Raw JSON With Explicit Content-Type');
+    expect(request).toBeDefined();
+    if (!request) {
+      throw new Error('Expected request to be defined');
+    }
+    const contentType = Object.entries(request.headers).find(
+      ([key]) => key.toLowerCase() === 'content-type',
+    )?.[1];
+    expect(contentType).toBe('application/custom+json');
+  });
+
+  it('silently ignores unrecognized raw language and does not inject Content-Type', () => {
+    const content = readFixture('postman-raw-content-type.json');
+    const result = parsePostmanCollection(content);
+
+    const request = result.requests.find((r) => r.name === 'Raw Unrecognized Language');
+    expect(request).toBeDefined();
+    if (!request) {
+      throw new Error('Expected request to be defined');
+    }
+    expect(request.headers['Content-Type']).toBeUndefined();
+  });
+
+  it('does not inject Content-Type when raw body has no language hint', () => {
+    const content = readFixture('postman-raw-content-type.json');
+    const result = parsePostmanCollection(content);
+
+    const request = result.requests.find((r) => r.name === 'Raw Without Language Hint');
+    expect(request).toBeDefined();
+    if (!request) {
+      throw new Error('Expected request to be defined');
+    }
+    expect(request.headers['Content-Type']).toBeUndefined();
+  });
 });
 
 describe('integration smoke test', () => {

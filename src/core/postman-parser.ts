@@ -342,6 +342,24 @@ export function parsePostmanCollection(content: string): ParseResult {
       headers['Content-Type'] = 'multipart/form-data';
     }
 
+    // Auto-generate Content-Type for raw body based on language hint
+    const rawLanguage = req.body?.options?.raw?.language as string | undefined;
+    const hasExplicitContentType = Object.keys(headers).some(
+      (key) => key.toLowerCase() === 'content-type',
+    );
+    if (bodyMode === 'raw' && rawLanguage && !hasExplicitContentType) {
+      const contentTypeMap: Record<string, string> = {
+        json: 'application/json',
+        xml: 'application/xml',
+        text: 'text/plain',
+        html: 'text/html',
+      };
+      const contentType = contentTypeMap[rawLanguage];
+      if (contentType) {
+        headers['Content-Type'] = contentType;
+      }
+    }
+
     requests.push({
       name,
       method,

@@ -1,0 +1,127 @@
+{
+  "info": {
+    "name": "Raw Content-Type Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Raw JSON Body",
+      "request": {
+        "method": "POST",
+        "url": "https://api.example.com/users",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Alice\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Raw XML Body",
+      "request": {
+        "method": "POST",
+        "url": "https://api.example.com/xml",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "<name>Alice</name>",
+          "options": {
+            "raw": {
+              "language": "xml"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Raw Text Body",
+      "request": {
+        "method": "POST",
+        "url": "https://api.example.com/text",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "plain text",
+          "options": {
+            "raw": {
+              "language": "text"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Raw HTML Body",
+      "request": {
+        "method": "POST",
+        "url": "https://api.example.com/html",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "<h1>Title</h1>",
+          "options": {
+            "raw": {
+              "language": "html"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Raw JSON With Explicit Content-Type",
+      "request": {
+        "method": "POST",
+        "url": "https://api.example.com/custom",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/custom+json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Alice\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Raw Unrecognized Language",
+      "request": {
+        "method": "POST",
+        "url": "https://api.example.com/graphql",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{ users { name } }",
+          "options": {
+            "raw": {
+              "language": "graphql"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Raw Without Language Hint",
+      "request": {
+        "method": "POST",
+        "url": "https://api.example.com/no-hint",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "some data"
+        }
+      }
+    }
+  ]
+}
