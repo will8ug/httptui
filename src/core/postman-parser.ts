@@ -121,16 +121,6 @@ function convertKeyValueParamsToUrlEncoded(params: any[]): string | undefined {
     .join('&');
 }
 
-function ensureUrlEncodedContentType(headers: Record<string, string>): void {
-  const hasContentType = Object.keys(headers).some(
-    (key) => key.toLowerCase() === 'content-type',
-  );
-
-  if (!hasContentType) {
-    headers['Content-Type'] = 'application/x-www-form-urlencoded';
-  }
-}
-
 function convertBody(item: any): { body: string | undefined; formdataFields?: FormDataParam[] } {
   if (!item?.request?.body) {
     return { body: undefined };
@@ -338,12 +328,8 @@ export function parsePostmanCollection(content: string): ParseResult {
 
     const bodyMode = req.body?.mode;
 
-    if (bodyMode === 'urlencoded' && convertedBody !== undefined) {
-      ensureUrlEncodedContentType(headers);
-    }
-
-    for (const [key, value] of Object.entries(authHeaders)) {
-      headers[key] = value;
+    for (const key of Object.keys(authHeaders)) {
+      headers[key] = authHeaders[key];
     }
 
     // SDK's toObject() may include Content-Type from request body; override with our conversion
