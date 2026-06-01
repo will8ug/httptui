@@ -63,29 +63,52 @@ httptui -k path/to/api.http
 
 ## Keyboard Shortcuts
 
+### Navigation
+
 | Key | Action |
 |-----|--------|
-| `↑` / `k` | Select previous request / Scroll response up |
-| `↓` / `j` | Select next request / Scroll response down |
+| `↑` / `k` | Previous request / Scroll up |
+| `↓` / `j` | Next request / Scroll down |
 | `←` / `h` | Scroll focused panel left |
 | `→` / `l` | Scroll focused panel right |
 | `g` | Jump to top of focused panel |
 | `G` | Jump to bottom of focused panel |
-| `0` | Jump to horizontal start of focused panel |
-| `$` | Jump to horizontal end of focused panel |
-| `Enter` | Send currently selected request |
+| `0` | Jump to horizontal start |
+| `$` | Jump to horizontal end |
 | `Tab` | Switch focus between panels |
+
+### Request
+
+| Key | Action |
+|-----|--------|
+| `Enter` | Send selected request |
+| `R` | Reload file from disk |
+| `o` | Open a different .http file |
+
+### Display
+
+| Key | Action |
+|-----|--------|
 | `v` | Toggle verbose mode (show/hide headers) |
 | `r` | Toggle raw mode (no JSON formatting) |
-| `w` | Toggle text wrapping in response panel |
+| `w` | Toggle text wrapping |
 | `d` | Toggle request details panel |
-| `o` | Open a different .http file |
-| `R` | Reload file from disk |
+| `f` | Toggle fullscreen |
+
+### Search
+
+| Key | Action |
+|-----|--------|
 | `/` | Search response body |
-| `n` | Go to next search match |
-| `N` | Go to previous search match |
-| `Escape` | Close current overlay |
+| `n` | Go to next match |
+| `N` | Go to previous match |
+
+### General
+
+| Key | Action |
+|-----|--------|
 | `?` | Toggle help overlay |
+| `Escape` | Close current overlay / Exit fullscreen |
 | `q` | Quit application |
 
 ## .http File Format
