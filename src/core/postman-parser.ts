@@ -351,6 +351,11 @@ export function parsePostmanCollection(content: string): ParseResult {
       headers['Content-Type'] = 'application/x-www-form-urlencoded';
     }
 
+    // Informational only — undici auto-generates the boundary at send time
+    if (formdataFields && formdataFields.length > 0) {
+      headers['Content-Type'] = 'multipart/form-data';
+    }
+
     requests.push({
       name,
       method,

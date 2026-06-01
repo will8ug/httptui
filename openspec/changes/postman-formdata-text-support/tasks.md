@@ -48,3 +48,13 @@
 - [x] 7.2 Run `npm test` — all existing tests pass, new tests pass
 - [x] 7.3 Run `npm run build` — TypeScript compilation succeeds
 - [ ] 7.4 Manual smoke test: load a Postman collection with formdata text fields, verify correct multipart encoding in request
+
+## 8. Content-Type Header UX Fix
+
+- [x] 8.1 Update `postman-parser.ts` to inject `Content-Type: multipart/form-data` header for formdata mode (informational for display)
+- [x] 8.2 Update `executor.ts` to strip Content-Type header when building FormData body (let undici auto-generate boundary)
+- [x] 8.3 Add `removeContentTypeHeader` helper function in `executor.ts`
+- [x] 8.4 Update delta spec `postman-collection-import/spec.md`: text-only formdata scenario includes Content-Type header
+- [x] 8.5 Update delta spec `formdata-body/spec.md`: add Content-Type lifecycle requirement (inject in parser, strip in executor)
+- [x] 8.6 Update existing test: verify formdata request includes `Content-Type: multipart/form-data` in parsed headers
+- [x] 8.7 Update existing test: verify executor strips Content-Type when sending FormData body

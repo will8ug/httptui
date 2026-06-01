@@ -13,7 +13,7 @@ The system SHALL extract the request body based on body mode. For `raw` mode, th
 
 #### Scenario: Extract text-only formdata body
 - **WHEN** a Postman request has body mode `formdata` with fields `[{key: "username", value: "alice", type: "text"}, {key: "email", value: "alice@example.com", type: "text"}]`
-- **THEN** the parsed request SHALL have `formdataFields` with two entries `[{key: "username", value: "alice", type: "text"}, {key: "email", value: "alice@example.com", type: "text"}]` and body SHALL be `undefined`
+- **THEN** the parsed request SHALL have `formdataFields` with two entries `[{key: "username", value: "alice", type: "text"}, {key: "email", value: "alice@example.com", type: "text"}]`, body SHALL be `undefined`, and headers SHALL include `Content-Type: multipart/form-data`
 
 #### Scenario: Warn on formdata with file upload
 - **WHEN** a Postman request has body mode `formdata` containing a file field with `type: "file"`

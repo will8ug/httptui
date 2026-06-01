@@ -166,13 +166,13 @@ describe('executeRequest', () => {
     );
   });
 
-  it('does not inject Content-Type header when formdataFields are present', async () => {
+  it('strips Content-Type header when formdataFields are present', async () => {
     requestMock.mockResolvedValue(createMockResponse());
 
     await executeRequest(
       createResolvedRequest({
         method: 'POST',
-        body: '{"name":"test"}',
+        headers: { 'Content-Type': 'multipart/form-data' },
         formdataFields: [
           { key: 'username', value: 'alice', type: 'text' as const },
         ],

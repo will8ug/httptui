@@ -27,6 +27,15 @@ function hasContentTypeHeader(headers: Record<string, string>): boolean {
   return Object.keys(headers).some((headerName) => headerName.toLowerCase() === 'content-type');
 }
 
+function removeContentTypeHeader(headers: Record<string, string>): void {
+  const contentTypeKey = Object.keys(headers).find((k) => k.toLowerCase() === 'content-type');
+
+  if (contentTypeKey) {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- key is found by case-insensitive lookup, not arbitrary
+    delete headers[contentTypeKey];
+  }
+}
+
 function normalizeHeaders(
   headers: Record<string, string | string[] | undefined>,
 ): Record<string, string> {
@@ -97,6 +106,9 @@ export async function executeRequest(
     }
 
     body = formData;
+
+    // Remove informational Content-Type — undici auto-generates the real one with boundary
+    removeContentTypeHeader(headers);
   } else {
     body = resolvedRequest.body;
 

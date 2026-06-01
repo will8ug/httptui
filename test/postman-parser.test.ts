@@ -200,13 +200,12 @@ describe('parsePostmanCollection', () => {
     expect(fields[2]).toEqual({ key: 'message', value: 'Hello World', type: 'text' });
   });
 
-  it('does not inject Content-Type header for text-only formdata', () => {
+  it('injects Content-Type: multipart/form-data header for text-only formdata', () => {
     const content = readFixture('postman-formdata-text.json');
     const result = parsePostmanCollection(content);
 
     const request = result.requests[0];
-    expect(request.headers['Content-Type']).toBeUndefined();
-    expect(request.headers['content-type']).toBeUndefined();
+    expect(request.headers['Content-Type']).toBe('multipart/form-data');
   });
 
   it('warns on formdata with file fields and sets formdataFields to undefined', () => {
