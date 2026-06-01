@@ -1,4 +1,4 @@
-import { Agent, request } from 'undici';
+import { Agent, FormData, request } from 'undici';
 
 import type { ExecutorConfig, RequestError, ResolvedRequest, ResponseData } from './types';
 
@@ -87,12 +87,26 @@ export async function executeRequest(
 
   const headers = { ...resolvedRequest.headers };
 
-  if (
-    resolvedRequest.body !== undefined &&
-    !hasContentTypeHeader(headers) &&
-    looksLikeJson(resolvedRequest.body)
-  ) {
-    headers['Content-Type'] = 'application/json';
+  let body: string | FormData | undefined;
+
+  if (resolvedRequest.formdataFields && resolvedRequest.formdataFields.length > 0) {
+    const formData = new FormData();
+
+    for (const field of resolvedRequest.formdataFields) {
+      formData.append(field.key, field.value);
+    }
+
+    body = formData;
+  } else {
+    body = resolvedRequest.body;
+
+    if (
+      body !== undefined &&
+      !hasContentTypeHeader(headers) &&
+      looksLikeJson(body)
+    ) {
+      headers['Content-Type'] = 'application/json';
+    }
   }
 
   const startTime = performance.now();
@@ -105,25 +119,25 @@ export async function executeRequest(
     const response = await request(resolvedRequest.url, {
       method: resolvedRequest.method,
       headers,
-      body: resolvedRequest.body,
+      body,
       signal: AbortSignal.timeout(30000),
       dispatcher,
     });
 
     const rawBody = await response.body.text();
-    const body = rawBody.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const responseBody = rawBody.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const endTime = performance.now();
 
     return {
       statusCode: response.statusCode,
       statusText: getStatusText(response.statusCode),
       headers: normalizeHeaders(response.headers),
-      body,
+      body: responseBody,
       timing: {
         durationMs: endTime - startTime,
       },
       size: {
-        bodyBytes: Buffer.byteLength(body, 'utf-8'),
+        bodyBytes: Buffer.byteLength(responseBody, 'utf-8'),
       },
     };
   } catch (error) {

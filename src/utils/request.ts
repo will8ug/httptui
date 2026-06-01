@@ -1,4 +1,4 @@
-import type { FileVariable, ParsedRequest } from '../core/types';
+import type { FileVariable, FormDataParam, ParsedRequest } from '../core/types';
 import { resolveVariables } from '../core/variables';
 import { getDetailsTotalLines } from './scroll';
 
@@ -7,6 +7,7 @@ export interface ResolvedRequestDetails {
   url: string;
   headers: Record<string, string>;
   body: string | undefined;
+  formdataFields?: FormDataParam[];
   totalContentLines: number;
 }
 
@@ -30,6 +31,7 @@ export function resolveRequestDetails(
     url: resolved.url,
     headers: resolved.headers,
     body: resolved.body,
+    formdataFields: resolved.formdataFields,
   });
 
   return {

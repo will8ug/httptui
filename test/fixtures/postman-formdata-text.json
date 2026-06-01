@@ -1,0 +1,24 @@
+{
+  "info": {
+    "name": "FormData Text Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Submit Text FormData",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "https://api.example.com/submit" },
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "username", "value": "alice", "type": "text" },
+            { "key": "email", "value": "alice@example.com", "type": "text" },
+            { "key": "message", "value": "Hello World", "type": "text" }
+          ]
+        }
+      }
+    }
+  ]
+}

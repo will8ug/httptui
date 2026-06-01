@@ -25,6 +25,11 @@ export function resolveVariables(
   const context = createResolutionContext(dotenvPath);
   const resolvedFileVariables = resolveFileVariablesInternal(variables, context);
 
+  const resolvedFormdataFields = request.formdataFields?.map((field) => ({
+    ...field,
+    value: resolveRequestValue(field.value, resolvedFileVariables, context),
+  }));
+
   return {
     method: request.method,
     url: resolveRequestValue(request.url, resolvedFileVariables, context),
@@ -38,6 +43,7 @@ export function resolveVariables(
       request.body === undefined
         ? undefined
         : resolveRequestValue(request.body, resolvedFileVariables, context),
+    formdataFields: resolvedFormdataFields,
   };
 }
 

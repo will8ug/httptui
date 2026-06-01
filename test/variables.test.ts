@@ -162,6 +162,51 @@ describe('resolveVariables', () => {
 
     expect(resolved.body).toBe('value={{$processEnv NONEXISTENT_VARIABLE_FOR_TESTS}}');
   });
+
+  it('resolves variables in formdata field values', () => {
+    const resolved = resolveVariables(
+      createRequest({
+        formdataFields: [
+          { key: 'token', value: '{{apiKey}}', type: 'text' as const },
+          { key: 'user', value: '{{username}}', type: 'text' as const },
+        ],
+      }),
+      [
+        { name: 'apiKey', value: 'abc123' },
+        { name: 'username', value: 'alice' },
+      ],
+    );
+
+    expect(resolved.formdataFields).toBeDefined();
+    expect(resolved.formdataFields).toHaveLength(2);
+
+    const fields = resolved.formdataFields;
+    if (!fields) {
+      throw new Error('Expected formdataFields to be defined');
+    }
+    expect(fields[0]).toEqual({ key: 'token', value: 'abc123', type: 'text' });
+    expect(fields[1]).toEqual({ key: 'user', value: 'alice', type: 'text' });
+  });
+
+  it('does not resolve variables in formdata field keys', () => {
+    const resolved = resolveVariables(
+      createRequest({
+        formdataFields: [
+          { key: '{{fieldName}}', value: 'hello', type: 'text' as const },
+        ],
+      }),
+      [{ name: 'fieldName', value: 'greeting' }],
+    );
+
+    expect(resolved.formdataFields).toBeDefined();
+
+    const fields = resolved.formdataFields;
+    if (!fields) {
+      throw new Error('Expected formdataFields to be defined');
+    }
+    expect(fields[0].key).toBe('{{fieldName}}');
+    expect(fields[0].value).toBe('hello');
+  });
 });
 
 function createRequest(overrides: Partial<ParsedRequest> = {}): ParsedRequest {

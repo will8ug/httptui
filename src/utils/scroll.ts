@@ -31,11 +31,13 @@ export function getDetailsTotalLines(options: {
   url: string;
   headers: Record<string, string>;
   body: string | undefined;
+  formdataFields?: Array<{ key: string; value: string }>;
 }): number {
   const headerEntries = Object.entries(options.headers);
   const headerSeparator = headerEntries.length > 0 ? 1 : 0;
   const bodyLines = options.body !== undefined ? options.body.split('\n') : [];
-  return 3 + headerEntries.length + headerSeparator + bodyLines.length;
+  const formdataLines = options.formdataFields ? options.formdataFields.length : 0;
+  return 3 + headerEntries.length + headerSeparator + formdataLines + bodyLines.length;
 }
 
 export function getMaxScrollOffset(totalLines: number, visibleHeight: number): number {

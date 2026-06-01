@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 import pkg from 'postman-collection';
 
-import type { FileVariable, HttpMethod, ParseResult, ParsedRequest } from './types';
+import type { FileVariable, FormDataParam, HttpMethod, ParseResult, ParsedRequest } from './types';
 
 const { Collection } = pkg;
 
@@ -131,9 +131,9 @@ function ensureUrlEncodedContentType(headers: Record<string, string>): void {
   }
 }
 
-function convertBody(item: any): string | undefined {
+function convertBody(item: any): { body: string | undefined; formdataFields?: FormDataParam[] } {
   if (!item?.request?.body) {
-    return undefined;
+    return { body: undefined };
   }
 
   const body = item.request.body;
@@ -144,13 +144,13 @@ function convertBody(item: any): string | undefined {
     if (mode === 'raw') {
       const normalizedContent = body.raw.replace(/\r\n|\r/g, '\n');
 
-      return normalizedContent && normalizedContent.length > 0 ? normalizedContent : undefined;
+      return { body: normalizedContent && normalizedContent.length > 0 ? normalizedContent : undefined };
     }
 
     if (mode === 'urlencoded') {
       const params = body.urlencoded?.members ?? body.urlencoded ?? [];
 
-      return convertKeyValueParamsToUrlEncoded(Array.isArray(params) ? params : []);
+      return { body: convertKeyValueParamsToUrlEncoded(Array.isArray(params) ? params : []) };
     }
 
     if (mode === 'formdata') {
@@ -161,34 +161,42 @@ function convertBody(item: any): string | undefined {
       if (hasFiles) {
         warn(`Request "${item.name ?? '(unnamed)'}" has form-data with file uploads — not supported`);
 
-        return undefined;
+        return { body: undefined };
       }
 
-      return convertKeyValueParamsToUrlEncoded(paramArray);
+      const formdataFields: FormDataParam[] = paramArray
+        .filter((p: any) => p.key)
+        .map((p: any) => ({
+          key: p.key as string,
+          value: (p.value ?? '') as string,
+          type: (p.type ?? 'text') as 'text' | 'file',
+        }));
+
+      return { body: undefined, formdataFields };
     }
 
     if (mode === 'graphql') {
       warn(`Request "${item.name ?? '(unnamed)'}" has GraphQL body — not supported`);
 
-      return undefined;
+      return { body: undefined };
     }
 
     if (mode === 'file') {
       warn(`Request "${item.name ?? '(unnamed)'}" has binary file body — not supported`);
 
-      return undefined;
+      return { body: undefined };
     }
 
     // unknown body mode — best effort: try raw
     if (body.raw && body.raw.length > 0) {
       const normalizedContent = body.raw.replace(/\r\n|\r/g, '\n');
-      return normalizedContent && normalizedContent.length > 0 ? normalizedContent : undefined;
+      return { body: normalizedContent && normalizedContent.length > 0 ? normalizedContent : undefined };
     }
   } catch {
     // body parsing is best-effort
   }
 
-  return undefined;
+  return { body: undefined };
 }
 
 function checkForScripts(item: any): void {
@@ -324,13 +332,13 @@ export function parsePostmanCollection(content: string): ParseResult {
       req.headers?.toObject?.() ?? req.headers?.all?.() ?? {};
 
     const authHeaders = buildAuthHeaders(item);
-    const convertedBody = convertBody(item);
+    const { body: convertedBody, formdataFields } = convertBody(item);
 
     const headers: Record<string, string> = { ...sdkHeaders };
 
     const bodyMode = req.body?.mode;
 
-    if ((bodyMode === 'urlencoded' || bodyMode === 'formdata') && convertedBody !== undefined) {
+    if (bodyMode === 'urlencoded' && convertedBody !== undefined) {
       ensureUrlEncodedContentType(headers);
     }
 
@@ -339,7 +347,7 @@ export function parsePostmanCollection(content: string): ParseResult {
     }
 
     // SDK's toObject() may include Content-Type from request body; override with our conversion
-    if ((bodyMode === 'urlencoded' || bodyMode === 'formdata') && convertedBody !== undefined) {
+    if (bodyMode === 'urlencoded' && convertedBody !== undefined) {
       headers['Content-Type'] = 'application/x-www-form-urlencoded';
     }
 
@@ -349,6 +357,7 @@ export function parsePostmanCollection(content: string): ParseResult {
       url,
       headers,
       body: convertedBody,
+      formdataFields,
       lineNumber: requestIndex,
     });
   }

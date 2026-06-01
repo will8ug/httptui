@@ -2,13 +2,29 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { RequestError, ResolvedRequest, ResponseData } from '../src/core/types';
 
-const { agentMock, requestMock } = vi.hoisted(() => ({
-  agentMock: vi.fn().mockImplementation(() => ({})),
-  requestMock: vi.fn(),
-}));
+const { agentMock, MockFormData, requestMock } = vi.hoisted(() => {
+  class FormDataMock {
+    private _data: Array<[string, string]> = [];
+
+    append(key: string, value: string): void {
+      this._data.push([key, value]);
+    }
+
+    entries(): Array<[string, string]> {
+      return this._data;
+    }
+  }
+
+  return {
+    agentMock: vi.fn().mockImplementation(() => ({})),
+    MockFormData: FormDataMock,
+    requestMock: vi.fn(),
+  };
+});
 
 vi.mock('undici', () => ({
   Agent: agentMock,
+  FormData: MockFormData,
   request: requestMock,
 }));
 
@@ -122,6 +138,51 @@ describe('executeRequest', () => {
         headers: {
           'content-type': 'text/plain',
         },
+      }),
+    );
+  });
+
+  it('sends FormData body when formdataFields are present', async () => {
+    requestMock.mockResolvedValue(createMockResponse());
+
+    await executeRequest(
+      createResolvedRequest({
+        method: 'POST',
+        formdataFields: [
+          { key: 'username', value: 'alice', type: 'text' as const },
+          { key: 'email', value: 'alice@example.com', type: 'text' as const },
+        ],
+      }),
+    );
+
+    expect(requestMock).toHaveBeenCalledWith(
+      'https://example.com/api',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({
+          entries: expect.any(Function),
+        }),
+      }),
+    );
+  });
+
+  it('does not inject Content-Type header when formdataFields are present', async () => {
+    requestMock.mockResolvedValue(createMockResponse());
+
+    await executeRequest(
+      createResolvedRequest({
+        method: 'POST',
+        body: '{"name":"test"}',
+        formdataFields: [
+          { key: 'username', value: 'alice', type: 'text' as const },
+        ],
+      }),
+    );
+
+    expect(requestMock).toHaveBeenCalledWith(
+      'https://example.com/api',
+      expect.objectContaining({
+        headers: {},
       }),
     );
   });

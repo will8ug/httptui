@@ -7,12 +7,19 @@ export type HttpMethod =
   | 'HEAD'
   | 'OPTIONS';
 
+export interface FormDataParam {
+  key: string;
+  value: string;
+  type: 'text' | 'file';
+}
+
 export interface ParsedRequest {
   name: string;
   method: HttpMethod;
   url: string;
   headers: Record<string, string>;
   body: string | undefined;
+  formdataFields?: FormDataParam[];
   lineNumber: number;
 }
 
@@ -21,6 +28,7 @@ export interface ResolvedRequest {
   url: string;
   headers: Record<string, string>;
   body: string | undefined;
+  formdataFields?: FormDataParam[];
 }
 
 export interface FileVariable {

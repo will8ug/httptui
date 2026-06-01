@@ -179,6 +179,46 @@ describe('parsePostmanCollection', () => {
 
     expect(result.requests[0].body).toBeUndefined();
   });
+
+  it('extracts text-only formdata fields as formdataFields', () => {
+    const content = readFixture('postman-formdata-text.json');
+    const result = parsePostmanCollection(content);
+
+    expect(result.requests).toHaveLength(1);
+    const request = result.requests[0];
+    expect(request.name).toBe('Submit Text FormData');
+    expect(request.body).toBeUndefined();
+    expect(request.formdataFields).toBeDefined();
+    expect(request.formdataFields).toHaveLength(3);
+
+    const fields = request.formdataFields;
+    if (!fields) {
+      throw new Error('Expected formdataFields to be defined');
+    }
+    expect(fields[0]).toEqual({ key: 'username', value: 'alice', type: 'text' });
+    expect(fields[1]).toEqual({ key: 'email', value: 'alice@example.com', type: 'text' });
+    expect(fields[2]).toEqual({ key: 'message', value: 'Hello World', type: 'text' });
+  });
+
+  it('does not inject Content-Type header for text-only formdata', () => {
+    const content = readFixture('postman-formdata-text.json');
+    const result = parsePostmanCollection(content);
+
+    const request = result.requests[0];
+    expect(request.headers['Content-Type']).toBeUndefined();
+    expect(request.headers['content-type']).toBeUndefined();
+  });
+
+  it('warns on formdata with file fields and sets formdataFields to undefined', () => {
+    const content = readFixture('postman-formdata-mixed.json');
+    const result = parsePostmanCollection(content);
+
+    expect(result.requests).toHaveLength(1);
+    const request = result.requests[0];
+    expect(request.name).toBe('Submit Mixed FormData');
+    expect(request.body).toBeUndefined();
+    expect(request.formdataFields).toBeUndefined();
+  });
 });
 
 describe('integration smoke test', () => {

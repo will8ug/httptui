@@ -86,6 +86,32 @@ export function RequestDetailsView({
     );
   }
 
+  if (resolved.formdataFields && resolved.formdataFields.length > 0) {
+    for (const field of resolved.formdataFields) {
+      const fieldText = `${field.key}=${field.value}`;
+      if (horizontalOffset > 0) {
+        allLines.push(
+          <Text key={`formdata-${field.key}`}>{shiftText(fieldText, horizontalOffset, contentWidth)}</Text>,
+        );
+      } else {
+        const availableValueWidth = Math.max(0, contentWidth - field.key.length - 1);
+        allLines.push(
+          <Text key={`formdata-${field.key}`}>
+            <Text color="cyan">{field.key}</Text>
+            <Text color="gray">=</Text>
+            <Text color="gray">{truncateText(field.value, availableValueWidth)}</Text>
+          </Text>,
+        );
+      }
+    }
+
+    if (bodyLines.length > 0) {
+      allLines.push(
+        <Text key="separator-formdata" color="gray">{truncateText('─'.repeat(40), contentWidth)}</Text>,
+      );
+    }
+  }
+
   for (let i = 0; i < bodyLines.length; i += 1) {
     allLines.push(
       <Text key={`body-${i}`}>{shiftText(bodyLines[i] || ' ', horizontalOffset, contentWidth)}</Text>,

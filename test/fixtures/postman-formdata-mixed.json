@@ -1,0 +1,24 @@
+{
+  "info": {
+    "name": "FormData Mixed Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Submit Mixed FormData",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "https://api.example.com/upload" },
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "username", "value": "alice", "type": "text" },
+            { "key": "avatar", "type": "file", "src": "/path/to/avatar.png" },
+            { "key": "bio", "value": "Hello", "type": "text" }
+          ]
+        }
+      }
+    }
+  ]
+}
