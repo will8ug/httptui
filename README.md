@@ -10,6 +10,7 @@ httptui is a fast, keyboard-driven REST client that lives in your terminal. It p
 
 - **Interactive TUI**: Split-panel layout with request list and response viewer.
 - **Keyboard First**: Navigate, send requests, and toggle views entirely with shortcuts.
+- **Postman Collections**: Import and run Postman collections (`.json`) directly, with simple support for now.
 - **Variable Support**: Use file-level, system, and environment variables.
 - **Response Inspection**: Colorized status codes, headers, and pretty-printed JSON.
 - **Fast**: Built with Ink and undici for a lightweight, responsive experience.
