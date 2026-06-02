@@ -2,20 +2,9 @@
 
 ## Purpose
 
-Represent and send `multipart/form-data` request bodies with text-only fields, built from structured form parameter arrays during Postman collection parsing. This enables httptui to correctly handle Postman's `formdata` body mode, sending proper multipart encoding instead of the previous URL-encoded workaround.
+Handle `multipart/form-data` request bodies with text-only fields at runtime: encoding, variable resolution, and display. Parsing of `formdataFields` from Postman collections is specified in the `postman-collection-import` spec.
 
 ## Requirements
-
-### Requirement: Formdata body representation
-The system SHALL support a structured representation of `multipart/form-data` request bodies via an optional `formdataFields` property on parsed requests. Each field SHALL have a `key` and `value` (both strings). The `type` property from the Postman collection format SHALL be used to distinguish text fields from file fields.
-
-#### Scenario: Parsed request with formdata fields
-- **WHEN** a parsed request has `formdataFields: [{ key: "username", value: "alice", type: "text" }, { key: "email", value: "alice@example.com", type: "text" }]`
-- **THEN** the system SHALL recognize these as multipart form fields to be sent as `multipart/form-data`
-
-#### Scenario: Parsed request without formdata fields
-- **WHEN** a parsed request has `formdataFields` undefined
-- **THEN** the system SHALL treat the request body as a raw string (existing behavior, unchanged)
 
 ### Requirement: Multipart form-data encoding
 When sending a request with `formdataFields`, the system SHALL build a `FormData` object and pass it to the HTTP client. Before building the `FormData`, the executor SHALL remove any existing `Content-Type` header from the request headers so the HTTP client auto-generates the correct `Content-Type: multipart/form-data; boundary=...` header. All text fields SHALL be appended to the `FormData` object with their key and value.
