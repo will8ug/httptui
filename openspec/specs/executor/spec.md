@@ -85,3 +85,19 @@ When insecure mode is active, the status bar SHALL display a visible "INSECURE" 
 #### Scenario: INSECURE indicator shown when active
 - **WHEN** `state.insecure` is `true`
 - **THEN** the status bar SHALL display "INSECURE" in a warning color
+
+### Requirement: System CA certificates loaded by default
+httptui SHALL load system CA certificates at startup by merging Node.js's bundled Mozilla CA certificates with OS-level certificates via `tls.setDefaultCACertificates([...tls.getCACertificates('bundled'), ...tls.getCACertificates('system')])`, called once during startup before any HTTP requests are made. If the call fails (e.g., OS certificate store is inaccessible), httptui SHALL silently fall back to Node.js's default bundled CA certificates.
+
+#### Scenario: Corporate proxy CA is trusted without user action
+- **WHEN** a user runs `httptui api.http` on a system with a corporate proxy CA installed in the OS certificate store
+- **THEN** HTTPS requests to endpoints using the corporate proxy CA SHALL succeed without certificate errors
+
+#### Scenario: cli.tsx calls tls.setDefaultCACertificates at startup
+- **WHEN** `src/cli.tsx` is examined after the change
+- **THEN** it SHALL contain a call to `tls.setDefaultCACertificates([...tls.getCACertificates('bundled'), ...tls.getCACertificates('system')])` before the application starts rendering
+- **AND** the call SHALL be wrapped in a try/catch that silently ignores errors
+
+#### Scenario: dist/cli.js does NOT contain NODE_USE_SYSTEM_CA env var setup
+- **WHEN** `dist/cli.js` is examined after `npm run build`
+- **THEN** the file SHALL NOT contain `process.env.NODE_USE_SYSTEM_CA` in the banner (first two lines)
