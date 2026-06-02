@@ -18,7 +18,7 @@ The parser SHALL use `###` (three or more `#` characters) to separate requests. 
 - **THEN** the text SHALL be used as the request name
 
 ### Requirement: File variables
-File-level variables SHALL be declared with `@name = value` syntax outside any request block. Variable names SHALL be alphanumeric plus underscore. Values SHALL be trimmed. File variables MAY reference system variables.
+File-level variables SHALL be declared with `@name = value` syntax outside any request block. Variable names SHALL be alphanumeric plus underscore. Values SHALL be trimmed. File variables MAY reference system variables. Variable resolution is specified in the `variables` spec.
 
 #### Scenario: File variable declaration and reference
 - **WHEN** a file contains `@hostname = api.example.com` and a request URL contains `{{hostname}}`
@@ -31,72 +31,53 @@ Lines starting with `#` (but NOT `###`) SHALL be treated as comments and ignored
 - **WHEN** a `.http` file contains `# this is a comment` and `// another comment`
 - **THEN** both lines SHALL be ignored during parsing
 
-## Input
+### Requirement: Request line parsing
+The request line SHALL have format `METHOD URL [HTTP/VERSION]`. METHOD SHALL be case-insensitive, normalized to uppercase. URL MAY contain `{{variable}}` placeholders, including expressions with space-separated arguments (e.g., `{{$randomInt 1 100}}`). HTTP version is optional and SHALL be ignored.
 
-A string (file content) containing one or more HTTP requests separated by `###`.
+#### Scenario: Method normalized to uppercase
+- **WHEN** a request line is `post https://api.example.com/users`
+- **THEN** the parsed request SHALL have method `POST`
 
-## Output
+#### Scenario: URL with variable placeholders
+- **WHEN** a request line URL contains `{{hostname}}` and `{{$randomInt 1 100}}`
+- **THEN** the placeholders SHALL be preserved in the parsed URL (resolved later per `variables` spec)
 
-```typescript
-interface ParsedRequest {
-  name: string;           // from ### comment, or auto-generated "Request 1"
-  method: HttpMethod;     // GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
-  url: string;            // raw URL (variables not yet resolved)
-  headers: Record<string, string>;
-  body: string | undefined;
-  lineNumber: number;     // line in source file where request starts
-}
+### Requirement: Header parsing
+Headers SHALL follow the format `Header-Name: Header-Value`, one per line. Headers SHALL continue until a blank line, `###`, or EOF. Duplicate header names SHALL use the last value.
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
-```
+#### Scenario: Headers parsed from request
+- **WHEN** a request has headers `Content-Type: application/json` and `Authorization: Bearer token123`
+- **THEN** the parsed request SHALL have headers `{ "Content-Type": "application/json", "Authorization": "Bearer token123" }`
 
-## Rules
+#### Scenario: Duplicate headers use last value
+- **WHEN** a request has two `Accept` headers with different values
+- **THEN** the parsed request SHALL use the last `Accept` value
 
-### Request Separation
-- `###` (three or more `#` characters) separates requests
-- Text after `###` on the same line is the request name (trimmed)
-- First request in file does not require a preceding `###`
+### Requirement: Body parsing
+The body SHALL be everything after the first blank line following headers, until `###` or EOF. Leading and trailing blank lines in the body SHALL be trimmed. If no blank line follows headers, the body SHALL be undefined.
 
-### Request Line
-- Format: `METHOD URL [HTTP/VERSION]`
-- METHOD is case-insensitive, normalized to uppercase
-- URL can contain `{{variable}}` placeholders, including expressions with space-separated arguments (e.g., `{{$randomInt 1 100}}`)
-- HTTP version is optional and ignored (always use HTTP/1.1 via undici)
+#### Scenario: Body extracted after blank line
+- **WHEN** a POST request has headers followed by a blank line then `{"name": "Alice"}`
+- **THEN** the parsed request SHALL have body `{"name": "Alice"}`
 
-### Headers
-- Format: `Header-Name: Header-Value`
-- One header per line
-- Continues until a blank line or `###` or EOF
-- Duplicate header names: last value wins
+#### Scenario: No blank line means no body
+- **WHEN** a GET request has headers but no blank line before the next `###`
+- **THEN** the parsed request SHALL have body undefined
 
-### Body
-- Everything after the first blank line following headers, until `###` or EOF
-- Leading/trailing blank lines in body are trimmed
-- If no blank line after headers, body is undefined
+### Requirement: Whitespace handling
+Blank lines SHALL separate headers from body. Trailing whitespace on lines SHALL be trimmed. Empty lines between `###` and the request line SHALL be skipped.
 
-### Comments
-- Lines starting with `#` (but NOT `###`) are comments — ignored
-- Lines starting with `//` are comments — ignored
-- Comments can appear anywhere: between requests, before headers, etc.
+#### Scenario: Empty lines between ### and request are skipped
+- **WHEN** a `###` separator has two empty lines before the request line
+- **THEN** the empty lines SHALL be ignored and the request SHALL be parsed correctly
 
-### File Variables
-- Format: `@variableName = value`
-- Declared at file level (outside any request)
-- Name: alphanumeric + underscore
-- Value: everything after `=` (trimmed)
-- Can reference system variables: `@ts = {{$timestamp}}`
+### Requirement: Edge cases
+The parser SHALL handle: empty files (return empty array), files with only comments (return empty array), requests with no headers and no body, requests with headers but no body, `###` with no following request (ignored), and URLs with query params (preserved as-is).
 
-### Whitespace
-- Blank lines separate headers from body
-- Trailing whitespace on lines is trimmed
-- Empty lines between `###` and request line are skipped
+#### Scenario: Empty file returns empty array
+- **WHEN** a `.http` file contains no content
+- **THEN** the parser SHALL return an empty `ParsedRequest` array
 
-## Edge Cases
-
-- Empty file → empty array
-- File with only comments → empty array
-- Request with no headers and no body → valid (just method + URL)
-- Request with headers but no body → valid
-- Multiple blank lines between headers and body → first blank line is the separator, rest are part of body (trimmed)
-- `###` with no following request → ignored
-- URL with query params → preserved as-is
+#### Scenario: File with only comments returns empty array
+- **WHEN** a `.http` file contains only `# comment` lines
+- **THEN** the parser SHALL return an empty `ParsedRequest` array
