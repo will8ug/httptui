@@ -2,35 +2,7 @@
 
 ## Purpose
 
-Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buffer application with split-panel layout and keyboard navigation.
-
-## Requirements
-
-### Requirement: Response panel title visibility
-The response panel SHALL render its title ("Response" or "Response [wrap]"), status line, headers, and body content correctly regardless of response body size. The bordered Box containing the response view SHALL maintain its full height within the right column layout, ensuring the title is always visible.
-
-#### Scenario: Large response body renders title correctly
-- **WHEN** a request returns a large response body (e.g., a JSON array with many entries)
-- **THEN** the response panel SHALL display its "Response" title at the top of the bordered box, followed by the visible portion of the response content
-
-#### Scenario: Response title visible with detail panel toggled
-- **WHEN** the request details panel is toggled on and a large response is displayed
-- **THEN** both the "Request Details" title and the "Response" title SHALL be visible in their respective bordered boxes
-
-### Requirement: Vertical scroll offset clamping
-All vertical scroll offsets (`responseScrollOffset`, `detailsScrollOffset`) SHALL be clamped to `[0, maxOffset]` within the reducer. The `maxOffset` value SHALL be computed in the component layer (where terminal dimensions and content line counts are available) and passed as a payload field on the `SCROLL` action. The reducer SHALL apply `Math.min(Math.max(0, offset + delta), maxOffset)` clamping, consistent with the existing `SCROLL_HORIZONTAL` pattern. When `maxOffset` is not provided in the action (e.g., in tests), the reducer SHALL fall back to `Math.max(0, offset + delta)` to maintain backward compatibility.
-
-#### Scenario: Response scroll offset clamped at bottom
-- **WHEN** `focusedPanel` is `response` and `responseScrollOffset` is at `maxOffset` and the user presses `j` or `↓`
-- **THEN** `responseScrollOffset` SHALL remain at `maxOffset` (it SHALL NOT increase beyond the boundary)
-
-#### Scenario: Immediate upward scroll in response panel after bottoming out
-- **WHEN** `focusedPanel` is `response` and `responseScrollOffset` is at `maxOffset`, the user presses `j` multiple times, then presses `k`
-- **THEN** `responseScrollOffset` SHALL decrease by 1 from `maxOffset` immediately (no invisible offset accumulation)
-
-#### Scenario: SCROLL action without maxOffset falls back to lower-bound clamping
-- **WHEN** a `SCROLL` action is dispatched without a `maxOffset` field
-- **THEN** the reducer SHALL apply only `Math.max(0, offset + delta)` clamping (preserving current behavior for backward compatibility)
+Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buffer application with split-panel layout and keyboard navigation. This spec provides an overview of the layout, panels, and application lifecycle. Detailed behavior for shortcuts, navigation, search, fullscreen, wrap mode, and request details is specified in their respective specs.
 
 ## Layout
 
@@ -56,112 +28,44 @@ All vertical scroll offsets (`responseScrollOffset`, `detailsScrollOffset`) SHAL
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+### Panel Overview
+
+**Request List (left):** Shows all parsed requests from the file. Each entry: `METHOD /path` (truncated to fit width). Selected request highlighted with `▸`, and scroll vertically/horizontally when content exceeds panel bounds.
+
+**Response (right):** Shows response for the last sent request. Status line with color-coded status code, optional headers (verbose mode), and body (formatted JSON or raw text). Scroll vertically/horizontally when content exceeds panel bounds. See **text-wrap** spec for wrap mode behavior. See **response-search** spec for search behavior.
+
+**Request Details:** Toggleable panel showing resolved request details (method, URL, headers, body). See **request-details** spec for full behavior.
+
+**Status Bar (bottom):** Single line, full width. Left side shows keyboard shortcut hints (from centralized shortcuts, max 6 items). Right side shows file name and context-aware panel information (selected index, scroll position).
+
+**Help Overlay:** Lists all keyboard shortcuts in a two-column grouped layout. See **shortcuts** spec for full shortcut catalog and rendering rules.
+
 ### Fullscreen Layout
 
-When `maximizedPanel` is not `null`, the `Layout` component renders only the maximized panel at full width/height plus the status bar. The `maximizedPanel` prop controls which panel is shown:
-
-```
-┌────────────────────────────────────────────────────────────┐
-│   Response (fullscreen)                                     │
-│   HTTP/1.1 200 OK        247ms                             │
-│                                                             │
-│   Content-Type: application/json                           │
-│   X-Req-Id: abc-123                                        │
-│                                                             │
-│   {                                                         │
-│     "users": [                                              │
-│       { "id": 1, "name": "Alice" }                        │
-│     ]                                                       │
-│   }                                                         │
-│                                                             │
-├────────────────────────────────────────────────────────────┤
-│ [f] Max  [Enter] Send  [v] Verbose  [q] Quit  [?] Help   │
-└────────────────────────────────────────────────────────────┘
-```
-
-The `Layout` component SHALL accept a `maximizedPanel` prop of type `FocusedPanel | null`. When `maximizedPanel` is set, only that panel and the status bar SHALL be rendered. When `maximizedPanel` is `null`, the normal split-panel layout SHALL be rendered.
-
-The `App` component SHALL pass `state.maximizedPanel` as the `maximizedPanel` prop to `Layout`. The `App` component SHALL also pass `focused={true}` for the maximized panel (or the normal `focusedPanel` when not in fullscreen) for border highlighting.
-
-## Panels
-
-### Request List Panel (left)
-- Shows all parsed requests from the file
-- Each entry: `METHOD /path` (truncated to fit width)
-- Selected request highlighted with `▸` prefix and bold/color
-- Scroll when requests exceed panel height (vertically with ↑/↓/j/k)
-- Scroll horizontally with ←/→/h/l when content exceeds panel width
-- Focused state: bordered with accent color
-
-### Response Panel (right)
-- Shows response for the last sent request
-- Status line: `HTTP/1.1 {code} {text}` with timing
-  - 2xx: green, 3xx: yellow, 4xx: orange, 5xx: red
-- Headers section: shown only in verbose mode (dimmed text)
-- Body section: pretty-printed JSON (with syntax colors) or raw text
-- Scroll when content exceeds panel height (vertically with ↑/↓/j/k)
-- Scroll horizontally with ←/→/h/l when content exceeds panel width
-- Empty state: "Select a request and press Enter to send"
-- Two display modes controlled by `wrapMode` in `AppState`:
-  - **nowrap** (default): Lines are truncated to panel width with `…` ellipsis; horizontal scrolling supported
-  - **wrap**: Long lines wrap at the panel boundary (word boundaries preferred); JSON syntax coloring preserved across wrapped lines; horizontal scrolling disabled; panel title shows `Response [wrap]`
-- Raw mode controlled by `rawMode` boolean in `AppState`:
-  - **formatted** (default, `rawMode: false`): JSON responses are pretty-printed with syntax colorization
-  - **raw** (`rawMode: true`): Response body is rendered as plain text without JSON formatting or colorization; panel title shows `Response [raw]`
-  - When both `rawMode` and `wrapMode === 'wrap'` are active, panel title shows `Response [raw] [wrap]`
-
-### Status Bar (bottom)
-- Left side: keyboard shortcut hints (rendered from centralized shortcuts data, showing only items with `showInBar: true`; at most 6 shortcuts in the status bar — new shortcuts should default to `showInBar: false`)
-- Right side: file name, context-aware panel information. The file name is always visible, followed by a `|` separator and panel-specific status text based on the focused panel
-- When requests panel is focused: `{fileName} | {selectedIndex + 1}/{requestCount}`
-- When details panel is focused and content overflows: `{fileName} | ↕ {detailsScrollOffset + 1}/{detailsTotalLines} lines`
-- When response panel is focused and a response is displayed: `{fileName} | ↕ {responseScrollOffset + 1}/{responseTotalLines} lines`
-- When response panel is focused but no response has been sent yet: `{fileName}`
-- Single line, full width
-- Dimmed text
-
-### Help Overlay
-- Lists all keyboard shortcuts from the centralized `SHORTCUTS` data source (including those not shown in the status bar)
-- Rendered in a two-column grouped layout (see **shortcuts** spec for layout details)
-- Key displayed in yellow (padded to 8 characters), description in white
-- Toggled by pressing `?`
-- Closed by pressing `Escape` or `?` (closes current overlay)
-
-## Keyboard Shortcuts
-
-Keyboard shortcuts are defined in the centralized `SHORTCUTS` registry (`src/core/shortcuts.ts`). See the **shortcuts** spec for the full shortcut catalog and rendering rules. For navigation-specific keybindings (scrolling, edge-jump, Tab focus cycling), see the **navigation** spec.
+When `maximizedPanel` is not `null`, the `Layout` component renders only the maximized panel at full width/height (minus one row for the status bar). All other panels are hidden. See **fullscreen-panel** spec for full behavior including keyboard bindings, state preservation, and layout calculations.
 
 ## States
 
 ### Application States
-- **Idle**: Request selected, no response yet (or previous response shown). `wrapMode` persists across requests.
-- **Loading**: Request in flight (show spinner in response panel). `wrapMode` is preserved.
-- **Success**: Response received, displaying it. Rendering respects `wrapMode`.
-- **Error**: Network/connection error (show error message in response panel). `wrapMode` is preserved.
-- **File-load**: File-load overlay open, keystrokes routed to text input. `wrapMode` is preserved.
+- **Idle**: Request selected, no response yet (or previous response shown)
+- **Loading**: Request in flight (show spinner in response panel)
+- **Success**: Response received, displaying it
+- **Error**: Network/connection error (show error message in response panel)
+- **File-load**: File-load overlay open, keystrokes routed to text input
 
 ### Focus States
-- **Request list focused**: bordered with accent color, keyboard controls list
-- **Response focused**: bordered with accent color, keyboard controls scroll
-- **Details focused**: bordered with accent color (see **request-details** spec for full details panel behavior)
-- Focus cycling (Tab) behavior: see **navigation** spec
+Focus cycling via `Tab` is defined in the **navigation** spec.
 
-### Fullscreen States
-- **Fullscreen mode**: When `maximizedPanel` is not `null`, the focused panel expands to fill the entire content area (full terminal width and height minus one row for the status bar). All other panels are hidden.
-- Entering fullscreen: press `f` while focused on any panel (see **fullscreen-panel** spec for all keyboard bindings).
-- Exiting fullscreen: press `f` again or press `Escape` (see **navigation** spec for Escape priority chain).
-- `Tab` is a no-op in fullscreen mode (no panel to switch to).
-- `d` on the details panel in fullscreen is a no-op (cannot collapse the only visible panel).
+## Keyboard Shortcuts
 
-### Navigation States
-Horizontal and vertical scroll offset tracking and clamping are delegated to the **navigation** spec. The TUI spec only defines the _visible consequences_: panels support scrolling when content exceeds visible area, and navigation keys change which portion of content is displayed.
+Defined in the centralized `SHORTCUTS` registry (`src/core/shortcuts.ts`). See **shortcuts** spec for the full catalog and rendering rules. See **navigation** spec for scrolling and edge-jump keybindings.
 
 ## Startup
 
 1. Parse file path from argv
 2. If no file arg: show usage message and exit
 3. If file doesn't exist: show error and exit
-4. Parse .http file
+4. Parse .http file (or Postman collection if .json)
 5. If no requests found: show "No requests found in {file}" and exit
 6. Render TUI with alternate screen buffer
 7. First request pre-selected, response panel shows empty state
@@ -174,75 +78,16 @@ Horizontal and vertical scroll offset tracking and clamping are delegated to the
 
 ## File Reload
 
-### Action: RELOAD_FILE
+The `R` key triggers file reload. The reload handler reads the file at `state.filePath` using `readFileSync`, parses it with `parseHttpFile`, and dispatches a `RELOAD_FILE` action with the result. If the file read or parse fails, the handler dispatches a `REQUEST_ERROR` action with the error message.
 
-The TUI supports a `RELOAD_FILE` action that replaces the in-memory `requests` and `variables` with freshly parsed content from `filePath`. The action payload includes `requests` (ParsedRequest[]) and `variables` (FileVariable[]).
-
-- Successful reload: re-read file from `filePath`, parse it, dispatch `RELOAD_FILE` with the new data, request list reflects new contents
 - Selection preservation: if the currently selected request name still exists in the reloaded file, keep it selected; otherwise reset `selectedIndex` to 0
 - Reload clears `response`, `error`, and `responseScrollOffset`
-
-### Input: R key
-
-The `R` key (Shift+R) triggers file reload. The reload handler reads the file at `state.filePath` using `readFileSync`, parses it with `parseHttpFile`, and dispatches a `RELOAD_FILE` action with the result. If the file read or parse fails, the handler dispatches a `REQUEST_ERROR` action with the error message.
-
-### Reload Confirmation
-
-The status bar displays a temporary "Reloaded" confirmation (green, bold) when the file is reloaded. The message disappears after 2 seconds via a `CLEAR_RELOAD_MESSAGE` action dispatched by `setTimeout`.
-
-### Help Overlay
-
-The help overlay lists `R` as the "Reload file from disk" shortcut.
+- The status bar displays a temporary "Reloaded" confirmation (green, bold) that disappears after 2 seconds
 
 ## File Load
 
-### Mode: fileLoad
+The `o` key enters `fileLoad` mode, showing a centered pop-up overlay with a title, text input, optional error message, and hint. All keystrokes are routed to the text input.
 
-The TUI supports a `fileLoad` mode in which the user can type a file path to load a different `.http` file. The mode is entered by pressing `o` and exited by pressing Enter (confirm) or Escape (cancel).
-
-When in `fileLoad` mode, a centered pop-up overlay is displayed containing:
-- A title: "Open File"
-- A prompt: `File: ` followed by the current input text and a cursor character `_`
-- An inline error message in red when `fileLoadError` is not null
-- A hint: "Enter to load, Esc to cancel"
-
-All keystrokes are routed to the text input instead of the normal key handler.
-
-### Action: LOAD_FILE
-
-The `LOAD_FILE` action replaces `requests`, `variables`, and `filePath` with data from the newly loaded file. It also clears `response`, `error`, `responseScrollOffset`, `requestScrollOffset`, sets `mode` back to `'normal'`, clears `fileLoadInput` and `fileLoadError`, and sets `reloadMessage` to `"Loaded: {basename}"`.
-
-- Selection preservation: if the currently selected request name still exists in the new file, keep it selected; otherwise reset `selectedIndex` to 0
-- Load clears `response`, `error`, and scroll offsets
-
-### Action: ENTER_FILE_LOAD
-
-The `ENTER_FILE_LOAD` action sets `mode` to `'fileLoad'`, clears `fileLoadInput` to `''`, and clears `fileLoadError` to `null`.
-
-### Action: CANCEL_FILE_LOAD
-
-The `CANCEL_FILE_LOAD` action sets `mode` back to `'normal'` and clears `fileLoadInput` and `fileLoadError`. No state changes to requests, variables, or filePath occur.
-
-### Action: SET_FILE_LOAD_ERROR
-
-The `SET_FILE_LOAD_ERROR` action sets `fileLoadError` to the provided error message. The mode remains `'fileLoad'` so the overlay stays open and the user can correct the path.
-
-### Input: o key
-
-The `o` key (lowercase) triggers file-load mode. The overlay appears and keystrokes are routed to the text input.
-
-### Input: Enter (in file-load mode)
-
-When the user presses Enter in file-load mode, the TUI resolves the path relative to `process.cwd()`, checks file existence with `existsSync`, reads and parses the file. If the file is not found or contains no requests, a `SET_FILE_LOAD_ERROR` action is dispatched and the overlay remains open with the input preserved. On success, a `LOAD_FILE` action is dispatched.
-
-### Input: Escape (in file-load mode)
-
-Pressing Escape dispatches `CANCEL_FILE_LOAD`, which closes the overlay and returns to normal mode without changing any file state.
-
-### Load Confirmation
-
-The status bar displays a temporary `"Loaded: {basename}"` confirmation (green, bold) when a file is loaded. The message disappears after 2 seconds via a `CLEAR_RELOAD_MESSAGE` action, reusing the same mechanism as the reload confirmation.
-
-### Help Overlay
-
-The help overlay lists `o` as the "Open a different file" shortcut.
+- **Enter**: resolves path relative to `process.cwd()`, checks file existence, reads and parses the file. On success, dispatches `LOAD_FILE` action; on failure, sets `fileLoadError` and keeps overlay open with input preserved.
+- **Escape**: dispatches `CANCEL_FILE_LOAD`, closes overlay, returns to normal mode without changing file state.
+- Load confirmation: status bar displays a temporary `"Loaded: {basename}"` (green, bold) that disappears after 2 seconds.
