@@ -37,6 +37,31 @@ function isSupportedMethod(method: string): method is HttpMethod {
   return SUPPORTED_METHODS.has(method.toUpperCase());
 }
 
+const RAW_LANGUAGE_TO_CONTENT_TYPE: Record<string, string> = {
+  json: 'application/json',
+  xml: 'application/xml',
+  text: 'text/plain',
+  html: 'text/html',
+};
+
+function inferContentTypeFromLanguage(
+  headers: Record<string, string>,
+  bodyMode: string | undefined,
+  rawLanguage: string | undefined,
+): void {
+  const hasExplicitContentType = Object.keys(headers).some(
+    (key) => key.toLowerCase() === 'content-type',
+  );
+
+  if (bodyMode === 'raw' && rawLanguage && !hasExplicitContentType) {
+    const contentType = RAW_LANGUAGE_TO_CONTENT_TYPE[rawLanguage];
+
+    if (contentType) {
+      headers['Content-Type'] = contentType;
+    }
+  }
+}
+
 function buildAuthHeaders(item: any): Record<string, string> {
   if (!item?.request?.auth) {
     return {};
@@ -342,23 +367,7 @@ export function parsePostmanCollection(content: string): ParseResult {
       headers['Content-Type'] = 'multipart/form-data';
     }
 
-    // Auto-generate Content-Type for raw body based on language hint
-    const rawLanguage = req.body?.options?.raw?.language as string | undefined;
-    const hasExplicitContentType = Object.keys(headers).some(
-      (key) => key.toLowerCase() === 'content-type',
-    );
-    if (bodyMode === 'raw' && rawLanguage && !hasExplicitContentType) {
-      const contentTypeMap: Record<string, string> = {
-        json: 'application/json',
-        xml: 'application/xml',
-        text: 'text/plain',
-        html: 'text/html',
-      };
-      const contentType = contentTypeMap[rawLanguage];
-      if (contentType) {
-        headers['Content-Type'] = contentType;
-      }
-    }
+    inferContentTypeFromLanguage(headers, bodyMode, req.body?.options?.raw?.language as string | undefined);
 
     requests.push({
       name,
