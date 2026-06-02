@@ -60,7 +60,7 @@ The system SHALL convert the Postman header array `[{key: "Content-Type", value:
 - **THEN** the parsed request SHALL have an empty headers object `{}`
 
 ### Requirement: Extract request body
-The system SHALL extract the request body based on body mode. For `raw` mode, the raw string SHALL be used directly. For `urlencoded` mode, the key-value array SHALL be converted to a `key=val&key2=val2` string and a `Content-Type: application/x-www-form-urlencoded` header SHALL be injected. For `formdata` mode with only text fields (no file fields), the parser SHALL populate `formdataFields` on the parsed request with each field's key, value, and type, and inject a `Content-Type: multipart/form-data` header (informational for display — the actual boundary is auto-generated at send time). For `formdata` mode containing file fields, the parser SHALL log a warning and set body to `undefined`. For `file` and `graphql` modes, the parser SHALL log a warning and set body to `undefined`.
+The system SHALL extract the request body based on body mode. For `raw` mode, the raw string SHALL be used directly, and if `body.options.raw.language` is present, the parser SHALL inject the corresponding `Content-Type` header (`json` → `application/json`, `xml` → `application/xml`, `text` → `text/plain`, `html` → `text/html`) only if no explicit `Content-Type` header is already declared. For `urlencoded` mode, the key-value array SHALL be converted to a `key=val&key2=val2` string and a `Content-Type: application/x-www-form-urlencoded` header SHALL be injected. For `formdata` mode with only text fields (no file fields), the parser SHALL populate `formdataFields` on the parsed request with each field's key, value, and type, and inject a `Content-Type: multipart/form-data` header (informational for display — the actual boundary is auto-generated at send time). For `formdata` mode containing file fields, the parser SHALL log a warning and set body to `undefined`. For `file` and `graphql` modes, the parser SHALL log a warning and set body to `undefined`.
 
 #### Scenario: Extract raw JSON body
 - **WHEN** a Postman request has body mode `raw` with content `{"name": "Alice"}`
@@ -81,6 +81,34 @@ The system SHALL extract the request body based on body mode. For `raw` mode, th
 #### Scenario: Request with no body
 - **WHEN** a Postman request has body mode `raw` with empty content
 - **THEN** the parsed request SHALL have body `undefined`
+
+#### Scenario: Raw body with JSON language hint generates Content-Type header
+- **WHEN** a Postman request has body mode `raw`, raw content `{"name": "Alice"}`, and `options.raw.language` set to `json`
+- **THEN** the parsed request SHALL include header `Content-Type: application/json`
+
+#### Scenario: Raw body with XML language hint generates Content-Type header
+- **WHEN** a Postman request has body mode `raw`, raw content `<name>Alice</name>`, and `options.raw.language` set to `xml`
+- **THEN** the parsed request SHALL include header `Content-Type: application/xml`
+
+#### Scenario: Raw body with text language hint generates Content-Type header
+- **WHEN** a Postman request has body mode `raw`, raw content `plain text`, and `options.raw.language` set to `text`
+- **THEN** the parsed request SHALL include header `Content-Type: text/plain`
+
+#### Scenario: Raw body with HTML language hint generates Content-Type header
+- **WHEN** a Postman request has body mode `raw`, raw content `<h1>Title</h1>`, and `options.raw.language` set to `html`
+- **THEN** the parsed request SHALL include header `Content-Type: text/html`
+
+#### Scenario: Explicit Content-Type header is not overridden
+- **WHEN** a Postman request has body mode `raw`, `options.raw.language` set to `json`, AND an explicit header `Content-Type: application/custom+json`
+- **THEN** the parsed request SHALL retain the explicit header `Content-Type: application/custom+json`
+
+#### Scenario: Unrecognized raw language is silently ignored
+- **WHEN** a Postman request has body mode `raw`, `options.raw.language` set to `graphql`, and no explicit `Content-Type` header
+- **THEN** the parsed request SHALL NOT have a `Content-Type` header injected
+
+#### Scenario: Raw body without language hint leaves headers unchanged
+- **WHEN** a Postman request has body mode `raw` with content `some data` and no `options.raw.language` property
+- **THEN** the parsed request SHALL NOT have a `Content-Type` header injected
 
 ### Requirement: Convert auth to headers
 The system SHALL convert supported auth types to standard HTTP headers. Basic auth SHALL produce `Authorization: Basic <base64(user:pass)>`. Bearer auth SHALL produce `Authorization: Bearer <token>`. API Key auth with `in: "header"` SHALL add the specified key-value pair as a header. Unsupported auth types SHALL be logged as warnings.
