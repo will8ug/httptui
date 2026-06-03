@@ -5,6 +5,7 @@ import { render } from 'ink';
 
 import { App } from './app';
 import { parseArgs } from './args';
+import { loadConfig } from './core/config';
 import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
 import type { ParseResult } from './core/types';
@@ -62,12 +63,14 @@ try {
   // Silently fall back to bundled CAs
 }
 
+const httptuiConfig = loadConfig();
+
 const app = render(
   <App
     filePath={filePath}
     requests={parseResult.requests}
     variables={parseResult.variables}
-    executorConfig={{ insecure }}
+    executorConfig={{ insecure, certificates: httptuiConfig?.certificates }}
   />,
 );
 

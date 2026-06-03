@@ -59,8 +59,21 @@ export interface RequestError {
   code?: string;
 }
 
+export interface CertEntry {
+  cert?: string;
+  key?: string;
+  pfx?: string;
+  passphrase?: string;
+  ca?: string;
+}
+
+export interface HttptuiConfig {
+  certificates?: Record<string, CertEntry>;
+}
+
 export interface ExecutorConfig {
   insecure: boolean;
+  certificates?: Record<string, CertEntry>;
 }
 
 export type FocusedPanel = 'requests' | 'details' | 'response';

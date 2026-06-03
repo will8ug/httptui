@@ -12,6 +12,7 @@ import { RequestDetailsView } from './components/RequestDetailsView';
 import { ResponseView } from './components/ResponseView';
 import { StatusBar } from './components/StatusBar';
 import { executeRequest, isRequestError } from './core/executor';
+import type { CertConfig } from './core/executor';
 import { formatResponseBody } from './core/formatter';
 import { computeVerticalMaxOffset, createInitialState, reducer } from './core/reducer';
 import { computeResponseLayout } from './core/responseLayout';
@@ -19,6 +20,8 @@ import type { AppProps, AppState, RequestError, ResponseData } from './core/type
 import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
 import { resolveVariables } from './core/variables';
+import { matchCertificate, loadCertFiles } from './core/certificates';
+import { getConfigDir } from './core/config';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
 import { resolveRequestDetails } from './utils/request';
 import { getResponseTotalLines } from './utils/scroll';
@@ -106,7 +109,18 @@ export function App(props: AppProps): React.ReactElement {
 
     try {
       const resolvedRequest = resolveVariables(request, state.variables);
-      const result = await executeRequest(resolvedRequest, props.executorConfig);
+
+      let certConfig: CertConfig | undefined;
+      if (props.executorConfig.certificates) {
+        const matchedEntry = matchCertificate(resolvedRequest.url, props.executorConfig.certificates);
+        if (matchedEntry) {
+          const configDir = getConfigDir();
+          const hostname = new URL(resolvedRequest.url).hostname;
+          certConfig = loadCertFiles(matchedEntry, configDir, hostname);
+        }
+      }
+
+      const result = await executeRequest(resolvedRequest, props.executorConfig, certConfig);
 
       if (isRequestError(result)) {
         dispatch({ type: 'REQUEST_ERROR', error: result });

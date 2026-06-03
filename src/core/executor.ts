@@ -84,9 +84,18 @@ function getStatusText(statusCode: number): string {
   return STATUS_TEXTS[statusCode] ?? '';
 }
 
+export interface CertConfig {
+  cert?: Buffer;
+  key?: Buffer;
+  pfx?: Buffer;
+  passphrase?: string;
+  ca?: Buffer;
+}
+
 export async function executeRequest(
   resolvedRequest: ResolvedRequest,
   config?: ExecutorConfig,
+  certConfig?: CertConfig,
 ): Promise<ResponseData | RequestError> {
   try {
     new URL(resolvedRequest.url);
@@ -124,8 +133,23 @@ export async function executeRequest(
   const startTime = performance.now();
 
   try {
-    const dispatcher = config?.insecure
-      ? new Agent({ connect: { rejectUnauthorized: false } })
+    const connectOptions: Record<string, unknown> = {};
+
+    if (config?.insecure) {
+      connectOptions.rejectUnauthorized = false;
+    }
+
+    if (certConfig) {
+      if (certConfig.cert !== undefined) connectOptions.cert = certConfig.cert;
+      if (certConfig.key !== undefined) connectOptions.key = certConfig.key;
+      if (certConfig.pfx !== undefined) connectOptions.pfx = certConfig.pfx;
+      if (certConfig.passphrase !== undefined) connectOptions.passphrase = certConfig.passphrase;
+      if (certConfig.ca !== undefined) connectOptions.ca = certConfig.ca;
+    }
+
+    const hasConnectOptions = Object.keys(connectOptions).length > 0;
+    const dispatcher = hasConnectOptions
+      ? new Agent({ connect: connectOptions })
       : undefined;
 
     const response = await request(resolvedRequest.url, {
