@@ -55,7 +55,7 @@ The executor SHALL return `ResponseData` with `statusCode`, `statusText`, `heade
 - **THEN** the executor SHALL return `ResponseData` with all fields populated, including timing and size metrics
 
 ### Requirement: Insecure mode via ExecutorConfig
-The executor SHALL accept an optional `ExecutorConfig` parameter with an `insecure` boolean field. When `insecure` is `true`, the executor SHALL create an undici `Agent` with `connect.rejectUnauthorized` set to `false` and pass it as the `dispatcher` option to `request()`. When `insecure` is `false` or the config is omitted, the executor SHALL use default TLS verification.
+The executor SHALL accept an optional `ExecutorConfig` parameter with an `insecure` boolean field and an optional `certificates` field of type `Record<string, CertEntry>`. When `insecure` is `true`, the executor SHALL create an undici `Agent` with `connect.rejectUnauthorized` set to `false`. The `certificates` field, when present, SHALL be used to match the request URL's host against certificate entries. When a match is found, the matched certificate's file contents SHALL be merged into the undici `Agent.connect` options.
 
 #### Scenario: Insecure mode skips TLS verification
 - **WHEN** `ExecutorConfig.insecure` is `true`
@@ -64,6 +64,10 @@ The executor SHALL accept an optional `ExecutorConfig` parameter with an `insecu
 #### Scenario: Default mode uses TLS verification
 - **WHEN** `ExecutorConfig` is omitted or `insecure` is `false`
 - **THEN** the executor SHALL NOT use a custom dispatcher (default TLS verification applies)
+
+#### Scenario: Certificates field threaded through ExecutorConfig
+- **WHEN** `ExecutorConfig.certificates` is present and contains a matching entry for the request host
+- **THEN** the executor SHALL configure the undici Agent with the matched certificate's credentials
 
 ### Requirement: Actionable TLS error messages
 When a request fails due to a TLS certificate error, the executor SHALL detect the error code and append remediation hints to the error message. The following error codes SHALL be detected: `UNABLE_TO_VERIFY_LEAF_SIGNATURE`, `DEPTH_ZERO_SELF_SIGNED_CERT`, `SELF_SIGNED_CERT_IN_CHAIN`, `CERT_HAS_EXPIRED`, `ERR_TLS_CERT_ALTNAME_INVALID`. The hint SHALL suggest the `--insecure` flag and `NODE_EXTRA_CA_CERTS` environment variable.
