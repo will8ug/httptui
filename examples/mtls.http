@@ -1,0 +1,48 @@
+@mtlsBase = https://localhost:10443
+
+# Edit ~/.config/httptui/config.json:
+# {
+#   "certificates": {
+#     "localhost": {
+#       "cert": "./certs/client.crt",
+#       "key": "./certs/client.key",
+#       "ca": "./certs/ca.crt"
+#     }
+#   }
+# }
+
+##### Quick test of HTTPS endpoint (client cert is not required)
+
+### quick ping (no cert is required)
+GET {{mtlsBase}}/ping
+
+
+##### Test for no client certificate
+##### Expect: /optional -> client_certificate=null, /verify -> 403
+
+### No Cert - /optional (Expect: returns success, cert is null)
+GET {{mtlsBase}}/mtls/optional
+
+### No Cert - /verify (Expect: 403)
+GET {{mtlsBase}}/mtls/verify
+
+### No Cert - /echo-cert (Expect: 400)
+GET {{mtlsBase}}/mtls/echo-cert
+
+
+##### Test for client certificate
+##### Prerequisites: httptui config is ready with "localhost" certificates
+
+### With Cert - /echo-cert (returns client certificate details)
+GET {{mtlsBase}}/mtls/echo-cert
+
+### With Cert - /optional (returns client certificate details)
+GET {{mtlsBase}}/mtls/optional
+
+### With Cert - /verify (returns cert details + TLS version/cipher suite)
+GET {{mtlsBase}}/mtls/verify
+
+### With Cert - /headers (echoes request headers + certificate info)
+GET {{mtlsBase}}/mtls/headers
+Accept: application/json
+X-Custom-Header: mtls-test
