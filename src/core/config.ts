@@ -52,6 +52,18 @@ function validateEntry(key: string, entry: CertEntry): boolean {
   return true;
 }
 
+function populateCertEntry(value: any): CertEntry {
+  const entry = value as Record<string, unknown>;
+  const certEntry: CertEntry = {};
+
+  if (typeof entry.cert === 'string') certEntry.cert = entry.cert;
+  if (typeof entry.key === 'string') certEntry.key = entry.key;
+  if (typeof entry.pfx === 'string') certEntry.pfx = entry.pfx;
+  if (typeof entry.passphrase === 'string') certEntry.passphrase = entry.passphrase;
+  if (typeof entry.ca === 'string') certEntry.ca = entry.ca;
+  return certEntry;
+}
+
 export function loadConfig(): HttptuiConfig | null {
   const configDir = getConfigDir();
   const configPath = path.join(configDir, 'config.json');
@@ -92,14 +104,7 @@ export function loadConfig(): HttptuiConfig | null {
       continue;
     }
 
-    const entry = value as Record<string, unknown>;
-    const certEntry: CertEntry = {};
-
-    if (typeof entry.cert === 'string') certEntry.cert = entry.cert;
-    if (typeof entry.key === 'string') certEntry.key = entry.key;
-    if (typeof entry.pfx === 'string') certEntry.pfx = entry.pfx;
-    if (typeof entry.passphrase === 'string') certEntry.passphrase = entry.passphrase;
-    if (typeof entry.ca === 'string') certEntry.ca = entry.ca;
+    const certEntry = populateCertEntry(value);
 
     if (validateEntry(key, certEntry)) {
       certificates[key] = certEntry;
