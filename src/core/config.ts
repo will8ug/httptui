@@ -134,13 +134,11 @@ export function loadConfig(projectDir?: string): HttptuiConfig | null {
     return { ...projectConfig, configDir: projectDir };
   }
 
-  const merged: HttptuiConfig = {
+  return {
     ...globalConfig,
     ...projectConfig,
     configDir: projectDir,
   };
-
-  return merged;
 }
 
 export function resolveCertPath(inputPath: string, baseDir: string): string {

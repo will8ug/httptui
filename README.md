@@ -153,7 +153,7 @@ GET https://{{hostname}}/users
 
 #### Environment Variables
 - `{{$processEnv VAR_NAME}}`: Read from your shell environment.
-- `{{$dotenv VAR_NAME}}`: Read from a `.env` file in the current directory.
+- `{{$dotenv VAR_NAME}}`: Read from a `.env` file in the `.http` file's directory first, then fall back to the current working directory.
 
 ## Examples
 
@@ -225,13 +225,33 @@ Node.js 24 ships OpenSSL 3.5 with security level 2 by default. This means:
 
 If you connect to a legacy server with weak certificates, you may see new TLS errors that didn't occur on earlier Node.js versions. The fix is to upgrade the server's certificates to use at least 2048-bit RSA keys.
 
-## Client Certificates
+## Configuration
 
-Configure SSL client certificates for mTLS endpoints in the global config file:
+httptui loads configuration from two sources: a global config file and an optional project-level sidecar file.
+
+### Global Config
+
 - **macOS/Linux**: `~/.config/httptui/config.json`
 - **Windows**: `%APPDATA%\httptui\config.json`
 
-Paths starting with `~` expand to your home directory. Relative paths resolve against the directory containing the config file.
+Paths starting with `~` expand to your home directory. Relative paths resolve against the global config directory.
+
+### Project-Level Config
+
+You can also place a `.httptui.json` file in the same directory as your `.http` file. This is useful for sharing request collections in teams or keeping project-specific certificates alongside your code.
+
+#### Precedence
+
+Project config values override global config values for all top-level keys. If both files define `certificates`, the project's `certificates` completely replace the global ones for that session.
+
+#### Relative Path Resolution
+
+- **Global config**: Relative paths resolve against the global config directory (`~/.config/httptui/`).
+- **Project config**: Relative paths resolve against the directory containing the `.httptui.json` file.
+
+## Client Certificates
+
+Configure SSL client certificates for mTLS endpoints in either the global config file or a project-level `.httptui.json` file.
 
 ```json
 {
@@ -255,27 +275,17 @@ Paths starting with `~` expand to your home directory. Relative paths resolve ag
 }
 ```
 
-### Configuration Details
+### Details
 
 - **Passphrases**: Prefix the value with `$` to reference an environment variable (e.g., `"$MY_PWD"`). Plaintext passphrases are supported but discouraged.
 - **CA-only**: Use the `ca` field to trust a specific server without providing client credentials.
 - **Matching Priority**: Exact host:port > exact host > wildcard.
 - **Protocol**: Client certificates only apply to HTTPS requests. HTTP requests ignore this configuration.
+- **Absolute Paths**: Paths starting with `/` are used as-is.
 
-## Project-Level Config
+### Project-Level Example
 
-You can also place a `.httptui.json` file in the same directory as your `.http` file. This is useful for sharing request collections in teams or keeping project-specific certificates alongside your code.
-
-### Precedence
-
-Project config values override global config values for all top-level keys. If both files define `certificates`, the project's `certificates` completely replace the global ones for that session.
-
-### Relative Path Resolution
-
-- **Global config**: Relative paths resolve against the global config directory (`~/.config/httptui/`).
-- **Project config**: Relative paths resolve against the directory containing the `.httptui.json` file.
-
-### Example
+With a `.httptui.json` at `/project/api/.httptui.json`, the relative path `./certs/client.crt` resolves to `/project/api/certs/client.crt`.
 
 ```json
 {
@@ -288,11 +298,10 @@ Project config values override global config values for all top-level keys. If b
 }
 ```
 
-With this file at `/project/api/.httptui.json`, the relative path `./certs/client.crt` resolves to `/project/api/certs/client.crt`.
+## Environment Variables
 
-### Environment Variables
-
-The `{{$dotenv VAR_NAME}}` system variable reads from a `.env` file in the `.http` file's directory first, then falls back to the current working directory.
+- `{{$processEnv VAR_NAME}}`: Read from your shell environment.
+- `{{$dotenv VAR_NAME}}`: Read from a `.env` file in the `.http` file's directory first, then fall back to the current working directory.
 
 ## Tech Stack
 
