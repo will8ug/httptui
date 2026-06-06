@@ -262,6 +262,38 @@ Paths starting with `~` expand to your home directory. Relative paths resolve ag
 - **Matching Priority**: Exact host:port > exact host > wildcard.
 - **Protocol**: Client certificates only apply to HTTPS requests. HTTP requests ignore this configuration.
 
+## Project-Level Config
+
+You can also place a `.httptui.json` file in the same directory as your `.http` file. This is useful for sharing request collections in teams or keeping project-specific certificates alongside your code.
+
+### Precedence
+
+Project config values override global config values for all top-level keys. If both files define `certificates`, the project's `certificates` completely replace the global ones for that session.
+
+### Relative Path Resolution
+
+- **Global config**: Relative paths resolve against the global config directory (`~/.config/httptui/`).
+- **Project config**: Relative paths resolve against the directory containing the `.httptui.json` file.
+
+### Example
+
+```json
+{
+  "certificates": {
+    "api.corp.local": {
+      "cert": "./certs/client.crt",
+      "key": "./certs/client.key"
+    }
+  }
+}
+```
+
+With this file at `/project/api/.httptui.json`, the relative path `./certs/client.crt` resolves to `/project/api/certs/client.crt`.
+
+### Environment Variables
+
+The `{{$dotenv VAR_NAME}}` system variable reads from a `.env` file in the `.http` file's directory first, then falls back to the current working directory.
+
 ## Tech Stack
 
 - **TypeScript**: Type-safe development.
