@@ -145,12 +145,35 @@ describe('resolveVariables', () => {
           body: '{{ $dotenv HOST }}|{{ $dotenv TOKEN }}|{{ $dotenv NAME }}',
         }),
         [],
-        dotenvPath,
+        tempDirectory,
       );
 
       expect(resolved.body).toBe('service.local|quoted value|single quoted');
     } finally {
       rmSync(tempDirectory, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves $dotenv from baseDir first, then falls back to cwd', () => {
+    const baseDir = mkdtempSync(join(tmpdir(), 'base-dir-'));
+    const fallbackDir = mkdtempSync(join(tmpdir(), 'fallback-dir-'));
+
+    writeFileSync(join(baseDir, '.env'), 'HOST=base.local', 'utf8');
+    writeFileSync(join(fallbackDir, '.env'), 'HOST=fallback.local', 'utf8');
+
+    const originalCwd = process.cwd();
+    try {
+      process.chdir(fallbackDir);
+      const resolved = resolveVariables(
+        createRequest({ body: '{{ $dotenv HOST }}' }),
+        [],
+        baseDir,
+      );
+      expect(resolved.body).toBe('base.local');
+    } finally {
+      process.chdir(originalCwd);
+      rmSync(baseDir, { recursive: true, force: true });
+      rmSync(fallbackDir, { recursive: true, force: true });
     }
   });
 

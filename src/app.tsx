@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 
 import React, { useReducer } from 'react';
 import { useApp, useInput, useStdout } from 'ink';
@@ -21,7 +21,7 @@ import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
 import { resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
-import { getConfigDir } from './core/config';
+import { getConfigDir, loadConfig } from './core/config';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
 import { resolveRequestDetails } from './utils/request';
 import { getResponseTotalLines } from './utils/scroll';
@@ -108,13 +108,13 @@ export function App(props: AppProps): React.ReactElement {
     dispatch({ type: 'SEND_REQUEST' });
 
     try {
-      const resolvedRequest = resolveVariables(request, state.variables);
+      const resolvedRequest = resolveVariables(request, state.variables, dirname(state.filePath));
 
       let certConfig: CertConfig | undefined;
-      if (props.executorConfig.certificates) {
-        const matchedEntry = matchCertificate(resolvedRequest.url, props.executorConfig.certificates);
+      if (state.certificates) {
+        const matchedEntry = matchCertificate(resolvedRequest.url, state.certificates);
         if (matchedEntry) {
-          const configDir = getConfigDir();
+          const configDir = state.configDir ?? getConfigDir();
           const hostname = new URL(resolvedRequest.url).hostname;
           certConfig = loadCertFiles(matchedEntry, configDir, hostname);
         }
@@ -174,11 +174,19 @@ export function App(props: AppProps): React.ReactElement {
             return;
           }
 
+          const newConfig = loadConfig(dirname(resolvedPath));
+          const newExecutorConfig = {
+            ...props.executorConfig,
+            certificates: newConfig?.certificates,
+            configDir: newConfig?.configDir,
+          };
+
           dispatch({
             type: 'LOAD_FILE',
             requests: parseResult.requests,
             variables: parseResult.variables,
             filePath: resolvedPath,
+            executorConfig: newExecutorConfig,
           });
           setTimeout(() => { dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }); }, 2000);
         } catch (error) {

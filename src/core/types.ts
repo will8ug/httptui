@@ -69,11 +69,13 @@ export interface CertEntry {
 
 export interface HttptuiConfig {
   certificates?: Record<string, CertEntry>;
+  configDir?: string;
 }
 
 export interface ExecutorConfig {
   insecure: boolean;
   certificates?: Record<string, CertEntry>;
+  configDir?: string;
 }
 
 export type FocusedPanel = 'requests' | 'details' | 'response';
@@ -110,6 +112,8 @@ export interface AppState {
   currentMatchIndex: number;
   lastSearchQuery: string;
   maximizedPanel: FocusedPanel | null;
+  certificates?: Record<string, CertEntry>;
+  configDir?: string;
 }
 
 export interface AppProps {
@@ -136,7 +140,7 @@ export type Action =
   | { type: 'ENTER_FILE_LOAD' }
   | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string }
   | { type: 'SET_FILE_LOAD_ERROR'; error: string }
-  | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string }
+  | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string; executorConfig?: ExecutorConfig }
   | { type: 'CANCEL_FILE_LOAD' }
   | { type: 'TOGGLE_WRAP' }
   | { type: 'TOGGLE_RAW' }

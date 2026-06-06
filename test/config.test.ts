@@ -111,6 +111,7 @@ describe('loadConfig', () => {
       certificates: {
         'api.example.com': { cert: '/path/to/cert', key: '/path/to/key' },
       },
+      configDir: '/home/testuser/.config/httptui',
     });
   });
 
@@ -146,7 +147,10 @@ describe('loadConfig', () => {
 
     const result = loadConfig();
 
-    expect(result).toEqual({ certificates: {} });
+    expect(result).toEqual({
+      certificates: {},
+      configDir: '/home/testuser/.config/httptui',
+    });
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining(
         'certificate entry "incomplete.example.com" has cert but no key',
@@ -166,7 +170,10 @@ describe('loadConfig', () => {
 
     const result = loadConfig();
 
-    expect(result).toEqual({ certificates: {} });
+    expect(result).toEqual({
+      certificates: {},
+      configDir: '/home/testuser/.config/httptui',
+    });
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining(
         'certificate entry "conflict.example.com" has both cert/key and pfx',
@@ -186,7 +193,10 @@ describe('loadConfig', () => {
 
     const result = loadConfig();
 
-    expect(result).toEqual({ certificates: {} });
+    expect(result).toEqual({
+      certificates: {},
+      configDir: '/home/testuser/.config/httptui',
+    });
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining(
         'certificate entry "empty.example.com" has no cert, key, pfx, or ca',
@@ -211,6 +221,7 @@ describe('loadConfig', () => {
       certificates: {
         'valid.example.com': { cert: '/cert', key: '/key' },
       },
+      configDir: '/home/testuser/.config/httptui',
     });
   });
 
@@ -220,7 +231,9 @@ describe('loadConfig', () => {
 
     const result = loadConfig();
 
-    expect(result).toEqual({});
+    expect(result).toEqual({
+      configDir: '/home/testuser/.config/httptui',
+    });
   });
 
   it('returns null when certificates value is an array instead of an object', () => {
@@ -235,6 +248,119 @@ describe('loadConfig', () => {
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining('"certificates" must be an object'),
     );
+  });
+
+  it('returns null when config file does not exist', () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    const result = loadConfig();
+
+    expect(result).toBeNull();
+  });
+
+  it('merges project config over global config when project config exists', () => {
+    vi.mocked(existsSync).mockImplementation((p) => {
+      if (typeof p === 'string') {
+        if (p.includes('config.json')) return true;
+        if (p.includes('.httptui.json')) return true;
+      }
+      return false;
+    });
+    vi.mocked(readFileSync).mockImplementation((p) => {
+      const pathStr = String(p);
+      if (pathStr.includes('config.json')) {
+        return JSON.stringify({
+          certificates: {
+            'global.example.com': { cert: '/global/cert', key: '/global/key' },
+          },
+        });
+      }
+      if (pathStr.includes('.httptui.json')) {
+        return JSON.stringify({
+          certificates: {
+            'project.example.com': { cert: '/project/cert', key: '/project/key' },
+          },
+        });
+      }
+      return '';
+    });
+
+    const result = loadConfig('/project/api');
+
+    expect(result).toEqual({
+      certificates: {
+        'project.example.com': { cert: '/project/cert', key: '/project/key' },
+      },
+      configDir: '/project/api',
+    });
+  });
+
+  it('returns global config when project config does not exist', () => {
+    vi.mocked(existsSync).mockImplementation((p) => {
+      if (typeof p === 'string') {
+        if (p.includes('config.json')) return true;
+        if (p.includes('.httptui.json')) return false;
+      }
+      return false;
+    });
+    vi.mocked(readFileSync).mockImplementation((p) => {
+      const pathStr = String(p);
+      if (pathStr.includes('config.json')) {
+        return JSON.stringify({
+          certificates: {
+            'global.example.com': { cert: '/global/cert', key: '/global/key' },
+          },
+        });
+      }
+      return '';
+    });
+
+    const result = loadConfig('/project/api');
+
+    expect(result).toEqual({
+      certificates: {
+        'global.example.com': { cert: '/global/cert', key: '/global/key' },
+      },
+      configDir: '/home/testuser/.config/httptui',
+    });
+  });
+
+  it('returns project config when no global config exists', () => {
+    vi.mocked(existsSync).mockImplementation((p) => {
+      if (typeof p === 'string') {
+        if (p.includes('config.json')) return false;
+        if (p.includes('.httptui.json')) return true;
+      }
+      return false;
+    });
+    vi.mocked(readFileSync).mockImplementation((p) => {
+      const pathStr = String(p);
+      if (pathStr.includes('.httptui.json')) {
+        return JSON.stringify({
+          certificates: {
+            'project.example.com': { cert: '/project/cert', key: '/project/key' },
+          },
+        });
+      }
+      return '';
+    });
+
+    const result = loadConfig('/project/api');
+
+    expect(result).toEqual({
+      certificates: {
+        'project.example.com': { cert: '/project/cert', key: '/project/key' },
+      },
+      configDir: '/project/api',
+    });
+  });
+
+  it('returns null when neither global nor project config exists', () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    const result = loadConfig('/project/api');
+
+    expect(result).toBeNull();
   });
 });
 

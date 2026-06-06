@@ -64,10 +64,7 @@ function populateCertEntry(value: any): CertEntry {
   return certEntry;
 }
 
-export function loadConfig(): HttptuiConfig | null {
-  const configDir = getConfigDir();
-  const configPath = path.join(configDir, 'config.json');
-
+function loadConfigFile(configPath: string): HttptuiConfig | null {
   if (!existsSync(configPath)) {
     return null;
   }
@@ -114,7 +111,39 @@ export function loadConfig(): HttptuiConfig | null {
   return { certificates };
 }
 
-export function resolveCertPath(inputPath: string, configDir: string): string {
+export function loadConfig(projectDir?: string): HttptuiConfig | null {
+  const configDir = getConfigDir();
+  const globalConfigPath = path.join(configDir, 'config.json');
+  const globalConfig = loadConfigFile(globalConfigPath);
+
+  let projectConfig: HttptuiConfig | null = null;
+  if (projectDir) {
+    const projectConfigPath = path.join(projectDir, '.httptui.json');
+    projectConfig = loadConfigFile(projectConfigPath);
+  }
+
+  if (!globalConfig && !projectConfig) {
+    return null;
+  }
+
+  if (!projectConfig) {
+    return globalConfig ? { ...globalConfig, configDir } : null;
+  }
+
+  if (!globalConfig) {
+    return { ...projectConfig, configDir: projectDir };
+  }
+
+  const merged: HttptuiConfig = {
+    ...globalConfig,
+    ...projectConfig,
+    configDir: projectDir,
+  };
+
+  return merged;
+}
+
+export function resolveCertPath(inputPath: string, baseDir: string): string {
   let resolved = inputPath;
 
   if (resolved.startsWith('~')) {
@@ -125,5 +154,5 @@ export function resolveCertPath(inputPath: string, configDir: string): string {
     return resolved;
   }
 
-  return path.resolve(configDir, resolved);
+  return path.resolve(baseDir, resolved);
 }

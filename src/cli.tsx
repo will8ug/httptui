@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import tls from 'node:tls';
 
 import { render } from 'ink';
@@ -63,14 +64,14 @@ try {
   // Silently fall back to bundled CAs
 }
 
-const httptuiConfig = loadConfig();
+const httptuiConfig = loadConfig(dirname(filePath));
 
 const app = render(
   <App
     filePath={filePath}
     requests={parseResult.requests}
     variables={parseResult.variables}
-    executorConfig={{ insecure, certificates: httptuiConfig?.certificates }}
+    executorConfig={{ insecure, certificates: httptuiConfig?.certificates, configDir: httptuiConfig?.configDir }}
   />,
 );
 

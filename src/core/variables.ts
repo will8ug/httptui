@@ -11,18 +11,19 @@ const DEFAULT_RANDOM_MAX = 1000;
 interface ResolutionContext {
   dotenvPath?: string;
   dotenvVariables?: Map<string, string>;
+  baseDir?: string;
 }
 
-export function resolveFileVariables(variables: FileVariable[]): Map<string, string> {
-  return resolveFileVariablesInternal(variables, createResolutionContext());
+export function resolveFileVariables(variables: FileVariable[], baseDir?: string): Map<string, string> {
+  return resolveFileVariablesInternal(variables, createResolutionContext(baseDir));
 }
 
 export function resolveVariables(
   request: ParsedRequest,
   variables: FileVariable[],
-  dotenvPath?: string,
+  baseDir?: string,
 ): ResolvedRequest {
-  const context = createResolutionContext(dotenvPath);
+  const context = createResolutionContext(baseDir);
   const resolvedFileVariables = resolveFileVariablesInternal(variables, context);
 
   const resolvedFormdataFields = request.formdataFields?.map((field) => ({
@@ -206,15 +207,30 @@ function getDotenvVariables(context: ResolutionContext): Map<string, string> {
     return context.dotenvVariables;
   }
 
-  const dotenvPath = context.dotenvPath ?? resolvePath(process.cwd(), '.env');
+  const baseDir = context.baseDir;
+  let dotenvPath: string | undefined;
+
+  if (baseDir) {
+    const projectDotenv = resolvePath(baseDir, '.env');
+    if (existsSync(projectDotenv)) {
+      dotenvPath = projectDotenv;
+    }
+  }
+
+  if (!dotenvPath) {
+    const cwdDotenv = resolvePath(process.cwd(), '.env');
+    if (existsSync(cwdDotenv)) {
+      dotenvPath = cwdDotenv;
+    }
+  }
 
   context.dotenvVariables = parseDotenvFile(dotenvPath);
 
   return context.dotenvVariables;
 }
 
-function parseDotenvFile(filePath: string): Map<string, string> {
-  if (!existsSync(filePath)) {
+function parseDotenvFile(filePath?: string): Map<string, string> {
+  if (!filePath || !existsSync(filePath)) {
     return new Map<string, string>();
   }
 
@@ -256,6 +272,6 @@ function parseDotenvFile(filePath: string): Map<string, string> {
   return variables;
 }
 
-function createResolutionContext(dotenvPath?: string): ResolutionContext {
-  return { dotenvPath };
+function createResolutionContext(baseDir?: string): ResolutionContext {
+  return { baseDir };
 }
