@@ -55,11 +55,16 @@ You can also open a different `.http` file from within the running TUI by pressi
 | Flag | Description |
 |------|-------------|
 | `--insecure`, `-k` | Skip TLS certificate verification |
+| `--env`, `-e` | Load a Postman environment file (`.postman_environment.json`) |
 
 ```bash
 # Skip TLS certificate verification
 httptui --insecure path/to/api.http
 httptui -k path/to/api.http
+
+# Load a Postman environment file
+httptui collection.json --env dev.postman_environment.json
+httptui api.http -e staging.postman_environment.json
 ```
 
 ## Keyboard Shortcuts
@@ -154,6 +159,16 @@ GET https://{{hostname}}/users
 #### Environment Variables
 - `{{$processEnv VAR_NAME}}`: Read from your shell environment.
 - `{{$dotenv VAR_NAME}}`: Read from a `.env` file in the `.http` file's directory first, then fall back to the current working directory.
+
+#### Postman Environment Files
+Load Postman environment files (`.postman_environment.json`) with the `--env` / `-e` flag. Environment variables override file-level and collection-level variables of the same name. This works for both `.http` files and Postman collections.
+
+```bash
+httptui collection.json --env dev.postman_environment.json
+httptui api.http -e staging.postman_environment.json
+```
+
+Disabled variables (`enabled: false`) in the environment file are skipped. The `type` field is ignored (no secret masking).
 
 ## Examples
 

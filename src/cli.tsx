@@ -9,14 +9,16 @@ import { parseArgs } from './args';
 import { loadConfig } from './core/config';
 import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
-import type { ParseResult } from './core/types';
+import { parsePostmanEnvironment } from './core/postman-env-parser';
+import { mergeVariables } from './core/variables';
+import type { FileVariable, ParseResult } from './core/types';
 
 function exitWithError(message: string): never {
   console.error(message);
   process.exit(1);
 }
 
-const { filePath, insecure } = parseArgs(process.argv);
+const { filePath, insecure, envPath } = parseArgs(process.argv);
 
 if (!filePath) {
   exitWithError('Usage: httptui <file.http>');
@@ -24,6 +26,25 @@ if (!filePath) {
 
 if (!existsSync(filePath)) {
   exitWithError(`File not found: ${filePath}`);
+}
+
+let environmentVariables: FileVariable[] = [];
+
+if (envPath) {
+  if (!existsSync(envPath)) {
+    exitWithError(`Environment file not found: ${envPath}`);
+  }
+
+  try {
+    const envContent = readFileSync(envPath, 'utf8');
+    environmentVariables = parsePostmanEnvironment(envContent);
+  } catch (error) {
+    exitWithError(
+      error instanceof Error
+        ? `Failed to parse environment file: ${error.message}`
+        : 'Failed to parse environment file',
+    );
+  }
 }
 
 const content = readFileSync(filePath, 'utf8');
@@ -66,11 +87,14 @@ try {
 
 const httptuiConfig = loadConfig(dirname(filePath));
 
+const mergedVariables = mergeVariables(parseResult.variables, environmentVariables);
+
 const app = render(
   <App
     filePath={filePath}
     requests={parseResult.requests}
-    variables={parseResult.variables}
+    variables={mergedVariables}
+    environmentVariables={environmentVariables}
     executorConfig={{ insecure, certificates: httptuiConfig?.certificates, configDir: httptuiConfig?.configDir }}
   />,
 );

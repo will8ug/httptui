@@ -1,0 +1,10 @@
+{
+  "id": "abc-123",
+  "name": "Development",
+  "values": [
+    { "key": "baseUrl", "value": "https://api.dev.com", "type": "default", "enabled": true },
+    { "key": "apiKey", "value": "dev-secret-key", "type": "secret", "enabled": true },
+    { "key": "port", "value": "8080", "type": "default", "enabled": true }
+  ],
+  "_postman_variable_scope": "environment"
+}

@@ -85,6 +85,7 @@ export type WrapMode = 'nowrap' | 'wrap';
 export interface AppState {
   requests: ParsedRequest[];
   variables: FileVariable[];
+  environmentVariables: FileVariable[];
   selectedIndex: number;
   focusedPanel: FocusedPanel;
   response: ResponseData | null;
@@ -120,6 +121,7 @@ export interface AppProps {
   filePath: string;
   requests: ParsedRequest[];
   variables: FileVariable[];
+  environmentVariables: FileVariable[];
   executorConfig: ExecutorConfig;
 }
 

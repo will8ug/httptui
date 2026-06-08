@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { resolveFileVariables, resolveVariables } from '../src/core/variables.js';
+import { mergeVariables, resolveFileVariables, resolveVariables } from '../src/core/variables.js';
 import type { ParsedRequest } from '../src/core/types.js';
 
 const UUID_PATTERN =
@@ -229,6 +229,57 @@ describe('resolveVariables', () => {
     }
     expect(fields[0].key).toBe('{{fieldName}}');
     expect(fields[0].value).toBe('hello');
+  });
+});
+
+describe('mergeVariables', () => {
+  it('returns file variables when no environment variables', () => {
+    const fileVars = [{ name: 'baseUrl', value: 'https://api.local' }];
+    const result = mergeVariables(fileVars);
+
+    expect(result).toEqual(fileVars);
+  });
+
+  it('returns environment variables when no file variables', () => {
+    const envVars = [{ name: 'baseUrl', value: 'https://api.dev.com' }];
+    const result = mergeVariables([], envVars);
+
+    expect(result).toEqual(envVars);
+  });
+
+  it('environment variables override file variables', () => {
+    const fileVars = [
+      { name: 'baseUrl', value: 'https://api.local' },
+      { name: 'port', value: '8080' },
+    ];
+    const envVars = [{ name: 'baseUrl', value: 'https://api.dev.com' }];
+    const result = mergeVariables(fileVars, envVars);
+
+    const baseUrlVar = result.find((v) => v.name === 'baseUrl');
+    const portVar = result.find((v) => v.name === 'port');
+
+    expect(baseUrlVar?.value).toBe('https://api.dev.com');
+    expect(portVar?.value).toBe('8080');
+  });
+
+  it('includes all unique variables from both sources', () => {
+    const fileVars = [{ name: 'a', value: '1' }];
+    const envVars = [{ name: 'b', value: '2' }];
+    const result = mergeVariables(fileVars, envVars);
+
+    expect(result).toHaveLength(2);
+    expect(result).toContainEqual({ name: 'a', value: '1' });
+    expect(result).toContainEqual({ name: 'b', value: '2' });
+  });
+
+  it('resolves variables with environment overlay', () => {
+    const request = createRequest({ url: 'https://{{baseUrl}}/users' });
+    const fileVars = [{ name: 'baseUrl', value: 'api.local' }];
+    const envVars = [{ name: 'baseUrl', value: 'api.dev.com' }];
+    const merged = mergeVariables(fileVars, envVars);
+    const resolved = resolveVariables(request, merged);
+
+    expect(resolved.url).toBe('https://api.dev.com/users');
   });
 });
 

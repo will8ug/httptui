@@ -1,0 +1,10 @@
+{
+  "id": "def-456",
+  "name": "Production",
+  "values": [
+    { "key": "baseUrl", "value": "https://api.prod.com", "type": "default", "enabled": true },
+    { "key": "apiKey", "value": "prod-secret-key", "type": "secret", "enabled": false },
+    { "key": "port", "value": "443", "type": "default", "enabled": true }
+  ],
+  "_postman_variable_scope": "environment"
+}

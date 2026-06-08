@@ -14,6 +14,32 @@ interface ResolutionContext {
   baseDir?: string;
 }
 
+export function mergeVariables(
+  fileVariables: FileVariable[],
+  environmentVariables?: FileVariable[],
+): FileVariable[] {
+  if (!environmentVariables || environmentVariables.length === 0) {
+    return fileVariables;
+  }
+
+  const merged = new Map<string, string>();
+
+  for (const variable of fileVariables) {
+    merged.set(variable.name, variable.value);
+  }
+
+  for (const variable of environmentVariables) {
+    merged.set(variable.name, variable.value);
+  }
+
+  const result: FileVariable[] = [];
+  for (const [name, value] of merged) {
+    result.push({ name, value });
+  }
+
+  return result;
+}
+
 export function resolveFileVariables(variables: FileVariable[], baseDir?: string): Map<string, string> {
   return resolveFileVariablesInternal(variables, createResolutionContext(baseDir));
 }

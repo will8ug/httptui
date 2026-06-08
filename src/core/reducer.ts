@@ -594,6 +594,7 @@ export function createInitialState(props: AppProps): AppState {
   return {
     requests: props.requests,
     variables: props.variables,
+    environmentVariables: props.environmentVariables,
     selectedIndex: 0,
     focusedPanel: 'requests',
     response: null,
