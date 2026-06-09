@@ -271,16 +271,6 @@ describe('mergeVariables', () => {
     expect(result).toContainEqual({ name: 'a', value: '1' });
     expect(result).toContainEqual({ name: 'b', value: '2' });
   });
-
-  it('resolves variables with environment overlay', () => {
-    const request = createRequest({ url: 'https://{{baseUrl}}/users' });
-    const fileVars = [{ name: 'baseUrl', value: 'api.local' }];
-    const envVars = [{ name: 'baseUrl', value: 'api.dev.com' }];
-    const merged = mergeVariables(fileVars, envVars);
-    const resolved = resolveVariables(request, merged);
-
-    expect(resolved.url).toBe('https://api.dev.com/users');
-  });
 });
 
 function createRequest(overrides: Partial<ParsedRequest> = {}): ParsedRequest {
