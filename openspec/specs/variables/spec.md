@@ -36,11 +36,19 @@ The parser SHALL support `{{$processEnv VAR}}` to read from `process.env` and `{
 - **THEN** the placeholder SHALL be left as-is and a warning SHALL be logged
 
 ### Requirement: Resolution order
-Variables SHALL be resolved in two passes: first file variables (which may reference system/env variables), then system and environment variables for each request.
+Variables SHALL be resolved in two passes: first file variables (which may reference system/env variables), then system and environment variables for each request. When an environment file is loaded via `--env`, environment file variables SHALL be applied as an overlay on top of file variables, taking precedence over file/collection variables of the same name.
 
 #### Scenario: File variable referencing system variable
 - **WHEN** a file variable is declared as `@ts = {{$timestamp}}`
 - **THEN** the system variable SHALL be resolved after the file variable map is built, so the timestamp reflects resolution time rather than parse time
+
+#### Scenario: Environment overlay takes precedence over file variable
+- **WHEN** a `.http` file declares `@baseUrl = https://api.local` and an environment file defines `baseUrl = "https://api.dev.com"` via `--env`
+- **THEN** the `{{baseUrl}}` placeholder SHALL resolve to `"https://api.dev.com"` (environment value, not file value)
+
+#### Scenario: Environment overlay takes precedence over collection variable
+- **WHEN** a Postman collection defines `baseUrl = "https://api.example.com"` and an environment file defines `baseUrl = "https://api.staging.com"` via `--env`
+- **THEN** the `{{baseUrl}}` placeholder SHALL resolve to `"https://api.staging.com"` (environment value, not collection value)
 
 ### Requirement: Scope and freshness
 File variables SHALL be scoped to the file (not shared across files). System variables SHALL be evaluated fresh each time they are resolved — `{{$guid}}` SHALL generate a new UUID each time, and `{{$timestamp}}` SHALL return the current time at resolution (not parse time).

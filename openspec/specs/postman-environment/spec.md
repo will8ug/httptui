@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Postman Environment Files
+
+## Purpose
+
+Load and apply Postman environment files (`.postman_environment.json`) to override file-level and collection-level variables. Enables running the same collection or `.http` file against different environments (dev, staging, prod) without editing the source.
+
+## Requirements
 
 ### Requirement: Parse Postman environment files
 The system SHALL parse `.postman_environment.json` files and extract enabled variables into the internal `FileVariable[]` format. The parser SHALL skip entries where `enabled` is `false`. The parser SHALL ignore the `type` field (no secret masking).
@@ -59,12 +65,3 @@ When the user reloads the current file (`R`) or loads a different file (`o`), th
 #### Scenario: Environment variables are available in request details
 - **WHEN** a user views request details (presses `d`) after loading with `--env`
 - **THEN** the resolved request details SHALL reflect environment variable values, not file/collection defaults
-
-## MODIFIED Requirements
-
-### Requirement: Resolution order
-Variables SHALL be resolved in two passes: first file variables (which may reference system/env variables), then system and environment variables for each request. **When an environment file is loaded, environment file variables SHALL be resolved as an overlay on top of file variables, taking precedence in the first pass.**
-
-#### Scenario: File variable referencing system variable with env overlay
-- **WHEN** a file variable is declared as `@ts = {{$timestamp}}` and an environment file is loaded
-- **THEN** the file variable SHALL be built from the system variable, and the environment overlay SHALL be applied before request resolution
