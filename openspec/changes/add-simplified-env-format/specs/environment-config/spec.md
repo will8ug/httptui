@@ -1,0 +1,32 @@
+## ADDED Requirements
+
+### Requirement: Environment file configuration in config
+The system SHALL allow environment files to be registered in the global config (`~/.config/httptui/config.json`) or project-level config (`.httptui.json`) under an `environments` array with `name` and `file` fields.
+
+#### Scenario: Global config with environments
+- **WHEN** the global config file contains `environments: [{ name: "Development", file: "env/dev.json" }]`, and the user runs `httptui api.http --env-name Development`
+- **THEN** the system SHALL resolve the environment file path relative to the global config directory and load the environment variables
+
+#### Scenario: Project config with environments
+- **WHEN** the project-level `.httptui.json` contains `environments: [{ name: "Staging", file: "env/staging.json" }]`, and the user runs `httptui api.http --env-name Staging`
+- **THEN** the system SHALL resolve the environment file path relative to the project config directory and load the environment variables
+
+#### Scenario: Shallow-replace environments merge
+- **WHEN** both global config and project-level config define `environments`
+- **THEN** the project-level config's `environments` array SHALL replace the global config's `environments` array entirely
+
+#### Scenario: Absolute path in environment file
+- **WHEN** the config contains `environments: [{ name: "Production", file: "/etc/httptui/env/prod.json" }]`
+- **THEN** the system SHALL use the absolute path as-is without resolving it relative to the config directory
+
+#### Scenario: Environment name resolution
+- **WHEN** the config contains `environments: [{ name: "Development", file: "env/dev.json" }]` and the user specifies `--env-name Development`
+- **THEN** the system SHALL find the matching environment by name and resolve its file path
+
+#### Scenario: Environment name not found
+- **WHEN** the user specifies `--env-name NonExistent` and the config does not contain an environment with that name
+- **THEN** the system SHALL exit with an error: `Environment not found in config: NonExistent`
+
+#### Scenario: Missing environment file for name
+- **WHEN** the user specifies `--env-name Development` and the resolved file path does not exist
+- **THEN** the system SHALL exit with an error: `Environment file not found: <resolved_path>`
