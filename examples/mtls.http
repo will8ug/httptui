@@ -1,4 +1,4 @@
-@mtlsBase = https://localhost:10443
+@mtlsBaseUrl = https://localhost:10443
 
 # Edit ~/.config/httptui/config.json:
 # {
@@ -14,35 +14,35 @@
 ##### Quick test of HTTPS endpoint (client cert is not required)
 
 ### quick ping (no cert is required)
-GET {{mtlsBase}}/ping
+GET {{mtlsBaseUrl}}/ping
 
 
 ##### Test for no client certificate
 ##### Expect: /optional -> client_certificate=null, /verify -> 403
 
 ### No Cert - /optional (Expect: returns success, cert is null)
-GET {{mtlsBase}}/mtls/optional
+GET {{mtlsBaseUrl}}/mtls/optional
 
 ### No Cert - /verify (Expect: 403)
-GET {{mtlsBase}}/mtls/verify
+GET {{mtlsBaseUrl}}/mtls/verify
 
 ### No Cert - /echo-cert (Expect: 400)
-GET {{mtlsBase}}/mtls/echo-cert
+GET {{mtlsBaseUrl}}/mtls/echo-cert
 
 
 ##### Test for client certificate
 ##### Prerequisites: httptui config is ready with "localhost" certificates
 
 ### With Cert - /echo-cert (returns client certificate details)
-GET {{mtlsBase}}/mtls/echo-cert
+GET {{mtlsBaseUrl}}/mtls/echo-cert
 
 ### With Cert - /optional (returns client certificate details)
-GET {{mtlsBase}}/mtls/optional
+GET {{mtlsBaseUrl}}/mtls/optional
 
 ### With Cert - /verify (returns cert details + TLS version/cipher suite)
-GET {{mtlsBase}}/mtls/verify
+GET {{mtlsBaseUrl}}/mtls/verify
 
 ### With Cert - /headers (echoes request headers + certificate info)
-GET {{mtlsBase}}/mtls/headers
+GET {{mtlsBaseUrl}}/mtls/headers
 Accept: application/json
 X-Custom-Header: mtls-test
