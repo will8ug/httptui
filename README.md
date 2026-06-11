@@ -55,16 +55,21 @@ You can also open a different `.http` file from within the running TUI by pressi
 | Flag | Description |
 |------|-------------|
 | `--insecure`, `-k` | Skip TLS certificate verification |
-| `--env`, `-e` | Load a Postman environment file (`.postman_environment.json`) |
+| `--env`, `-e` | Load an environment file (Postman or simplified format) |
+| `--env-name`, `-E` | Select an environment by name from the config file |
 
 ```bash
 # Skip TLS certificate verification
 httptui --insecure path/to/api.http
 httptui -k path/to/api.http
 
-# Load a Postman environment file
+# Load an environment file by path
 httptui collection.json --env dev.postman_environment.json
-httptui api.http -e staging.postman_environment.json
+httptui api.http -e staging.json
+
+# Select an environment by name from config
+httptui api.http --env-name Development
+httptui api.http -E Staging
 ```
 
 ## Keyboard Shortcuts
@@ -160,15 +165,27 @@ GET https://{{hostname}}/users
 - `{{$processEnv VAR_NAME}}`: Read from your shell environment.
 - `{{$dotenv VAR_NAME}}`: Read from a `.env` file in the `.http` file's directory first, then fall back to the current working directory.
 
-#### Postman Environment Files
-Load Postman environment files (`.postman_environment.json`) with the `--env` / `-e` flag. Environment variables override file-level and collection-level variables of the same name. This works for both `.http` files and Postman collections.
+#### Environment Files
+Load environment files with the `--env` / `-e` flag. httptui supports both Postman environment files (`.postman_environment.json`) and a simplified format. Environment variables override file-level and collection-level variables of the same name. This works for both `.http` files and Postman collections.
 
 ```bash
 httptui collection.json --env dev.postman_environment.json
-httptui api.http -e staging.postman_environment.json
+httptui api.http -e staging.json
 ```
 
-Disabled variables (`enabled: false`) in the environment file are skipped. The `type` field is ignored (no secret masking).
+**Simplified format** (compatible with Postman, but without Postman-specific metadata):
+
+```json
+{
+  "name": "Development",
+  "values": [
+    { "key": "baseUrl", "value": "https://api.dev.com", "enabled": true },
+    { "key": "apiKey", "value": "dev-secret-key", "enabled": true }
+  ]
+}
+```
+
+The `enabled` field is optional and defaults to `true`. Disabled variables are skipped. The `type` field is ignored (no secret masking).
 
 ## Examples
 
@@ -263,12 +280,27 @@ You can also place a `.httptui.json` file in the same directory as your `.http` 
 
 #### Precedence
 
-Project config values override global config values for all top-level keys. If both files define `certificates`, the project's `certificates` completely replace the global ones for that session.
+Project config values override global config values for all top-level keys. For example, if both files define `certificates`, the project's `certificates` completely replace the global ones for that session.
 
 #### Relative Path Resolution
 
 - **Global config**: Relative paths resolve against the global config directory (`~/.config/httptui/`).
 - **Project config**: Relative paths resolve against the directory containing the `.httptui.json` file.
+
+## Environment Configuration
+
+You can register environment files in your global or project-level config file and reference them by name using the `--env-name` / `-E` flag.
+
+```json
+{
+  "environments": [
+    { "name": "Development", "file": "env/dev.json" },
+    { "name": "Staging", "file": "env/staging.json" }
+  ]
+}
+```
+
+Relative paths are resolved against the config directory. If both global and project configs define `environments`, the project config replaces the global one entirely.
 
 ## Client Certificates
 

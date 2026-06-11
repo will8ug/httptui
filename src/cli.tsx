@@ -6,10 +6,10 @@ import { render } from 'ink';
 
 import { App } from './app';
 import { parseArgs } from './args';
-import { loadConfig } from './core/config';
+import { loadConfig, resolveCertPath } from './core/config';
 import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
-import { parsePostmanEnvironment } from './core/postman-env-parser';
+import { parseEnvironmentFile } from './core/env-parser';
 import { mergeVariables } from './core/variables';
 import type { FileVariable, ParseResult } from './core/types';
 
@@ -18,7 +18,7 @@ function exitWithError(message: string): never {
   process.exit(1);
 }
 
-const { filePath, insecure, envPath } = parseArgs(process.argv);
+const { filePath, insecure, envPath, envName } = parseArgs(process.argv);
 
 if (!filePath) {
   exitWithError('Usage: httptui <file.http>');
@@ -28,23 +28,8 @@ if (!existsSync(filePath)) {
   exitWithError(`File not found: ${filePath}`);
 }
 
-let environmentVariables: FileVariable[] = [];
-
-if (envPath) {
-  if (!existsSync(envPath)) {
-    exitWithError(`Environment file not found: ${envPath}`);
-  }
-
-  try {
-    const envContent = readFileSync(envPath, 'utf8');
-    environmentVariables = parsePostmanEnvironment(envContent);
-  } catch (error) {
-    exitWithError(
-      error instanceof Error
-        ? `Failed to parse environment file: ${error.message}`
-        : 'Failed to parse environment file',
-    );
-  }
+if (envPath && envName) {
+  exitWithError('Error: only one of --env and --env-name can be specified');
 }
 
 const content = readFileSync(filePath, 'utf8');
@@ -86,6 +71,40 @@ try {
 }
 
 const httptuiConfig = loadConfig(dirname(filePath));
+
+let environmentVariables: FileVariable[] = [];
+
+let resolvedEnvPath = envPath;
+
+if (envName) {
+  const environments = httptuiConfig?.environments;
+  if (!environments) {
+    exitWithError('Error: no environments configured in config file');
+  }
+  const match = environments.find((e) => e.name === envName);
+  if (!match) {
+    exitWithError(`Environment not found in config: ${envName}`);
+  }
+  const baseDir = httptuiConfig.configDir ?? dirname(filePath);
+  resolvedEnvPath = resolveCertPath(match.file, baseDir);
+}
+
+if (resolvedEnvPath) {
+  if (!existsSync(resolvedEnvPath)) {
+    exitWithError(`Environment file not found: ${resolvedEnvPath}`);
+  }
+
+  try {
+    const envContent = readFileSync(resolvedEnvPath, 'utf8');
+    environmentVariables = parseEnvironmentFile(envContent);
+  } catch (error) {
+    exitWithError(
+      error instanceof Error
+        ? `Failed to parse environment file: ${error.message}`
+        : 'Failed to parse environment file',
+    );
+  }
+}
 
 const mergedVariables = mergeVariables(parseResult.variables, environmentVariables);
 

@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import type { CertEntry, HttptuiConfig } from './types';
+import type { CertEntry, EnvironmentConfig, HttptuiConfig } from './types';
 
 export function getConfigDir(): string {
   if (process.env.HTTP_TUI_CONFIG) {
@@ -83,32 +83,59 @@ function loadConfigFile(configPath: string): HttptuiConfig | null {
   }
 
   const obj = raw as Record<string, unknown>;
+  const config: HttptuiConfig = {};
+
   const rawCerts = obj.certificates;
-
-  if (rawCerts === undefined || rawCerts === null) {
-    return {};
-  }
-
-  if (typeof rawCerts !== 'object' || Array.isArray(rawCerts)) {
-    process.stderr.write('Error: "certificates" must be an object in config.json\n');
-    return null;
-  }
-
-  const certificates: Record<string, CertEntry> = {};
-  for (const [key, value] of Object.entries(rawCerts as Record<string, unknown>)) {
-    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-      process.stderr.write(`Warning: certificate entry "${key}" is not a valid object — skipping\n`);
-      continue;
+  if (rawCerts !== undefined && rawCerts !== null) {
+    if (typeof rawCerts !== 'object' || Array.isArray(rawCerts)) {
+      process.stderr.write('Error: "certificates" must be an object in config.json\n');
+      return null;
     }
 
-    const certEntry = populateCertEntry(value);
+    const certificates: Record<string, CertEntry> = {};
+    for (const [key, value] of Object.entries(rawCerts as Record<string, unknown>)) {
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+        process.stderr.write(`Warning: certificate entry "${key}" is not a valid object — skipping\n`);
+        continue;
+      }
 
-    if (validateEntry(key, certEntry)) {
-      certificates[key] = certEntry;
+      const certEntry = populateCertEntry(value);
+
+      if (validateEntry(key, certEntry)) {
+        certificates[key] = certEntry;
+      }
+    }
+
+    config.certificates = certificates;
+  }
+
+  const rawEnvs = obj.environments;
+  if (rawEnvs !== undefined && rawEnvs !== null) {
+    if (!Array.isArray(rawEnvs)) {
+      process.stderr.write('Warning: "environments" must be an array in config.json — skipping\n');
+    } else {
+      const environments: EnvironmentConfig[] = [];
+      for (const entry of rawEnvs) {
+        if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
+          process.stderr.write('Warning: environment entry is not a valid object — skipping\n');
+          continue;
+        }
+        const envEntry = entry as Record<string, unknown>;
+        const name = envEntry.name;
+        const file = envEntry.file;
+        if (typeof name !== 'string' || name === '' || typeof file !== 'string' || file === '') {
+          process.stderr.write('Warning: environment entry must have non-empty "name" and "file" strings — skipping\n');
+          continue;
+        }
+        environments.push({ name, file });
+      }
+      if (environments.length > 0) {
+        config.environments = environments;
+      }
     }
   }
 
-  return { certificates };
+  return config;
 }
 
 export function loadConfig(projectDir?: string): HttptuiConfig | null {

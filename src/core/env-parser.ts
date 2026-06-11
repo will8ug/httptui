@@ -1,16 +1,16 @@
 import type { FileVariable } from './types.js';
 
-export function parsePostmanEnvironment(content: string): FileVariable[] {
+export function parseEnvironmentFile(content: string): FileVariable[] {
   let raw: unknown;
 
   try {
     raw = JSON.parse(content);
   } catch {
-    throw new Error('Failed to parse Postman environment file: invalid JSON');
+    throw new Error('Failed to parse environment file: invalid JSON');
   }
 
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-    throw new Error('Failed to parse Postman environment file: expected JSON object');
+    throw new Error('Failed to parse environment file: expected JSON object');
   }
 
   const obj = raw as Record<string, unknown>;

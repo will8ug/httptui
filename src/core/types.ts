@@ -67,8 +67,14 @@ export interface CertEntry {
   ca?: string;
 }
 
+export interface EnvironmentConfig {
+  name: string;
+  file: string;
+}
+
 export interface HttptuiConfig {
   certificates?: Record<string, CertEntry>;
+  environments?: EnvironmentConfig[];
   configDir?: string;
 }
 

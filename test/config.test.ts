@@ -362,6 +362,111 @@ describe('loadConfig', () => {
 
     expect(result).toBeNull();
   });
+
+  it('parses environments array from config', () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue(
+      JSON.stringify({
+        environments: [
+          { name: 'Development', file: 'env/dev.json' },
+          { name: 'Staging', file: 'env/staging.json' },
+        ],
+      }),
+    );
+
+    const result = loadConfig();
+
+    expect(result).toEqual({
+      environments: [
+        { name: 'Development', file: 'env/dev.json' },
+        { name: 'Staging', file: 'env/staging.json' },
+      ],
+      configDir: '/home/testuser/.config/httptui',
+    });
+  });
+
+  it('skips invalid environment entries and emits warnings', () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue(
+      JSON.stringify({
+        environments: [
+          { name: 'Valid', file: 'env/valid.json' },
+          { name: '', file: 'env/empty-name.json' },
+          { name: 'MissingFile' },
+          'not an object',
+        ],
+      }),
+    );
+
+    const result = loadConfig();
+
+    expect(result).toEqual({
+      environments: [{ name: 'Valid', file: 'env/valid.json' }],
+      configDir: '/home/testuser/.config/httptui',
+    });
+    expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
+      expect.stringContaining('environment entry must have non-empty "name" and "file" strings'),
+    );
+    expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
+      expect.stringContaining('environment entry must have non-empty "name" and "file" strings'),
+    );
+    expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
+      expect.stringContaining('environment entry is not a valid object'),
+    );
+  });
+
+  it('warns when environments is not an array', () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue(
+      JSON.stringify({
+        environments: 'not an array',
+      }),
+    );
+
+    const result = loadConfig();
+
+    expect(result).toEqual({
+      configDir: '/home/testuser/.config/httptui',
+    });
+    expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
+      expect.stringContaining('"environments" must be an array'),
+    );
+  });
+
+  it('merges project environments over global environments', () => {
+    vi.mocked(existsSync).mockImplementation((p) => {
+      if (typeof p === 'string') {
+        if (p.includes('config.json')) return true;
+        if (p.includes('.httptui.json')) return true;
+      }
+      return false;
+    });
+    vi.mocked(readFileSync).mockImplementation((p) => {
+      const pathStr = String(p);
+      if (pathStr.includes('config.json')) {
+        return JSON.stringify({
+          environments: [
+            { name: 'GlobalDev', file: 'env/global-dev.json' },
+          ],
+        });
+      }
+      if (pathStr.includes('.httptui.json')) {
+        return JSON.stringify({
+          environments: [
+            { name: 'ProjectDev', file: 'env/project-dev.json' },
+          ],
+        });
+      }
+      return '';
+    });
+
+    const result = loadConfig('/project/api');
+
+    expect(result).toEqual({
+      environments: [{ name: 'ProjectDev', file: 'env/project-dev.json' }],
+      configDir: '/project/api',
+    });
+  });
 });
 
 describe('resolveCertPath', () => {

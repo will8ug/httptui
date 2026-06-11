@@ -46,9 +46,8 @@
 
 ## 6. Cleanup and Verification
 
-- [ ] 6.1 Run full test suite and verify all tests pass
-- [ ] 6.2 Run linter and verify no new errors
-- [ ] 6.3 Verify TypeScript compilation succeeds
-- [ ] 6.4 Review code for any leftover references to `postman-env-parser` or `parsePostmanEnvironment`
-- [ ] 6.5 Update README.md with new CLI flag `--env-name` / `-E` and config `environments` option
-- [ ] 6.6 Archive the change
+- [x] 6.1 Run full test suite and verify all tests pass
+- [x] 6.2 Run linter and verify no new errors
+- [x] 6.3 Verify TypeScript compilation succeeds
+- [x] 6.4 Review code for any leftover references to `postman-env-parser` or `parsePostmanEnvironment`
+- [x] 6.5 Update README.md with new CLI flag `--env-name` / `-E` and config `environments` option

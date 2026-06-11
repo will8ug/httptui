@@ -1,6 +1,8 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 import { describe, expect, it } from 'vitest';
 
@@ -159,5 +161,40 @@ describe('CLI smoke tests', { timeout: 10_000 }, () => {
 
     expect(result.wasAliveAtKill).toBe(true);
     expect(stripAnsi(result.stderr)).toContain('TLS certificate verification disabled');
+  });
+
+  it('exits with error when both --env and --env-name are specified', async () => {
+    const result = await runCli(['--env', 'dev.json', '--env-name', 'Development', 'examples/basic.http']);
+
+    expect(result.code).toBe(1);
+    expect(stripAnsi(result.stderr)).toContain('only one of --env and --env-name can be specified');
+  });
+
+  it('exits with error when --env-name is used but no environments are configured', async () => {
+    const result = await runCli(['--env-name', 'Development', 'examples/basic.http']);
+
+    expect(result.code).toBe(1);
+    expect(stripAnsi(result.stderr)).toContain('no environments configured in config file');
+  });
+
+  it('exits with error when --env-name references a non-existent environment name', async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-test-'));
+    try {
+      const tmpHttp = join(tmpDir, 'test.http');
+      const tmpConfig = join(tmpDir, '.httptui.json');
+      writeFileSync(tmpHttp, 'GET https://example.com\n');
+      writeFileSync(tmpConfig, JSON.stringify({
+        environments: [
+          { name: 'Development', file: 'env/dev.json' },
+        ],
+      }));
+
+      const result = await runCli(['--env-name', 'NonExistent', tmpHttp]);
+
+      expect(result.code).toBe(1);
+      expect(stripAnsi(result.stderr)).toContain('Environment not found in config');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });
