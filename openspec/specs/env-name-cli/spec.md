@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Environment Name CLI
+
+## Purpose
+
+Accept `--env-name` or `-E` as a CLI flag to select an environment by name from the loaded config file.
+
+## Requirements
 
 ### Requirement: Environment selection by name via CLI
 The system SHALL accept `--env-name` or `-E` as a CLI flag followed by an environment name. The system SHALL resolve the environment name to a file path using the loaded config file. If the name is not found or the file cannot be parsed, the system SHALL exit with an error.

@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Simplified Environment Files
+
+## Purpose
+
+Support a simplified environment file format that is compatible with the Postman environment file format but does not require Postman-specific metadata fields.
+
+## Requirements
 
 ### Requirement: Simplified environment file format
 The system SHALL support a simplified environment file format that is compatible with the Postman environment file format but does not require Postman-specific metadata fields.

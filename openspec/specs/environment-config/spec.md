@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Environment Configuration
+
+## Purpose
+
+Allow environment files to be registered in the global config or project-level config under an `environments` array with `name` and `file` fields.
+
+## Requirements
 
 ### Requirement: Environment file configuration in config
 The system SHALL allow environment files to be registered in the global config (`~/.config/httptui/config.json`) or project-level config (`.httptui.json`) under an `environments` array with `name` and `file` fields.
