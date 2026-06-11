@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Allow environment files to be registered in the global config or project-level config under an `environments` array with `name` and `file` fields.
+Register environment files in the global config or project-level config under an `environments` array with `name` and `file` fields. Resolve file paths relative to the config directory, and merge with shallow-replace semantics.
 
 ## Requirements
 
@@ -28,11 +28,3 @@ The system SHALL allow environment files to be registered in the global config (
 #### Scenario: Environment name resolution
 - **WHEN** the config contains `environments: [{ name: "Development", file: "env/dev.json" }]` and the user specifies `--env-name Development`
 - **THEN** the system SHALL find the matching environment by name and resolve its file path
-
-#### Scenario: Environment name not found
-- **WHEN** the user specifies `--env-name NonExistent` and the config does not contain an environment with that name
-- **THEN** the system SHALL exit with an error: `Environment not found in config: NonExistent`
-
-#### Scenario: Missing environment file for name
-- **WHEN** the user specifies `--env-name Development` and the resolved file path does not exist
-- **THEN** the system SHALL exit with an error: `Environment file not found: <resolved_path>`
