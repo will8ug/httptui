@@ -111,7 +111,6 @@ describe('loadConfig', () => {
       certificates: {
         'api.example.com': { cert: '/path/to/cert', key: '/path/to/key' },
       },
-      configDir: '/home/testuser/.config/httptui',
     });
   });
 
@@ -149,7 +148,6 @@ describe('loadConfig', () => {
 
     expect(result).toEqual({
       certificates: {},
-      configDir: '/home/testuser/.config/httptui',
     });
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining(
@@ -172,7 +170,6 @@ describe('loadConfig', () => {
 
     expect(result).toEqual({
       certificates: {},
-      configDir: '/home/testuser/.config/httptui',
     });
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining(
@@ -195,7 +192,6 @@ describe('loadConfig', () => {
 
     expect(result).toEqual({
       certificates: {},
-      configDir: '/home/testuser/.config/httptui',
     });
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining(
@@ -221,7 +217,6 @@ describe('loadConfig', () => {
       certificates: {
         'valid.example.com': { cert: '/cert', key: '/key' },
       },
-      configDir: '/home/testuser/.config/httptui',
     });
   });
 
@@ -231,9 +226,7 @@ describe('loadConfig', () => {
 
     const result = loadConfig();
 
-    expect(result).toEqual({
-      configDir: '/home/testuser/.config/httptui',
-    });
+    expect(result).toEqual({});
   });
 
   it('returns null when certificates value is an array instead of an object', () => {
@@ -291,7 +284,6 @@ describe('loadConfig', () => {
       certificates: {
         'project.example.com': { cert: '/project/cert', key: '/project/key' },
       },
-      configDir: '/project/api',
     });
   });
 
@@ -321,7 +313,6 @@ describe('loadConfig', () => {
       certificates: {
         'global.example.com': { cert: '/global/cert', key: '/global/key' },
       },
-      configDir: '/home/testuser/.config/httptui',
     });
   });
 
@@ -351,7 +342,6 @@ describe('loadConfig', () => {
       certificates: {
         'project.example.com': { cert: '/project/cert', key: '/project/key' },
       },
-      configDir: '/project/api',
     });
   });
 
@@ -378,10 +368,9 @@ describe('loadConfig', () => {
 
     expect(result).toEqual({
       environments: [
-        { name: 'Development', file: 'env/dev.json' },
-        { name: 'Staging', file: 'env/staging.json' },
+        { name: 'Development', file: '/home/testuser/.config/httptui/env/dev.json' },
+        { name: 'Staging', file: '/home/testuser/.config/httptui/env/staging.json' },
       ],
-      configDir: '/home/testuser/.config/httptui',
     });
   });
 
@@ -401,8 +390,7 @@ describe('loadConfig', () => {
     const result = loadConfig();
 
     expect(result).toEqual({
-      environments: [{ name: 'Valid', file: 'env/valid.json' }],
-      configDir: '/home/testuser/.config/httptui',
+      environments: [{ name: 'Valid', file: '/home/testuser/.config/httptui/env/valid.json' }],
     });
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining('environment entry must have non-empty "name" and "file" strings'),
@@ -425,9 +413,7 @@ describe('loadConfig', () => {
 
     const result = loadConfig();
 
-    expect(result).toEqual({
-      configDir: '/home/testuser/.config/httptui',
-    });
+    expect(result).toEqual({});
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining('"environments" must be an array'),
     );
@@ -463,8 +449,105 @@ describe('loadConfig', () => {
     const result = loadConfig('/project/api');
 
     expect(result).toEqual({
-      environments: [{ name: 'ProjectDev', file: 'env/project-dev.json' }],
-      configDir: '/project/api',
+      environments: [{ name: 'ProjectDev', file: '/project/api/env/project-dev.json' }],
+    });
+  });
+
+  it('resolves global environment paths relative to global config dir when project config exists without environments', () => {
+    vi.mocked(existsSync).mockImplementation((p) => {
+      if (typeof p === 'string') {
+        if (p.includes('config.json')) return true;
+        if (p.includes('.httptui.json')) return true;
+      }
+      return false;
+    });
+    vi.mocked(readFileSync).mockImplementation((p) => {
+      const pathStr = String(p);
+      if (pathStr.includes('config.json')) {
+        return JSON.stringify({
+          environments: [
+            { name: 'LocalAPI', file: 'env/local.json' },
+          ],
+        });
+      }
+      if (pathStr.includes('.httptui.json')) {
+        return JSON.stringify({
+          certificates: {
+            'localhost': { cert: './certs/client.crt', key: './certs/client.key' },
+          },
+        });
+      }
+      return '';
+    });
+
+    const result = loadConfig('/project/api');
+
+    expect(result?.environments).toEqual([
+      { name: 'LocalAPI', file: '/home/testuser/.config/httptui/env/local.json' },
+    ]);
+  });
+
+  it('resolves project environment paths relative to project config dir', () => {
+    vi.mocked(existsSync).mockImplementation((p) => {
+      if (typeof p === 'string') {
+        if (p.includes('config.json')) return false;
+        if (p.includes('.httptui.json')) return true;
+      }
+      return false;
+    });
+    vi.mocked(readFileSync).mockImplementation((p) => {
+      const pathStr = String(p);
+      if (pathStr.includes('.httptui.json')) {
+        return JSON.stringify({
+          environments: [
+            { name: 'Dev', file: 'env/dev.json' },
+          ],
+        });
+      }
+      return '';
+    });
+
+    const result = loadConfig('/project/api');
+
+    expect(result?.environments).toEqual([
+      { name: 'Dev', file: '/project/api/env/dev.json' },
+    ]);
+  });
+
+  it('resolves global cert paths relative to global config dir when project config exists without certs', () => {
+    vi.mocked(existsSync).mockImplementation((p) => {
+      if (typeof p === 'string') {
+        if (p.includes('config.json')) return true;
+        if (p.includes('.httptui.json')) return true;
+      }
+      return false;
+    });
+    vi.mocked(readFileSync).mockImplementation((p) => {
+      const pathStr = String(p);
+      if (pathStr.includes('config.json')) {
+        return JSON.stringify({
+          certificates: {
+            'api.example.com': { cert: './certs/client.crt', key: './certs/client.key' },
+          },
+        });
+      }
+      if (pathStr.includes('.httptui.json')) {
+        return JSON.stringify({
+          environments: [
+            { name: 'Dev', file: 'env/dev.json' },
+          ],
+        });
+      }
+      return '';
+    });
+
+    const result = loadConfig('/project/api');
+
+    expect(result?.certificates).toEqual({
+      'api.example.com': {
+        cert: '/home/testuser/.config/httptui/certs/client.crt',
+        key: '/home/testuser/.config/httptui/certs/client.key',
+      },
     });
   });
 });

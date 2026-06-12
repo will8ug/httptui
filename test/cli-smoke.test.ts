@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -45,11 +45,11 @@ function stripAnsi(value: string): string {
   return value.replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, '');
 }
 
-function runCli(args: string[], timeoutMs = 2_000): Promise<CliRunResult> {
+function runCli(args: string[], timeoutMs = 2_000, envOverrides: Record<string, string> = {}): Promise<CliRunResult> {
   return new Promise((resolve) => {
     const child = spawn(nodeExecutable, [builtCliRelativePath, ...args], {
       cwd: projectRoot,
-      env: { ...process.env, NO_COLOR: '1' },
+      env: { ...process.env, NO_COLOR: '1', ...envOverrides },
       timeout: timeoutMs,
     });
 
@@ -74,18 +74,19 @@ type InteractiveCliOptions = {
   killAfterMs?: number;
   forceKillAfterMs?: number;
   waitForStderr?: string;
+  envOverrides?: Record<string, string>;
 };
 
 function runInteractiveCliWithKill(
   args: string[],
   options: InteractiveCliOptions = {},
 ): Promise<KilledCliRunResult> {
-  const { killAfterMs = 500, forceKillAfterMs = 2_000, waitForStderr } = options;
+  const { killAfterMs = 500, forceKillAfterMs = 2_000, waitForStderr, envOverrides = {} } = options;
 
   return new Promise((resolve) => {
     const child = spawn(nodeExecutable, ['--import', ttyPreloadModule, builtCliRelativePath, ...args], {
       cwd: projectRoot,
-      env: { ...process.env, NO_COLOR: '1' },
+      env: { ...process.env, NO_COLOR: '1', ...envOverrides },
     });
 
     let stdout = '';
@@ -171,10 +172,22 @@ describe('CLI smoke tests', { timeout: 10_000 }, () => {
   });
 
   it('exits with error when --env-name is used but no environments are configured', async () => {
-    const result = await runCli(['--env-name', 'Development', 'examples/basic.http']);
+    const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-noenv-'));
+    try {
+      const emptyConfig = join(tmpDir, 'empty-config.json');
+      writeFileSync(emptyConfig, JSON.stringify({}));
 
-    expect(result.code).toBe(1);
-    expect(stripAnsi(result.stderr)).toContain('no environments configured in config file');
+      const result = await runCli(
+        ['--env-name', 'Development', 'examples/basic.http'],
+        2_000,
+        { HTTP_TUI_CONFIG: emptyConfig },
+      );
+
+      expect(result.code).toBe(1);
+      expect(stripAnsi(result.stderr)).toContain('no environments configured in config file');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it('exits with error when --env-name references a non-existent environment name', async () => {
@@ -193,6 +206,44 @@ describe('CLI smoke tests', { timeout: 10_000 }, () => {
 
       expect(result.code).toBe(1);
       expect(stripAnsi(result.stderr)).toContain('Environment not found in config');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves env file relative to global config dir when project config exists without environments', async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-envtest-'));
+    try {
+      const configDir = join(tmpDir, 'config');
+      const envDir = join(configDir, 'env');
+      const projectDir = join(tmpDir, 'project');
+
+      mkdirSync(envDir, { recursive: true });
+      mkdirSync(projectDir, { recursive: true });
+
+      const tmpHttp = join(projectDir, 'test.http');
+      writeFileSync(tmpHttp, 'GET https://example.com\n');
+
+      writeFileSync(join(configDir, 'config.json'), JSON.stringify({
+        environments: [{ name: 'Development', file: 'env/dev.json' }],
+      }));
+
+      writeFileSync(join(projectDir, '.httptui.json'), JSON.stringify({
+        certificates: {},
+      }));
+
+      writeFileSync(join(envDir, 'dev.json'), JSON.stringify({
+        name: 'Development',
+        values: [{ key: 'baseUrl', value: 'https://api.dev.com' }],
+      }));
+
+      const result = await runInteractiveCliWithKill(
+        ['--env-name', 'Development', tmpHttp],
+        { envOverrides: { HTTP_TUI_CONFIG: configDir } },
+      );
+
+      expect(result.wasAliveAtKill).toBe(true);
+      expect(stripAnsi(result.stderr)).not.toContain('Environment file not found');
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }

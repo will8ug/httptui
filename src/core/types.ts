@@ -75,13 +75,11 @@ export interface EnvironmentConfig {
 export interface HttptuiConfig {
   certificates?: Record<string, CertEntry>;
   environments?: EnvironmentConfig[];
-  configDir?: string;
 }
 
 export interface ExecutorConfig {
   insecure: boolean;
   certificates?: Record<string, CertEntry>;
-  configDir?: string;
 }
 
 export type FocusedPanel = 'requests' | 'details' | 'response';
@@ -120,7 +118,6 @@ export interface AppState {
   lastSearchQuery: string;
   maximizedPanel: FocusedPanel | null;
   certificates?: Record<string, CertEntry>;
-  configDir?: string;
 }
 
 export interface AppProps {

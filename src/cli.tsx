@@ -85,8 +85,7 @@ if (envName) {
   if (!match) {
     exitWithError(`Environment not found in config: ${envName}`);
   }
-  const baseDir = httptuiConfig.configDir ?? dirname(filePath);
-  resolvedEnvPath = resolveCertPath(match.file, baseDir);
+  resolvedEnvPath = resolveCertPath(match.file, '');
 }
 
 if (resolvedEnvPath) {
@@ -114,7 +113,7 @@ const app = render(
     requests={parseResult.requests}
     variables={mergedVariables}
     environmentVariables={environmentVariables}
-    executorConfig={{ insecure, certificates: httptuiConfig?.certificates, configDir: httptuiConfig?.configDir }}
+    executorConfig={{ insecure, certificates: httptuiConfig?.certificates }}
   />,
 );
 

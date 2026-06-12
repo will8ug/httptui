@@ -52,15 +52,15 @@ function validateEntry(key: string, entry: CertEntry): boolean {
   return true;
 }
 
-function populateCertEntry(value: any): CertEntry {
+function populateCertEntry(value: unknown, baseDir: string): CertEntry {
   const entry = value as Record<string, unknown>;
   const certEntry: CertEntry = {};
 
-  if (typeof entry.cert === 'string') certEntry.cert = entry.cert;
-  if (typeof entry.key === 'string') certEntry.key = entry.key;
-  if (typeof entry.pfx === 'string') certEntry.pfx = entry.pfx;
+  if (typeof entry.cert === 'string') certEntry.cert = resolveCertPath(entry.cert, baseDir);
+  if (typeof entry.key === 'string') certEntry.key = resolveCertPath(entry.key, baseDir);
+  if (typeof entry.pfx === 'string') certEntry.pfx = resolveCertPath(entry.pfx, baseDir);
   if (typeof entry.passphrase === 'string') certEntry.passphrase = entry.passphrase;
-  if (typeof entry.ca === 'string') certEntry.ca = entry.ca;
+  if (typeof entry.ca === 'string') certEntry.ca = resolveCertPath(entry.ca, baseDir);
   return certEntry;
 }
 
@@ -68,6 +68,8 @@ function loadConfigFile(configPath: string): HttptuiConfig | null {
   if (!existsSync(configPath)) {
     return null;
   }
+
+  const baseDir = path.dirname(configPath);
 
   let raw: unknown;
   try {
@@ -99,7 +101,7 @@ function loadConfigFile(configPath: string): HttptuiConfig | null {
         continue;
       }
 
-      const certEntry = populateCertEntry(value);
+      const certEntry = populateCertEntry(value, baseDir);
 
       if (validateEntry(key, certEntry)) {
         certificates[key] = certEntry;
@@ -127,7 +129,7 @@ function loadConfigFile(configPath: string): HttptuiConfig | null {
           process.stderr.write('Warning: environment entry must have non-empty "name" and "file" strings — skipping\n');
           continue;
         }
-        environments.push({ name, file });
+        environments.push({ name, file: resolveCertPath(file, baseDir) });
       }
       if (environments.length > 0) {
         config.environments = environments;
@@ -154,17 +156,16 @@ export function loadConfig(projectDir?: string): HttptuiConfig | null {
   }
 
   if (!projectConfig) {
-    return globalConfig ? { ...globalConfig, configDir } : null;
+    return globalConfig;
   }
 
   if (!globalConfig) {
-    return { ...projectConfig, configDir: projectDir };
+    return projectConfig;
   }
 
   return {
     ...globalConfig,
     ...projectConfig,
-    configDir: projectDir,
   };
 }
 

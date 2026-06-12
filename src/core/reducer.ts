@@ -463,7 +463,6 @@ export function reducer(state: AppState, action: Action): AppState {
         reloadMessage: `Loaded: ${action.filePath.split('/').pop() ?? ''}`,
         ...(action.executorConfig && {
           certificates: action.executorConfig.certificates,
-          configDir: action.executorConfig.configDir,
         }),
       };
     }
@@ -623,6 +622,5 @@ export function createInitialState(props: AppProps): AppState {
     lastSearchQuery: '',
     maximizedPanel: null,
     certificates: props.executorConfig.certificates,
-    configDir: props.executorConfig.configDir,
   };
 }

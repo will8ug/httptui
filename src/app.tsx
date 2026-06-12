@@ -21,7 +21,7 @@ import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
 import { mergeVariables, resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
-import { getConfigDir, loadConfig } from './core/config';
+import { loadConfig } from './core/config';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
 import { resolveRequestDetails } from './utils/request';
 import { getResponseTotalLines } from './utils/scroll';
@@ -114,9 +114,8 @@ export function App(props: AppProps): React.ReactElement {
       if (state.certificates) {
         const matchedEntry = matchCertificate(resolvedRequest.url, state.certificates);
         if (matchedEntry) {
-          const configDir = state.configDir ?? getConfigDir();
           const hostname = new URL(resolvedRequest.url).hostname;
-          certConfig = loadCertFiles(matchedEntry, configDir, hostname);
+          certConfig = loadCertFiles(matchedEntry, '', hostname);
         }
       }
 
@@ -178,7 +177,6 @@ export function App(props: AppProps): React.ReactElement {
           const newExecutorConfig = {
             ...props.executorConfig,
             certificates: newConfig?.certificates,
-            configDir: newConfig?.configDir,
           };
 
           const mergedVariables = mergeVariables(parseResult.variables, state.environmentVariables);
