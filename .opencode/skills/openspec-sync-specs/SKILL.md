@@ -70,11 +70,35 @@ This is an **agent-driven** operation - you will read delta specs and directly e
       - Add Purpose section (can be brief, mark as TBD)
       - Add Requirements section with the ADDED requirements
 
-4. **Show summary**
+4. **Post-sync consolidation**
 
-   After applying all changes, summarize:
+   After applying all delta changes, scan the updated main specs for SOLID violations and consolidate automatically:
+
+   a. **Duplication check (DRY)**:
+      - Compare all requirements across specs in `openspec/specs/`
+      - If the same requirement (by name or semantic meaning) appears in multiple specs, consolidate into the most appropriate spec
+      - The "most appropriate" spec is the one whose primary concern matches the requirement
+
+   b. **Single Responsibility check (SRP)**:
+      - If a spec contains requirements from multiple distinct concerns (e.g., file parsing + CLI flags + config schema), split it
+      - Each spec should have one clear "reason to change"
+
+   c. **Capability boundary check**:
+      - If a new spec was created by the delta, check if its requirements actually belong to an existing spec
+      - If yes, merge into the existing spec instead of keeping a separate file
+
+   d. **Naming check**:
+      - Spec names should reflect their single concern
+      - Rename specs if they no longer match their content after consolidation
+
+   **Apply consolidation automatically** and document what was done in the summary.
+
+5. **Show summary**
+
+   After applying all changes and consolidation, summarize:
    - Which capabilities were updated
    - What changes were made (requirements added/modified/removed/renamed)
+   - What consolidation was performed (if any)
 
 **Delta Spec Format Reference**
 
@@ -126,6 +150,11 @@ Updated main specs:
 **<capability-2>**:
 - Created new spec file
 - Added requirement: "Another Feature"
+
+Consolidation performed:
+- Merged "Simplified environment file format" from simplified-environment into environment-files
+- Renamed postman-environment → environment-files (stripped CLI/config concerns)
+- Deleted: simplified-environment, env-name-cli (merged into environment-cli)
 
 Main specs are now updated. The change remains active - archive when implementation is complete.
 ```
