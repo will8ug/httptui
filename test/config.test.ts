@@ -11,35 +11,54 @@ import path from 'node:path';
 
 import { getConfigDir, loadConfig, resolveCertPath } from '../src/core/config';
 
+const ENV_KEYS = ['HTTP_TUI_CONFIG', 'XDG_CONFIG_HOME', 'APPDATA', 'HOME'] as const;
 const savedEnv: Record<string, string | undefined> = {};
-
-function saveEnv(key: string): void {
-  savedEnv[key] = process.env[key];
-}
-
-function restoreEnv(key: string): void {
-  if (savedEnv[key] === undefined) {
-    delete process.env[key];
-  } else {
-    process.env[key] = savedEnv[key];
-  }
-}
 
 beforeEach(() => {
   vi.resetAllMocks();
-  saveEnv('HTTP_TUI_CONFIG');
-  saveEnv('XDG_CONFIG_HOME');
-  saveEnv('APPDATA');
-  saveEnv('HOME');
+  for (const key of ENV_KEYS) {
+    savedEnv[key] = process.env[key];
+  }
 });
 
 afterEach(() => {
-  restoreEnv('HTTP_TUI_CONFIG');
-  restoreEnv('XDG_CONFIG_HOME');
-  restoreEnv('APPDATA');
-  restoreEnv('HOME');
+  for (const key of ENV_KEYS) {
+    if (savedEnv[key] === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = savedEnv[key];
+    }
+  }
   vi.restoreAllMocks();
 });
+
+function mockConfigFile(json: unknown): void {
+  vi.mocked(existsSync).mockReturnValue(true);
+  vi.mocked(readFileSync).mockReturnValue(JSON.stringify(json));
+}
+
+function mockMergeConfigs(globalJson: unknown, projectJson: unknown | undefined): void {
+  vi.mocked(existsSync).mockImplementation((p) => {
+    if (typeof p !== 'string') return false;
+    if (p.includes('config.json')) return true;
+    if (projectJson !== undefined && p.includes('.httptui.json')) return true;
+    return false;
+  });
+  vi.mocked(readFileSync).mockImplementation((p) => {
+    const pathStr = String(p);
+    if (pathStr.includes('config.json')) return JSON.stringify(globalJson);
+    if (pathStr.includes('.httptui.json') && projectJson !== undefined) return JSON.stringify(projectJson);
+    return '';
+  });
+}
+
+function mockNoConfig(): void {
+  vi.mocked(existsSync).mockReturnValue(false);
+}
+
+function suppressStderr(): void {
+  vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+}
 
 describe('getConfigDir', () => {
   beforeEach(() => {
@@ -69,8 +88,7 @@ describe('getConfigDir', () => {
     process.env.APPDATA = appdata;
     const platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
 
-    const expected = path.join(appdata, 'httptui');
-    expect(getConfigDir()).toBe(expected);
+    expect(getConfigDir()).toBe(path.join(appdata, 'httptui'));
 
     platformSpy.mockRestore();
   });
@@ -88,7 +106,7 @@ describe('getConfigDir', () => {
 
 describe('loadConfig', () => {
   beforeEach(() => {
-    vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    suppressStderr();
     process.env.HOME = '/home/testuser';
     delete process.env.HTTP_TUI_CONFIG;
     delete process.env.XDG_CONFIG_HOME;
@@ -96,18 +114,13 @@ describe('loadConfig', () => {
   });
 
   it('returns parsed config when config file exists and is valid', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue(
-      JSON.stringify({
-        certificates: {
-          'api.example.com': { cert: '/path/to/cert', key: '/path/to/key' },
-        },
-      }),
-    );
+    mockConfigFile({
+      certificates: {
+        'api.example.com': { cert: '/path/to/cert', key: '/path/to/key' },
+      },
+    });
 
-    const result = loadConfig();
-
-    expect(result).toEqual({
+    expect(loadConfig()).toEqual({
       certificates: {
         'api.example.com': { cert: '/path/to/cert', key: '/path/to/key' },
       },
@@ -115,105 +128,68 @@ describe('loadConfig', () => {
   });
 
   it('returns null when config file does not exist', () => {
-    vi.mocked(existsSync).mockReturnValue(false);
-
-    const result = loadConfig();
-
-    expect(result).toBeNull();
+    mockNoConfig();
+    expect(loadConfig()).toBeNull();
   });
 
   it('returns null for malformed JSON and writes error to stderr', () => {
     vi.mocked(existsSync).mockReturnValue(true);
     vi.mocked(readFileSync).mockReturnValue('not valid json }');
 
-    const result = loadConfig();
-
-    expect(result).toBeNull();
+    expect(loadConfig()).toBeNull();
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining('Error: failed to parse'),
     );
   });
 
   it('skips entry with cert but no key and emits warning to stderr', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue(
-      JSON.stringify({
-        certificates: {
-          'incomplete.example.com': { cert: '/path/to/cert' },
-        },
-      }),
-    );
-
-    const result = loadConfig();
-
-    expect(result).toEqual({
-      certificates: {},
+    mockConfigFile({
+      certificates: {
+        'incomplete.example.com': { cert: '/path/to/cert' },
+      },
     });
+
+    expect(loadConfig()).toEqual({ certificates: {} });
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'certificate entry "incomplete.example.com" has cert but no key',
-      ),
+      expect.stringContaining('certificate entry "incomplete.example.com" has cert but no key'),
     );
   });
 
   it('skips entry with both cert/key and pfx and emits warning to stderr', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue(
-      JSON.stringify({
-        certificates: {
-          'conflict.example.com': { cert: '/cert', key: '/key', pfx: '/pfx' },
-        },
-      }),
-    );
-
-    const result = loadConfig();
-
-    expect(result).toEqual({
-      certificates: {},
+    mockConfigFile({
+      certificates: {
+        'conflict.example.com': { cert: '/cert', key: '/key', pfx: '/pfx' },
+      },
     });
+
+    expect(loadConfig()).toEqual({ certificates: {} });
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'certificate entry "conflict.example.com" has both cert/key and pfx',
-      ),
+      expect.stringContaining('certificate entry "conflict.example.com" has both cert/key and pfx'),
     );
   });
 
   it('skips empty entry with no cert, key, pfx, or ca and emits warning', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue(
-      JSON.stringify({
-        certificates: {
-          'empty.example.com': {},
-        },
-      }),
-    );
-
-    const result = loadConfig();
-
-    expect(result).toEqual({
-      certificates: {},
+    mockConfigFile({
+      certificates: {
+        'empty.example.com': {},
+      },
     });
+
+    expect(loadConfig()).toEqual({ certificates: {} });
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'certificate entry "empty.example.com" has no cert, key, pfx, or ca',
-      ),
+      expect.stringContaining('certificate entry "empty.example.com" has no cert, key, pfx, or ca'),
     );
   });
 
   it('returns only valid entries when mixed with invalid entries', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue(
-      JSON.stringify({
-        certificates: {
-          'valid.example.com': { cert: '/cert', key: '/key' },
-          'invalid.example.com': {},
-        },
-      }),
-    );
+    mockConfigFile({
+      certificates: {
+        'valid.example.com': { cert: '/cert', key: '/key' },
+        'invalid.example.com': {},
+      },
+    });
 
-    const result = loadConfig();
-
-    expect(result).toEqual({
+    expect(loadConfig()).toEqual({
       certificates: {
         'valid.example.com': { cert: '/cert', key: '/key' },
       },
@@ -221,66 +197,26 @@ describe('loadConfig', () => {
   });
 
   it('returns empty config when certificates key is missing from JSON', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue(JSON.stringify({}));
-
-    const result = loadConfig();
-
-    expect(result).toEqual({});
+    mockConfigFile({});
+    expect(loadConfig()).toEqual({});
   });
 
   it('returns null when certificates value is an array instead of an object', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue(
-      JSON.stringify({ certificates: ['not', 'an', 'object'] }),
-    );
+    mockConfigFile({ certificates: ['not', 'an', 'object'] });
 
-    const result = loadConfig();
-
-    expect(result).toBeNull();
+    expect(loadConfig()).toBeNull();
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining('"certificates" must be an object'),
     );
   });
 
-  it('returns null when config file does not exist', () => {
-    vi.mocked(existsSync).mockReturnValue(false);
-
-    const result = loadConfig();
-
-    expect(result).toBeNull();
-  });
-
   it('merges project config over global config when project config exists', () => {
-    vi.mocked(existsSync).mockImplementation((p) => {
-      if (typeof p === 'string') {
-        if (p.includes('config.json')) return true;
-        if (p.includes('.httptui.json')) return true;
-      }
-      return false;
-    });
-    vi.mocked(readFileSync).mockImplementation((p) => {
-      const pathStr = String(p);
-      if (pathStr.includes('config.json')) {
-        return JSON.stringify({
-          certificates: {
-            'global.example.com': { cert: '/global/cert', key: '/global/key' },
-          },
-        });
-      }
-      if (pathStr.includes('.httptui.json')) {
-        return JSON.stringify({
-          certificates: {
-            'project.example.com': { cert: '/project/cert', key: '/project/key' },
-          },
-        });
-      }
-      return '';
-    });
+    mockMergeConfigs(
+      { certificates: { 'global.example.com': { cert: '/global/cert', key: '/global/key' } } },
+      { certificates: { 'project.example.com': { cert: '/project/cert', key: '/project/key' } } },
+    );
 
-    const result = loadConfig('/project/api');
-
-    expect(result).toEqual({
+    expect(loadConfig('/project/api')).toEqual({
       certificates: {
         'project.example.com': { cert: '/project/cert', key: '/project/key' },
       },
@@ -289,27 +225,19 @@ describe('loadConfig', () => {
 
   it('returns global config when project config does not exist', () => {
     vi.mocked(existsSync).mockImplementation((p) => {
-      if (typeof p === 'string') {
-        if (p.includes('config.json')) return true;
-        if (p.includes('.httptui.json')) return false;
-      }
+      if (typeof p === 'string' && p.includes('config.json')) return true;
       return false;
     });
     vi.mocked(readFileSync).mockImplementation((p) => {
-      const pathStr = String(p);
-      if (pathStr.includes('config.json')) {
+      if (String(p).includes('config.json')) {
         return JSON.stringify({
-          certificates: {
-            'global.example.com': { cert: '/global/cert', key: '/global/key' },
-          },
+          certificates: { 'global.example.com': { cert: '/global/cert', key: '/global/key' } },
         });
       }
       return '';
     });
 
-    const result = loadConfig('/project/api');
-
-    expect(result).toEqual({
+    expect(loadConfig('/project/api')).toEqual({
       certificates: {
         'global.example.com': { cert: '/global/cert', key: '/global/key' },
       },
@@ -318,27 +246,19 @@ describe('loadConfig', () => {
 
   it('returns project config when no global config exists', () => {
     vi.mocked(existsSync).mockImplementation((p) => {
-      if (typeof p === 'string') {
-        if (p.includes('config.json')) return false;
-        if (p.includes('.httptui.json')) return true;
-      }
+      if (typeof p === 'string' && p.includes('.httptui.json')) return true;
       return false;
     });
     vi.mocked(readFileSync).mockImplementation((p) => {
-      const pathStr = String(p);
-      if (pathStr.includes('.httptui.json')) {
+      if (String(p).includes('.httptui.json')) {
         return JSON.stringify({
-          certificates: {
-            'project.example.com': { cert: '/project/cert', key: '/project/key' },
-          },
+          certificates: { 'project.example.com': { cert: '/project/cert', key: '/project/key' } },
         });
       }
       return '';
     });
 
-    const result = loadConfig('/project/api');
-
-    expect(result).toEqual({
+    expect(loadConfig('/project/api')).toEqual({
       certificates: {
         'project.example.com': { cert: '/project/cert', key: '/project/key' },
       },
@@ -346,27 +266,19 @@ describe('loadConfig', () => {
   });
 
   it('returns null when neither global nor project config exists', () => {
-    vi.mocked(existsSync).mockReturnValue(false);
-
-    const result = loadConfig('/project/api');
-
-    expect(result).toBeNull();
+    mockNoConfig();
+    expect(loadConfig('/project/api')).toBeNull();
   });
 
   it('parses environments array from config', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue(
-      JSON.stringify({
-        environments: [
-          { name: 'Development', file: 'env/dev.json' },
-          { name: 'Staging', file: 'env/staging.json' },
-        ],
-      }),
-    );
+    mockConfigFile({
+      environments: [
+        { name: 'Development', file: 'env/dev.json' },
+        { name: 'Staging', file: 'env/staging.json' },
+      ],
+    });
 
-    const result = loadConfig();
-
-    expect(result).toEqual({
+    expect(loadConfig()).toEqual({
       environments: [
         { name: 'Development', file: '/home/testuser/.config/httptui/env/dev.json' },
         { name: 'Staging', file: '/home/testuser/.config/httptui/env/staging.json' },
@@ -375,26 +287,18 @@ describe('loadConfig', () => {
   });
 
   it('skips invalid environment entries and emits warnings', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue(
-      JSON.stringify({
-        environments: [
-          { name: 'Valid', file: 'env/valid.json' },
-          { name: '', file: 'env/empty-name.json' },
-          { name: 'MissingFile' },
-          'not an object',
-        ],
-      }),
-    );
+    mockConfigFile({
+      environments: [
+        { name: 'Valid', file: 'env/valid.json' },
+        { name: '', file: 'env/empty-name.json' },
+        { name: 'MissingFile' },
+        'not an object',
+      ],
+    });
 
-    const result = loadConfig();
-
-    expect(result).toEqual({
+    expect(loadConfig()).toEqual({
       environments: [{ name: 'Valid', file: '/home/testuser/.config/httptui/env/valid.json' }],
     });
-    expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
-      expect.stringContaining('environment entry must have non-empty "name" and "file" strings'),
-    );
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining('environment entry must have non-empty "name" and "file" strings'),
     );
@@ -404,146 +308,60 @@ describe('loadConfig', () => {
   });
 
   it('warns when environments is not an array', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readFileSync).mockReturnValue(
-      JSON.stringify({
-        environments: 'not an array',
-      }),
-    );
+    mockConfigFile({ environments: 'not an array' });
 
-    const result = loadConfig();
-
-    expect(result).toEqual({});
+    expect(loadConfig()).toEqual({});
     expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
       expect.stringContaining('"environments" must be an array'),
     );
   });
 
   it('merges project environments over global environments', () => {
-    vi.mocked(existsSync).mockImplementation((p) => {
-      if (typeof p === 'string') {
-        if (p.includes('config.json')) return true;
-        if (p.includes('.httptui.json')) return true;
-      }
-      return false;
-    });
-    vi.mocked(readFileSync).mockImplementation((p) => {
-      const pathStr = String(p);
-      if (pathStr.includes('config.json')) {
-        return JSON.stringify({
-          environments: [
-            { name: 'GlobalDev', file: 'env/global-dev.json' },
-          ],
-        });
-      }
-      if (pathStr.includes('.httptui.json')) {
-        return JSON.stringify({
-          environments: [
-            { name: 'ProjectDev', file: 'env/project-dev.json' },
-          ],
-        });
-      }
-      return '';
-    });
+    mockMergeConfigs(
+      { environments: [{ name: 'GlobalDev', file: 'env/global-dev.json' }] },
+      { environments: [{ name: 'ProjectDev', file: 'env/project-dev.json' }] },
+    );
 
-    const result = loadConfig('/project/api');
-
-    expect(result).toEqual({
+    expect(loadConfig('/project/api')).toEqual({
       environments: [{ name: 'ProjectDev', file: '/project/api/env/project-dev.json' }],
     });
   });
 
   it('resolves global environment paths relative to global config dir when project config exists without environments', () => {
-    vi.mocked(existsSync).mockImplementation((p) => {
-      if (typeof p === 'string') {
-        if (p.includes('config.json')) return true;
-        if (p.includes('.httptui.json')) return true;
-      }
-      return false;
-    });
-    vi.mocked(readFileSync).mockImplementation((p) => {
-      const pathStr = String(p);
-      if (pathStr.includes('config.json')) {
-        return JSON.stringify({
-          environments: [
-            { name: 'LocalAPI', file: 'env/local.json' },
-          ],
-        });
-      }
-      if (pathStr.includes('.httptui.json')) {
-        return JSON.stringify({
-          certificates: {
-            'localhost': { cert: './certs/client.crt', key: './certs/client.key' },
-          },
-        });
-      }
-      return '';
-    });
+    mockMergeConfigs(
+      { environments: [{ name: 'LocalAPI', file: 'env/local.json' }] },
+      { certificates: { localhost: { cert: './certs/client.crt', key: './certs/client.key' } } },
+    );
 
-    const result = loadConfig('/project/api');
-
-    expect(result?.environments).toEqual([
+    expect(loadConfig('/project/api')?.environments).toEqual([
       { name: 'LocalAPI', file: '/home/testuser/.config/httptui/env/local.json' },
     ]);
   });
 
   it('resolves project environment paths relative to project config dir', () => {
     vi.mocked(existsSync).mockImplementation((p) => {
-      if (typeof p === 'string') {
-        if (p.includes('config.json')) return false;
-        if (p.includes('.httptui.json')) return true;
-      }
+      if (typeof p === 'string' && p.includes('.httptui.json')) return true;
       return false;
     });
     vi.mocked(readFileSync).mockImplementation((p) => {
-      const pathStr = String(p);
-      if (pathStr.includes('.httptui.json')) {
-        return JSON.stringify({
-          environments: [
-            { name: 'Dev', file: 'env/dev.json' },
-          ],
-        });
+      if (String(p).includes('.httptui.json')) {
+        return JSON.stringify({ environments: [{ name: 'Dev', file: 'env/dev.json' }] });
       }
       return '';
     });
 
-    const result = loadConfig('/project/api');
-
-    expect(result?.environments).toEqual([
+    expect(loadConfig('/project/api')?.environments).toEqual([
       { name: 'Dev', file: '/project/api/env/dev.json' },
     ]);
   });
 
   it('resolves global cert paths relative to global config dir when project config exists without certs', () => {
-    vi.mocked(existsSync).mockImplementation((p) => {
-      if (typeof p === 'string') {
-        if (p.includes('config.json')) return true;
-        if (p.includes('.httptui.json')) return true;
-      }
-      return false;
-    });
-    vi.mocked(readFileSync).mockImplementation((p) => {
-      const pathStr = String(p);
-      if (pathStr.includes('config.json')) {
-        return JSON.stringify({
-          certificates: {
-            'api.example.com': { cert: './certs/client.crt', key: './certs/client.key' },
-          },
-        });
-      }
-      if (pathStr.includes('.httptui.json')) {
-        return JSON.stringify({
-          environments: [
-            { name: 'Dev', file: 'env/dev.json' },
-          ],
-        });
-      }
-      return '';
-    });
+    mockMergeConfigs(
+      { certificates: { 'api.example.com': { cert: './certs/client.crt', key: './certs/client.key' } } },
+      { environments: [{ name: 'Dev', file: 'env/dev.json' }] },
+    );
 
-    const result = loadConfig('/project/api');
-
-    expect(result?.certificates).toEqual({
+    expect(loadConfig('/project/api')?.certificates).toEqual({
       'api.example.com': {
         cert: '/home/testuser/.config/httptui/certs/client.crt',
         key: '/home/testuser/.config/httptui/certs/client.key',
@@ -557,38 +375,27 @@ describe('resolveCertPath', () => {
     process.env.HOME = '/home/testuser';
   });
 
-  it('expands tilde path to home directory', () => {
-    const result = resolveCertPath('~/certs/a.crt', '/tmp/config');
-    expect(result).toBe('/home/testuser/certs/a.crt');
-  });
-
   it('returns absolute path as-is', () => {
-    const result = resolveCertPath('/etc/ssl/a.crt', '/tmp/config');
-    expect(result).toBe('/etc/ssl/a.crt');
+    expect(resolveCertPath('/etc/ssl/a.crt', '/tmp/config')).toBe('/etc/ssl/a.crt');
   });
 
   it('resolves relative path against configDir', () => {
-    const result = resolveCertPath('./certs/a.crt', '/etc/httptui');
-    expect(result).toBe('/etc/httptui/certs/a.crt');
+    expect(resolveCertPath('./certs/a.crt', '/etc/httptui')).toBe('/etc/httptui/certs/a.crt');
   });
 
   it('returns Windows-style path as-is when path.isAbsolute returns true', () => {
     const isAbsoluteSpy = vi.spyOn(path, 'isAbsolute').mockReturnValue(true);
-
-    const result = resolveCertPath('C:\\certs\\a.crt', '/tmp/config');
-
-    expect(result).toBe('C:\\certs\\a.crt');
-
+    expect(resolveCertPath('C:\\certs\\a.crt', '/tmp/config')).toBe('C:\\certs\\a.crt');
     isAbsoluteSpy.mockRestore();
   });
 
   it('resolves relative paths with parent directory traversal', () => {
-    const result = resolveCertPath('../certs/a.crt', '/etc/httptui/sub');
-    expect(result).toBe('/etc/httptui/certs/a.crt');
+    expect(resolveCertPath('../certs/a.crt', '/etc/httptui/sub')).toBe('/etc/httptui/certs/a.crt');
   });
 
-  it('expands tilde and resolves as absolute immediately', () => {
-    const result = resolveCertPath('~/certs/a.crt', '/tmp/config');
-    expect(result).toBe(path.join(os.homedir(), 'certs/a.crt'));
+  it('expands tilde and resolves using os.homedir', () => {
+    expect(resolveCertPath('~/certs/a.crt', '/tmp/config')).toBe(
+      path.join(os.homedir(), 'certs/a.crt'),
+    );
   });
 });
