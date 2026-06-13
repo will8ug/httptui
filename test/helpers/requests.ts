@@ -30,7 +30,7 @@ export function createRequest(overrides: Partial<ParsedRequest> = {}): ParsedReq
 export function createResolvedRequest(overrides: Partial<ResolvedRequest> = {}): ResolvedRequest {
   return {
     method: 'GET',
-    url: 'https://api.example.com/users',
+    url: 'https://example.com/api',
     headers: {},
     body: undefined,
     ...overrides,
