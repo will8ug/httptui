@@ -247,7 +247,7 @@ describe('mergeVariables', () => {
     expect(result).toEqual(envVars);
   });
 
-  it('environment variables override file variables', () => {
+  it('file variables override environment variables', () => {
     const fileVars = [
       { name: 'baseUrl', value: 'https://api.local' },
       { name: 'port', value: '8080' },
@@ -258,7 +258,7 @@ describe('mergeVariables', () => {
     const baseUrlVar = result.find((v) => v.name === 'baseUrl');
     const portVar = result.find((v) => v.name === 'port');
 
-    expect(baseUrlVar?.value).toBe('https://api.dev.com');
+    expect(baseUrlVar?.value).toBe('https://api.local');
     expect(portVar?.value).toBe('8080');
   });
 

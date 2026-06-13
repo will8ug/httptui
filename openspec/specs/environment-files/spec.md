@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Load and apply environment files (Postman `.postman_environment.json` and simplified format) to override file-level and collection-level variables. Enables running the same collection or `.http` file against different environments (dev, staging, prod) without editing the source.
+Load and apply environment files (Postman `.postman_environment.json` and simplified format) as a base layer of variables. File-level and collection-level variables take precedence over environment file variables, enabling environment files to provide defaults while allowing per-file or per-request overrides.
 
 ## Requirements
 
@@ -49,16 +49,20 @@ The system SHALL parse both Postman environment files (`.postman_environment.jso
 - **WHEN** an environment file is a JSON array instead of an object
 - **THEN** the parser SHALL throw an error indicating the file could not be parsed
 
-### Requirement: Environment variables take precedence
-When an environment file is loaded via `--env` or `--env-name`, environment variables SHALL override file/collection variables of the same name during resolution. System variables (`{{$timestamp}}`, `{{$processEnv}}`, etc.) SHALL still be resolved in the second pass.
+### Requirement: File variables take precedence over environment variables
+When an environment file is loaded via `--env` or `--env-name`, file variables and collection variables SHALL take precedence over environment file variables of the same name during resolution. Environment file variables SHALL serve as a base layer providing defaults. System variables (`{{$timestamp}}`, `{{$processEnv}}`, etc.) SHALL still be resolved in the second pass.
 
-#### Scenario: Environment overrides collection variable
-- **WHEN** a Postman collection defines `baseUrl = "https://api.example.com"` and the environment file defines `baseUrl = "https://api.staging.com"`
-- **THEN** requests containing `{{baseUrl}}` SHALL resolve to `"https://api.staging.com"`
-
-#### Scenario: Environment overrides .http file variable
+#### Scenario: File variable overrides environment variable
 - **WHEN** a `.http` file declares `@baseUrl = https://api.local` and the environment file defines `baseUrl = "https://api.dev.com"`
-- **THEN** requests containing `{{baseUrl}}` SHALL resolve to `"https://api.dev.com"`
+- **THEN** requests containing `{{baseUrl}}` SHALL resolve to `https://api.local` (file value wins)
+
+#### Scenario: Collection variable overrides environment variable
+- **WHEN** a Postman collection defines `baseUrl = "https://api.example.com"` and the environment file defines `baseUrl = "https://api.staging.com"`
+- **THEN** requests containing `{{baseUrl}}` SHALL resolve to `"https://api.example.com"` (collection value wins)
+
+#### Scenario: Environment variable used as default when no file variable exists
+- **WHEN** an environment file defines `apiKey = "dev-key-123"` and no file or collection variable named `apiKey` exists
+- **THEN** requests containing `{{apiKey}}` SHALL resolve to `"dev-key-123"` (environment value serves as base)
 
 #### Scenario: Environment variable does not affect system variables
 - **WHEN** an environment file has no variable named `timestamp` and a request contains `{{$timestamp}}`
