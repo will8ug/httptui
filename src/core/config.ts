@@ -64,6 +64,40 @@ function populateCertEntry(value: unknown, baseDir: string): CertEntry {
   return certEntry;
 }
 
+function parseCertificates(rawCerts: Record<string, unknown>, baseDir: string): Record<string, CertEntry> {
+  const certificates: Record<string, CertEntry> = {};
+  for (const [key, value] of Object.entries(rawCerts)) {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+      process.stderr.write(`Warning: certificate entry "${key}" is not a valid object — skipping\n`);
+      continue;
+    }
+    const certEntry = populateCertEntry(value, baseDir);
+    if (validateEntry(key, certEntry)) {
+      certificates[key] = certEntry;
+    }
+  }
+  return certificates;
+}
+
+function parseEnvironments(rawEnvs: unknown[], baseDir: string): EnvironmentConfig[] {
+  const environments: EnvironmentConfig[] = [];
+  for (const entry of rawEnvs) {
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
+      process.stderr.write('Warning: environment entry is not a valid object — skipping\n');
+      continue;
+    }
+    const envEntry = entry as Record<string, unknown>;
+    const name = envEntry.name;
+    const file = envEntry.file;
+    if (typeof name !== 'string' || name === '' || typeof file !== 'string' || file === '') {
+      process.stderr.write('Warning: environment entry must have non-empty "name" and "file" strings — skipping\n');
+      continue;
+    }
+    environments.push({ name, file: resolveCertPath(file, baseDir) });
+  }
+  return environments;
+}
+
 function loadConfigFile(configPath: string): HttptuiConfig | null {
   if (!existsSync(configPath)) {
     return null;
@@ -93,22 +127,7 @@ function loadConfigFile(configPath: string): HttptuiConfig | null {
       process.stderr.write('Error: "certificates" must be an object in config.json\n');
       return null;
     }
-
-    const certificates: Record<string, CertEntry> = {};
-    for (const [key, value] of Object.entries(rawCerts as Record<string, unknown>)) {
-      if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-        process.stderr.write(`Warning: certificate entry "${key}" is not a valid object — skipping\n`);
-        continue;
-      }
-
-      const certEntry = populateCertEntry(value, baseDir);
-
-      if (validateEntry(key, certEntry)) {
-        certificates[key] = certEntry;
-      }
-    }
-
-    config.certificates = certificates;
+    config.certificates = parseCertificates(rawCerts as Record<string, unknown>, baseDir);
   }
 
   const rawEnvs = obj.environments;
@@ -116,21 +135,7 @@ function loadConfigFile(configPath: string): HttptuiConfig | null {
     if (!Array.isArray(rawEnvs)) {
       process.stderr.write('Warning: "environments" must be an array in config.json — skipping\n');
     } else {
-      const environments: EnvironmentConfig[] = [];
-      for (const entry of rawEnvs) {
-        if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
-          process.stderr.write('Warning: environment entry is not a valid object — skipping\n');
-          continue;
-        }
-        const envEntry = entry as Record<string, unknown>;
-        const name = envEntry.name;
-        const file = envEntry.file;
-        if (typeof name !== 'string' || name === '' || typeof file !== 'string' || file === '') {
-          process.stderr.write('Warning: environment entry must have non-empty "name" and "file" strings — skipping\n');
-          continue;
-        }
-        environments.push({ name, file: resolveCertPath(file, baseDir) });
-      }
+      const environments = parseEnvironments(rawEnvs, baseDir);
       if (environments.length > 0) {
         config.environments = environments;
       }
