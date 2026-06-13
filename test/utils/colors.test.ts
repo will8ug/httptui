@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isJsonString } from '../src/utils/colors.js';
+import { isJsonString } from '../../src/utils/colors.js';
 
 describe('isJsonString', () => {
   it('returns false for empty and whitespace-only strings', () => {

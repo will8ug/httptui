@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { truncateText } from '../src/utils/text.js';
+import { truncateText } from '../../src/utils/text.js';
 
 describe('truncateText', () => {
   it('returns empty string for maxWidth <= 0', () => {

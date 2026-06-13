@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { RequestError, ResolvedRequest, ResponseData } from '../src/core/types';
+import type { RequestError, ResolvedRequest, ResponseData } from '../../src/core/types';
 
 const { agentMock, MockFormData, requestMock } = vi.hoisted(() => {
   class FormDataMock {
@@ -28,7 +28,7 @@ vi.mock('undici', () => ({
   request: requestMock,
 }));
 
-import { executeRequest, isRequestError } from '../src/core/executor';
+import { executeRequest, isRequestError } from '../../src/core/executor';
 
 function createResolvedRequest(overrides: Partial<ResolvedRequest> = {}): ResolvedRequest {
   return {

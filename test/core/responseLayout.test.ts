@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeResponseLayout, formatStatusLine } from '../src/core/responseLayout.js';
-import type { ResponseData } from '../src/core/types.js';
+import { computeResponseLayout, formatStatusLine } from '../../src/core/responseLayout.js';
+import type { ResponseData } from '../../src/core/types.js';
 
 const CONTENT_WIDTH = 49;
 

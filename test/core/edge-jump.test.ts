@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import { createInitialState } from './helpers/state';
-import { makeRequests } from './helpers/requests';
-import { longResponse } from './helpers/responses';
+import { createInitialState } from '../helpers/state';
+import { makeRequests } from '../helpers/requests';
+import { longResponse } from '../helpers/responses';
 import {
   reducer,
   getMaxRequestLineWidth,
   getMaxResponseLineWidth,
   getMaxDetailsLineWidth,
   clamp,
-} from '../src/core/reducer';
-import type { Action, AppState, ParsedRequest, ResponseData } from '../src/core/types';
-import { getRequestContentWidth, getResponseContentWidth } from '../src/utils/layout';
+} from '../../src/core/reducer';
+import type { Action, AppState, ParsedRequest, ResponseData } from '../../src/core/types';
+import { getRequestContentWidth, getResponseContentWidth } from '../../src/utils/layout';
 
 describe('JUMP_VERTICAL reducer', () => {
   describe('requests panel', () => {

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMaxRequestLineWidth, getMaxResponseLineWidth } from '../src/core/reducer';
-import type { Action, AppState, ParsedRequest } from '../src/core/types';
-import { getRequestContentWidth, getLeftPanelWidth, getResponseContentWidth, getDetailPanelHeight } from '../src/utils/layout';
-import { createInitialState, reducer } from './helpers/state';
-import { makeRequests } from './helpers/requests';
+import { getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../src/core/reducer';
+import type { Action, AppState, ParsedRequest } from '../../src/core/types';
+import { getRequestContentWidth, getLeftPanelWidth, getResponseContentWidth, getDetailPanelHeight } from '../../src/utils/layout';
+import { createInitialState, reducer } from '../helpers/state';
+import { makeRequests } from '../helpers/requests';
 
 const longUrlRequests: ParsedRequest[] = makeRequests(1, { longUrl: true });
 const shortUrlRequests: ParsedRequest[] = makeRequests(1);

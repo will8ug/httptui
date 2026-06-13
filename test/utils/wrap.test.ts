@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { wrapLine, wrapColorizedSegments } from '../src/utils/wrap.js';
+import { wrapLine, wrapColorizedSegments } from '../../src/utils/wrap.js';
 
 describe('wrapLine', () => {
   it('returns empty array for maxWidth <= 0', () => {

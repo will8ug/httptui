@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { reducer, getVisibleRequestOffset } from '../src/core/reducer';
-import type { Action, AppState, ParsedRequest } from '../src/core/types';
-import { createRequest } from './helpers/requests';
-import { createInitialState } from './helpers/state';
+import { reducer, getVisibleRequestOffset } from '../../src/core/reducer';
+import type { Action, AppState, ParsedRequest } from '../../src/core/types';
+import { createRequest } from '../helpers/requests';
+import { createInitialState } from '../helpers/state';
 
 const requests: ParsedRequest[] = [
   createRequest({

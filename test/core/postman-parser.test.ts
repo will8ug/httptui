@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { detectFormat, parsePostmanCollection } from '../src/core/postman-parser';
+import { detectFormat, parsePostmanCollection } from '../../src/core/postman-parser';
 
 function readFixture(name: string): string {
-  return readFileSync(resolve(__dirname, 'fixtures', name), 'utf8');
+  return readFileSync(resolve(__dirname, '..', 'fixtures', name), 'utf8');
 }
 
 describe('detectFormat', () => {

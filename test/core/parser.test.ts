@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseHttpFile } from '../src/core/parser';
+import { parseHttpFile } from '../../src/core/parser';
 
 describe('parseHttpFile', () => {
   it('returns no requests for an empty file', () => {

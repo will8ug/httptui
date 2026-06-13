@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { createRequest } from './helpers/requests';
-import { createInitialState, reducer } from './helpers/state';
-import type { AppState, ParsedRequest, FileVariable } from '../src/core/types';
+import { createRequest } from '../helpers/requests';
+import { createInitialState, reducer } from '../helpers/state';
+import type { AppState, ParsedRequest, FileVariable } from '../../src/core/types';
 
 const sampleRequests: ParsedRequest[] = [
   createRequest({ name: 'Get users', method: 'GET', url: 'https://api.example.com/users', lineNumber: 1 }),

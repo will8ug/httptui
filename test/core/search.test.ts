@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { createInitialState } from './helpers/state';
-import { createMockResponse } from './helpers/responses';
-import { formatResponseBody } from '../src/core/formatter';
-import { reducer, CLEAR_SEARCH_STATE, computeSearchScrollOffset } from '../src/core/reducer';
-import { computeResponseLayout } from '../src/core/responseLayout';
-import type { Action, AppState, ResponseData } from '../src/core/types';
+import { createInitialState } from '../helpers/state';
+import { createMockResponse } from '../helpers/responses';
+import { formatResponseBody } from '../../src/core/formatter';
+import { reducer, CLEAR_SEARCH_STATE, computeSearchScrollOffset } from '../../src/core/reducer';
+import { computeResponseLayout } from '../../src/core/responseLayout';
+import type { Action, AppState, ResponseData } from '../../src/core/types';
 
 const LEDGER_CONTENT_WIDTH = 49;
 

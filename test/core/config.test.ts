@@ -9,7 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { getConfigDir, loadConfig, resolveCertPath } from '../src/core/config';
+import { getConfigDir, loadConfig, resolveCertPath } from '../../src/core/config';
 
 const ENV_KEYS = ['HTTP_TUI_CONFIG', 'XDG_CONFIG_HOME', 'APPDATA', 'HOME'] as const;
 const savedEnv: Record<string, string | undefined> = {};

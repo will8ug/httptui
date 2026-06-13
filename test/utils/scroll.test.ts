@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../src/utils/scroll';
-import { getResponseContentWidth } from '../src/utils/layout';
+import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../../src/utils/scroll';
+import { getResponseContentWidth } from '../../src/utils/layout';
 
 describe('scroll utilities', () => {
   describe('getMaxScrollOffset', () => {

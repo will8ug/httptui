@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { getVisibleRequestOffset, reducer } from '../src/core/reducer';
-import type { AppState, ParsedRequest } from '../src/core/types';
-import { createRequest } from './helpers/requests';
-import { createInitialState } from './helpers/state';
+import { getVisibleRequestOffset, reducer } from '../../src/core/reducer';
+import type { AppState, ParsedRequest } from '../../src/core/types';
+import { createRequest } from '../helpers/requests';
+import { createInitialState } from '../helpers/state';
 
 function makeRequests(count: number): ParsedRequest[] {
   return Array.from({ length: count }, (_, i) =>

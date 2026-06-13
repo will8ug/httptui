@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createInitialState, reducer } from './helpers/state';
+import { createInitialState, reducer } from '../helpers/state';
 
 describe('TOGGLE_WRAP reducer', () => {
   it('resets responseScrollOffset to 0', () => {

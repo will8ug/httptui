@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SHORTCUTS } from '../src/core/shortcuts';
+import { SHORTCUTS } from '../../src/core/shortcuts';
 
 describe('SHORTCUTS registry — edge-jump entries', () => {
   it('contains the `g` entry (jump to top)', () => {

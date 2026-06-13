@@ -7,8 +7,8 @@ vi.mock('node:fs', () => ({
 
 import { existsSync, readFileSync } from 'node:fs';
 
-import { loadCertFiles, matchCertificate, resolvePassphrase } from '../src/core/certificates';
-import type { CertEntry } from '../src/core/types';
+import { loadCertFiles, matchCertificate, resolvePassphrase } from '../../src/core/certificates';
+import type { CertEntry } from '../../src/core/types';
 
 const savedEnv: Record<string, string | undefined> = {};
 
