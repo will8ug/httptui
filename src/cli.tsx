@@ -185,8 +185,7 @@ async function runCli(): Promise<void> {
     />,
   );
 
-  await app.waitUntilExit();
-  restoreScreen();
+  await app.waitUntilExit().finally(restoreScreen);
 }
 
 if (isMainModule()) {
