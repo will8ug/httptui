@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Runtime Environment Switching
+
+## Purpose
+
+Allow users to switch between configured environment files at runtime via a keyboard-driven picker overlay, without restarting the application. The active environment's variables are merged over file-level variables (with file-level variables taking precedence), and the selection persists across file reloads and file loads.
+
+## Requirements
 
 ### Requirement: Environment switcher shortcut
 The system SHALL register a keyboard shortcut with `key: 'E'` in the centralized `SHORTCUTS` registry (`src/core/shortcuts.ts`) that, when pressed in normal mode, opens the environment picker overlay. The shortcut SHALL use `description: 'Switch environment'`, `group: 'request'`, `showInBar: false`, and `showInHelp: true`. The `E` key SHALL be ignored while the help overlay, file-load mode, or search mode is active.
