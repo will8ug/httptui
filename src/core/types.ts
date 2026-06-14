@@ -72,6 +72,11 @@ export interface EnvironmentConfig {
   file: string;
 }
 
+export interface EnvOption {
+  name: string;
+  file: string | null;
+}
+
 export interface HttptuiConfig {
   certificates?: Record<string, CertEntry>;
   environments?: EnvironmentConfig[];
@@ -83,7 +88,7 @@ export interface ExecutorConfig {
 }
 
 export type FocusedPanel = 'requests' | 'details' | 'response';
-export type AppMode = 'normal' | 'fileLoad' | 'search';
+export type AppMode = 'normal' | 'fileLoad' | 'search' | 'envSelect';
 export type WrapMode = 'nowrap' | 'wrap';
 
 export interface AppState {
@@ -109,6 +114,11 @@ export interface AppState {
   mode: AppMode;
   fileLoadInput: string;
   fileLoadError: string | null;
+  fileVariables: FileVariable[];
+  activeEnvName: string | null;
+  availableEnvironments: EnvOption[];
+  envSelectIndex: number;
+  envSelectError: string | null;
   wrapMode: WrapMode;
   showRequestDetails: boolean;
   rawMode: boolean;
@@ -125,6 +135,9 @@ export interface AppProps {
   requests: ParsedRequest[];
   variables: FileVariable[];
   environmentVariables: FileVariable[];
+  fileVariables: FileVariable[];
+  activeEnvName: string | null;
+  availableEnvironments: EnvOption[];
   executorConfig: ExecutorConfig;
 }
 
@@ -141,6 +154,7 @@ export type Action =
   | { type: 'SCROLL_HORIZONTAL'; direction: 'left' | 'right'; columns?: number }
   | { type: 'CLOSE_HELP' }
   | { type: 'RELOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[] }
+  | { type: 'SET_RELOAD_MESSAGE'; message: string }
   | { type: 'CLEAR_RELOAD_MESSAGE' }
   | { type: 'ENTER_FILE_LOAD' }
   | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string }
@@ -158,4 +172,9 @@ export type Action =
   | { type: 'CANCEL_SEARCH' }
   | { type: 'NEXT_MATCH'; targetVisualIndex: number; maxOffset?: number }
   | { type: 'PREV_MATCH'; targetVisualIndex: number; maxOffset?: number }
-  | { type: 'TOGGLE_FULLSCREEN' };
+  | { type: 'TOGGLE_FULLSCREEN' }
+  | { type: 'ENTER_ENV_SELECT' }
+  | { type: 'MOVE_ENV_SELECTION'; direction: 'up' | 'down' }
+  | { type: 'SWITCH_ENV'; environmentVariables: FileVariable[]; envName: string | null }
+  | { type: 'CANCEL_ENV_SELECT' }
+  | { type: 'SET_ENV_SELECT_ERROR'; error: string };

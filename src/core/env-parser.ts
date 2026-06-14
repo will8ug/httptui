@@ -1,6 +1,9 @@
 import type { FileVariable } from './types.js';
 
-export function parseEnvironmentFile(content: string): FileVariable[] {
+export function parseEnvironmentFile(content: string): {
+  name: string | null;
+  variables: FileVariable[];
+} {
   let raw: unknown;
 
   try {
@@ -14,10 +17,11 @@ export function parseEnvironmentFile(content: string): FileVariable[] {
   }
 
   const obj = raw as Record<string, unknown>;
+  const name = typeof obj.name === 'string' && obj.name !== '' ? obj.name : null;
   const values = obj.values;
 
   if (!Array.isArray(values)) {
-    return [];
+    return { name, variables: [] };
   }
 
   const variables: FileVariable[] = [];
@@ -47,5 +51,5 @@ export function parseEnvironmentFile(content: string): FileVariable[] {
     });
   }
 
-  return variables;
+  return { name, variables };
 }

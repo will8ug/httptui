@@ -11,6 +11,7 @@ import { RequestList } from './components/RequestList';
 import { RequestDetailsView } from './components/RequestDetailsView';
 import { ResponseView } from './components/ResponseView';
 import { StatusBar } from './components/StatusBar';
+import { EnvSelectOverlay } from './components/EnvSelectOverlay';
 import { executeRequest, isRequestError } from './core/executor';
 import type { CertConfig } from './core/executor';
 import { formatResponseBody } from './core/formatter';
@@ -19,6 +20,7 @@ import { computeResponseLayout } from './core/responseLayout';
 import type { AppProps, AppState, RequestError, ResponseData } from './core/types';
 import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
+import { parseEnvironmentFile } from './core/env-parser';
 import { mergeVariables, resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
 import { loadConfig } from './core/config';
@@ -242,6 +244,48 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (state.mode === 'envSelect') {
+      if (key.escape) {
+        dispatch({ type: 'CANCEL_ENV_SELECT' });
+        return;
+      }
+
+      if (key.return) {
+        const option = state.availableEnvironments[state.envSelectIndex];
+        if (!option) {
+          return;
+        }
+        if (option.file === null) {
+          dispatch({ type: 'SWITCH_ENV', environmentVariables: [], envName: null });
+        } else {
+          try {
+            const content = readFileSync(option.file, 'utf8');
+            const parsed = parseEnvironmentFile(content);
+            dispatch({
+              type: 'SWITCH_ENV',
+              environmentVariables: parsed.variables,
+              envName: option.name === '(none)' ? null : option.name,
+            });
+          } catch (error) {
+            dispatch({
+              type: 'SET_ENV_SELECT_ERROR',
+              error: error instanceof Error ? error.message : 'Failed to load environment',
+            });
+          }
+        }
+        return;
+      }
+
+      const isEnvUp = input === 'k' || key.upArrow;
+      const isEnvDown = input === 'j' || key.downArrow;
+      if (isEnvUp || isEnvDown) {
+        dispatch({ type: 'MOVE_ENV_SELECTION', direction: isEnvUp ? 'up' : 'down' });
+        return;
+      }
+
+      return;
+    }
+
     if (key.escape && state.maximizedPanel !== null) {
       dispatch({ type: 'TOGGLE_FULLSCREEN' });
       return;
@@ -294,6 +338,16 @@ export function App(props: AppProps): React.ReactElement {
 
     if (input === 'o') {
       dispatch({ type: 'ENTER_FILE_LOAD' });
+      return;
+    }
+
+    if (input === 'E') {
+      if (state.availableEnvironments.length > 1) {
+        dispatch({ type: 'ENTER_ENV_SELECT' });
+      } else {
+        dispatch({ type: 'SET_RELOAD_MESSAGE', message: 'No environments configured' });
+        setTimeout(() => { dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }); }, 2000);
+      }
       return;
     }
 
@@ -452,9 +506,15 @@ return (
             columns,
           }) : 0}
           hasResponse={!!state.response}
+          envName={state.activeEnvName}
         />
       }
-      overlay={state.showHelp ? <HelpOverlay visible={state.showHelp} /> : state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> : undefined}
+      overlay={
+        state.showHelp ? <HelpOverlay visible={state.showHelp} /> :
+        state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> :
+        state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
+        undefined
+      }
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
       detailPanel={state.showRequestDetails && selectedRequest ? (
         <RequestDetailsView

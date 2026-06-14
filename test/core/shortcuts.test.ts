@@ -54,6 +54,23 @@ describe('SHORTCUTS registry — status bar budget', () => {
   });
 });
 
+describe('SHORTCUTS registry — env-switch entry', () => {
+  it('contains the `E` entry (switch environment)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'E');
+    expect(entry).toBeDefined();
+    expect(entry?.label).toBe('Env');
+    expect(entry?.description).toBe('Switch environment');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('request');
+  });
+
+  it('does not appear in the status bar', () => {
+    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
+    expect(barKeys).not.toContain('E');
+  });
+});
+
 describe('SHORTCUTS registry — fullscreen entry', () => {
   it('contains the `f` entry (toggle fullscreen)', () => {
     const entry = SHORTCUTS.find((s) => s.key === 'f');

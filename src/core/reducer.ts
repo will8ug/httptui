@@ -1,7 +1,7 @@
 import type { Action, AppState, AppProps } from './types';
 import { formatResponseBody } from './formatter';
 import { formatStatusLine } from './responseLayout';
-import { resolveVariables } from './variables';
+import { mergeVariables, resolveVariables } from './variables';
 import { DEFAULT_TERMINAL_ROWS, getRequestContentWidth, getRequestVisibleHeight, getResponseContentWidth } from '../utils/layout';
 import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
 import { getRequestTarget } from '../utils/request';
@@ -401,7 +401,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         requests: action.requests,
-        variables: action.variables,
+        fileVariables: action.variables,
+        variables: mergeVariables(action.variables, state.environmentVariables),
         selectedIndex: newIndex >= 0 ? newIndex : 0,
         response: null,
         error: null,
@@ -417,6 +418,12 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         reloadMessage: null,
+      };
+
+    case 'SET_RELOAD_MESSAGE':
+      return {
+        ...state,
+        reloadMessage: action.message,
       };
 
     case 'ENTER_FILE_LOAD':
@@ -448,7 +455,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         requests: action.requests,
-        variables: action.variables,
+        fileVariables: action.variables,
+        variables: mergeVariables(action.variables, state.environmentVariables),
         filePath: action.filePath,
         selectedIndex: newIndex >= 0 ? newIndex : 0,
         response: null,
@@ -473,6 +481,63 @@ export function reducer(state: AppState, action: Action): AppState {
         mode: 'normal',
         fileLoadInput: '',
         fileLoadError: null,
+      };
+
+    case 'ENTER_ENV_SELECT': {
+      const activeIndex = state.activeEnvName
+        ? state.availableEnvironments.findIndex((option) => option.name === state.activeEnvName)
+        : -1;
+      const initialIndex = activeIndex >= 0 ? activeIndex : 0;
+      return {
+        ...state,
+        mode: 'envSelect',
+        envSelectIndex: initialIndex,
+        envSelectError: null,
+      };
+    }
+
+    case 'MOVE_ENV_SELECTION': {
+      const optionCount = state.availableEnvironments.length;
+      if (optionCount === 0) {
+        return state;
+      }
+      const delta = action.direction === 'up' ? -1 : 1;
+      const nextIndex = clamp(state.envSelectIndex + delta, 0, optionCount - 1);
+      return {
+        ...state,
+        envSelectIndex: nextIndex,
+      };
+    }
+
+    case 'SWITCH_ENV':
+      return {
+        ...state,
+        environmentVariables: action.environmentVariables,
+        variables: mergeVariables(state.fileVariables, action.environmentVariables),
+        activeEnvName: action.envName,
+        response: null,
+        error: null,
+        responseScrollOffset: 0,
+        requestScrollOffset: 0,
+        requestHorizontalOffset: 0,
+        responseHorizontalOffset: 0,
+        detailsScrollOffset: 0,
+        detailsHorizontalOffset: 0,
+        mode: 'normal',
+        envSelectError: null,
+      };
+
+    case 'CANCEL_ENV_SELECT':
+      return {
+        ...state,
+        mode: 'normal',
+        envSelectError: null,
+      };
+
+    case 'SET_ENV_SELECT_ERROR':
+      return {
+        ...state,
+        envSelectError: action.error,
       };
 
     case 'ENTER_SEARCH': {
@@ -594,6 +659,11 @@ export function createInitialState(props: AppProps): AppState {
     requests: props.requests,
     variables: props.variables,
     environmentVariables: props.environmentVariables,
+    fileVariables: props.fileVariables,
+    activeEnvName: props.activeEnvName,
+    availableEnvironments: props.availableEnvironments,
+    envSelectIndex: 0,
+    envSelectError: null,
     selectedIndex: 0,
     focusedPanel: 'requests',
     response: null,

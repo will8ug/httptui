@@ -5,6 +5,10 @@ const defaultAppProps: AppProps = {
   filePath: 'test.http',
   requests: [],
   variables: [],
+  environmentVariables: [],
+  fileVariables: [],
+  activeEnvName: null,
+  availableEnvironments: [],
   executorConfig: { insecure: false },
 };
 

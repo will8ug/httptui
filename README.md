@@ -95,6 +95,7 @@ httptui api.http -E Staging
 | `Enter` | Send selected request |
 | `R` | Reload file from disk |
 | `o` | Open a different .http file |
+| `E` | Switch environment |
 
 ### Display
 
@@ -301,6 +302,17 @@ You can register environment files in your global or project-level config file a
 ```
 
 Relative paths are resolved against the config directory. If both global and project configs define `environments`, the project config replaces the global one entirely.
+
+### Runtime Environment Switcher
+
+Press `E` while the TUI is running to open the environment picker.
+
+- The picker lists all environments registered in your configuration files.
+- If you launched httptui with the `--env` flag, that file's name (or basename) is also included in the list.
+- Use `↑`/`↓` or `j`/`k` to navigate the list.
+- Press `Enter` to apply the selected environment or `Esc` to cancel.
+- Selecting the `(none)` option reverts to using only file-level variables.
+- The active environment name is displayed in the status bar.
 
 ## Client Certificates
 

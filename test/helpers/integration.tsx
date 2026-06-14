@@ -20,6 +20,10 @@ const defaultProps: AppProps = {
   filePath: 'test.http',
   requests: [],
   variables: [],
+  environmentVariables: [],
+  fileVariables: [],
+  activeEnvName: null,
+  availableEnvironments: [],
   executorConfig: { insecure: false },
 };
 
@@ -30,6 +34,10 @@ export function renderApp(overrides: Partial<AppProps> = {}) {
       filePath={props.filePath}
       requests={props.requests}
       variables={props.variables}
+      environmentVariables={props.environmentVariables}
+      fileVariables={props.fileVariables}
+      activeEnvName={props.activeEnvName}
+      availableEnvironments={props.availableEnvironments}
       executorConfig={props.executorConfig}
     />,
   );

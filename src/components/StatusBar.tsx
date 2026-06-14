@@ -20,6 +20,7 @@ interface StatusBarProps {
   responseScrollOffset: number;
   responseTotalLines: number;
   hasResponse: boolean;
+  envName: string | null;
 }
 
 function getStatusText(props: StatusBarProps): string {
@@ -56,6 +57,7 @@ export function StatusBar({
   responseScrollOffset,
   responseTotalLines,
   hasResponse,
+  envName,
 }: StatusBarProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
@@ -73,18 +75,21 @@ export function StatusBar({
     responseScrollOffset,
     responseTotalLines,
     hasResponse,
+    envName,
   });
   const insecureLabelWidth = insecure ? 10 : 0;
   const reloadLabelWidth = reloadMessage ? reloadMessage.length + 2 : 0;
-  const availableLeftWidth = Math.max(0, columns - rightText.length - insecureLabelWidth - reloadLabelWidth - 1);
+  const envNameLabelWidth = envName ? envName.length + 2 : 0;
+  const availableLeftWidth = Math.max(0, columns - rightText.length - insecureLabelWidth - reloadLabelWidth - envNameLabelWidth - 1);
 
   return (
     <Box width="100%" justifyContent="space-between">
       <Text color="gray">{truncateText(leftText, availableLeftWidth)}</Text>
       <Box>
-        {reloadMessage ? <Text color="green" bold>{reloadMessage}  </Text> : null}
-        {insecure ? <Text color="yellow" bold>INSECURE  </Text> : null}
-        <Text color="gray">{rightText}</Text>
+        {envName ? <Text key="env-name" color="magenta" bold>{envName}  </Text> : null}
+        {reloadMessage ? <Text key="reload-message" color="green" bold>{reloadMessage}  </Text> : null}
+        {insecure ? <Text key="insecure" color="yellow" bold>INSECURE  </Text> : null}
+        <Text key="status-text" color="gray">{rightText}</Text>
       </Box>
     </Box>
   );
