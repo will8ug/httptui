@@ -113,7 +113,7 @@ When no environments are available (the configuration defines no environments an
 - **THEN** the picker SHALL NOT open and a transient status message `No environments configured` SHALL be shown and then auto-cleared
 
 ### Requirement: Active environment indicator in status bar
-The status bar SHALL display the currently active environment name in `magenta` bold in its right segment, positioned before the reload message indicator. When no environment is active, no environment indicator SHALL be rendered.
+The status bar SHALL display the currently active environment name in `magenta` bold in its right segment, positioned after the reload message indicator. When no environment is active, no environment indicator SHALL be rendered.
 
 #### Scenario: Active environment shown
 - **WHEN** the active environment is `Staging`

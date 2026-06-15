@@ -77,17 +77,17 @@ export function StatusBar({
     hasResponse,
     envName,
   });
-  const insecureLabelWidth = insecure ? 10 : 0;
   const reloadLabelWidth = reloadMessage ? reloadMessage.length + 2 : 0;
   const envNameLabelWidth = envName ? envName.length + 2 : 0;
-  const availableLeftWidth = Math.max(0, columns - rightText.length - insecureLabelWidth - reloadLabelWidth - envNameLabelWidth - 1);
+  const insecureLabelWidth = insecure ? 10 : 0;
+  const availableLeftWidth = Math.max(0, columns - rightText.length - reloadLabelWidth - envNameLabelWidth - insecureLabelWidth - 1);
 
   return (
     <Box width="100%" justifyContent="space-between">
       <Text color="gray">{truncateText(leftText, availableLeftWidth)}</Text>
       <Box>
-        {envName ? <Text key="env-name" color="magenta" bold>{envName}  </Text> : null}
         {reloadMessage ? <Text key="reload-message" color="green" bold>{reloadMessage}  </Text> : null}
+        {envName ? <Text key="env-name" color="magenta" bold>{envName}  </Text> : null}
         {insecure ? <Text key="insecure" color="yellow" bold>INSECURE  </Text> : null}
         <Text key="status-text" color="gray">{rightText}</Text>
       </Box>
