@@ -167,7 +167,7 @@ GET https://{{hostname}}/users
 - `{{$dotenv VAR_NAME}}`: Read from a `.env` file in the `.http` file's directory first, then fall back to the current working directory.
 
 #### Environment Files
-Load environment files with the `--env` / `-e` flag. httptui supports both Postman environment files (`.postman_environment.json`) and a simplified format. File-level and collection-level variables override environment variables of the same name. This works for both `.http` files and Postman collections.
+Load environment files with the `--env` / `-e` flag. httptui supports both Postman environment files (`.postman_environment.json`) and a simplified format. Environment variables override file-level and collection-level variables of the same name. This works for both `.http` files and Postman collections.
 
 ```bash
 httptui collection.json --env dev.postman_environment.json

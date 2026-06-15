@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Allow users to switch between configured environment files at runtime via a keyboard-driven picker overlay, without restarting the application. The active environment's variables are merged over file-level variables (with file-level variables taking precedence), and the selection persists across file reloads and file loads.
+Allow users to switch between configured environment files at runtime via a keyboard-driven picker overlay, without restarting the application. The active environment's variables are merged over file-level variables (with environment variables taking precedence), and the selection persists across file reloads and file loads.
 
 ## Requirements
 
@@ -79,15 +79,15 @@ The system SHALL support moving the highlight within the picker using the up/dow
 - **THEN** the picker SHALL close, the mode SHALL return to `'normal'`, and the active environment SHALL remain `Development`
 
 ### Requirement: Apply selected environment at runtime
-When the user applies an environment option, the system SHALL load and parse that environment's file, set the environment variables to the parsed values, re-merge them over the pristine file-level variables (file-level variables taking precedence), update the active environment name, reset the response and scroll state, and return to normal mode. Applying the `(none)` option SHALL set the environment variables to an empty list, re-merge (yielding only file-level variables), and clear the active environment name. If the environment file cannot be read or parsed, the system SHALL display an inline error in the picker and keep the picker open.
+When the user applies an environment option, the system SHALL load and parse that environment's file, set the environment variables to the parsed values, re-merge them over the pristine file-level variables (environment variables taking precedence), update the active environment name, reset the response and scroll state, and return to normal mode. Applying the `(none)` option SHALL set the environment variables to an empty list, re-merge (yielding only file-level variables), and clear the active environment name. If the environment file cannot be read or parsed, the system SHALL display an inline error in the picker and keep the picker open.
 
 #### Scenario: Switching environment re-merges variables
 - **WHEN** the active environment is `Development` (defining `baseUrl = https://api.dev.com`) and the user applies `Staging` (defining `baseUrl = https://api.staging.com`)
 - **THEN** requests containing `{{baseUrl}}` SHALL resolve to `https://api.staging.com` and the active environment name SHALL become `Staging`
 
-#### Scenario: File variables still win after switching
+#### Scenario: Environment variables still win after switching
 - **WHEN** the `.http` file declares `@baseUrl = https://api.local` and the user applies an environment defining `baseUrl = https://api.dev.com`
-- **THEN** requests containing `{{baseUrl}}` SHALL resolve to `https://api.local` (file value wins)
+- **THEN** requests containing `{{baseUrl}}` SHALL resolve to `https://api.dev.com` (environment value wins)
 
 #### Scenario: No stale variables leak between environments
 - **WHEN** the active environment is `Staging` (defining `stagingOnly = x` and `baseUrl = ...`) and the user applies `Production` (defining only `baseUrl = ...`)

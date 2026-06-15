@@ -24,11 +24,11 @@ export function mergeVariables(
 
   const merged = new Map<string, string>();
 
-  for (const variable of environmentVariables) {
+  for (const variable of fileVariables) {
     merged.set(variable.name, variable.value);
   }
 
-  for (const variable of fileVariables) {
+  for (const variable of environmentVariables) {
     merged.set(variable.name, variable.value);
   }
 

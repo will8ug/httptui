@@ -229,7 +229,7 @@ describe('SWITCH_ENV reducer', () => {
     expect(merged.get('token')).toBe('fileToken');
   });
 
-  it('preserves file-variable precedence after switch', () => {
+  it('preserves environment-variable precedence after switch', () => {
     const state = makeInitialState({
       fileVariables: [{ name: 'baseUrl', value: 'https://api.local' }],
       activeEnvName: null,
@@ -244,7 +244,7 @@ describe('SWITCH_ENV reducer', () => {
     });
 
     const merged = varMap(result.variables);
-    expect(merged.get('baseUrl')).toBe('https://api.local');
+    expect(merged.get('baseUrl')).toBe('https://api.dev.com');
   });
 
   it('does not leak stale variables from a previous environment', () => {
