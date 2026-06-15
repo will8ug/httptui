@@ -484,9 +484,15 @@ export function reducer(state: AppState, action: Action): AppState {
       };
 
     case 'ENTER_ENV_SELECT': {
+      const findOption = (name: string) =>
+        state.availableEnvironments.findIndex((option) => option.name === name);
+      // When no environment is active, default to the (none) option so the
+      // user lands on the revert-to-file-vars choice rather than the first
+      // listed environment. The final `>= 0` fallback handles malformed
+      // configurations where (none) itself is missing.
       const activeIndex = state.activeEnvName
-        ? state.availableEnvironments.findIndex((option) => option.name === state.activeEnvName)
-        : -1;
+        ? findOption(state.activeEnvName)
+        : findOption('(none)');
       const initialIndex = activeIndex >= 0 ? activeIndex : 0;
       return {
         ...state,

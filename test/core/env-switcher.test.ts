@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { createInitialState as realCreateInitialState, createInitialState, defaultAppProps, reducer } from '../helpers/state';
-import type { AppState, EnvOption, FileVariable } from '../../src/core/types';
+import { createInitialState as realCreateInitialState, reducer } from '../../src/core/reducer';
+import { mergeVariables } from '../../src/core/variables';
+import type { Action, AppState, EnvOption, FileVariable } from '../../src/core/types';
+import { createInitialState, defaultAppProps } from '../helpers/state';
 
 const fileVariables: FileVariable[] = [
   { name: 'baseUrl', value: 'https://api.local' },
@@ -28,10 +30,21 @@ const availableEnvironments: EnvOption[] = [
   { name: 'Production', file: 'env/prod.json' },
 ];
 
-const STAGING_INDEX = 2;
-const NONE_INDEX = 0;
-const DEV_INDEX = 1;
-const PROD_INDEX = 3;
+// Index lookups are derived from `availableEnvironments` so they stay in sync
+// with the fixture order. A missing name throws at module load rather than
+// silently producing wrong test results when the fixture is reordered.
+const envIndex = (name: string): number => {
+  const index = availableEnvironments.findIndex((option) => option.name === name);
+  if (index < 0) {
+    throw new Error(`Test fixture: required env name "${name}" missing from availableEnvironments`);
+  }
+  return index;
+};
+
+const NONE_INDEX = envIndex('(none)');
+const DEV_INDEX = envIndex('Development');
+const STAGING_INDEX = envIndex('Staging');
+const PROD_INDEX = envIndex('Production');
 
 function makeInitialState(overrides: Partial<AppState> = {}): AppState {
   return createInitialState({
@@ -42,6 +55,19 @@ function makeInitialState(overrides: Partial<AppState> = {}): AppState {
     availableEnvironments,
     envSelectIndex: 0,
     envSelectError: null,
+    ...overrides,
+  });
+}
+
+function makeActiveEnvState(
+  envName: string | null,
+  envVars: FileVariable[],
+  overrides: Partial<AppState> = {},
+): AppState {
+  return makeInitialState({
+    activeEnvName: envName,
+    environmentVariables: envVars,
+    variables: mergeVariables(fileVariables, envVars),
     ...overrides,
   });
 }
@@ -75,34 +101,56 @@ describe('createInitialState env fields', () => {
   });
 });
 
-describe('RELOAD_FILE preserves active runtime environment', () => {
-  it('re-merges environmentVariables over the new fileVariables', () => {
-    const state = makeInitialState({
-      environmentVariables: stagingEnvVariables,
-      variables: [
-        { name: 'baseUrl', value: 'https://api.staging.com' },
-        { name: 'stagingOnly', value: 'x' },
-      ],
-      activeEnvName: 'Staging',
+describe.each([
+  {
+    type: 'RELOAD_FILE' as const,
+    envName: 'Staging',
+    envVars: stagingEnvVariables,
+    newFileVars: [{ name: 'token', value: 'abc' }],
+    expectedMerged: {
+      token: 'abc',
+      stagingOnly: 'x',
+      baseUrl: 'https://api.staging.com',
+    },
+  },
+  {
+    type: 'LOAD_FILE' as const,
+    envName: 'Development',
+    envVars: devEnvVariables,
+    newFileVars: [{ name: 'host', value: 'example.com' }],
+    filePath: 'other.http',
+    expectedMerged: {
+      host: 'example.com',
+      apiKey: 'dev-key',
+      baseUrl: 'https://api.dev.com',
+    },
+  },
+])('$type preserves active runtime environment', ({ type, envName, envVars, newFileVars, filePath, expectedMerged }) => {
+  it('re-merges environmentVariables over the new fileVariables and keeps active env', () => {
+    const state = makeActiveEnvState(envName, envVars, {
       fileVariables: [{ name: 'baseUrl', value: 'https://api.local' }],
     });
 
-    const newFileVars: FileVariable[] = [{ name: 'token', value: 'abc' }];
-    const result = reducer(state, {
-      type: 'RELOAD_FILE',
+    const action = {
+      type,
       requests: [],
       variables: newFileVars,
-    });
+      ...(filePath !== undefined ? { filePath } : {}),
+    } as Action;
+
+    const result = reducer(state, action);
 
     expect(result.fileVariables).toEqual(newFileVars);
-    expect(result.activeEnvName).toBe('Staging');
+    expect(result.activeEnvName).toBe(envName);
     const merged = varMap(result.variables);
-    expect(merged.get('token')).toBe('abc');
-    expect(merged.get('stagingOnly')).toBe('x');
-    expect(merged.get('baseUrl')).toBe('https://api.staging.com');
+    for (const [name, value] of Object.entries(expectedMerged)) {
+      expect(merged.get(name)).toBe(value);
+    }
   });
+});
 
-  it('keeps activeEnvName null when no environment is active', () => {
+describe('RELOAD_FILE with no active environment', () => {
+  it('keeps activeEnvName null and stores the new fileVariables', () => {
     const state = makeInitialState({ activeEnvName: null });
     const result = reducer(state, {
       type: 'RELOAD_FILE',
@@ -115,35 +163,6 @@ describe('RELOAD_FILE preserves active runtime environment', () => {
   });
 });
 
-describe('LOAD_FILE preserves active runtime environment', () => {
-  it('re-merges environmentVariables over the new fileVariables', () => {
-    const state = makeInitialState({
-      environmentVariables: devEnvVariables,
-      variables: [
-        { name: 'baseUrl', value: 'https://api.dev.com' },
-        { name: 'apiKey', value: 'dev-key' },
-      ],
-      activeEnvName: 'Development',
-      fileVariables: [{ name: 'baseUrl', value: 'https://api.local' }],
-    });
-
-    const newFileVars: FileVariable[] = [{ name: 'host', value: 'example.com' }];
-    const result = reducer(state, {
-      type: 'LOAD_FILE',
-      requests: [],
-      variables: newFileVars,
-      filePath: 'other.http',
-    });
-
-    expect(result.fileVariables).toEqual(newFileVars);
-    expect(result.activeEnvName).toBe('Development');
-    const merged = varMap(result.variables);
-    expect(merged.get('host')).toBe('example.com');
-    expect(merged.get('apiKey')).toBe('dev-key');
-    expect(merged.get('baseUrl')).toBe('https://api.dev.com');
-  });
-});
-
 describe('ENTER_ENV_SELECT reducer', () => {
   it('sets mode to envSelect and clears envSelectError', () => {
     const state = makeInitialState({ envSelectError: 'old error' });
@@ -153,7 +172,7 @@ describe('ENTER_ENV_SELECT reducer', () => {
     expect(result.envSelectError).toBeNull();
   });
 
-  it('initializes envSelectIndex to active environment option index', () => {
+  it('initializes envSelectIndex to the active environment option index', () => {
     const state = makeInitialState({ activeEnvName: 'Staging' });
     const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
 
@@ -167,7 +186,7 @@ describe('ENTER_ENV_SELECT reducer', () => {
     expect(result.envSelectIndex).toBe(NONE_INDEX);
   });
 
-  it('initializes envSelectIndex to (none) when activeEnvName is not in availableEnvironments', () => {
+  it('falls back to (none) when activeEnvName is not in availableEnvironments', () => {
     const state = makeInitialState({ activeEnvName: 'Unknown' });
     const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
 
@@ -190,29 +209,33 @@ describe('MOVE_ENV_SELECTION reducer', () => {
     expect(result.envSelectIndex).toBe(DEV_INDEX);
   });
 
-  it('clamps to 0 when moving up at first option (no wrap)', () => {
+  it('clamps to first option when moving up at first option (no wrap)', () => {
     const state = makeInitialState({ envSelectIndex: NONE_INDEX });
     const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'up' });
 
     expect(result.envSelectIndex).toBe(NONE_INDEX);
   });
 
-  it('clamps to last index when moving down at last option (no wrap)', () => {
+  it('clamps to last option when moving down at last option (no wrap)', () => {
     const state = makeInitialState({ envSelectIndex: PROD_INDEX });
     const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'down' });
 
     expect(result.envSelectIndex).toBe(PROD_INDEX);
   });
+
+  it('is a no-op when availableEnvironments is empty', () => {
+    const state = makeInitialState({ availableEnvironments: [] });
+    const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'down' });
+
+    expect(result).toBe(state);
+  });
 });
 
 describe('SWITCH_ENV reducer', () => {
-  it('re-merges fileVariables with new environmentVariables', () => {
+  it('re-merges fileVariables with new environmentVariables and preserves fileVariables base', () => {
     const fileOnlyVars: FileVariable[] = [{ name: 'token', value: 'fileToken' }];
-    const state = makeInitialState({
+    const state = makeActiveEnvState(null, [], {
       fileVariables: fileOnlyVars,
-      variables: fileOnlyVars,
-      activeEnvName: null,
-      environmentVariables: [],
     });
 
     const result = reducer(state, {
@@ -223,6 +246,7 @@ describe('SWITCH_ENV reducer', () => {
 
     expect(result.activeEnvName).toBe('Staging');
     expect(result.environmentVariables).toEqual(stagingEnvVariables);
+    expect(result.fileVariables).toBe(fileOnlyVars);
     const merged = varMap(result.variables);
     expect(merged.get('baseUrl')).toBe('https://api.staging.com');
     expect(merged.get('stagingOnly')).toBe('x');
@@ -230,11 +254,8 @@ describe('SWITCH_ENV reducer', () => {
   });
 
   it('preserves environment-variable precedence after switch', () => {
-    const state = makeInitialState({
+    const state = makeActiveEnvState(null, [], {
       fileVariables: [{ name: 'baseUrl', value: 'https://api.local' }],
-      activeEnvName: null,
-      environmentVariables: [],
-      variables: [{ name: 'baseUrl', value: 'https://api.local' }],
     });
 
     const result = reducer(state, {
@@ -248,15 +269,7 @@ describe('SWITCH_ENV reducer', () => {
   });
 
   it('does not leak stale variables from a previous environment', () => {
-    const state = makeInitialState({
-      fileVariables: [],
-      activeEnvName: 'Staging',
-      environmentVariables: stagingEnvVariables,
-      variables: [
-        { name: 'baseUrl', value: 'https://api.staging.com' },
-        { name: 'stagingOnly', value: 'x' },
-      ],
-    });
+    const state = makeActiveEnvState('Staging', stagingEnvVariables);
 
     const result = reducer(state, {
       type: 'SWITCH_ENV',
@@ -270,15 +283,7 @@ describe('SWITCH_ENV reducer', () => {
   });
 
   it('applies (none) by clearing environmentVariables and activeEnvName', () => {
-    const state = makeInitialState({
-      fileVariables,
-      activeEnvName: 'Development',
-      environmentVariables: devEnvVariables,
-      variables: [
-        { name: 'baseUrl', value: 'https://api.local' },
-        { name: 'apiKey', value: 'dev-key' },
-      ],
-    });
+    const state = makeActiveEnvState('Development', devEnvVariables);
 
     const result = reducer(state, {
       type: 'SWITCH_ENV',
@@ -288,13 +293,14 @@ describe('SWITCH_ENV reducer', () => {
 
     expect(result.activeEnvName).toBeNull();
     expect(result.environmentVariables).toEqual([]);
+    expect(result.fileVariables).toEqual(fileVariables);
     const merged = varMap(result.variables);
     expect(merged.get('baseUrl')).toBe('https://api.local');
     expect(merged.has('apiKey')).toBe(false);
   });
 
   it('resets response, error, and scroll offsets', () => {
-    const state: AppState = makeInitialState({
+    const state = makeInitialState({
       response: {
         statusCode: 200,
         statusText: 'OK',
@@ -354,7 +360,7 @@ describe('CANCEL_ENV_SELECT reducer', () => {
     expect(result.envSelectError).toBeNull();
   });
 
-  it('leaves activeEnvName, environmentVariables, and variables unchanged', () => {
+  it('preserves active env state and variables by reference', () => {
     const state = makeInitialState({
       mode: 'envSelect',
       envSelectError: 'some error',
@@ -369,8 +375,8 @@ describe('CANCEL_ENV_SELECT reducer', () => {
     const result = reducer(state, { type: 'CANCEL_ENV_SELECT' });
 
     expect(result.activeEnvName).toBe('Staging');
-    expect(result.environmentVariables).toEqual(stagingEnvVariables);
-    expect(result.variables).toEqual(state.variables);
+    expect(result.environmentVariables).toBe(state.environmentVariables);
+    expect(result.variables).toBe(state.variables);
   });
 });
 
