@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Load and apply environment files (Postman `.postman_environment.json` and simplified format) as a base layer of variables. File-level and collection-level variables take precedence over environment file variables, enabling environment files to provide defaults while allowing per-file or per-request overrides.
+Load and apply environment files (Postman `.postman_environment.json` and simplified format) as a layer of variables. Environment file variables take precedence over file-level and collection-level variables, enabling environment files to override per-file or per-request defaults.
 
 ## Requirements
 
