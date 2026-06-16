@@ -1,35 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AppState, ParsedRequest, FileVariable } from '../../src/core/types';
-import { createRequest } from '../helpers/requests';
+import type { AppState, ParsedRequest } from '../../src/core/types';
+import { sampleRequests, sampleVariables, toVarMap } from '../helpers/fixtures';
 import { createInitialState, reducer } from '../helpers/state';
-
-const sampleRequests: ParsedRequest[] = [
-  createRequest({
-    name: 'Get users',
-    method: 'GET',
-    url: 'https://api.example.com/users',
-    lineNumber: 1,
-  }),
-  createRequest({
-    name: 'Create user',
-    method: 'POST',
-    url: 'https://api.example.com/users',
-    headers: { 'Content-Type': 'application/json' },
-    body: '{"name":"John"}',
-    lineNumber: 8,
-  }),
-  createRequest({
-    name: 'Delete user',
-    method: 'DELETE',
-    url: 'https://api.example.com/users/1',
-    lineNumber: 15,
-  }),
-];
-
-const sampleVariables: FileVariable[] = [
-  { name: 'baseUrl', value: 'https://api.example.com' },
-];
 
 describe('RELOAD_FILE reducer', () => {
   it('preserves selection by name when request still exists', () => {
@@ -74,7 +47,7 @@ describe('RELOAD_FILE reducer', () => {
     expect(result.selectedIndex).toBe(0);
   });
 
-  it('clears response and error', () => {
+  it('clears response, error, and scroll offsets', () => {
     const state: AppState = {
       ...createInitialState(),
       response: {
@@ -87,6 +60,9 @@ describe('RELOAD_FILE reducer', () => {
       },
       error: null,
       responseScrollOffset: 5,
+      requestScrollOffset: 3,
+      detailsScrollOffset: 2,
+      detailsHorizontalOffset: 4,
     };
 
     const result = reducer(state, {
@@ -98,6 +74,9 @@ describe('RELOAD_FILE reducer', () => {
     expect(result.response).toBeNull();
     expect(result.error).toBeNull();
     expect(result.responseScrollOffset).toBe(0);
+    expect(result.requestScrollOffset).toBe(0);
+    expect(result.detailsScrollOffset).toBe(0);
+    expect(result.detailsHorizontalOffset).toBe(0);
   });
 });
 
@@ -137,8 +116,7 @@ describe('RELOAD_FILE preserves pristine file variables for later (none) switch'
 
     expect(afterReload.fileVariables).toEqual([{ name: 'baseUrl', value: 'new-file-value' }]);
 
-    const mergedAfterReload = new Map(afterReload.variables.map(v => [v.name, v.value]));
-    expect(mergedAfterReload.get('baseUrl')).toBe('from-env');
+    expect(toVarMap(afterReload.variables).get('baseUrl')).toBe('from-env');
 
     const afterNone = reducer(afterReload, {
       type: 'SWITCH_ENV',
@@ -148,7 +126,6 @@ describe('RELOAD_FILE preserves pristine file variables for later (none) switch'
 
     expect(afterNone.activeEnvName).toBeNull();
     expect(afterNone.environmentVariables).toEqual([]);
-    const mergedAfterNone = new Map(afterNone.variables.map(v => [v.name, v.value]));
-    expect(mergedAfterNone.get('baseUrl')).toBe('new-file-value');
+    expect(toVarMap(afterNone.variables).get('baseUrl')).toBe('new-file-value');
   });
 });

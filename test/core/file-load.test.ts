@@ -2,23 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { createRequest } from '../helpers/requests';
 import { createInitialState, reducer } from '../helpers/state';
-import type { AppState, ParsedRequest, FileVariable } from '../../src/core/types';
-
-const sampleRequests: ParsedRequest[] = [
-  createRequest({ name: 'Get users', method: 'GET', url: 'https://api.example.com/users', lineNumber: 1 }),
-  createRequest({
-    name: 'Create user',
-    method: 'POST',
-    url: 'https://api.example.com/users',
-    headers: { 'Content-Type': 'application/json' },
-    body: '{"name":"John"}',
-    lineNumber: 8,
-  }),
-];
-
-const sampleVariables: FileVariable[] = [
-  { name: 'baseUrl', value: 'https://api.example.com' },
-];
+import type { AppState, ParsedRequest } from '../../src/core/types';
+import { sampleRequests, sampleVariables, toVarMap } from '../helpers/fixtures';
 
 describe('ENTER_FILE_LOAD reducer', () => {
   it('clears previous input and error when entering file-load mode', () => {
@@ -71,7 +56,7 @@ describe('LOAD_FILE reducer', () => {
     };
 
     const newRequests: ParsedRequest[] = [
-      { name: 'Different request', method: 'GET', url: 'https://new.api/other', headers: {}, body: undefined, lineNumber: 1 },
+      createRequest({ name: 'Different request', url: 'https://new.api/other' }),
     ];
 
     const result = reducer(state, {
@@ -98,6 +83,8 @@ describe('LOAD_FILE reducer', () => {
       error: null,
       responseScrollOffset: 5,
       requestScrollOffset: 3,
+      detailsScrollOffset: 2,
+      detailsHorizontalOffset: 4,
     };
 
     const result = reducer(state, {
@@ -111,6 +98,8 @@ describe('LOAD_FILE reducer', () => {
     expect(result.error).toBeNull();
     expect(result.responseScrollOffset).toBe(0);
     expect(result.requestScrollOffset).toBe(0);
+    expect(result.detailsScrollOffset).toBe(0);
+    expect(result.detailsHorizontalOffset).toBe(0);
   });
 
   it('sets reloadMessage with basename of filePath', () => {
@@ -139,6 +128,9 @@ describe('CANCEL_FILE_LOAD reducer', () => {
 
     expect(result.requests).toEqual(sampleRequests);
     expect(result.filePath).toBe('original.http');
+    expect(result.mode).toBe('normal');
+    expect(result.fileLoadInput).toBe('');
+    expect(result.fileLoadError).toBeNull();
   });
 });
 
@@ -160,8 +152,7 @@ describe('LOAD_FILE preserves pristine file variables for later (none) switch', 
 
     expect(afterLoad.fileVariables).toEqual([{ name: 'baseUrl', value: 'from-file' }]);
 
-    const mergedAfterLoad = new Map(afterLoad.variables.map(v => [v.name, v.value]));
-    expect(mergedAfterLoad.get('baseUrl')).toBe('from-env');
+    expect(toVarMap(afterLoad.variables).get('baseUrl')).toBe('from-env');
 
     const afterNone = reducer(afterLoad, {
       type: 'SWITCH_ENV',
@@ -171,7 +162,6 @@ describe('LOAD_FILE preserves pristine file variables for later (none) switch', 
 
     expect(afterNone.activeEnvName).toBeNull();
     expect(afterNone.environmentVariables).toEqual([]);
-    const mergedAfterNone = new Map(afterNone.variables.map(v => [v.name, v.value]));
-    expect(mergedAfterNone.get('baseUrl')).toBe('from-file');
+    expect(toVarMap(afterNone.variables).get('baseUrl')).toBe('from-file');
   });
 });
