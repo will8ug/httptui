@@ -1,4 +1,4 @@
-import type { Action, AppState, AppProps, FileVariable } from './types';
+import type { Action, AppState, AppProps } from './types';
 import { formatResponseBody } from './formatter';
 import { formatStatusLine } from './responseLayout';
 import { mergeVariables, resolveVariables } from './variables';
@@ -8,16 +8,6 @@ import { getRequestTarget } from '../utils/request';
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
-}
-
-function fileBaseAndMerged(fileVariables: FileVariable[], environmentVariables: FileVariable[]): {
-  fileVariables: FileVariable[];
-  variables: FileVariable[];
-} {
-  return {
-    fileVariables,
-    variables: mergeVariables(fileVariables, environmentVariables),
-  };
 }
 
 export function getVisibleRequestOffset(selectedIndex: number, currentOffset: number, visibleCount: number): number {
@@ -411,7 +401,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         requests: action.requests,
-        ...fileBaseAndMerged(action.variables, state.environmentVariables),
+        fileVariables: action.variables,
+        variables: mergeVariables(action.variables, state.environmentVariables),
         selectedIndex: newIndex >= 0 ? newIndex : 0,
         response: null,
         error: null,
@@ -464,7 +455,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         requests: action.requests,
-        ...fileBaseAndMerged(action.variables, state.environmentVariables),
+        fileVariables: action.variables,
+        variables: mergeVariables(action.variables, state.environmentVariables),
         filePath: action.filePath,
         selectedIndex: newIndex >= 0 ? newIndex : 0,
         response: null,

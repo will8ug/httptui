@@ -2,7 +2,6 @@
 
 - [x] 1.1 In `src/app.tsx`, locate the `o` (file load) keypress handler and remove the pre-merge call. Replace `variables: mergedVariables` in the `LOAD_FILE` dispatch with `variables: parseResult.variables`. Delete the now-unused `mergedVariables` local. (Lines ~184-189.)
 - [x] 1.2 In `src/app.tsx`, locate the `R` (reload) keypress handler and remove the pre-merge call. Inline `parseResult.variables` directly into the `RELOAD_FILE` dispatch. (Lines ~386-387.)
-- [x] 1.3 In `src/core/reducer.ts`, document the contract that `action.variables` MUST contain only the file's own variables (not pre-merged with environment variables). Extracted a `fileBaseAndMerged` helper that names the intent, so both `LOAD_FILE` and `RELOAD_FILE` case branches use it and the contract is self-documenting.
 
 ## 2. Unit tests — reducer contract
 

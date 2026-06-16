@@ -47,17 +47,13 @@ The result: a user who loads a new file while env `LocalAPI` is active, then swi
 
 The unit test against the reducer alone wouldn't catch the bug because the existing test at `env-switcher.test.ts:128` already passes — it dispatches correctly. The bug only manifests when a caller violates the contract. The integration test is the highest-value regression test.
 
-### Decision 3: Add a clarifying comment near the reducer handlers
-
-**Rationale:** The contract ("`action.variables` must be file-only, not pre-merged") isn't obvious from the function signature. A one-line comment near the `LOAD_FILE` and `RELOAD_FILE` reducers will prevent a future contributor from "fixing" what they think is a missing merge in the reducer by adding a pre-merge in a new caller.
-
 ## Risks / Trade-offs
 
 - **Risk:** Existing user muscle memory expects the buggy behavior (env "sticks" across file changes).
   → **Mitigation:** The behavior change aligns with the spec that already documents it. The status bar's env indicator + the spec scenario in the new tests give users a clear signal that env is per-file-load.
 
 - **Risk:** Other code paths (e.g. Postman collection import, future "recent files" feature) might also pre-merge.
-  → **Mitigation:** The new comment in the reducer, plus a search for `mergeVariables(.*environmentVariables)` in `app.tsx` (the only caller in production), confirms there are no other paths.
+  → **Mitigation:** A search for `mergeVariables(.*environmentVariables)` in `app.tsx` (the only caller in production) confirms there are no other pre-merge call sites. The integration test exercises the full `o` → `E` → `(none)` path and will fail loudly if any future code path reintroduces the pollution.
 
 - **Risk:** Test fixtures might assume the pre-merge behavior.
   → **Mitigation:** The existing `env-switcher.test.ts:128` test already uses file-only vars and passes. Other unit tests in `file-load.test.ts` and `reload.test.ts` use isolated `createInitialState` calls and don't depend on env merge behavior. Will re-verify when adding new tests.
