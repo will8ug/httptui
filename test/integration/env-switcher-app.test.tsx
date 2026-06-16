@@ -4,13 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { cleanup } from 'ink-testing-library';
 
-import { KEY_DELAY_MS, delay, makeShortUrlRequests, press, renderApp } from '../helpers/integration';
+import { DOWN_ARROW, ENTER, ESC, KEY_DELAY_MS, UP_ARROW, delay, makeShortUrlRequests, press, renderApp } from '../helpers/integration';
 import type { EnvOption, FileVariable } from '../../src/core/types';
-
-const ESCAPE = '\u001B';
-const ENTER = '\r';
-const DOWN_ARROW = '\u001B[B';
-const UP_ARROW = '\u001B[A';
 
 function makeEnvFile(name: string, variables: Array<{ key: string; value: string }>): string {
   const dir = mkdtempSync(join(tmpdir(), 'httptui-env-switcher-'));
@@ -168,7 +163,7 @@ describe('env switcher integration — overlay navigation', () => {
     await press(stdin, 'E');
     expect(lastFrame() ?? '').toContain('Select Environment');
 
-    await press(stdin, ESCAPE);
+    await press(stdin, ESC);
 
     const frame = lastFrame() ?? '';
     expect(frame).not.toContain('Select Environment');

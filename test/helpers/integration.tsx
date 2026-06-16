@@ -6,6 +6,14 @@ import type { AppProps, ParsedRequest } from '../../src/core/types';
 
 export const KEY_DELAY_MS = 50;
 
+/** Common key constants for integration tests. */
+export const ESC = '\u001B';
+export const ENTER = '\r';
+export const BACKSPACE = '\u007F';
+export const TAB = '\t';
+export const UP_ARROW = '\u001B[A';
+export const DOWN_ARROW = '\u001B[B';
+
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

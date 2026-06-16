@@ -2,12 +2,17 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup } from 'ink-testing-library';
 import { resolve } from 'node:path';
 
-import { KEY_DELAY_MS, delay, makeShortUrlRequests, press, renderApp } from '../helpers/integration';
+import {
+  BACKSPACE,
+  ENTER,
+  ESC,
+  KEY_DELAY_MS,
+  delay,
+  makeShortUrlRequests,
+  press,
+  renderApp,
+} from '../helpers/integration';
 import type { EnvOption, FileVariable, ParsedRequest } from '../../src/core/types';
-
-const ESC = '\u001B';
-const ENTER = '\r';
-const BACKSPACE = '\u007F';
 
 afterEach(() => {
   cleanup();
@@ -112,10 +117,6 @@ describe('file-load regression — env revert shows file variables', () => {
     { name: 'EnvTest', file: '/does-not-matter/env.json' },
   ];
 
-  afterEach(() => {
-    cleanup();
-  });
-
   it('after loading a new file then switching to (none), request details show file variable value', async () => {
     const { stdin, lastFrame } = renderApp({
       requests: initialRequests,
@@ -132,25 +133,26 @@ describe('file-load regression — env revert shows file variables', () => {
     await press(stdin, 'o');
     expect(lastFrame() ?? '').toContain('Open File');
 
-    // Step 2: Type the fixture path character by character
-    for (const char of fixturePath) {
-      await press(stdin, char);
-    }
+    // Step 2: Type the fixture path (write in one shot for speed)
+    stdin.write(fixturePath);
+    await delay(KEY_DELAY_MS);
+
+    // Step 3: Submit the path
     await press(stdin, ENTER);
     await delay(KEY_DELAY_MS);
 
-    // After LOAD_FILE, env is still active — verify we're back in normal mode
+    // Verify we're back in normal mode after loading
     const afterLoadFrame = lastFrame() ?? '';
     expect(afterLoadFrame).not.toContain('Open File');
 
-    // Step 3: Open env-select overlay
+    // Step 4: Open env-select overlay
     await press(stdin, 'E');
     expect(lastFrame() ?? '').toContain('Select Environment');
 
-    // Step 4: Navigate to (none) — active env 'EnvTest' is at index 1, press k to go up to index 0
+    // Step 5: Navigate to (none) — active env 'EnvTest' is at index 1, press k to go up to index 0
     await press(stdin, 'k');
 
-    // Step 5: Select (none)
+    // Step 6: Select (none)
     await press(stdin, ENTER);
     await delay(KEY_DELAY_MS);
 
@@ -158,13 +160,13 @@ describe('file-load regression — env revert shows file variables', () => {
     const afterEnvFrame = lastFrame() ?? '';
     expect(afterEnvFrame).not.toContain('Select Environment');
 
-    // Step 6: Show request details
+    // Step 7: Show request details
     await press(stdin, 'd');
     await delay(KEY_DELAY_MS);
 
-    // Step 7: Assert the resolved URL shows the file variable value, not the env value
+    // Assert the resolved URL shows the file variable value, not the env value
     const detailsFrame = lastFrame() ?? '';
     expect(detailsFrame).toContain('http://file-value');
     expect(detailsFrame).not.toContain('http://env-value');
-  }, 30000);
+  }, 15000);
 });

@@ -1,11 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup } from 'ink-testing-library';
 
-import { KEY_DELAY_MS, delay, makeShortUrlRequests, press, renderApp, selectedLine } from '../helpers/integration';
-
-// App can't receive a preloaded response, so these tests cover only no-response search guards.
-
-const ESCAPE = '\u001B';
+import { ESC, KEY_DELAY_MS, delay, makeShortUrlRequests, press, renderApp, selectedLine } from '../helpers/integration';
 
 afterEach(() => {
   cleanup();
@@ -53,7 +49,7 @@ describe('search integration — guarded no-response behavior', () => {
 
     const initialFrame = lastFrame() ?? '';
 
-    await press(stdin, ESCAPE);
+    await press(stdin, ESC);
 
     const frame = lastFrame() ?? '';
 

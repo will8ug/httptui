@@ -1,9 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup } from 'ink-testing-library';
 
-import { KEY_DELAY_MS, delay, makeShortUrlRequests, press, renderApp, selectedLine } from '../helpers/integration';
-
-const ESCAPE = '\u001B';
+import { ESC, KEY_DELAY_MS, delay, makeShortUrlRequests, press, renderApp, selectedLine } from '../helpers/integration';
 
 afterEach(() => {
   cleanup();
@@ -47,7 +45,7 @@ describe('toggles integration — help overlay', () => {
     await delay(KEY_DELAY_MS);
 
     await press(stdin, '?');
-    await press(stdin, ESCAPE);
+    await press(stdin, ESC);
 
     const frame = lastFrame() ?? '';
 

@@ -2,17 +2,16 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup } from 'ink-testing-library';
 
 import {
+  DOWN_ARROW,
   KEY_DELAY_MS,
+  TAB,
+  UP_ARROW,
   delay,
   makeShortUrlRequests,
   press,
   renderApp,
   selectedLine,
 } from '../helpers/integration';
-
-const UP_ARROW = '\u001B[A';
-const DOWN_ARROW = '\u001B[B';
-const TAB = '\t';
 
 afterEach(() => {
   cleanup();
