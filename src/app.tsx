@@ -21,7 +21,7 @@ import type { AppProps, AppState, RequestError, ResponseData } from './core/type
 import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
 import { parseEnvironmentFile } from './core/env-parser';
-import { mergeVariables, resolveVariables } from './core/variables';
+import { resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
 import { loadConfig } from './core/config';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
@@ -181,12 +181,10 @@ export function App(props: AppProps): React.ReactElement {
             certificates: newConfig?.certificates,
           };
 
-          const mergedVariables = mergeVariables(parseResult.variables, state.environmentVariables);
-
           dispatch({
             type: 'LOAD_FILE',
             requests: parseResult.requests,
-            variables: mergedVariables,
+            variables: parseResult.variables,
             filePath: resolvedPath,
             executorConfig: newExecutorConfig,
           });
@@ -383,8 +381,7 @@ export function App(props: AppProps): React.ReactElement {
           detectFormat(state.filePath, content) === 'postman'
             ? parsePostmanCollection(content)
             : parseHttpFile(content);
-        const mergedVariables = mergeVariables(parseResult.variables, state.environmentVariables);
-        dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: mergedVariables });
+        dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
         setTimeout(() => { dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }); }, 2000);
       } catch (error) {
         dispatch({ type: 'REQUEST_ERROR', error: toRequestError(error) });

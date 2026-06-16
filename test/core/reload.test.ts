@@ -117,3 +117,38 @@ describe('CLEAR_RELOAD_MESSAGE reducer', () => {
     expect(result.reloadMessage).toBeNull();
   });
 });
+
+describe('RELOAD_FILE preserves pristine file variables for later (none) switch', () => {
+  it('after reloading the current file with an active env, switching to (none) falls back to the new file variables', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      requests: sampleRequests,
+      environmentVariables: [{ name: 'baseUrl', value: 'from-env' }],
+      variables: [{ name: 'baseUrl', value: 'from-env' }],
+      fileVariables: [{ name: 'baseUrl', value: 'old-file-value' }],
+      activeEnvName: 'Staging',
+    };
+
+    const afterReload = reducer(state, {
+      type: 'RELOAD_FILE',
+      requests: sampleRequests,
+      variables: [{ name: 'baseUrl', value: 'new-file-value' }],
+    });
+
+    expect(afterReload.fileVariables).toEqual([{ name: 'baseUrl', value: 'new-file-value' }]);
+
+    const mergedAfterReload = new Map(afterReload.variables.map(v => [v.name, v.value]));
+    expect(mergedAfterReload.get('baseUrl')).toBe('from-env');
+
+    const afterNone = reducer(afterReload, {
+      type: 'SWITCH_ENV',
+      environmentVariables: [],
+      envName: null,
+    });
+
+    expect(afterNone.activeEnvName).toBeNull();
+    expect(afterNone.environmentVariables).toEqual([]);
+    const mergedAfterNone = new Map(afterNone.variables.map(v => [v.name, v.value]));
+    expect(mergedAfterNone.get('baseUrl')).toBe('new-file-value');
+  });
+});

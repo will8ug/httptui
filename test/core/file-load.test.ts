@@ -141,3 +141,37 @@ describe('CANCEL_FILE_LOAD reducer', () => {
     expect(result.filePath).toBe('original.http');
   });
 });
+
+describe('LOAD_FILE preserves pristine file variables for later (none) switch', () => {
+  it('after loading a new file with an active env, switching to (none) falls back to the new file variables', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      environmentVariables: [{ name: 'baseUrl', value: 'from-env' }],
+      variables: [{ name: 'baseUrl', value: 'from-env' }],
+      activeEnvName: 'Staging',
+    };
+
+    const afterLoad = reducer(state, {
+      type: 'LOAD_FILE',
+      requests: sampleRequests,
+      variables: [{ name: 'baseUrl', value: 'from-file' }],
+      filePath: 'other.http',
+    });
+
+    expect(afterLoad.fileVariables).toEqual([{ name: 'baseUrl', value: 'from-file' }]);
+
+    const mergedAfterLoad = new Map(afterLoad.variables.map(v => [v.name, v.value]));
+    expect(mergedAfterLoad.get('baseUrl')).toBe('from-env');
+
+    const afterNone = reducer(afterLoad, {
+      type: 'SWITCH_ENV',
+      environmentVariables: [],
+      envName: null,
+    });
+
+    expect(afterNone.activeEnvName).toBeNull();
+    expect(afterNone.environmentVariables).toEqual([]);
+    const mergedAfterNone = new Map(afterNone.variables.map(v => [v.name, v.value]));
+    expect(mergedAfterNone.get('baseUrl')).toBe('from-file');
+  });
+});
