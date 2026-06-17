@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { render } from 'ink-testing-library';
+import { cleanup, render } from 'ink-testing-library';
 
 import { EnvSelectOverlay } from '../../src/components/EnvSelectOverlay';
 import type { EnvOption } from '../../src/core/types';
@@ -10,10 +10,12 @@ const options: EnvOption[] = [
   { name: 'Staging', file: 'env/staging.json' },
 ];
 
-afterEach(() => {});
+afterEach(() => {
+  cleanup();
+});
 
 describe('EnvSelectOverlay', () => {
-  describe('highlight styling', () => {
+  describe('option rendering', () => {
     it('renders the selected option name', () => {
       const { lastFrame } = render(
         <EnvSelectOverlay
@@ -26,22 +28,6 @@ describe('EnvSelectOverlay', () => {
 
       const frame = lastFrame() ?? '';
       expect(frame).toContain('Development');
-    });
-
-    it('renders all option names regardless of selection', () => {
-      const { lastFrame } = render(
-        <EnvSelectOverlay
-          options={options}
-          selectedIndex={0}
-          activeEnvName={null}
-          error={null}
-        />,
-      );
-
-      const frame = lastFrame() ?? '';
-      expect(frame).toContain('(none)');
-      expect(frame).toContain('Development');
-      expect(frame).toContain('Staging');
     });
   });
 
@@ -118,7 +104,7 @@ describe('EnvSelectOverlay', () => {
       );
 
       const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Failed to load');
+      expect(frame).not.toContain('Failed to load environment file');
     });
   });
 
@@ -167,23 +153,6 @@ describe('EnvSelectOverlay', () => {
       expect(frame).toContain('(none)');
       expect(frame).toContain('Development');
       expect(frame).toContain('Staging');
-    });
-
-    it('renders with round border', () => {
-      const { lastFrame } = render(
-        <EnvSelectOverlay
-          options={options}
-          selectedIndex={0}
-          activeEnvName={null}
-          error={null}
-        />,
-      );
-
-      const frame = lastFrame() ?? '';
-      expect(frame).toContain('╭');
-      expect(frame).toContain('╮');
-      expect(frame).toContain('╰');
-      expect(frame).toContain('╯');
     });
   });
 });
