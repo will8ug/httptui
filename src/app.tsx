@@ -188,7 +188,7 @@ export function App(props: AppProps): React.ReactElement {
             filePath: resolvedPath,
             executorConfig: newExecutorConfig,
           });
-          setTimeout(() => { dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }); }, 2000);
+          setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
         } catch (error) {
           dispatch({ type: 'SET_FILE_LOAD_ERROR', error: toRequestError(error).message });
         }
@@ -343,8 +343,8 @@ export function App(props: AppProps): React.ReactElement {
       if (state.availableEnvironments.length > 1) {
         dispatch({ type: 'ENTER_ENV_SELECT' });
       } else {
-        dispatch({ type: 'SET_RELOAD_MESSAGE', message: 'No environments configured' });
-        setTimeout(() => { dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }); }, 2000);
+        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No environments configured' });
+        setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
       }
       return;
     }
@@ -382,7 +382,7 @@ export function App(props: AppProps): React.ReactElement {
             ? parsePostmanCollection(content)
             : parseHttpFile(content);
         dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
-        setTimeout(() => { dispatch({ type: 'CLEAR_RELOAD_MESSAGE' }); }, 2000);
+        setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
       } catch (error) {
         dispatch({ type: 'REQUEST_ERROR', error: toRequestError(error) });
       }
@@ -490,7 +490,7 @@ return (
           requestCount={state.requests.length}
           selectedIndex={state.selectedIndex}
           insecure={state.insecure}
-          reloadMessage={state.reloadMessage}
+          transientMessage={state.transientMessage}
           focusedPanel={state.focusedPanel}
           detailsScrollOffset={state.detailsScrollOffset}
           detailsTotalLines={detailsTotalLines}

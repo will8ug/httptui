@@ -410,20 +410,20 @@ export function reducer(state: AppState, action: Action): AppState {
         requestScrollOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
-        reloadMessage: 'Reloaded',
+        transientMessage: 'Reloaded',
       };
     }
 
-    case 'CLEAR_RELOAD_MESSAGE':
+    case 'CLEAR_TRANSIENT_MESSAGE':
       return {
         ...state,
-        reloadMessage: null,
+        transientMessage: null,
       };
 
-    case 'SET_RELOAD_MESSAGE':
+    case 'SET_TRANSIENT_MESSAGE':
       return {
         ...state,
-        reloadMessage: action.message,
+        transientMessage: action.message,
       };
 
     case 'ENTER_FILE_LOAD':
@@ -468,7 +468,7 @@ export function reducer(state: AppState, action: Action): AppState {
         mode: 'normal',
         fileLoadInput: '',
         fileLoadError: null,
-        reloadMessage: `Loaded: ${action.filePath.split('/').pop() ?? ''}`,
+        transientMessage: `Loaded: ${action.filePath.split('/').pop() ?? ''}`,
         ...(action.executorConfig && {
           certificates: action.executorConfig.certificates,
         }),
@@ -685,7 +685,7 @@ export function createInitialState(props: AppProps): AppState {
     detailsScrollOffset: 0,
     detailsHorizontalOffset: 0,
     insecure: props.executorConfig.insecure,
-    reloadMessage: null,
+    transientMessage: null,
     mode: 'normal',
     fileLoadInput: '',
     fileLoadError: null,

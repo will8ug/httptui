@@ -13,7 +13,7 @@ interface StatusBarProps {
   requestCount: number;
   selectedIndex: number;
   insecure: boolean;
-  reloadMessage: string | null;
+  transientMessage: string | null;
   focusedPanel: FocusedPanel;
   detailsScrollOffset: number;
   detailsTotalLines: number;
@@ -50,7 +50,7 @@ export function StatusBar({
   requestCount,
   selectedIndex,
   insecure,
-  reloadMessage,
+  transientMessage,
   focusedPanel,
   detailsScrollOffset,
   detailsTotalLines,
@@ -68,7 +68,7 @@ export function StatusBar({
     requestCount,
     selectedIndex,
     insecure,
-    reloadMessage,
+    transientMessage,
     focusedPanel,
     detailsScrollOffset,
     detailsTotalLines,
@@ -77,7 +77,7 @@ export function StatusBar({
     hasResponse,
     envName,
   });
-  const reloadLabelWidth = reloadMessage ? reloadMessage.length + 2 : 0;
+  const reloadLabelWidth = transientMessage ? transientMessage.length + 2 : 0;
   const envNameLabelWidth = envName ? envName.length + 2 : 0;
   const insecureLabelWidth = insecure ? 10 : 0;
   const availableLeftWidth = Math.max(0, columns - rightText.length - reloadLabelWidth - envNameLabelWidth - insecureLabelWidth - 1);
@@ -86,7 +86,7 @@ export function StatusBar({
     <Box width="100%" justifyContent="space-between">
       <Text color="gray">{truncateText(leftText, availableLeftWidth)}</Text>
       <Box>
-        {reloadMessage ? <Text key="reload-message" color="green" bold>{reloadMessage}  </Text> : null}
+        {transientMessage ? <Text key="reload-message" color="green" bold>{transientMessage}  </Text> : null}
         {envName ? <Text key="env-name" color="magenta" bold>{envName}  </Text> : null}
         {insecure ? <Text key="insecure" color="yellow" bold>INSECURE  </Text> : null}
         <Text key="status-text" color="gray">{rightText}</Text>

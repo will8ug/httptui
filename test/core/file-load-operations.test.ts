@@ -81,20 +81,20 @@ describe('RELOAD_FILE reducer', () => {
   });
 });
 
-describe('CLEAR_RELOAD_MESSAGE reducer', () => {
+describe('CLEAR_TRANSIENT_MESSAGE reducer', () => {
   it('does not change other state fields', () => {
     const state: AppState = {
       ...createInitialState(),
       requests: sampleRequests,
       selectedIndex: 2,
-      reloadMessage: 'Reloaded',
+      transientMessage: 'Reloaded',
     };
 
-    const result = reducer(state, { type: 'CLEAR_RELOAD_MESSAGE' });
+    const result = reducer(state, { type: 'CLEAR_TRANSIENT_MESSAGE' });
 
     expect(result.requests).toEqual(sampleRequests);
     expect(result.selectedIndex).toBe(2);
-    expect(result.reloadMessage).toBeNull();
+    expect(result.transientMessage).toBeNull();
   });
 });
 
@@ -228,7 +228,7 @@ describe('LOAD_FILE reducer', () => {
     expect(result.detailsHorizontalOffset).toBe(0);
   });
 
-  it('sets reloadMessage with basename of filePath', () => {
+  it('sets transientMessage with basename of filePath', () => {
     const state = createInitialState();
     const result = reducer(state, {
       type: 'LOAD_FILE',
@@ -237,7 +237,7 @@ describe('LOAD_FILE reducer', () => {
       filePath: '/some/deep/path/api.http',
     });
 
-    expect(result.reloadMessage).toBe('Loaded: api.http');
+    expect(result.transientMessage).toBe('Loaded: api.http');
   });
 });
 
