@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 import React, { useReducer } from 'react';
@@ -6,6 +6,7 @@ import { useApp, useInput, useStdout } from 'ink';
 
 import { FileLoadOverlay } from './components/FileLoadOverlay';
 import { HelpOverlay } from './components/HelpOverlay';
+import { SaveOverlay } from './components/SaveOverlay';
 import { Layout } from './components/Layout';
 import { RequestList } from './components/RequestList';
 import { RequestDetailsView } from './components/RequestDetailsView';
@@ -19,6 +20,7 @@ import { computeVerticalMaxOffset, createInitialState, reducer } from './core/re
 import { computeResponseLayout } from './core/responseLayout';
 import type { AppProps, AppState, RequestError, ResponseData } from './core/types';
 import { parseHttpFile } from './core/parser';
+import { serializeHttpFile } from './core/http-serializer';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
 import { parseEnvironmentFile } from './core/env-parser';
 import { resolveVariables } from './core/variables';
@@ -284,6 +286,62 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (state.mode === 'saveLoad') {
+      if (key.escape) {
+        dispatch({ type: 'CANCEL_SAVE' });
+        return;
+      }
+
+      if (key.return) {
+        const inputPath = state.saveInput.trim();
+        if (!inputPath) {
+          dispatch({ type: 'SET_SAVE_ERROR', error: 'Please enter a file path' });
+          return;
+        }
+
+        // Resolve path: absolute as-is, relative to loaded file's directory
+        const baseDir = dirname(state.filePath);
+        const targetPath = resolve(baseDir, inputPath);
+
+        try {
+          const content = serializeHttpFile(state.requests, state.fileVariables);
+
+          // Conflict resolution: append " - N" suffix if file exists
+          let finalPath = targetPath;
+          if (existsSync(finalPath)) {
+            const ext = targetPath.match(/\.[^.]+$/);
+            const extPart = ext ? ext[0] : '';
+            const basePart = ext ? targetPath.slice(0, -extPart.length) : targetPath;
+            let suffix = 1;
+            while (existsSync(`${basePart} - ${suffix}${extPart}`)) {
+              suffix += 1;
+            }
+            finalPath = `${basePart} - ${suffix}${extPart}`;
+          }
+
+          writeFileSync(finalPath, content, 'utf8');
+          const fileName = finalPath.split('/').pop() ?? finalPath;
+          dispatch({ type: 'SAVE_FILE', message: `Saved ${state.requests.length} requests to ${fileName}` });
+          setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
+        } catch (error) {
+          dispatch({ type: 'SET_SAVE_ERROR', error: toRequestError(error).message });
+        }
+
+        return;
+      }
+
+      if (key.backspace || key.delete) {
+        dispatch({ type: 'UPDATE_SAVE_INPUT', value: state.saveInput.slice(0, -1) });
+        return;
+      }
+
+      if (input && !key.ctrl && !key.meta) {
+        dispatch({ type: 'UPDATE_SAVE_INPUT', value: state.saveInput + input });
+      }
+
+      return;
+    }
+
     if (key.escape && state.maximizedPanel !== null) {
       dispatch({ type: 'TOGGLE_FULLSCREEN' });
       return;
@@ -346,6 +404,11 @@ export function App(props: AppProps): React.ReactElement {
         dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No environments configured' });
         setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
       }
+      return;
+    }
+
+    if (input === 'S') {
+      dispatch({ type: 'ENTER_SAVE' });
       return;
     }
 
@@ -509,6 +572,7 @@ return (
       overlay={
         state.showHelp ? <HelpOverlay visible={state.showHelp} /> :
         state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> :
+        state.mode === 'saveLoad' ? <SaveOverlay value={state.saveInput} error={state.saveError} /> :
         state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
         undefined
       }

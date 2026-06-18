@@ -483,6 +483,46 @@ export function reducer(state: AppState, action: Action): AppState {
         fileLoadError: null,
       };
 
+    case 'ENTER_SAVE': {
+      const defaultPath = state.filePath.replace(/\.[^.]+$/, '.http');
+      return {
+        ...state,
+        mode: 'saveLoad',
+        saveInput: defaultPath,
+        saveError: null,
+      };
+    }
+
+    case 'UPDATE_SAVE_INPUT':
+      return {
+        ...state,
+        saveInput: action.value,
+        saveError: null,
+      };
+
+    case 'SET_SAVE_ERROR':
+      return {
+        ...state,
+        saveError: action.error,
+      };
+
+    case 'SAVE_FILE':
+      return {
+        ...state,
+        mode: 'normal',
+        saveInput: '',
+        saveError: null,
+        transientMessage: action.message,
+      };
+
+    case 'CANCEL_SAVE':
+      return {
+        ...state,
+        mode: 'normal',
+        saveInput: '',
+        saveError: null,
+      };
+
     case 'ENTER_ENV_SELECT': {
       const findOption = (name: string) =>
         state.availableEnvironments.findIndex((option) => option.name === name);
@@ -689,6 +729,8 @@ export function createInitialState(props: AppProps): AppState {
     mode: 'normal',
     fileLoadInput: '',
     fileLoadError: null,
+    saveInput: '',
+    saveError: null,
     wrapMode: 'nowrap',
     showRequestDetails: false,
     rawMode: false,

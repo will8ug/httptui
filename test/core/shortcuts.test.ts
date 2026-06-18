@@ -86,3 +86,20 @@ describe('SHORTCUTS registry — fullscreen entry', () => {
     expect(barKeys).not.toContain('f');
   });
 });
+
+describe('SHORTCUTS registry — save-as-http entry', () => {
+  it('contains the `S` entry (save as .http file)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'S');
+    expect(entry).toBeDefined();
+    expect(entry?.label).toBe('');
+    expect(entry?.description).toBe('Save as .http file');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('request');
+  });
+
+  it('does not appear in the status bar', () => {
+    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
+    expect(barKeys).not.toContain('S');
+  });
+});

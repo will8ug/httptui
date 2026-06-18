@@ -88,7 +88,7 @@ export interface ExecutorConfig {
 }
 
 export type FocusedPanel = 'requests' | 'details' | 'response';
-export type AppMode = 'normal' | 'fileLoad' | 'search' | 'envSelect';
+export type AppMode = 'normal' | 'fileLoad' | 'search' | 'envSelect' | 'saveLoad';
 export type WrapMode = 'nowrap' | 'wrap';
 
 export interface AppState {
@@ -114,6 +114,8 @@ export interface AppState {
   mode: AppMode;
   fileLoadInput: string;
   fileLoadError: string | null;
+  saveInput: string;
+  saveError: string | null;
   fileVariables: FileVariable[];
   activeEnvName: string | null;
   availableEnvironments: EnvOption[];
@@ -177,4 +179,9 @@ export type Action =
   | { type: 'MOVE_ENV_SELECTION'; direction: 'up' | 'down' }
   | { type: 'SWITCH_ENV'; environmentVariables: FileVariable[]; envName: string | null }
   | { type: 'CANCEL_ENV_SELECT' }
-  | { type: 'SET_ENV_SELECT_ERROR'; error: string };
+  | { type: 'SET_ENV_SELECT_ERROR'; error: string }
+  | { type: 'ENTER_SAVE' }
+  | { type: 'UPDATE_SAVE_INPUT'; value: string }
+  | { type: 'SAVE_FILE'; message: string }
+  | { type: 'SET_SAVE_ERROR'; error: string }
+  | { type: 'CANCEL_SAVE' };
