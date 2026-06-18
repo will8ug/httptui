@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Save as .http
+
+## Purpose
+
+Serialize the currently loaded requests and file variables to a `.http` file via a save-path overlay triggered by the `S` key, with default-path derivation, conflict-suffix auto-increment, and form-data omission handling.
+
+## Requirements
 
 ### Requirement: Serialize requests to .http file text
 The system SHALL provide a pure function `serializeHttpFile(requests: ParsedRequest[], variables: FileVariable[]): string` that converts the in-memory request and variable model into `.http` file text matching the format the existing `parseHttpFile` parser accepts. Each request SHALL be emitted as a `### <name>` separator line, followed by a `<METHOD> <url>` request line, followed by one `Header-Name: value` line per header, followed by a blank line and the body (if present). Requests SHALL be separated by a blank line. The `lineNumber` field SHALL NOT be serialized. The `name` field SHALL be written verbatim after `###`, including any ` / ` folder-prefix characters from Postman flattening.
@@ -24,7 +30,7 @@ The system SHALL provide a pure function `serializeHttpFile(requests: ParsedRequ
 - **THEN** the serialized request line SHALL contain `{{hostname}}` verbatim (not resolved)
 
 #### Scenario: Serialize preserves variable placeholders in body
-- **WHEN** a request has body `{"title":"Post {{$timestamp}}"`
+- **WHEN** a request has body `{"title":"Post {{$timestamp}}"}`
 - **THEN** the serialized body SHALL contain `{{$timestamp}}` verbatim (not resolved)
 
 ### Requirement: Serialize file variables as @name declarations
