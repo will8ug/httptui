@@ -1,4 +1,4 @@
-import type { FileVariable, ParsedRequest } from './types';
+import type { FileVariable, FormDataParam, ParsedRequest } from './types';
 
 function isMultipartContentType(name: string, value: string): boolean {
   return name.toLowerCase() === 'content-type' && value.toLowerCase().startsWith('multipart/form-data');
@@ -18,7 +18,7 @@ function serializeRequestBlock(request: ParsedRequest): string {
   }
 
   if (hasFormdataOmission) {
-    const fields = request.formdataFields as { key: string; value: string; type: 'text' | 'file' }[];
+    const fields = request.formdataFields as FormDataParam[];
     const keys = fields.map((field) => field.key).join(', ');
     lines.push('');
     lines.push(`# form-data body omitted (${fields.length} text fields: ${keys})`);

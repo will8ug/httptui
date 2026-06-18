@@ -47,7 +47,6 @@ describe('serializeHttpFile', () => {
       const output = serializeHttpFile([request], []);
 
       expect(output).toBe('### Ping\nGET https://api.example.com/health\n');
-      expect(output).not.toContain('health\n\n');
     });
 
     it('serializes a request with headers but no body without a blank line after headers', () => {
