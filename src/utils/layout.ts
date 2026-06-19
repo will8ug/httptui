@@ -11,6 +11,15 @@ const MIN_RESPONSE_CONTENT_WIDTH = 20;
 /** Panel chrome (border top + title + border bottom = 3) + status bar (1) + layout flex rounding (1) */
 export const REQUEST_LIST_VERTICAL_OVERHEAD = 5;
 
+/** Max number of environment options (including `(none)`) shown in the env picker overlay before scrolling. */
+export const MAX_ENV_PICKER_VISIBLE = 8;
+/** Env picker chrome: border (2) + paddingY (2) + title (1) + spacer (1) + spacer (1) + footer (1) = 8 rows. */
+export const ENV_PICKER_VERTICAL_OVERHEAD = 8;
+
+export function getEnvPickerVisibleHeight(rows: number): number {
+  return Math.min(MAX_ENV_PICKER_VISIBLE, Math.max(1, rows - ENV_PICKER_VERTICAL_OVERHEAD));
+}
+
 /** Border (1 + 1) + paddingX (1 + 1) for the request list panel */
 const REQUEST_PANEL_CHROME = 4;
 /** Border (1 + 1) + paddingX (1 + 1) for the response panel, plus 2 for adjacent panel border overlap */

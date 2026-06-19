@@ -283,6 +283,15 @@ export function App(props: AppProps): React.ReactElement {
         return;
       }
 
+      if (input === 'g') {
+        dispatch({ type: 'JUMP_ENV_SELECTION', target: 'top' });
+        return;
+      }
+      if (input === 'G') {
+        dispatch({ type: 'JUMP_ENV_SELECTION', target: 'bottom' });
+        return;
+      }
+
       return;
     }
 
@@ -573,7 +582,7 @@ return (
         state.showHelp ? <HelpOverlay visible={state.showHelp} /> :
         state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> :
         state.mode === 'saveLoad' ? <SaveOverlay value={state.saveInput} error={state.saveError} /> :
-        state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
+        state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} scrollOffset={state.envSelectScrollOffset} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
         undefined
       }
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access

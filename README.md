@@ -310,7 +310,8 @@ Press `E` while the TUI is running to open the environment picker.
 
 - The picker lists all environments registered in your configuration files.
 - If you launched httptui with the `--env` flag, that file's name (or basename) is also included in the list.
-- Use `↑`/`↓` or `j`/`k` to navigate the list.
+- Use `↑`/`↓` or `j`/`k` to navigate the list. Press `g` to jump to the top or `G` to jump to the bottom.
+- The picker shows at most 8 options at a time (including `(none)`); the list scrolls automatically as you move the highlight. On short terminals, fewer rows are shown to fit the screen.
 - Press `Enter` to apply the selected environment or `Esc` to cancel.
 - Selecting the `(none)` option reverts to using only file-level variables.
 - The active environment name is displayed in the status bar.

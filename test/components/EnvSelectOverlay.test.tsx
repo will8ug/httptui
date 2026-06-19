@@ -21,6 +21,7 @@ describe('EnvSelectOverlay', () => {
         <EnvSelectOverlay
           options={options}
           selectedIndex={1}
+          scrollOffset={0}
           activeEnvName={null}
           error={null}
         />,
@@ -37,6 +38,7 @@ describe('EnvSelectOverlay', () => {
         <EnvSelectOverlay
           options={options}
           selectedIndex={0}
+          scrollOffset={0}
           activeEnvName="Development"
           error={null}
         />,
@@ -54,6 +56,7 @@ describe('EnvSelectOverlay', () => {
         <EnvSelectOverlay
           options={options}
           selectedIndex={0}
+          scrollOffset={0}
           activeEnvName="(none)"
           error={null}
         />,
@@ -68,6 +71,7 @@ describe('EnvSelectOverlay', () => {
         <EnvSelectOverlay
           options={options}
           selectedIndex={0}
+          scrollOffset={0}
           activeEnvName={null}
           error={null}
         />,
@@ -84,6 +88,7 @@ describe('EnvSelectOverlay', () => {
         <EnvSelectOverlay
           options={options}
           selectedIndex={0}
+          scrollOffset={0}
           activeEnvName={null}
           error="Failed to load environment file"
         />,
@@ -98,6 +103,7 @@ describe('EnvSelectOverlay', () => {
         <EnvSelectOverlay
           options={options}
           selectedIndex={0}
+          scrollOffset={0}
           activeEnvName={null}
           error={null}
         />,
@@ -114,6 +120,7 @@ describe('EnvSelectOverlay', () => {
         <EnvSelectOverlay
           options={options}
           selectedIndex={0}
+          scrollOffset={0}
           activeEnvName={null}
           error={null}
         />,
@@ -128,6 +135,7 @@ describe('EnvSelectOverlay', () => {
         <EnvSelectOverlay
           options={options}
           selectedIndex={0}
+          scrollOffset={0}
           activeEnvName={null}
           error={null}
         />,
@@ -144,6 +152,7 @@ describe('EnvSelectOverlay', () => {
         <EnvSelectOverlay
           options={options}
           selectedIndex={0}
+          scrollOffset={0}
           activeEnvName={null}
           error={null}
         />,

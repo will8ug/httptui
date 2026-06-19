@@ -4,7 +4,7 @@ import type { Action, AppState, AppProps } from './types';
 import { formatResponseBody } from './formatter';
 import { formatStatusLine } from './responseLayout';
 import { mergeVariables, resolveVariables } from './variables';
-import { DEFAULT_TERMINAL_ROWS, getRequestContentWidth, getRequestVisibleHeight, getResponseContentWidth } from '../utils/layout';
+import { DEFAULT_TERMINAL_ROWS, getEnvPickerVisibleHeight, getRequestContentWidth, getRequestVisibleHeight, getResponseContentWidth } from '../utils/layout';
 import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
 import { getRequestTarget } from '../utils/request';
 
@@ -540,6 +540,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         mode: 'envSelect',
         envSelectIndex: initialIndex,
+        envSelectScrollOffset: 0,
         envSelectError: null,
       };
     }
@@ -551,9 +552,25 @@ export function reducer(state: AppState, action: Action): AppState {
       }
       const delta = action.direction === 'up' ? -1 : 1;
       const nextIndex = clamp(state.envSelectIndex + delta, 0, optionCount - 1);
+      const visibleCount = getEnvPickerVisibleHeight(DEFAULT_TERMINAL_ROWS);
       return {
         ...state,
         envSelectIndex: nextIndex,
+        envSelectScrollOffset: getVisibleRequestOffset(nextIndex, state.envSelectScrollOffset, visibleCount),
+      };
+    }
+
+    case 'JUMP_ENV_SELECTION': {
+      const optionCount = state.availableEnvironments.length;
+      if (optionCount === 0) {
+        return state;
+      }
+      const nextIndex = action.target === 'top' ? 0 : optionCount - 1;
+      const visibleCount = getEnvPickerVisibleHeight(DEFAULT_TERMINAL_ROWS);
+      return {
+        ...state,
+        envSelectIndex: nextIndex,
+        envSelectScrollOffset: getVisibleRequestOffset(nextIndex, state.envSelectScrollOffset, visibleCount),
       };
     }
 
@@ -579,6 +596,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         mode: 'normal',
+        envSelectScrollOffset: 0,
         envSelectError: null,
       };
 
@@ -711,6 +729,7 @@ export function createInitialState(props: AppProps): AppState {
     activeEnvName: props.activeEnvName,
     availableEnvironments: props.availableEnvironments,
     envSelectIndex: 0,
+    envSelectScrollOffset: 0,
     envSelectError: null,
     selectedIndex: 0,
     focusedPanel: 'requests',

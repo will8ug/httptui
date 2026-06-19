@@ -120,6 +120,7 @@ export interface AppState {
   activeEnvName: string | null;
   availableEnvironments: EnvOption[];
   envSelectIndex: number;
+  envSelectScrollOffset: number;
   envSelectError: string | null;
   wrapMode: WrapMode;
   showRequestDetails: boolean;
@@ -177,6 +178,7 @@ export type Action =
   | { type: 'TOGGLE_FULLSCREEN' }
   | { type: 'ENTER_ENV_SELECT' }
   | { type: 'MOVE_ENV_SELECTION'; direction: 'up' | 'down' }
+  | { type: 'JUMP_ENV_SELECTION'; target: 'top' | 'bottom' }
   | { type: 'SWITCH_ENV'; environmentVariables: FileVariable[]; envName: string | null }
   | { type: 'CANCEL_ENV_SELECT' }
   | { type: 'SET_ENV_SELECT_ERROR'; error: string }
