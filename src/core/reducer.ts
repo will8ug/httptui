@@ -1,3 +1,5 @@
+import { basename, extname } from 'node:path';
+
 import type { Action, AppState, AppProps } from './types';
 import { formatResponseBody } from './formatter';
 import { formatStatusLine } from './responseLayout';
@@ -484,7 +486,7 @@ export function reducer(state: AppState, action: Action): AppState {
       };
 
     case 'ENTER_SAVE': {
-      const defaultPath = state.filePath.replace(/\.[^.]+$/, '.http');
+      const defaultPath = `${basename(state.filePath, extname(state.filePath))}.http`;
       return {
         ...state,
         mode: 'saveLoad',

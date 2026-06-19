@@ -25,7 +25,7 @@ describe('ENTER_SAVE reducer', () => {
 
     const result = reducer(state, { type: 'ENTER_SAVE' });
 
-    expect(result.saveInput).toBe('/home/user/collections/MyAPI.http');
+    expect(result.saveInput).toBe('MyAPI.http');
   });
 
   it('keeps .http extension unchanged for .http files', () => {
@@ -36,10 +36,10 @@ describe('ENTER_SAVE reducer', () => {
 
     const result = reducer(state, { type: 'ENTER_SAVE' });
 
-    expect(result.saveInput).toBe('/home/user/apis/test.http');
+    expect(result.saveInput).toBe('test.http');
   });
 
-  it('replaces any extension with .http', () => {
+  it('replaces any extension with .http using only the file basename', () => {
     const state: AppState = {
       ...createInitialState(),
       filePath: 'path/to/My Collection.json',
@@ -47,7 +47,18 @@ describe('ENTER_SAVE reducer', () => {
 
     const result = reducer(state, { type: 'ENTER_SAVE' });
 
-    expect(result.saveInput).toBe('path/to/My Collection.http');
+    expect(result.saveInput).toBe('My Collection.http');
+  });
+
+  it('strips directory components from the default save path', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      filePath: 'examples/basic.http',
+    };
+
+    const result = reducer(state, { type: 'ENTER_SAVE' });
+
+    expect(result.saveInput).toBe('basic.http');
   });
 });
 

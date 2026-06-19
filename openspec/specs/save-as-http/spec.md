@@ -68,15 +68,20 @@ The output of `serializeHttpFile` SHALL be parseable by `parseHttpFile` and SHAL
 - **THEN** the re-parsed variables SHALL include a variable with name `hostname` and value `api.example.com`
 
 ### Requirement: Save overlay default path derivation
-When the user presses `S` in normal mode, the system SHALL enter save mode and pre-fill the save input with a default path derived from the currently loaded file path. The default SHALL replace the loaded file's extension with `.http`, preserving the directory and basename. For a loaded file `path/to/My Collection.json`, the default SHALL be `path/to/My Collection.http`. For a loaded file `path/to/api.http`, the default SHALL be `path/to/api.http`.
+When the user presses `S` in normal mode, the system SHALL enter save mode and pre-fill the save input with a default path derived from the currently loaded file path. The default SHALL be the file's basename with its extension replaced by `.http`, omitting any directory components. For a loaded file `path/to/My Collection.json`, the default SHALL be `My Collection.http`. For a loaded file `path/to/api.http`, the default SHALL be `api.http`. When the user confirms the default, the system SHALL resolve this relative basename against the directory of the currently loaded file, so the file is saved next to the source file.
 
 #### Scenario: Default path for a Postman collection
 - **WHEN** the loaded file is `/home/user/collections/MyAPI.json` and the user presses `S`
-- **THEN** the save overlay input SHALL be pre-filled with `/home/user/collections/MyAPI.http`
+- **THEN** the save overlay input SHALL be pre-filled with `MyAPI.http`
 
 #### Scenario: Default path for a .http file
 - **WHEN** the loaded file is `/home/user/apis/test.http` and the user presses `S`
-- **THEN** the save overlay input SHALL be pre-filled with `/home/user/apis/test.http`
+- **THEN** the save overlay input SHALL be pre-filled with `test.http`
+
+#### Scenario: Default path strips directory components
+- **WHEN** the loaded file is `examples/basic.http` and the user presses `S`
+- **THEN** the save overlay input SHALL be pre-filled with `basic.http`
+- **AND** confirming the save SHALL write to `examples/basic.http`
 
 ### Requirement: Save overlay path input and confirmation
 The save overlay SHALL display the current input value and allow the user to modify it via keyboard input (typing characters, backspace to delete). The user SHALL press `Enter` to confirm the save or `Escape` to cancel. The entered path MAY be absolute or relative. If relative, the system SHALL resolve it against the directory of the currently loaded file (`path.dirname(state.filePath)`). If absolute, the system SHALL use it directly.
