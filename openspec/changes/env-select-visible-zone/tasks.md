@@ -49,4 +49,4 @@
 - [x] 8.4 Manually test with 15+ environments: overlay shows exactly 8 rows, `j` past the 8th row scrolls the window, counter updates, `g` jumps to top, `G` jumps to bottom — requires manual TUI testing
 - [ ] 8.5 Manually test on a short terminal (12 rows): overlay shows fewer than 8 rows and does not overflow — requires manual TUI testing
 - [x] 8.6 Manually test `Esc` after scrolling: offset is preserved, re-opening shows the active environment in view (scroll adjusts only if the active env is outside the previous window) — requires manual TUI testing
-- [x] 8.7 Run existing test suite — 508/508 tests passed, no regressions
+- [x] 8.7 Run existing test suite — 531/531 tests passed (23 new tests added: layout helper, reducer scroll offset, component window slicing/counter, g/G integration), no regressions

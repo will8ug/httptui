@@ -10,6 +10,21 @@ const options: EnvOption[] = [
   { name: 'Staging', file: 'env/staging.json' },
 ];
 
+const manyOptions: EnvOption[] = [
+  { name: '(none)', file: null },
+  { name: 'Dev', file: 'env/dev.json' },
+  { name: 'Staging', file: 'env/staging.json' },
+  { name: 'QA', file: 'env/qa.json' },
+  { name: 'Prod', file: 'env/prod.json' },
+  { name: 'Sandbox', file: 'env/sandbox.json' },
+  { name: 'Local', file: 'env/local.json' },
+  { name: 'CI', file: 'env/ci.json' },
+  { name: 'Beta', file: 'env/beta.json' },
+  { name: 'Alpha', file: 'env/alpha.json' },
+  { name: 'Test', file: 'env/test.json' },
+  { name: 'Demo', file: 'env/demo.json' },
+];
+
 afterEach(() => {
   cleanup();
 });
@@ -162,6 +177,129 @@ describe('EnvSelectOverlay', () => {
       expect(frame).toContain('(none)');
       expect(frame).toContain('Development');
       expect(frame).toContain('Staging');
+    });
+  });
+
+  describe('position counter', () => {
+    it('renders the position counter {selectedIndex+1}/{total}', () => {
+      const { lastFrame } = render(
+        <EnvSelectOverlay
+          options={options}
+          selectedIndex={1}
+          scrollOffset={0}
+          activeEnvName={null}
+          error={null}
+        />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('2/3');
+    });
+
+    it('renders 1/12 for first of many options', () => {
+      const { lastFrame } = render(
+        <EnvSelectOverlay
+          options={manyOptions}
+          selectedIndex={0}
+          scrollOffset={0}
+          activeEnvName={null}
+          error={null}
+        />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('1/12');
+    });
+
+    it('renders correct position when scrolled', () => {
+      const { lastFrame } = render(
+        <EnvSelectOverlay
+          options={manyOptions}
+          selectedIndex={9}
+          scrollOffset={2}
+          activeEnvName={null}
+          error={null}
+        />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('10/12');
+    });
+  });
+
+  describe('footer hints', () => {
+    it('renders g/G top/bottom hint', () => {
+      const { lastFrame } = render(
+        <EnvSelectOverlay
+          options={options}
+          selectedIndex={0}
+          scrollOffset={0}
+          activeEnvName={null}
+          error={null}
+        />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('g/G');
+      expect(frame).toContain('top/bottom');
+    });
+  });
+
+  describe('visible window slicing', () => {
+    it('renders only visible options when scrollOffset > 0', () => {
+      const { lastFrame } = render(
+        <EnvSelectOverlay
+          options={manyOptions}
+          selectedIndex={9}
+          scrollOffset={2}
+          activeEnvName={null}
+          error={null}
+        />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).not.toContain('Dev');
+      expect(frame).toContain('Staging');
+      expect(frame).toContain('Alpha');
+      expect(frame).not.toContain('Test');
+      expect(frame).not.toContain('Demo');
+    });
+
+    it('renders all options when count is below the cap', () => {
+      const { lastFrame } = render(
+        <EnvSelectOverlay
+          options={options}
+          selectedIndex={0}
+          scrollOffset={0}
+          activeEnvName={null}
+          error={null}
+        />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('(none)');
+      expect(frame).toContain('Development');
+      expect(frame).toContain('Staging');
+    });
+  });
+
+  describe('highlight with scroll offset', () => {
+    it('highlights the option at the global selectedIndex, not the slice-local index', () => {
+      const { lastFrame } = render(
+        <EnvSelectOverlay
+          options={manyOptions}
+          selectedIndex={5}
+          scrollOffset={3}
+          activeEnvName={null}
+          error={null}
+        />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).not.toContain('Staging');
+      expect(frame).toContain('QA');
+      expect(frame).toContain('Test');
+      expect(frame).not.toContain('Demo');
     });
   });
 });

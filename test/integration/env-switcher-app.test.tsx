@@ -535,3 +535,45 @@ describe('env switcher integration — StatusBar envName display', () => {
     expect(frame).not.toContain('Production');
   });
 });
+
+describe('env switcher integration — g/G jump navigation', () => {
+  it('G jumps to the last environment and g jumps back to the first', async () => {
+    const environments: EnvOption[] = [
+      { name: '(none)', file: null },
+      { name: 'Dev', file: '/does-not-matter/dev.json' },
+      { name: 'Staging', file: '/does-not-matter/staging.json' },
+      { name: 'QA', file: '/does-not-matter/qa.json' },
+      { name: 'Prod', file: '/does-not-matter/prod.json' },
+      { name: 'Sandbox', file: '/does-not-matter/sandbox.json' },
+      { name: 'Local', file: '/does-not-matter/local.json' },
+      { name: 'CI', file: '/does-not-matter/ci.json' },
+      { name: 'Beta', file: '/does-not-matter/beta.json' },
+      { name: 'Alpha', file: '/does-not-matter/alpha.json' },
+      { name: 'Test', file: '/does-not-matter/test.json' },
+      { name: 'Demo', file: '/does-not-matter/demo.json' },
+    ];
+
+    const { stdin, lastFrame } = renderApp({
+      requests: makeShortUrlRequests(1),
+      availableEnvironments: environments,
+    });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'E');
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'G');
+    await delay(KEY_DELAY_MS);
+
+    let frame = lastFrame() ?? '';
+    expect(frame).toContain('Demo');
+    expect(frame).toContain('12/12');
+
+    await press(stdin, 'g');
+    await delay(KEY_DELAY_MS);
+
+    frame = lastFrame() ?? '';
+    expect(frame).toContain('(none)');
+    expect(frame).toContain('1/12');
+  });
+});

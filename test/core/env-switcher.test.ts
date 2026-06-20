@@ -30,6 +30,21 @@ const availableEnvironments: EnvOption[] = [
   { name: 'Production', file: 'env/prod.json' },
 ];
 
+const manyEnvironments: EnvOption[] = [
+  { name: '(none)', file: null },
+  { name: 'Dev', file: 'env/dev.json' },
+  { name: 'Staging', file: 'env/staging.json' },
+  { name: 'QA', file: 'env/qa.json' },
+  { name: 'Prod', file: 'env/prod.json' },
+  { name: 'Sandbox', file: 'env/sandbox.json' },
+  { name: 'Local', file: 'env/local.json' },
+  { name: 'CI', file: 'env/ci.json' },
+  { name: 'Beta', file: 'env/beta.json' },
+  { name: 'Alpha', file: 'env/alpha.json' },
+  { name: 'Test', file: 'env/test.json' },
+  { name: 'Demo', file: 'env/demo.json' },
+];
+
 // Index lookups are derived from `availableEnvironments` so they stay in sync
 // with the fixture order. A missing name throws at module load rather than
 // silently producing wrong test results when the fixture is reordered.
@@ -70,6 +85,10 @@ function makeActiveEnvState(
     variables: mergeVariables(fileVariables, envVars),
     ...overrides,
   });
+}
+
+function makeManyEnvState(overrides: Partial<AppState> = {}): AppState {
+  return makeInitialState({ availableEnvironments: manyEnvironments, ...overrides });
 }
 
 function varMap(vars: FileVariable[]): Map<string, string> {
@@ -390,5 +409,101 @@ describe('SET_ENV_SELECT_ERROR reducer', () => {
 
     expect(result.envSelectError).toBe('File not found: env/dev.json');
     expect(result.mode).toBe('envSelect');
+  });
+});
+
+describe('MOVE_ENV_SELECTION scroll offset', () => {
+  it('advances offset when cursor moves past the bottom of the visible window', () => {
+    const state = makeManyEnvState({ envSelectIndex: 7, envSelectScrollOffset: 0 });
+    const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'down' });
+
+    expect(result.envSelectIndex).toBe(8);
+    expect(result.envSelectScrollOffset).toBe(1);
+  });
+
+  it('retreats offset when cursor moves above the visible window', () => {
+    const state = makeManyEnvState({ envSelectIndex: 4, envSelectScrollOffset: 4 });
+    const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'up' });
+
+    expect(result.envSelectIndex).toBe(3);
+    expect(result.envSelectScrollOffset).toBe(3);
+  });
+
+  it('keeps offset stable when cursor moves within the visible window', () => {
+    const state = makeManyEnvState({ envSelectIndex: 3, envSelectScrollOffset: 0 });
+    const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'down' });
+
+    expect(result.envSelectIndex).toBe(4);
+    expect(result.envSelectScrollOffset).toBe(0);
+  });
+});
+
+describe('JUMP_ENV_SELECTION reducer', () => {
+  it('jump to top sets index to 0 and offset to 0', () => {
+    const state = makeManyEnvState({ envSelectIndex: 11, envSelectScrollOffset: 4 });
+    const result = reducer(state, { type: 'JUMP_ENV_SELECTION', target: 'top' });
+
+    expect(result.envSelectIndex).toBe(0);
+    expect(result.envSelectScrollOffset).toBe(0);
+  });
+
+  it('jump to bottom sets index to last and syncs offset', () => {
+    const state = makeManyEnvState({ envSelectIndex: 0, envSelectScrollOffset: 0 });
+    const result = reducer(state, { type: 'JUMP_ENV_SELECTION', target: 'bottom' });
+
+    expect(result.envSelectIndex).toBe(11);
+    expect(result.envSelectScrollOffset).toBe(4);
+  });
+
+  it('is a no-op when availableEnvironments is empty', () => {
+    const state = makeManyEnvState({ availableEnvironments: [] });
+    const result = reducer(state, { type: 'JUMP_ENV_SELECTION', target: 'top' });
+
+    expect(result).toBe(state);
+  });
+});
+
+describe('ENTER_ENV_SELECT scroll offset', () => {
+  it('computes offset to show active env when it is below the visible window', () => {
+    const state = makeManyEnvState({ activeEnvName: 'Demo', envSelectScrollOffset: 0 });
+    const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
+
+    expect(result.envSelectIndex).toBe(11);
+    expect(result.envSelectScrollOffset).toBe(4);
+  });
+
+  it('preserves offset when active env is already visible', () => {
+    const state = makeManyEnvState({ activeEnvName: 'QA', envSelectScrollOffset: 0 });
+    const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
+
+    expect(result.envSelectIndex).toBe(3);
+    expect(result.envSelectScrollOffset).toBe(0);
+  });
+
+  it('preserves persisted offset when active env is visible in it', () => {
+    const state = makeManyEnvState({ activeEnvName: 'Demo', envSelectScrollOffset: 4 });
+    const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
+
+    expect(result.envSelectIndex).toBe(11);
+    expect(result.envSelectScrollOffset).toBe(4);
+  });
+
+  it('corrects stale offset when active env is outside persisted window', () => {
+    const state = makeManyEnvState({ activeEnvName: 'Dev', envSelectScrollOffset: 8 });
+    const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
+
+    expect(result.envSelectIndex).toBe(1);
+    expect(result.envSelectScrollOffset).toBe(1);
+  });
+});
+
+describe('CANCEL_ENV_SELECT preserves scroll offset', () => {
+  it('preserves envSelectScrollOffset on cancel', () => {
+    const state = makeManyEnvState({ mode: 'envSelect', envSelectScrollOffset: 3, envSelectError: 'some error' });
+    const result = reducer(state, { type: 'CANCEL_ENV_SELECT' });
+
+    expect(result.envSelectScrollOffset).toBe(3);
+    expect(result.mode).toBe('normal');
+    expect(result.envSelectError).toBeNull();
   });
 });
