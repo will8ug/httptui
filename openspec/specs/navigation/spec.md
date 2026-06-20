@@ -89,8 +89,8 @@ The `ResponseView` component SHALL accept a `horizontalOffset` prop and render e
 ### Requirement: JUMP_VERTICAL action
 The system SHALL define a `JUMP_VERTICAL` action type in the `Action` union with `direction: 'start' | 'end'` and an optional `maxOffset: number` field. The reducer SHALL apply the action based on the currently focused panel:
 
-- When `focusedPanel === 'requests'` and `direction === 'start'`: set `selectedIndex` to `0`, set `requestScrollOffset` via `getVisibleRequestOffset(0, requestScrollOffset)`, and reset `requestHorizontalOffset`, `detailsScrollOffset`, and `detailsHorizontalOffset` to `0`.
-- When `focusedPanel === 'requests'` and `direction === 'end'`: set `selectedIndex` to `max(0, requests.length - 1)`, set `requestScrollOffset` via `getVisibleRequestOffset(lastIndex, requestScrollOffset)`, and reset `requestHorizontalOffset`, `detailsScrollOffset`, and `detailsHorizontalOffset` to `0`.
+- When `focusedPanel === 'requests'` and `direction === 'start'`: set `selectedIndex` to `0`, set `requestScrollOffset` via `clampScrollOffsetToCursor(0, requestScrollOffset)`, and reset `requestHorizontalOffset`, `detailsScrollOffset`, and `detailsHorizontalOffset` to `0`.
+- When `focusedPanel === 'requests'` and `direction === 'end'`: set `selectedIndex` to `max(0, requests.length - 1)`, set `requestScrollOffset` via `clampScrollOffsetToCursor(lastIndex, requestScrollOffset)`, and reset `requestHorizontalOffset`, `detailsScrollOffset`, and `detailsHorizontalOffset` to `0`.
 - When `focusedPanel === 'details'` and `direction === 'start'`: set `detailsScrollOffset` to `0`.
 - When `focusedPanel === 'details'` and `direction === 'end'`: set `detailsScrollOffset` to `min(max(0, maxOffset), maxOffset)` where `maxOffset` is provided on the action payload; when `maxOffset` is not provided, `detailsScrollOffset` SHALL be left unchanged.
 - When `focusedPanel === 'response'` and `direction === 'start'`: set `responseScrollOffset` to `0`.
@@ -101,13 +101,13 @@ No other state fields SHALL be modified by `JUMP_VERTICAL`.
 #### Scenario: Jump to top of requests panel
 - **WHEN** `focusedPanel` is `requests`, `selectedIndex` is greater than `0`, and a `JUMP_VERTICAL { direction: 'start' }` action is dispatched
 - **THEN** `selectedIndex` SHALL become `0`
-- **AND** `requestScrollOffset` SHALL be adjusted via `getVisibleRequestOffset(0, …)` so index `0` is visible
+- **AND** `requestScrollOffset` SHALL be adjusted via `clampScrollOffsetToCursor(0, …)` so index `0` is visible
 - **AND** `requestHorizontalOffset`, `detailsScrollOffset`, and `detailsHorizontalOffset` SHALL be `0`
 
 #### Scenario: Jump to bottom of requests panel
 - **WHEN** `focusedPanel` is `requests`, `requests.length` is `N` (with `N > 0`), and a `JUMP_VERTICAL { direction: 'end' }` action is dispatched
 - **THEN** `selectedIndex` SHALL become `N - 1`
-- **AND** `requestScrollOffset` SHALL be adjusted via `getVisibleRequestOffset(N - 1, …)` so the last request is visible
+- **AND** `requestScrollOffset` SHALL be adjusted via `clampScrollOffsetToCursor(N - 1, …)` so the last request is visible
 - **AND** `requestHorizontalOffset`, `detailsScrollOffset`, and `detailsHorizontalOffset` SHALL be `0`
 
 #### Scenario: Jump to bottom when requests list is empty

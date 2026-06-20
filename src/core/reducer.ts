@@ -12,7 +12,7 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-export function getVisibleRequestOffset(selectedIndex: number, currentOffset: number, visibleCount: number): number {
+export function clampScrollOffsetToCursor(selectedIndex: number, currentOffset: number, visibleCount: number): number {
   if (selectedIndex < currentOffset) {
     return selectedIndex;
   }
@@ -136,7 +136,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         selectedIndex: nextIndex,
-        requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset, visibleCount),
+        requestScrollOffset: clampScrollOffsetToCursor(nextIndex, state.requestScrollOffset, visibleCount),
         requestHorizontalOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
@@ -152,7 +152,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         selectedIndex: nextIndex,
-        requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset, visibleCount),
+        requestScrollOffset: clampScrollOffsetToCursor(nextIndex, state.requestScrollOffset, visibleCount),
         requestHorizontalOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
@@ -312,7 +312,7 @@ export function reducer(state: AppState, action: Action): AppState {
         return {
           ...state,
           selectedIndex: nextIndex,
-          requestScrollOffset: getVisibleRequestOffset(nextIndex, state.requestScrollOffset, visibleCount),
+          requestScrollOffset: clampScrollOffsetToCursor(nextIndex, state.requestScrollOffset, visibleCount),
           requestHorizontalOffset: 0,
           detailsScrollOffset: 0,
           detailsHorizontalOffset: 0,
@@ -556,7 +556,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         envSelectIndex: nextIndex,
-        envSelectScrollOffset: getVisibleRequestOffset(nextIndex, state.envSelectScrollOffset, visibleCount),
+        envSelectScrollOffset: clampScrollOffsetToCursor(nextIndex, state.envSelectScrollOffset, visibleCount),
       };
     }
 
@@ -570,7 +570,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         envSelectIndex: nextIndex,
-        envSelectScrollOffset: getVisibleRequestOffset(nextIndex, state.envSelectScrollOffset, visibleCount),
+        envSelectScrollOffset: clampScrollOffsetToCursor(nextIndex, state.envSelectScrollOffset, visibleCount),
       };
     }
 

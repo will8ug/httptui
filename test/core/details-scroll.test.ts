@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { reducer, getVisibleRequestOffset } from '../../src/core/reducer';
+import { reducer, clampScrollOffsetToCursor } from '../../src/core/reducer';
 import type { Action, AppState, ParsedRequest } from '../../src/core/types';
 import { createRequest } from '../helpers/requests';
 import { createInitialState } from '../helpers/state';
@@ -54,7 +54,7 @@ describe('request details scrolling reducer behavior', () => {
       const initialState = createInitialState({
         showRequestDetails: true,
         focusedPanel: 'requests',
-        requestScrollOffset: getVisibleRequestOffset(0, 0, 19),
+        requestScrollOffset: clampScrollOffsetToCursor(0, 0, 19),
       });
 
       const detailsState = reduce(initialState, { type: 'SWITCH_PANEL' });

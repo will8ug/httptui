@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getVisibleRequestOffset, reducer } from '../../src/core/reducer';
+import { clampScrollOffsetToCursor, reducer } from '../../src/core/reducer';
 import type { AppState, ParsedRequest } from '../../src/core/types';
 import { createRequest } from '../helpers/requests';
 import { createInitialState } from '../helpers/state';
@@ -18,24 +18,24 @@ function makeRequests(count: number): ParsedRequest[] {
 
 const reduce = (state: AppState, action: Parameters<typeof reducer>[1]): AppState => reducer(state, action);
 
-describe('getVisibleRequestOffset', () => {
+describe('clampScrollOffsetToCursor', () => {
   it('does not scroll when all items fit in the visible window', () => {
-    const result = getVisibleRequestOffset(12, 0, 19);
+    const result = clampScrollOffsetToCursor(12, 0, 19);
     expect(result).toBe(0);
   });
 
   it('scrolls down when the selected index exceeds the visible window', () => {
-    const result = getVisibleRequestOffset(20, 0, 19);
+    const result = clampScrollOffsetToCursor(20, 0, 19);
     expect(result).toBe(2);
   });
 
   it('scrolls up when the selected index is above the current offset', () => {
-    const result = getVisibleRequestOffset(3, 5, 19);
+    const result = clampScrollOffsetToCursor(3, 5, 19);
     expect(result).toBe(3);
   });
 
   it('keeps current offset when the selected index is already visible', () => {
-    const result = getVisibleRequestOffset(10, 5, 19);
+    const result = clampScrollOffsetToCursor(10, 5, 19);
     expect(result).toBe(5);
   });
 });

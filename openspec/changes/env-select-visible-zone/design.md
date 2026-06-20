@@ -2,7 +2,7 @@
 
 The environment picker overlay (`src/components/EnvSelectOverlay.tsx`) currently renders every available environment via `options.map(...)` with no height cap, no scroll offset, and no position indicator. The inner `<Box>` has no `height` prop — it auto-sizes to content. On a 24-row terminal with ~15+ environments, the overlay overflows and clips at the terminal bottom.
 
-The codebase already has a mature, reusable pattern for bounded scrollable lists: `RequestList.tsx` + the `getVisibleRequestOffset` helper in `reducer.ts` (lines 15-25). That helper is a pure function that keeps a cursor inside a `[offset, offset + visibleCount)` window. The request list also demonstrates `JUMP_VERTICAL` (jump to top/bottom via `g`/`G`). This change applies the same pattern to the env picker, reusing the existing helper rather than inventing new scroll math.
+The codebase already has a mature, reusable pattern for bounded scrollable lists: `RequestList.tsx` + the `clampScrollOffsetToCursor` helper in `reducer.ts` (lines 15-25). That helper is a pure function that keeps a cursor inside a `[offset, offset + visibleCount)` window. The request list also demonstrates `JUMP_VERTICAL` (jump to top/bottom via `g`/`G`). This change applies the same pattern to the env picker, reusing the existing helper rather than inventing new scroll math.
 
 The env-select state today (`types.ts:122-123`) holds only `envSelectIndex` and `envSelectError`. There is no scroll offset field. Input handling lives in `app.tsx` lines 247-287, dispatching `MOVE_ENV_SELECTION` for `j`/`k`/arrows and silently dropping all other keys.
 
@@ -14,7 +14,7 @@ The env-select state today (`types.ts:122-123`) holds only `envSelectIndex` and 
 - Add cursor-chase scrolling so the highlight never leaves the visible window.
 - Add `g`/`G` jump-to-top/bottom for parity with the request list.
 - Add a compact `{n}/{total}` position counter to the footer.
-- Reuse `getVisibleRequestOffset` and mirror the `JUMP_VERTICAL` reducer pattern — no new scroll abstractions.
+- Reuse `clampScrollOffsetToCursor` and mirror the `JUMP_VERTICAL` reducer pattern — no new scroll abstractions.
 
 **Non-Goals:**
 - Reordering or sorting environment names (config-file order preserved, `--env` appended, `(none)` first).
@@ -25,9 +25,9 @@ The env-select state today (`types.ts:122-123`) holds only `envSelectIndex` and 
 
 ## Decisions
 
-### Decision 1: Reuse `getVisibleRequestOffset` for cursor-chase scroll
+### Decision 1: Reuse `clampScrollOffsetToCursor` for cursor-chase scroll
 
-**Choice:** Call the existing `getVisibleRequestOffset(nextIndex, state.envSelectScrollOffset, visibleCount)` inside the `MOVE_ENV_SELECTION` reducer case to compute the new offset.
+**Choice:** Call the existing `clampScrollOffsetToCursor(nextIndex, state.envSelectScrollOffset, visibleCount)` inside the `MOVE_ENV_SELECTION` reducer case to compute the new offset.
 
 **Rationale:** The helper is already exported, pure, unit-tested implicitly via request-list behavior, and implements exactly the "keep cursor in window" semantics we want. Writing a second scroll helper would duplicate logic and diverge over time.
 
@@ -56,7 +56,7 @@ The env-select state today (`types.ts:122-123`) holds only `envSelectIndex` and 
 
 ### Decision 4: `JUMP_ENV_SELECTION` action mirroring `JUMP_VERTICAL`
 
-**Choice:** New action `{ type: 'JUMP_ENV_SELECTION'; target: 'top' | 'bottom' }`. Reducer sets `envSelectIndex` to 0 or `optionCount - 1`, then applies `getVisibleRequestOffset` to sync the offset.
+**Choice:** New action `{ type: 'JUMP_ENV_SELECTION'; target: 'top' | 'bottom' }`. Reducer sets `envSelectIndex` to 0 or `optionCount - 1`, then applies `clampScrollOffsetToCursor` to sync the offset.
 
 **Rationale:** `JUMP_VERTICAL` (reducer lines 307-344) is the established pattern for jump-to-end. A parallel `JUMP_ENV_SELECTION` keeps the action discriminated union clean and the reducer case self-contained. Using `target: 'top' | 'bottom'` (instead of `direction: 'start' | 'end'`) reads more naturally for a picker context.
 

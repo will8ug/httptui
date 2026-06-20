@@ -13,8 +13,8 @@
 
 - [x] 3.1 Initialize `envSelectScrollOffset: 0` in `createInitialState` in `src/core/reducer.ts`
 - [x] 3.2 Add `envSelectScrollOffset: 0` to the `ENTER_ENV_SELECT` return object in `src/core/reducer.ts` so the offset resets when the picker opens
-- [x] 3.3 Modify `MOVE_ENV_SELECTION` in `src/core/reducer.ts` to compute `visibleCount` from `DEFAULT_TERMINAL_ROWS` via `getEnvPickerVisibleHeight` and apply `getVisibleRequestOffset(nextIndex, state.envSelectScrollOffset, visibleCount)` to the returned `envSelectScrollOffset`
-- [x] 3.4 Add new `JUMP_ENV_SELECTION` case in `src/core/reducer.ts` (after `MOVE_ENV_SELECTION`): set `envSelectIndex` to 0 (top) or `optionCount - 1` (bottom), then apply `getVisibleRequestOffset` to sync `envSelectScrollOffset`; guard `optionCount === 0` early-return
+- [x] 3.3 Modify `MOVE_ENV_SELECTION` in `src/core/reducer.ts` to compute `visibleCount` from `DEFAULT_TERMINAL_ROWS` via `getEnvPickerVisibleHeight` and apply `clampScrollOffsetToCursor(nextIndex, state.envSelectScrollOffset, visibleCount)` to the returned `envSelectScrollOffset`
+- [x] 3.4 Add new `JUMP_ENV_SELECTION` case in `src/core/reducer.ts` (after `MOVE_ENV_SELECTION`): set `envSelectIndex` to 0 (top) or `optionCount - 1` (bottom), then apply `clampScrollOffsetToCursor` to sync `envSelectScrollOffset`; guard `optionCount === 0` early-return
 - [x] 3.5 Add `envSelectScrollOffset: 0` to the `CANCEL_ENV_SELECT` return object in `src/core/reducer.ts` so the offset resets on cancel
 - [x] 3.6 Import `getEnvPickerVisibleHeight` from `../utils/layout` at the top of `src/core/reducer.ts`
 
