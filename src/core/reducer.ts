@@ -536,11 +536,12 @@ export function reducer(state: AppState, action: Action): AppState {
         ? findOption(state.activeEnvName)
         : findOption('(none)');
       const initialIndex = activeIndex >= 0 ? activeIndex : 0;
+      const visibleCount = getEnvPickerVisibleHeight(DEFAULT_TERMINAL_ROWS);
       return {
         ...state,
         mode: 'envSelect',
         envSelectIndex: initialIndex,
-        envSelectScrollOffset: 0,
+        envSelectScrollOffset: clampScrollOffsetToCursor(initialIndex, state.envSelectScrollOffset, visibleCount),
         envSelectError: null,
       };
     }
@@ -596,7 +597,6 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         mode: 'normal',
-        envSelectScrollOffset: 0,
         envSelectError: null,
       };
 

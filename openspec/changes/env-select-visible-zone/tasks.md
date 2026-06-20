@@ -48,5 +48,5 @@
 - [x] 8.3 Manually test with 2 environments: overlay shrinks to 3 option rows (2 envs + `(none)`), no empty padding, counter shows `1/3` — initial test found empty padding below the footer (Box height used the 8-row cap instead of the actual option count); fixed by using `Math.min(visibleCount, options.length)` in `EnvSelectOverlay.tsx` line 36
 - [x] 8.4 Manually test with 15+ environments: overlay shows exactly 8 rows, `j` past the 8th row scrolls the window, counter updates, `g` jumps to top, `G` jumps to bottom — requires manual TUI testing
 - [ ] 8.5 Manually test on a short terminal (12 rows): overlay shows fewer than 8 rows and does not overflow — requires manual TUI testing
-- [ ] 8.6 Manually test `Esc` after scrolling: offset resets to 0, re-opening shows from the top — requires manual TUI testing
+- [x] 8.6 Manually test `Esc` after scrolling: offset is preserved, re-opening shows the active environment in view (scroll adjusts only if the active env is outside the previous window) — requires manual TUI testing
 - [x] 8.7 Run existing test suite — 508/508 tests passed, no regressions
