@@ -33,7 +33,7 @@ export function EnvSelectOverlay({
         paddingX={2}
         paddingY={1}
         width={width}
-        height={visibleCount + ENV_PICKER_VERTICAL_OVERHEAD}
+        height={error ? undefined : Math.min(visibleCount, options.length) + ENV_PICKER_VERTICAL_OVERHEAD}
       >
         <Text color="cyanBright" bold>
           Select Environment
