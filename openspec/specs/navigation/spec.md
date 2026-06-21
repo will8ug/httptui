@@ -43,7 +43,17 @@ The system SHALL define a `SCROLL_HORIZONTAL` action type with `direction: 'left
 
 #### Scenario: Max line width for response panel
 - **WHEN** computing the upper bound for `responseHorizontalOffset`
-- **THEN** `maxResponseLineWidth` SHALL be the length of the longest line across the status line, header lines (if verbose mode is on), and body lines, and `responseContentWidth` SHALL be `max(20, columns - leftPanelWidth - 6)` where `leftPanelWidth` is `clamp(floor(columns * 0.3), 25, 36)`
+- **THEN** `maxResponseLineWidth` SHALL be the length of the longest line across the status line, header lines (if verbose mode is on), and the **formatted** body lines, where the formatted body lines SHALL be the lines of `formatResponseBody(response.body, rawMode)` — the same string the `ResponseView` component renders. `responseContentWidth` SHALL be `max(20, columns - leftPanelWidth - 6)` where `leftPanelWidth` is `clamp(floor(columns * 0.3), 25, 36)`
+
+#### Scenario: Max line width for response panel uses formatted body in non-raw mode
+- **WHEN** `rawMode` is `false` and `response.body` is compact JSON (a single line whose length exceeds the content width) that `formatResponseBody` expands into multiple shorter indented lines
+- **AND** the upper bound for `responseHorizontalOffset` is computed
+- **THEN** `maxResponseLineWidth` SHALL be derived from the expanded (formatted) body lines, NOT from the raw `response.body` lines
+- **AND** the resulting `max(0, maxResponseLineWidth - responseContentWidth)` SHALL be small enough that every rendered line remains visible when `responseHorizontalOffset` is set to that bound
+
+#### Scenario: Max line width for response panel uses raw body in raw mode
+- **WHEN** `rawMode` is `true`
+- **THEN** `formatResponseBody(response.body, true)` SHALL return `response.body` unchanged, so `maxResponseLineWidth` SHALL equal the longest raw body line length (no behavior change from before this fix)
 
 #### Scenario: Empty or no content
 - **WHEN** the panel has no content (no requests, or no response)
