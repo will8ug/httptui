@@ -17,7 +17,7 @@ import { executeRequest, isRequestError } from './core/executor';
 import type { CertConfig } from './core/executor';
 import { formatResponseBody } from './core/formatter';
 import { computeVerticalMaxOffset, createInitialState, reducer } from './core/reducer';
-import { computeResponseLayout } from './core/responseLayout';
+import { computeResponseLayout } from './core/response-layout';
 import type { AppProps, AppState, RequestError, ResponseData } from './core/types';
 import { parseHttpFile } from './core/parser';
 import { serializeHttpFile } from './core/http-serializer';

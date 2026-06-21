@@ -1,5 +1,5 @@
-import { computeResponseLayout } from '../core/responseLayout';
-import type { ResponseForLayout } from '../core/responseLayout';
+import { computeResponseLayout } from '../core/response-layout';
+import type { ResponseForLayout } from '../core/response-layout';
 import { formatResponseBody } from '../core/formatter';
 import { getResponseContentWidth } from './layout';
 

@@ -3,7 +3,7 @@ import { Spinner } from '@inkjs/ui';
 import { Box, Text, useStdout } from 'ink';
 
 import { formatResponseBody } from "../core/formatter";
-import { computeResponseLayout } from '../core/responseLayout';
+import { computeResponseLayout } from '../core/response-layout';
 import type { RequestError, ResponseData, WrapMode } from '../core/types';
 import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
 import { RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';

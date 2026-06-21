@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../src/core/reducer';
 import { formatResponseBody } from '../../src/core/formatter';
-import { formatStatusLine } from '../../src/core/responseLayout';
+import { formatStatusLine } from '../../src/core/response-layout';
 import type { Action, AppState, ParsedRequest } from '../../src/core/types';
 import { getRequestContentWidth, getLeftPanelWidth, getResponseContentWidth, getDetailPanelHeight } from '../../src/utils/layout';
 import { createInitialState, reducer } from '../helpers/state';

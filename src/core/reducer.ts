@@ -2,7 +2,7 @@ import { basename, extname } from 'node:path';
 
 import type { Action, AppState, AppProps } from './types';
 import { formatResponseBody } from './formatter';
-import { formatStatusLine } from './responseLayout';
+import { formatStatusLine } from './response-layout';
 import { mergeVariables, resolveVariables } from './variables';
 import { DEFAULT_TERMINAL_ROWS, getEnvPickerVisibleHeight, getRequestContentWidth, getRequestVisibleHeight, getResponseContentWidth } from '../utils/layout';
 import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
