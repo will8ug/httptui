@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createInitialState } from '../helpers/state';
 import { makeRequests } from '../helpers/requests';
-import { longResponse } from '../helpers/responses';
+import { longResponse, compactJsonResponse } from '../helpers/responses';
 import {
   reducer,
   getMaxRequestLineWidth,
@@ -221,6 +221,44 @@ describe('JUMP_HORIZONTAL reducer', () => {
     });
   });
 
+  describe('response panel (nowrap) — compact JSON uses formatted body width', () => {
+    it('direction: "end" with rawMode false uses formatted body bound (regression: body no longer vanishes)', () => {
+      const columns = 80;
+      const contentWidth = getResponseContentWidth(columns);
+      const state: AppState = createInitialState({
+        focusedPanel: 'response',
+        response: compactJsonResponse,
+        rawMode: false,
+        wrapMode: 'nowrap',
+      });
+      const maxLineWidth = getMaxResponseLineWidth(state);
+      const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
+
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+
+      expect(result.responseHorizontalOffset).toBe(expected);
+      expect(expected).toBe(0);
+    });
+
+    it('direction: "end" with rawMode true uses raw body bound (unchanged behavior)', () => {
+      const columns = 80;
+      const contentWidth = getResponseContentWidth(columns);
+      const state: AppState = createInitialState({
+        focusedPanel: 'response',
+        response: compactJsonResponse,
+        rawMode: true,
+        wrapMode: 'nowrap',
+      });
+      const maxLineWidth = getMaxResponseLineWidth(state);
+      const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
+
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+
+      expect(result.responseHorizontalOffset).toBe(expected);
+      expect(expected).toBeGreaterThan(0);
+    });
+  });
+
   describe('response panel (wrap) — no-op', () => {
     it('direction: "start" returns state unchanged when wrapMode is wrap', () => {
       const state = createInitialState({
@@ -240,6 +278,19 @@ describe('JUMP_HORIZONTAL reducer', () => {
       const state = createInitialState({
         focusedPanel: 'response',
         response: longResponse,
+        wrapMode: 'wrap',
+      });
+
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns: 80 });
+
+      expect(result).toBe(state);
+    });
+
+    it('direction: "end" returns state unchanged when wrapMode is wrap (compact JSON)', () => {
+      const state = createInitialState({
+        focusedPanel: 'response',
+        response: compactJsonResponse,
+        rawMode: false,
         wrapMode: 'wrap',
       });
 

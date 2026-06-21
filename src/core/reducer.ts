@@ -55,7 +55,8 @@ export function getMaxResponseLineWidth(state: AppState): number {
     }
   }
 
-  lines.push(...res.body.split('\n'));
+  const formattedBody = formatResponseBody(res.body, state.rawMode);
+  lines.push(...formattedBody.split('\n'));
 
   return Math.max(0, ...lines.map((l) => l.length));
 }

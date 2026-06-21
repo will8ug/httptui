@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../src/core/reducer';
+import { formatResponseBody } from '../../src/core/formatter';
+import { formatStatusLine } from '../../src/core/responseLayout';
 import type { Action, AppState, ParsedRequest } from '../../src/core/types';
 import { getRequestContentWidth, getLeftPanelWidth, getResponseContentWidth, getDetailPanelHeight } from '../../src/utils/layout';
 import { createInitialState, reducer } from '../helpers/state';
 import { makeRequests } from '../helpers/requests';
+import { compactJsonResponse } from '../helpers/responses';
 
 const longUrlRequests: ParsedRequest[] = makeRequests(1, { longUrl: true });
 const shortUrlRequests: ParsedRequest[] = makeRequests(1);
@@ -175,6 +178,87 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
       const resultWithExplicit = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 });
 
       expect(resultWithDefault.requestHorizontalOffset).toBe(resultWithExplicit.requestHorizontalOffset);
+    });
+  });
+
+  describe('getMaxResponseLineWidth with compact JSON (formatted vs raw body)', () => {
+    it('measures formatted body lines in non-raw mode, not raw body lines', () => {
+      const state = createInitialState({
+        response: compactJsonResponse,
+        rawMode: false,
+      });
+
+      const formattedBody = formatResponseBody(compactJsonResponse.body, false);
+      const formattedMaxBodyLine = Math.max(...formattedBody.split('\n').map((l) => l.length));
+      const rawMaxBodyLine = Math.max(...compactJsonResponse.body.split('\n').map((l) => l.length));
+      const statusLineLength = formatStatusLine(compactJsonResponse).map((s) => s.text).join('').length;
+
+      expect(formattedMaxBodyLine).toBeLessThan(rawMaxBodyLine);
+
+      const expectedFormatted = Math.max(statusLineLength, formattedMaxBodyLine);
+      const expectedRaw = Math.max(statusLineLength, rawMaxBodyLine);
+
+      expect(getMaxResponseLineWidth(state)).toBe(expectedFormatted);
+      expect(getMaxResponseLineWidth(state)).not.toBe(expectedRaw);
+    });
+
+    it('measures raw body lines in raw mode (unchanged behavior)', () => {
+      const state = createInitialState({
+        response: compactJsonResponse,
+        rawMode: true,
+      });
+
+      const rawMaxBodyLine = Math.max(...compactJsonResponse.body.split('\n').map((l) => l.length));
+      const statusLineLength = formatStatusLine(compactJsonResponse).map((s) => s.text).join('').length;
+      const expected = Math.max(statusLineLength, rawMaxBodyLine);
+
+      expect(getMaxResponseLineWidth(state)).toBe(expected);
+    });
+  });
+
+  describe('SCROLL_HORIZONTAL response bound with compact JSON (formatted body)', () => {
+    it('step scroll cannot exceed formatted body bound in non-raw mode', () => {
+      const columns = 80;
+      const contentWidth = getResponseContentWidth(columns);
+      const state = createInitialState({
+        focusedPanel: 'response',
+        response: compactJsonResponse,
+        rawMode: false,
+      });
+      const formattedBound = Math.max(0, getMaxResponseLineWidth(state) - contentWidth);
+
+      const scrolledState = createInitialState({
+        focusedPanel: 'response',
+        response: compactJsonResponse,
+        rawMode: false,
+        responseHorizontalOffset: formattedBound,
+      });
+
+      const result = reducer(scrolledState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns });
+
+      expect(result.responseHorizontalOffset).toBeLessThanOrEqual(formattedBound);
+      expect(result.responseHorizontalOffset).toBe(formattedBound);
+    });
+
+    it('repeated step scroll plateaus at formatted bound, never reaching raw line length', () => {
+      const columns = 80;
+      const contentWidth = getResponseContentWidth(columns);
+      const state = createInitialState({
+        focusedPanel: 'response',
+        response: compactJsonResponse,
+        rawMode: false,
+      });
+      const formattedBound = Math.max(0, getMaxResponseLineWidth(state) - contentWidth);
+      const rawMaxBodyLine = Math.max(...compactJsonResponse.body.split('\n').map((l) => l.length));
+
+      let currentState = state;
+      for (let i = 0; i < 100; i += 1) {
+        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns });
+        expect(currentState.responseHorizontalOffset).toBeLessThanOrEqual(formattedBound);
+      }
+
+      expect(currentState.responseHorizontalOffset).toBe(formattedBound);
+      expect(currentState.responseHorizontalOffset).toBeLessThan(rawMaxBodyLine);
     });
   });
 });
