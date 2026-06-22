@@ -8,14 +8,14 @@ httptui is a fast, keyboard-driven REST client that lives in your terminal. It p
 
 ## Features
 
-- **Multi-Format Support**: Parse `.http` and `.rest` files, plus import Postman collections (`.json`) with authentication, nested folders, and multiple body types (raw, URL-encoded, form-data).
-- **Rich Variable System**: File-level (`@name = value`), system (`{{$timestamp}}`, `{{$guid}}`, `{{$randomInt}}`), process environment (`{{$processEnv}}`), and dotenv (`{{$dotenv}}`) variables. Nested references supported.
-- **Environment Management**: Load Postman or simplified environment files via `--env`, pre-register named environments in config, and switch at runtime with an interactive picker (`E`).
-- **Keyboard-Driven TUI**: Vim-style navigation, split-panel layout, request details panel (`d`), fullscreen mode (`f`), and on-screen help overlay (`?`).
-- **Response Inspection**: Colorized status codes, pretty-printed JSON with raw toggle (`r`), verbose headers (`v`), text wrapping (`w`), and search with match highlighting (`/`).
-- **mTLS & Client Certificates**: Per-host client certificates (PEM/PFX) via global or project-level config, with wildcard matching and passphrase support.
-- **Export as .http**: Save any request list (including Postman imports) to `.http` format with variables preserved (`S`).
-- **Fast & Lightweight**: Built with Ink, React, and undici. Request timing, body size metrics, 30-second timeout.
+- **Multi-Format Support**: Parse `.http`, `.rest`, and Postman collections with auth and multiple body types.
+- **Keyboard-Driven TUI**: Vim keys, split-panel layout, details panel (`d`), fullscreen (`f`), help overlay (`?`).
+- **Rich Variable System**: File, system, process env, and dotenv variables with nested references.
+- **Environment Management**: Load environment files, register named environments, switch at runtime (`E`).
+- **Response Inspection**: Colorized status codes, pretty JSON, verbose headers, text wrapping, body search.
+- **mTLS & Client Certificates**: Per-host client certificates (PEM/PFX) with wildcard matching.
+- **Export as .http**: Save requests to `.http` format with variables preserved (`S`).
+- **Fast & Lightweight**: Built with Ink and undici. Timing, size metrics, 30s timeout.
 
 ![httptui shortcuts](assets/httptui-shortcuts.png)
 
