@@ -8,12 +8,14 @@ httptui is a fast, keyboard-driven REST client that lives in your terminal. It p
 
 ## Features
 
-- **Interactive TUI**: Split-panel layout with request list and response viewer.
-- **Keyboard First**: Navigate, send requests, and toggle views entirely with shortcuts.
-- **Postman Collections**: Import and run Postman collections (`.json`) directly, with simple support for now.
-- **Variable Support**: Use file-level, system, and environment variables.
-- **Response Inspection**: Colorized status codes, headers, and pretty-printed JSON.
-- **Fast**: Built with Ink and undici for a lightweight, responsive experience.
+- **Multi-Format Support**: Parse `.http` and `.rest` files, plus import Postman collections (`.json`) with authentication, nested folders, and multiple body types (raw, URL-encoded, form-data).
+- **Rich Variable System**: File-level (`@name = value`), system (`{{$timestamp}}`, `{{$guid}}`, `{{$randomInt}}`), process environment (`{{$processEnv}}`), and dotenv (`{{$dotenv}}`) variables. Nested references supported.
+- **Environment Management**: Load Postman or simplified environment files via `--env`, pre-register named environments in config, and switch at runtime with an interactive picker (`E`).
+- **Keyboard-Driven TUI**: Vim-style navigation, split-panel layout, request details panel (`d`), fullscreen mode (`f`), and on-screen help overlay (`?`).
+- **Response Inspection**: Colorized status codes, pretty-printed JSON with raw toggle (`r`), verbose headers (`v`), text wrapping (`w`), and search with match highlighting (`/`).
+- **mTLS & Client Certificates**: Per-host client certificates (PEM/PFX) via global or project-level config, with wildcard matching and passphrase support.
+- **Export as .http**: Save any request list (including Postman imports) to `.http` format with variables preserved (`S`).
+- **Fast & Lightweight**: Built with Ink, React, and undici. Request timing, body size metrics, 30-second timeout.
 
 ![httptui shortcuts](assets/httptui-shortcuts.png)
 
@@ -228,9 +230,13 @@ DELETE https://jsonplaceholder.typicode.com/users/1
 
 httptui loads system CA certificates by default. This means certificates from your OS certificate store (macOS Keychain, Windows Certificate Store, Linux OpenSSL directories) are trusted automatically — the same behavior as browsers and VS Code REST Client.
 
-If you still encounter certificate errors like `UNABLE_TO_VERIFY_LEAF_SIGNATURE` or `SELF_SIGNED_CERT_IN_CHAIN`, try these solutions:
+When a TLS error occurs, httptui displays a smart hint suggesting the appropriate fix (e.g., `--insecure` or `NODE_EXTRA_CA_CERTS`).
 
-### 1. Point to your CA certificate file
+If you need to authenticate with a client certificate, see the [Client Certificates](#client-certificates) section for mTLS configuration.
+
+### Common fixes
+
+#### 1. Point to your CA certificate file
 
 If you have a custom CA certificate not in your OS store (e.g., a self-signed dev cert), use `NODE_EXTRA_CA_CERTS`:
 
@@ -240,7 +246,7 @@ NODE_EXTRA_CA_CERTS=/path/to/your-ca.pem httptui api.http
 
 The file should be PEM-encoded and can contain multiple certificates.
 
-### 2. Skip certificate verification (not recommended)
+#### 2. Skip certificate verification (not recommended)
 
 As a last resort, disable TLS verification entirely:
 
