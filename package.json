@@ -1,6 +1,6 @@
 {
   "name": "httptui",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Interactive TUI for sending HTTP requests from .http files",
   "type": "module",
   "bin": {
