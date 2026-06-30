@@ -1,6 +1,6 @@
-import { basename, extname } from 'node:path';
+import { basename, dirname, extname } from 'node:path';
 
-import type { Action, AppState, AppProps } from './types';
+import type { Action, AppState, AppProps, FileVariable, ParsedRequest } from './types';
 import { formatResponseBody } from './formatter';
 import { formatStatusLine } from './response-layout';
 import { mergeVariables, resolveVariables } from './variables';
@@ -31,12 +31,21 @@ export const CLEAR_SEARCH_STATE = {
   lastSearchQuery: '',
 };
 
-export function getMaxRequestLineWidth(requests: readonly { url: string }[]): number {
+export function getMaxRequestLineWidth(
+  requests: readonly ParsedRequest[],
+  variables: FileVariable[],
+  baseDir?: string,
+): number {
   if (requests.length === 0) {
     return 0;
   }
 
-  return Math.max(...requests.map((r) => 2 + 7 + getRequestTarget(r.url).length));
+  return Math.max(
+    ...requests.map((r) => {
+      const resolved = resolveVariables(r, variables, baseDir);
+      return 2 + 7 + getRequestTarget(resolved.url).length;
+    }),
+  );
 }
 
 export function getMaxResponseLineWidth(state: AppState): number {
@@ -283,7 +292,7 @@ export function reducer(state: AppState, action: Action): AppState {
       }
 
       const contentWidth = getRequestContentWidth(columns);
-      const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests) - contentWidth);
+      const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests, state.variables, dirname(state.filePath)) - contentWidth);
       return {
         ...state,
         requestHorizontalOffset: Math.min(Math.max(0, state.requestHorizontalOffset + horizontalDelta), maxOffset),
@@ -356,7 +365,7 @@ export function reducer(state: AppState, action: Action): AppState {
           return { ...state, requestHorizontalOffset: 0 };
         }
         const contentWidth = getRequestContentWidth(columns);
-        const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests) - contentWidth);
+        const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests, state.variables, dirname(state.filePath)) - contentWidth);
         return { ...state, requestHorizontalOffset: maxOffset };
       }
 

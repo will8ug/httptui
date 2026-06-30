@@ -122,7 +122,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
       const requests = makeRequests(1, { longUrl: true });
       const columns = 80;
       const contentWidth = getRequestContentWidth(columns);
-      const maxWidth = getMaxRequestLineWidth(requests);
+      const maxWidth = getMaxRequestLineWidth(requests, []);
       const expected = clamp(maxWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
 
       const state = createInitialState({

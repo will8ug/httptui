@@ -532,6 +532,9 @@ return (
           focused={state.focusedPanel === 'requests' || state.maximizedPanel === 'requests'}
           scrollOffset={state.requestScrollOffset}
           horizontalOffset={state.requestHorizontalOffset}
+          // Recomputed by SWITCH_ENV/RELOAD_FILE/LOAD_FILE via mergeVariables — free env reactivity.
+          variables={state.variables}
+          baseDir={dirname(state.filePath)}
           contentWidthOverride={state.maximizedPanel === 'requests' ? fullscreenRequestContentWidth : undefined}
           visibleHeightOverride={state.maximizedPanel === 'requests' ? fullscreenVisibleHeight : undefined}
         />

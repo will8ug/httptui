@@ -65,7 +65,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
     it('clamps offset to max(0, maxLineWidth - contentWidth) on request panel', () => {
       const columns = 80;
       const contentWidth = getRequestContentWidth(columns);
-      const maxLineWidth = getMaxRequestLineWidth(longUrlRequests);
+      const maxLineWidth = getMaxRequestLineWidth(longUrlRequests, []);
       const expectedMaxOffset = Math.max(0, maxLineWidth - contentWidth);
 
       const state = createInitialState({

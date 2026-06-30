@@ -1,7 +1,8 @@
 import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
-import type { ParsedRequest } from '../core/types';
+import type { FileVariable, ParsedRequest } from '../core/types';
+import { resolveVariables } from '../core/variables';
 import { getMethodColor } from '../utils/colors';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getRequestContentWidth, getRequestVisibleHeight } from '../utils/layout';
 import { getRequestTarget } from '../utils/request';
@@ -13,6 +14,8 @@ interface RequestListProps {
   focused: boolean;
   scrollOffset: number;
   horizontalOffset: number;
+  variables: FileVariable[];
+  baseDir?: string;
   contentWidthOverride?: number;
   visibleHeightOverride?: number;
 }
@@ -23,6 +26,8 @@ export function RequestList({
   focused,
   scrollOffset,
   horizontalOffset,
+  variables,
+  baseDir,
   contentWidthOverride,
   visibleHeightOverride,
 }: RequestListProps): React.ReactElement {
@@ -48,7 +53,8 @@ export function RequestList({
         const isSelected = actualIndex === selectedIndex;
         const prefix = isSelected ? '▸ ' : '  ';
         const methodLabel = request.method.padEnd(7, ' ');
-        const target = getRequestTarget(request.url);
+        const resolved = resolveVariables(request, variables, baseDir);
+        const target = getRequestTarget(resolved.url);
 
         if (horizontalOffset > 0) {
           const fullLine = `${prefix}${methodLabel}${target}`;
