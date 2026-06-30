@@ -24,7 +24,7 @@
 - [x] 4.2 Test: rendering with a file variable — given requests with `url: '{{baseUrl}}/posts'` and `variables: [{ name: 'baseUrl', value: 'https://api.example.com' }]`, the rendered output contains `GET /posts` and does NOT contain `{{baseUrl}}`
 - [x] 4.3 Test: rendering with nested file variables — `@hostname = api.example.com`, `@baseUrl = https://{{hostname}}`, `GET {{baseUrl}}/posts` — the output contains `GET /posts`
 - [x] 4.4 Test: unresolved variable fallback — `url: '{{unknown}}/posts'`, `variables: []` — the output contains `{{unknown}}` (current behavior preserved; assertion adjusted for terminal truncation)
-- [x] 4.5 Test: environment override takes precedence — same request `GET {{baseUrl}}/posts` with file `baseUrl = https://api.local` and environment `baseUrl = https://api.dev.com` merged into `variables` (use `mergeVariables`) — the output contains `GET /posts` and `resolveVariables(request, merged).url` equals `https://api.dev.com/posts`
+- [x] 4.5 Removed redundant "environment override" test — env-over-file precedence is already covered in `test/core/variables.test.ts:250` (`mergeVariables` > "environment variables override file variables"). The RequestList rendering assertion (`toContain('/posts')`) could not distinguish env override from file var since `getRequestTarget` only returns the pathname.
 - [x] 4.6 Reducer unit test in `test/core/request-list-display.test.ts` verifying `getMaxRequestLineWidth` returns a length consistent with the resolved path: with `url: '{{baseUrl}}/very-long-path'` and `baseUrl = https://x.io`, the computed width equals `2 + 7 + '/very-long-path'.length`; also tests unresolved fallback returns raw URL length
 
 ## 5. Integration tests

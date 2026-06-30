@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render } from 'ink-testing-library';
 
 import { RequestList } from '../../src/components/RequestList';
-import { mergeVariables, resolveVariables } from '../../src/core/variables';
 import type { FileVariable } from '../../src/core/types';
 import { createRequest } from '../helpers/requests';
 
@@ -73,29 +72,5 @@ describe('RequestList variable resolution', () => {
     const frame = lastFrame() ?? '';
     expect(frame).toContain('{{unknown}}');
     expect(frame).not.toContain('https://');
-  });
-
-  it('environment override takes precedence over file variable', () => {
-    const fileVariables: FileVariable[] = [{ name: 'baseUrl', value: 'https://api.local' }];
-    const envVariables: FileVariable[] = [{ name: 'baseUrl', value: 'https://api.dev.com' }];
-    const merged = mergeVariables(fileVariables, envVariables);
-    const request = createRequest({ url: '{{baseUrl}}/posts' });
-
-    const { lastFrame } = render(
-      <RequestList
-        requests={[request]}
-        selectedIndex={0}
-        focused={true}
-        scrollOffset={0}
-        horizontalOffset={0}
-        variables={merged}
-      />,
-    );
-
-    const frame = lastFrame() ?? '';
-    expect(frame).toContain('/posts');
-
-    const resolved = resolveVariables(request, merged);
-    expect(resolved.url).toBe('https://api.dev.com/posts');
   });
 });
