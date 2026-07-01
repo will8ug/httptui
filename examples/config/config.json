@@ -1,0 +1,12 @@
+{
+  "certificates": {
+    "localhost": {
+      "cert": "./certs/client.crt",
+      "key": "./certs/client.key",
+      "ca": "./certs/ca.crt"
+    }
+  },
+  "environments": [
+    {"name": "LocalAPI", "file": "env/LocalAPI.json"}
+  ]
+}
