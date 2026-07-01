@@ -1,0 +1,35 @@
+## 1. Add width helpers to `src/utils/scroll.ts`
+
+- [ ] 1.1 Add imports to `src/utils/scroll.ts`: `formatStatusLine` from `../core/response-layout` (combine with existing `computeResponseLayout`/`ResponseForLayout` import), `resolveVariables` from `../core/variables`, `getRequestTarget` from `./request`, and types `ParsedRequest`, `FileVariable`, `ResponseData` from `../core/types`
+- [ ] 1.2 Add `getMaxRequestLineWidth(options: { requests: readonly ParsedRequest[]; variables: FileVariable[]; baseDir?: string }): number` to `scroll.ts`. Implement by destructuring `options`, returning `0` when `requests.length === 0`, then `Math.max(...requests.map(r => 2 + 7 + getRequestTarget(resolveVariables(r, variables, baseDir).url)))`. Body is identical to the current `reducer.ts` implementation, just signature shape differs
+- [ ] 1.3 Add `getMaxResponseLineWidth(options: { response: ResponseData | null; verbose: boolean; rawMode: boolean }): number` to `scroll.ts`. Destructure `options`, return `0` when `response` is null, then build lines from `formatStatusLine(response)` joined, optional `verbose` headers, and `formatResponseBody(response.body, rawMode)` split. Return `Math.max(0, ...lines.map(l => l.length))`
+- [ ] 1.4 Add `getMaxDetailsLineWidth(options: { request: ParsedRequest | undefined; variables: FileVariable[] }): number` to `scroll.ts`. Destructure `options`, return `0` when `request` is undefined, `resolveVariables(request, variables)`, then build lines from `${method} ${url}`, headers, and body. Return `Math.max(0, ...lines.map(l => l.length))`
+- [ ] 1.5 Verify `src/utils/scroll.ts` typechecks via `lsp_diagnostics` (no `AppState` import; no errors)
+
+## 2. Update `src/core/reducer.ts`
+
+- [ ] 2.1 Remove the three `export function getMax*LineWidth` declarations from `src/core/reducer.ts` (lines ~34-95 in the current file)
+- [ ] 2.2 Remove now-unused imports from `reducer.ts`: `formatResponseBody` from `./formatter` (was only used by `getMaxResponseLineWidth` — confirm no other usage in `reducer.ts` first), `formatStatusLine` from `./response-layout` (same check), `getRequestTarget` from `../utils/request` (same check). Keep `resolveVariables` import — it is still used by `computeVerticalMaxOffset` in `reducer.ts`. Add `getMaxRequestLineWidth`, `getMaxResponseLineWidth`, `getMaxDetailsLineWidth` to the existing `import { ... } from '../utils/scroll'` statement
+- [ ] 2.3 Update the 6 call sites in `reducer.ts`:
+  - `SCROLL_HORIZONTAL` > requests branch (~line 295): `getMaxRequestLineWidth(state.requests, state.variables, dirname(state.filePath))` → `getMaxRequestLineWidth({ requests: state.requests, variables: state.variables, baseDir: dirname(state.filePath) })`
+  - `SCROLL_HORIZONTAL` > details branch (~line 278): `getMaxDetailsLineWidth(state)` → `getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables })`
+  - `SCROLL_HORIZONTAL` > response branch (~line 287): `getMaxResponseLineWidth(state)` → `getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode })`
+  - `JUMP_HORIZONTAL` > requests branch (~line 368): same shape as SCROLL_HORIZONTAL requests
+  - `JUMP_HORIZONTAL` > details branch (~line 377): same shape as SCROLL_HORIZONTAL details
+  - `JUMP_HORIZONTAL` > response branch (~line 387): same shape as SCROLL_HORIZONTAL response
+- [ ] 2.4 Run `npm run build` and `lsp_diagnostics` on `src/core/reducer.ts` — confirm zero errors and that removed imports were genuinely unused (if `tsc` complains about an import that's still used, restore it)
+
+## 3. Update test callers (4 files — independent, can run in parallel)
+
+- [ ] 3.1 `test/core/horizontal-scroll-boundary.test.ts`: change `import { getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../src/core/reducer'` → `from '../../src/utils/scroll'`. Update `getMaxRequestLineWidth(longUrlRequests, [])` (~line 68) → `getMaxRequestLineWidth({ requests: longUrlRequests, variables: [] })`. Update the ~7 `getMaxResponseLineWidth(state)` call sites (~lines 121, 201, 202, 228, 251) → `getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode })`. Note: the `getMaxResponseLineWidth(state)` calls at lines 201/202 pass a state whose `response`/`verbose`/`rawMode` are set via `createInitialState` overrides — destructure from the same state object
+- [ ] 3.2 `test/core/edge-jump.test.ts`: change `import { getMaxRequestLineWidth, getMaxResponseLineWidth, getMaxDetailsLineWidth } from '../../src/core/reducer'` → `from '../../src/utils/scroll'` (keep other `reducer`/`createInitialState` imports). Update `getMaxRequestLineWidth(requests, [])` (~line 125) → option bag. Update `getMaxDetailsLineWidth(state)` (~line 182) → `getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables })`. Update `getMaxResponseLineWidth(state)` (~lines 214, 234, 252) → `getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode })`
+- [ ] 3.3 `test/core/request-list-display.test.ts`: change `import { getMaxRequestLineWidth } from '../../src/core/reducer'` → `from '../../src/utils/scroll'`. Update both `getMaxRequestLineWidth(requests, variables)` and `getMaxRequestLineWidth(requests, [])` call sites to option bags: `getMaxRequestLineWidth({ requests, variables })` and `getMaxRequestLineWidth({ requests, variables: [] })` respectively
+- [ ] 3.4 `test/integration/request-list-resolution.test.ts`: change `import { getMaxRequestLineWidth, reducer } from '../../src/core/reducer'` → split into `import { getMaxRequestLineWidth } from '../../src/utils/scroll'` and `import { reducer } from '../../src/core/reducer'` (or keep `reducer` from the existing `../helpers/state` re-export if that's where it's already imported). Update the two `getMaxRequestLineWidth(switchedState.requests, switchedState.variables, switchedState.filePath)` / `getMaxRequestLineWidth(reloadedState.requests, reloadedState.variables, reloadedState.filePath)` call sites to option bags
+
+## 4. Verification
+
+- [ ] 4.1 Run `npx vitest run` — all 547 tests pass. If any test fails due to a wrong field name in an option bag, fix the call site (not the function)
+- [ ] 4.2 Run `npm run build` — passes with no type errors
+- [ ] 4.3 Run `npm run lint` — no NEW errors in `src/utils/scroll.ts`, `src/core/reducer.ts`, or the 4 updated test files. Pre-existing lint errors in untouched files (`certificates.ts`, `env-parser.ts`, `certificates.test.ts`, `config.test.ts`) are noted but not attributed to this change
+- [ ] 4.4 Run `lsp_diagnostics` (severity=error) on `src/utils/scroll.ts`, `src/core/reducer.ts`, and all 4 updated test files — zero errors on each
+- [ ] 4.5 Confirm `src/utils/scroll.ts` does NOT import `AppState` from `../core/types` (it imports `ParsedRequest`, `FileVariable`, `ResponseData` only). Confirm `src/core/reducer.ts` no longer exports `getMaxRequestLineWidth`, `getMaxResponseLineWidth`, or `getMaxDetailsLineWidth` (grep for `export function getMax` in `reducer.ts` — should return 0 matches)
