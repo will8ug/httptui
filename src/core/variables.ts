@@ -40,10 +40,6 @@ export function mergeVariables(
   return result;
 }
 
-export function resolveFileVariables(variables: FileVariable[], baseDir?: string): Map<string, string> {
-  return resolveFileVariablesInternal(variables, createResolutionContext(baseDir));
-}
-
 export function resolveVariables(
   request: ParsedRequest,
   variables: FileVariable[],

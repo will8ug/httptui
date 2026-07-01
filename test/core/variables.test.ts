@@ -4,31 +4,24 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { mergeVariables, resolveFileVariables, resolveVariables } from '../../src/core/variables.js';
+import { mergeVariables, resolveVariables } from '../../src/core/variables.js';
 import type { ParsedRequest } from '../../src/core/types.js';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-describe('resolveFileVariables', () => {
-  it('resolves file variables that reference other file variables', () => {
-    const resolved = resolveFileVariables([
-      { name: 'host', value: 'api.example.com' },
-      { name: 'baseUrl', value: 'https://{{host}}/v1' },
-    ]);
-
-    expect(resolved.get('host')).toBe('api.example.com');
-    expect(resolved.get('baseUrl')).toBe('https://api.example.com/v1');
-  });
-
-  it('resolves file variables that reference system variables', () => {
-    const resolved = resolveFileVariables([{ name: 'token', value: 'Bearer {{$timestamp}}' }]);
-
-    expect(resolved.get('token')).toMatch(/^Bearer \d+$/);
-  });
-});
-
 describe('resolveVariables', () => {
+  it('resolves nested file variables that reference other file variables', () => {
+    const resolved = resolveVariables(
+      createRequest({ url: '{{baseUrl}}/users' }),
+      [
+        { name: 'host', value: 'api.example.com' },
+        { name: 'baseUrl', value: 'https://{{host}}/v1' },
+      ],
+    );
+
+    expect(resolved.url).toBe('https://api.example.com/v1/users');
+  });
   it('replaces file variables in request values', () => {
     const resolved = resolveVariables(
       createRequest({ url: 'https://{{host}}/users' }),
