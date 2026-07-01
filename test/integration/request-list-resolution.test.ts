@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMaxRequestLineWidth, reducer } from '../../src/core/reducer';
+import { getMaxRequestLineWidth } from '../../src/utils/scroll';
 import { resolveVariables } from '../../src/core/variables';
 import type { FileVariable, ParsedRequest } from '../../src/core/types';
 import { createInitialState, reducer as stateReducer } from '../helpers/state';
@@ -33,7 +33,7 @@ describe('request list re-resolves on env switch', () => {
     const resolvedUrl = resolveVariables(requests[0], switchedState.variables, switchedState.filePath).url;
     expect(resolvedUrl).toBe('https://api.dev.com/posts');
 
-    const width = getMaxRequestLineWidth(switchedState.requests, switchedState.variables, switchedState.filePath);
+    const width = getMaxRequestLineWidth({ requests: switchedState.requests, variables: switchedState.variables, baseDir: switchedState.filePath });
     expect(width).toBe(2 + 7 + '/posts'.length);
   });
 
@@ -89,7 +89,7 @@ describe('request list re-resolves on file reload', () => {
 
     expect(reloadedState.variables).toContainEqual({ name: 'baseUrl', value: 'https://b.com' });
 
-    const width = getMaxRequestLineWidth(reloadedState.requests, reloadedState.variables, reloadedState.filePath);
+    const width = getMaxRequestLineWidth({ requests: reloadedState.requests, variables: reloadedState.variables, baseDir: reloadedState.filePath });
     expect(width).toBe(2 + 7 + '/very-long-path'.length);
   });
 });

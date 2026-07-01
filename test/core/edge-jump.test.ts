@@ -3,13 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../helpers/state';
 import { makeRequests } from '../helpers/requests';
 import { longResponse, compactJsonResponse } from '../helpers/responses';
-import {
-  reducer,
-  getMaxRequestLineWidth,
-  getMaxResponseLineWidth,
-  getMaxDetailsLineWidth,
-  clamp,
-} from '../../src/core/reducer';
+import { reducer, clamp } from '../../src/core/reducer';
+import { getMaxRequestLineWidth, getMaxResponseLineWidth, getMaxDetailsLineWidth } from '../../src/utils/scroll';
 import type { Action, AppState, ParsedRequest, ResponseData } from '../../src/core/types';
 import { getRequestContentWidth, getResponseContentWidth } from '../../src/utils/layout';
 
@@ -122,7 +117,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
       const requests = makeRequests(1, { longUrl: true });
       const columns = 80;
       const contentWidth = getRequestContentWidth(columns);
-      const maxWidth = getMaxRequestLineWidth(requests, []);
+      const maxWidth = getMaxRequestLineWidth({ requests, variables: [] });
       const expected = clamp(maxWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
 
       const state = createInitialState({
@@ -179,7 +174,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
         focusedPanel: 'details',
         requests,
       });
-      const expected = clamp(getMaxDetailsLineWidth(state) - contentWidth, 0, Number.POSITIVE_INFINITY);
+      const expected = clamp(getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables }) - contentWidth, 0, Number.POSITIVE_INFINITY);
 
       const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
 
@@ -211,7 +206,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
         response: longResponse,
         wrapMode: 'nowrap',
       });
-      const maxLineWidth = getMaxResponseLineWidth(state);
+      const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
       const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
 
       const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
@@ -231,7 +226,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
         rawMode: false,
         wrapMode: 'nowrap',
       });
-      const maxLineWidth = getMaxResponseLineWidth(state);
+      const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
       const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
 
       const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
@@ -249,7 +244,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
         rawMode: true,
         wrapMode: 'nowrap',
       });
-      const maxLineWidth = getMaxResponseLineWidth(state);
+      const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
       const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
 
       const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });

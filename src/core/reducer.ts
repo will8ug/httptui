@@ -1,12 +1,10 @@
 import { basename, dirname, extname } from 'node:path';
 
-import type { Action, AppState, AppProps, FileVariable, ParsedRequest } from './types';
+import type { Action, AppState, AppProps } from './types';
 import { formatResponseBody } from './formatter';
-import { formatStatusLine } from './response-layout';
 import { mergeVariables, resolveVariables } from './variables';
 import { DEFAULT_TERMINAL_ROWS, getEnvPickerVisibleHeight, getRequestContentWidth, getRequestVisibleHeight, getResponseContentWidth } from '../utils/layout';
-import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
-import { getRequestTarget } from '../utils/request';
+import { getDetailsTotalLines, getMaxDetailsLineWidth, getMaxRequestLineWidth, getMaxResponseLineWidth, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -30,68 +28,6 @@ export const CLEAR_SEARCH_STATE = {
   currentMatchIndex: 0,
   lastSearchQuery: '',
 };
-
-export function getMaxRequestLineWidth(
-  requests: readonly ParsedRequest[],
-  variables: FileVariable[],
-  baseDir?: string,
-): number {
-  if (requests.length === 0) {
-    return 0;
-  }
-
-  return Math.max(
-    ...requests.map((r) => {
-      const resolved = resolveVariables(r, variables, baseDir);
-      return 2 + 7 + getRequestTarget(resolved.url).length;
-    }),
-  );
-}
-
-export function getMaxResponseLineWidth(state: AppState): number {
-  if (!state.response) {
-    return 0;
-  }
-
-  const lines: string[] = [];
-  const res = state.response;
-
-  lines.push(formatStatusLine(res).map((segment) => segment.text).join(''));
-
-  if (state.verbose) {
-    for (const [name, value] of Object.entries(res.headers)) {
-      lines.push(`${name}: ${value}`);
-    }
-  }
-
-  const formattedBody = formatResponseBody(res.body, state.rawMode);
-  lines.push(...formattedBody.split('\n'));
-
-  return Math.max(0, ...lines.map((l) => l.length));
-}
-
-export function getMaxDetailsLineWidth(state: AppState): number {
-  const request = state.requests[state.selectedIndex];
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
-  if (!request) {
-    return 0;
-  }
-
-  const resolved = resolveVariables(request, state.variables);
-  const lines: string[] = [];
-
-  lines.push(`${resolved.method} ${resolved.url}`);
-
-  for (const [name, value] of Object.entries(resolved.headers)) {
-    lines.push(`${name}: ${value}`);
-  }
-
-  if (resolved.body !== undefined) {
-    lines.push(...resolved.body.split('\n'));
-  }
-
-  return Math.max(0, ...lines.map((l) => l.length));
-}
 
 export function computeVerticalMaxOffset(
   state: AppState,
@@ -275,7 +211,7 @@ export function reducer(state: AppState, action: Action): AppState {
 
       if (state.focusedPanel === 'details') {
         const contentWidth = getResponseContentWidth(columns);
-        const maxOffset = Math.max(0, getMaxDetailsLineWidth(state) - contentWidth);
+        const maxOffset = Math.max(0, getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables }) - contentWidth);
         return {
           ...state,
           detailsHorizontalOffset: Math.min(Math.max(0, state.detailsHorizontalOffset + horizontalDelta), maxOffset),
@@ -284,7 +220,7 @@ export function reducer(state: AppState, action: Action): AppState {
 
       if (state.focusedPanel === 'response') {
         const contentWidth = getResponseContentWidth(columns);
-        const maxOffset = Math.max(0, getMaxResponseLineWidth(state) - contentWidth);
+        const maxOffset = Math.max(0, getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode }) - contentWidth);
         return {
           ...state,
           responseHorizontalOffset: Math.min(Math.max(0, state.responseHorizontalOffset + horizontalDelta), maxOffset),
@@ -292,7 +228,7 @@ export function reducer(state: AppState, action: Action): AppState {
       }
 
       const contentWidth = getRequestContentWidth(columns);
-      const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests, state.variables, dirname(state.filePath)) - contentWidth);
+      const maxOffset = Math.max(0, getMaxRequestLineWidth({ requests: state.requests, variables: state.variables, baseDir: dirname(state.filePath) }) - contentWidth);
       return {
         ...state,
         requestHorizontalOffset: Math.min(Math.max(0, state.requestHorizontalOffset + horizontalDelta), maxOffset),
@@ -365,7 +301,7 @@ export function reducer(state: AppState, action: Action): AppState {
           return { ...state, requestHorizontalOffset: 0 };
         }
         const contentWidth = getRequestContentWidth(columns);
-        const maxOffset = Math.max(0, getMaxRequestLineWidth(state.requests, state.variables, dirname(state.filePath)) - contentWidth);
+        const maxOffset = Math.max(0, getMaxRequestLineWidth({ requests: state.requests, variables: state.variables, baseDir: dirname(state.filePath) }) - contentWidth);
         return { ...state, requestHorizontalOffset: maxOffset };
       }
 
@@ -374,7 +310,7 @@ export function reducer(state: AppState, action: Action): AppState {
           return { ...state, detailsHorizontalOffset: 0 };
         }
         const contentWidth = getResponseContentWidth(columns);
-        const maxOffset = Math.max(0, getMaxDetailsLineWidth(state) - contentWidth);
+        const maxOffset = Math.max(0, getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables }) - contentWidth);
         return { ...state, detailsHorizontalOffset: maxOffset };
       }
 
@@ -384,7 +320,7 @@ export function reducer(state: AppState, action: Action): AppState {
           return { ...state, responseHorizontalOffset: 0 };
         }
         const contentWidth = getResponseContentWidth(columns);
-        const maxOffset = Math.max(0, getMaxResponseLineWidth(state) - contentWidth);
+        const maxOffset = Math.max(0, getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode }) - contentWidth);
         return { ...state, responseHorizontalOffset: maxOffset };
       }
 

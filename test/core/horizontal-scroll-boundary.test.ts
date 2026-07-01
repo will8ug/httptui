@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../src/core/reducer';
+import { getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../src/utils/scroll';
 import { formatResponseBody } from '../../src/core/formatter';
 import { formatStatusLine } from '../../src/core/response-layout';
 import type { Action, AppState, ParsedRequest } from '../../src/core/types';
@@ -65,7 +65,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
     it('clamps offset to max(0, maxLineWidth - contentWidth) on request panel', () => {
       const columns = 80;
       const contentWidth = getRequestContentWidth(columns);
-      const maxLineWidth = getMaxRequestLineWidth(longUrlRequests, []);
+      const maxLineWidth = getMaxRequestLineWidth({ requests: longUrlRequests, variables: [] });
       const expectedMaxOffset = Math.max(0, maxLineWidth - contentWidth);
 
       const state = createInitialState({
@@ -118,7 +118,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         focusedPanel: 'response',
         response: longResponse,
       });
-      const maxLineWidth = getMaxResponseLineWidth(state);
+      const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
       const expectedMaxOffset = Math.max(0, maxLineWidth - contentWidth);
 
       const scrolledState = createInitialState({
@@ -198,8 +198,8 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
       const expectedFormatted = Math.max(statusLineLength, formattedMaxBodyLine);
       const expectedRaw = Math.max(statusLineLength, rawMaxBodyLine);
 
-      expect(getMaxResponseLineWidth(state)).toBe(expectedFormatted);
-      expect(getMaxResponseLineWidth(state)).not.toBe(expectedRaw);
+      expect(getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode })).toBe(expectedFormatted);
+      expect(getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode })).not.toBe(expectedRaw);
     });
 
     it('measures raw body lines in raw mode (unchanged behavior)', () => {
@@ -212,7 +212,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
       const statusLineLength = formatStatusLine(compactJsonResponse).map((s) => s.text).join('').length;
       const expected = Math.max(statusLineLength, rawMaxBodyLine);
 
-      expect(getMaxResponseLineWidth(state)).toBe(expected);
+      expect(getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode })).toBe(expected);
     });
   });
 
@@ -225,7 +225,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         response: compactJsonResponse,
         rawMode: false,
       });
-      const formattedBound = Math.max(0, getMaxResponseLineWidth(state) - contentWidth);
+      const formattedBound = Math.max(0, getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode }) - contentWidth);
 
       const scrolledState = createInitialState({
         focusedPanel: 'response',
@@ -248,7 +248,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         response: compactJsonResponse,
         rawMode: false,
       });
-      const formattedBound = Math.max(0, getMaxResponseLineWidth(state) - contentWidth);
+      const formattedBound = Math.max(0, getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode }) - contentWidth);
       const rawMaxBodyLine = Math.max(...compactJsonResponse.body.split('\n').map((l) => l.length));
 
       let currentState = state;
