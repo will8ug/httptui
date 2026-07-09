@@ -7,6 +7,7 @@
     }
   },
   "environments": [
-    {"name": "LocalAPI", "file": "env/LocalAPI.json"}
+    {"name": "ExampleLocal", "file": "env/example-local.json"},
+    {"name": "ExampleStaging", "file": "env/example-staging.json"}
   ]
 }

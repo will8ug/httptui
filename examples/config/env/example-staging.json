@@ -1,0 +1,6 @@
+{
+  "name": "ExampleStaging",
+  "values": [
+    { "key": "baseUrl", "value": "http://staging-hostname:10001" }
+  ]
+}

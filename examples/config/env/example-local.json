@@ -1,5 +1,5 @@
 {
-  "name": "LocalAPI",
+  "name": "ExampleLocal",
   "values": [
     { "key": "baseUrl", "value": "http://local-api-hostname:10001" },
     { "key": "mtlsBaseUrl", "value": "https://local-api-hostname:10443" }
