@@ -1,0 +1,26 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Tags API", "version": "1.0.0" },
+  "servers": [{ "url": "https://api.example.com" }],
+  "paths": {
+    "/users": {
+      "get": {
+        "operationId": "listUsers",
+        "tags": ["Users"]
+      },
+      "post": {
+        "operationId": "createUser",
+        "tags": ["Users"]
+      }
+    },
+    "/orders": {
+      "get": {
+        "summary": "List orders",
+        "tags": ["Orders"]
+      }
+    },
+    "/health": {
+      "get": {}
+    }
+  }
+}

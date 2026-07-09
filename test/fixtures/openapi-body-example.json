@@ -1,0 +1,34 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Body Example API", "version": "1.0.0" },
+  "servers": [{ "url": "https://api.example.com" }],
+  "paths": {
+    "/users": {
+      "post": {
+        "operationId": "createUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": { "name": "Alice", "email": "alice@example.com" }
+            }
+          }
+        }
+      }
+    },
+    "/users-named": {
+      "post": {
+        "operationId": "createUserNamed",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "alice": { "value": { "name": "Alice", "email": "alice@example.com" } },
+                "bob": { "value": { "name": "Bob", "email": "bob@example.com" } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

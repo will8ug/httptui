@@ -1,0 +1,53 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Auth API", "version": "1.0.0" },
+  "servers": [{ "url": "https://api.example.com" }],
+  "paths": {
+    "/secure/bearer": {
+      "get": {
+        "operationId": "bearerEndpoint",
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/secure/basic": {
+      "get": {
+        "operationId": "basicEndpoint",
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/secure/apikey-header": {
+      "get": {
+        "operationId": "apiKeyHeaderEndpoint",
+        "security": [{ "apiKeyHeader": [] }]
+      }
+    },
+    "/secure/apikey-query": {
+      "get": {
+        "operationId": "apiKeyQueryEndpoint",
+        "security": [{ "apiKeyQuery": [] }]
+      }
+    },
+    "/secure/apikey-cookie": {
+      "get": {
+        "operationId": "apiKeyCookieEndpoint",
+        "security": [{ "apiKeyCookie": [] }]
+      }
+    },
+    "/secure/oauth": {
+      "get": {
+        "operationId": "oauthEndpoint",
+        "security": [{ "oauth2Auth": [] }]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer" },
+      "basicAuth": { "type": "http", "scheme": "basic" },
+      "apiKeyHeader": { "type": "apiKey", "in": "header", "name": "X-API-Key" },
+      "apiKeyQuery": { "type": "apiKey", "in": "query", "name": "api_key" },
+      "apiKeyCookie": { "type": "apiKey", "in": "cookie", "name": "session" },
+      "oauth2Auth": { "type": "oauth2", "flows": {} }
+    }
+  }
+}

@@ -22,6 +22,7 @@ import type { AppProps, AppState, RequestError, ResponseData } from './core/type
 import { parseHttpFile } from './core/parser';
 import { serializeHttpFile } from './core/http-serializer';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
+import { parseOpenApiSpec } from './core/openapi-parser';
 import { parseEnvironmentFile } from './core/env-parser';
 import { resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
@@ -167,10 +168,13 @@ export function App(props: AppProps): React.ReactElement {
 
         try {
           const content = readFileSync(resolvedPath, 'utf8');
+          const format = detectFormat(resolvedPath, content);
           const parseResult =
-            detectFormat(resolvedPath, content) === 'postman'
+            format === 'postman'
               ? parsePostmanCollection(content)
-              : parseHttpFile(content);
+              : format === 'openapi'
+                ? parseOpenApiSpec(content)
+                : parseHttpFile(content);
 
           if (parseResult.requests.length === 0) {
             dispatch({ type: 'SET_FILE_LOAD_ERROR', error: `No requests found in ${inputPath}` });
@@ -449,10 +453,13 @@ export function App(props: AppProps): React.ReactElement {
     if (input === 'R') {
       try {
         const content = readFileSync(state.filePath, 'utf8');
+        const format = detectFormat(state.filePath, content);
         const parseResult =
-          detectFormat(state.filePath, content) === 'postman'
+          format === 'postman'
             ? parsePostmanCollection(content)
-            : parseHttpFile(content);
+            : format === 'openapi'
+              ? parseOpenApiSpec(content)
+              : parseHttpFile(content);
         dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
         setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
       } catch (error) {

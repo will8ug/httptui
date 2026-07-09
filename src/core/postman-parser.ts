@@ -260,13 +260,21 @@ function flattenCollectionItems(items: any[], parentPath?: string): any[] {
   return result;
 }
 
-export function detectFormat(filePath: string, content: string): 'http' | 'postman' {
+export function detectFormat(filePath: string, content: string): 'http' | 'postman' | 'openapi' {
   if (!filePath.toLowerCase().endsWith('.json')) {
     return 'http';
   }
 
   try {
     const parsed = JSON.parse(content);
+
+    if (parsed?.openapi && typeof parsed.openapi === 'string') {
+      return 'openapi';
+    }
+
+    if (parsed?.swagger && typeof parsed.swagger === 'string') {
+      return 'openapi';
+    }
 
     if (parsed?.info?.schema && typeof parsed.info.schema === 'string' && parsed.info.schema.toLowerCase().includes('postman')) {
       return 'postman';

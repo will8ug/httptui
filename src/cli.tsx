@@ -9,6 +9,7 @@ import { parseArgs } from './args';
 import { loadConfig, resolveCertPath } from './core/config';
 import { parseHttpFile } from './core/parser';
 import { detectFormat, parsePostmanCollection } from './core/postman-parser';
+import { parseOpenApiSpec } from './core/openapi-parser';
 import { parseEnvironmentFile } from './core/env-parser';
 import { aggregateEnvironments } from './core/env-aggregator';
 import { mergeVariables } from './core/variables';
@@ -34,10 +35,13 @@ if (envPath && envName) {
 }
 
 const content = readFileSync(filePath, 'utf8');
+const format = detectFormat(filePath, content);
 const parseResult: ParseResult =
-  detectFormat(filePath, content) === 'postman'
+  format === 'postman'
     ? parsePostmanCollection(content)
-    : parseHttpFile(content);
+    : format === 'openapi'
+      ? parseOpenApiSpec(content)
+      : parseHttpFile(content);
 
 if (parseResult.requests.length === 0) {
   exitWithError(`No requests found in ${filePath}`);

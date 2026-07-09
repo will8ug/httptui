@@ -1,0 +1,30 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Urlencoded API", "version": "1.0.0" },
+  "servers": [{ "url": "https://api.example.com" }],
+  "paths": {
+    "/submit": {
+      "post": {
+        "operationId": "submitForm",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "$ref": "#/components/schemas/FormSubmission" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FormSubmission": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "example": "John" },
+          "email": { "type": "string", "example": "john@example.com" }
+        }
+      }
+    }
+  }
+}

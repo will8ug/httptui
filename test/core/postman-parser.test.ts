@@ -31,6 +31,21 @@ describe('detectFormat', () => {
   it('returns http for JSON without postman structure', () => {
     expect(detectFormat('config.json', JSON.stringify({ key: 'value' }))).toBe('http');
   });
+
+  it('returns openapi for a JSON file with top-level openapi field', () => {
+    const content = JSON.stringify({ openapi: '3.0.3', paths: {} });
+    expect(detectFormat('spec.json', content)).toBe('openapi');
+  });
+
+  it('returns openapi for a JSON file with swagger field (Swagger 2.0)', () => {
+    const content = JSON.stringify({ swagger: '2.0', paths: {} });
+    expect(detectFormat('spec.json', content)).toBe('openapi');
+  });
+
+  it('does not misclassify Postman collection as openapi', () => {
+    const content = readFixture('postman-basic.json');
+    expect(detectFormat('collection.json', content)).toBe('postman');
+  });
 });
 
 describe('parsePostmanCollection', () => {
