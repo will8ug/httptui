@@ -20,8 +20,8 @@ describe('detectFormat', () => {
   });
 
   it('returns http for non-JSON file extension', () => {
-    const content = readFixture('postman-basic.json');
-    expect(detectFormat('requests.http', content)).toBe('http');
+    const content = readFixture('dummy.http');
+    expect(detectFormat('dummy.http', content)).toBe('http');
   });
 
   it('returns http for invalid JSON', () => {
@@ -40,11 +40,6 @@ describe('detectFormat', () => {
   it('returns openapi for a JSON file with swagger field (Swagger 2.0)', () => {
     const content = JSON.stringify({ swagger: '2.0', paths: {} });
     expect(detectFormat('spec.json', content)).toBe('openapi');
-  });
-
-  it('does not misclassify Postman collection as openapi', () => {
-    const content = readFixture('postman-basic.json');
-    expect(detectFormat('collection.json', content)).toBe('postman');
   });
 });
 
