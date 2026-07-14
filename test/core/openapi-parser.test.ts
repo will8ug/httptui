@@ -1,25 +1,25 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 
-import { parseOpenApiSpec } from '../../src/core/openapi-parser';
+import { parseOpenApiSpec, logger } from '../../src/core/openapi-parser';
 
 function readFixture(name: string): string {
   return readFileSync(resolve(__dirname, '..', 'fixtures', name), 'utf8');
 }
 
-let stderrSpy: ReturnType<typeof vi.spyOn>;
+let warnSpy: MockInstance<typeof logger.warn>;
 
 beforeEach(() => {
-  stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+  warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 });
 
 afterEach(() => {
-  stderrSpy.mockRestore();
+  warnSpy.mockRestore();
 });
 
 function getWarnings(): string {
-  return stderrSpy.mock.calls.map((c) => String(c[0])).join('');
+  return warnSpy.mock.calls.map((c) => c[0]).join('\n');
 }
 
 describe('parseOpenApiSpec - basic parsing', () => {
@@ -593,7 +593,7 @@ describe('parseOpenApiSpec - warnings', () => {
     const content = readFixture('openapi-basic.json');
     parseOpenApiSpec(content);
 
-    expect(stderrSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });
 

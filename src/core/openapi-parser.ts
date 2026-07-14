@@ -24,9 +24,11 @@ const NON_METHOD_PATH_KEYS: ReadonlySet<string> = new Set([
   '$ref',
 ]);
 
-function warn(message: string): void {
-  process.stderr.write(`\x1b[33m⚠ ${message}\x1b[0m\n`);
-}
+export const logger = {
+  warn(message: string): void {
+    process.stderr.write(`\x1b[33m⚠ ${message}\x1b[0m\n`);
+  },
+};
 
 function isSupportedMethod(method: string): method is HttpMethod {
   if (!method) {
@@ -42,7 +44,7 @@ function isSupportedMethod(method: string): method is HttpMethod {
  */
 function resolveRef(ref: string, doc: any): any {
   if (!ref.startsWith('#/')) {
-    warn(`External $ref "${ref}" is not supported — skipped`);
+    logger.warn(`External $ref "${ref}" is not supported — skipped`);
     return undefined;
   }
 
@@ -175,7 +177,7 @@ function processSecurity(
     for (const schemeName of Object.keys(requirement)) {
       const scheme = securitySchemes[schemeName];
       if (!scheme) {
-        warn(`Security scheme "${schemeName}" not found in components.securitySchemes — skipped`);
+        logger.warn(`Security scheme "${schemeName}" not found in components.securitySchemes — skipped`);
         continue;
       }
 
@@ -191,7 +193,7 @@ function processSecurity(
           headers['Authorization'] = `Basic {{${schemeName}}}`;
           variables.push({ name: schemeName, value: '' });
         } else {
-          warn(`Unsupported HTTP auth scheme "${scheme.scheme ?? '(unknown)'}" in security scheme "${schemeName}" — skipped`);
+          logger.warn(`Unsupported HTTP auth scheme "${scheme.scheme ?? '(unknown)'}" in security scheme "${schemeName}" — skipped`);
         }
       } else if (type === 'apiKey') {
         const inLocation = scheme.in?.toLowerCase();
@@ -207,10 +209,10 @@ function processSecurity(
           cookieParts.push(`${keyName}={{${schemeName}}}`);
           variables.push({ name: schemeName, value: '' });
         } else {
-          warn(`Unsupported apiKey location "${scheme.in ?? '(unknown)'}" in security scheme "${schemeName}" — skipped`);
+          logger.warn(`Unsupported apiKey location "${scheme.in ?? '(unknown)'}" in security scheme "${schemeName}" — skipped`);
         }
       } else {
-        warn(`Unsupported security scheme type "${type ?? '(unknown)'}" for "${schemeName}" — skipped`);
+        logger.warn(`Unsupported security scheme type "${type ?? '(unknown)'}" for "${schemeName}" — skipped`);
       }
     }
   }
@@ -408,7 +410,7 @@ export function parseOpenApiSpec(content: string): ParseResult {
   }
 
   if (doc.swagger && !doc.openapi) {
-    warn('Swagger 2.0 specs are not supported — returning empty results');
+    logger.warn('Swagger 2.0 specs are not supported — returning empty results');
     variables.push({ name: 'baseUrl', value: '' });
     return { requests, variables };
   }
@@ -436,7 +438,7 @@ export function parseOpenApiSpec(content: string): ParseResult {
       const method = methodKey.toUpperCase();
 
       if (KNOWN_UNSUPPORTED_METHODS.has(method)) {
-        warn(`Unsupported HTTP method "${method}" on path "${path}" — skipped`);
+        logger.warn(`Unsupported HTTP method "${method}" on path "${path}" — skipped`);
         continue;
       }
 
