@@ -562,7 +562,7 @@ describe('parseOpenApiSpec - warnings', () => {
     const result = parseOpenApiSpec(content);
 
     expect(result.requests).toHaveLength(0);
-    expect(getWarnings()).toContain('TRACE');
+    expect(getWarnings()).toMatch(/Unsupported HTTP method "TRACE"/);
   });
 
   it('warns on external $ref', () => {
