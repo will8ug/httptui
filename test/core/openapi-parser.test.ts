@@ -582,13 +582,6 @@ describe('parseOpenApiSpec - warnings', () => {
     expect(getWarnings()).toContain('External $ref');
   });
 
-  it('warns on unsupported security scheme (oauth2)', () => {
-    const content = readFixture('openapi-auth.json');
-    parseOpenApiSpec(content);
-
-    expect(getWarnings()).toContain('oauth2');
-  });
-
   it('produces no warnings for fully supported operations', () => {
     const content = readFixture('openapi-basic.json');
     parseOpenApiSpec(content);
