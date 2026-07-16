@@ -19,10 +19,8 @@ import { formatResponseBody } from './core/formatter';
 import { computeVerticalMaxOffset, createInitialState, reducer } from './core/reducer';
 import { computeResponseLayout } from './core/response-layout';
 import type { AppProps, AppState, RequestError, ResponseData } from './core/types';
-import { parseHttpFile } from './core/parser';
 import { serializeHttpFile } from './core/http-serializer';
-import { detectFormat, parsePostmanCollection } from './core/postman-parser';
-import { parseOpenApiSpec } from './core/openapi-parser';
+import { parseAnyFormat } from './core/format-detector';
 import { parseEnvironmentFile } from './core/env-parser';
 import { resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
@@ -168,13 +166,7 @@ export function App(props: AppProps): React.ReactElement {
 
         try {
           const content = readFileSync(resolvedPath, 'utf8');
-          const format = detectFormat(resolvedPath, content);
-          const parseResult =
-            format === 'postman'
-              ? parsePostmanCollection(content)
-              : format === 'openapi'
-                ? parseOpenApiSpec(content)
-                : parseHttpFile(content);
+          const parseResult = parseAnyFormat(resolvedPath, content);
 
           if (parseResult.requests.length === 0) {
             dispatch({ type: 'SET_FILE_LOAD_ERROR', error: `No requests found in ${inputPath}` });
@@ -453,13 +445,7 @@ export function App(props: AppProps): React.ReactElement {
     if (input === 'R') {
       try {
         const content = readFileSync(state.filePath, 'utf8');
-        const format = detectFormat(state.filePath, content);
-        const parseResult =
-          format === 'postman'
-            ? parsePostmanCollection(content)
-            : format === 'openapi'
-              ? parseOpenApiSpec(content)
-              : parseHttpFile(content);
+        const parseResult = parseAnyFormat(state.filePath, content);
         dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
         setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
       } catch (error) {
