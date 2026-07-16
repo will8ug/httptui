@@ -87,6 +87,9 @@ function resolveParamValue(param: any, doc: any): string {
   if (schema.example !== undefined) {
     return String(schema.example);
   }
+  if (typeof schema.type === 'string') {
+    return String(schema.type);
+  }
   return '';
 }
 

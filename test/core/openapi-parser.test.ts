@@ -204,7 +204,7 @@ describe('parseOpenApiSpec - path parameters', () => {
     expect(result.variables).toContainEqual({ name: 'id', value: '42' });
   });
 
-  it('maps path parameter with no default or example to empty string', () => {
+  it('maps path parameter with type but no default or example to type value', () => {
     const content = JSON.stringify({
       openapi: '3.0.3',
       paths: {
@@ -212,6 +212,40 @@ describe('parseOpenApiSpec - path parameters', () => {
           get: {
             operationId: 'getUser',
             parameters: [{ name: 'id', in: 'path', schema: { type: 'integer' } }],
+          },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    expect(result.variables).toContainEqual({ name: 'id', value: 'integer' });
+  });
+
+  it('maps path parameter with no schema to empty string', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/users/{id}': {
+          get: {
+            operationId: 'getUser',
+            parameters: [{ name: 'id', in: 'path' }],
+          },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    expect(result.variables).toContainEqual({ name: 'id', value: '' });
+  });
+
+  it('maps path parameter with nullable union type to empty string', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/users/{id}': {
+          get: {
+            operationId: 'getUser',
+            parameters: [{ name: 'id', in: 'path', schema: { type: ['string', 'null'] } }],
           },
         },
       },
@@ -247,12 +281,12 @@ describe('parseOpenApiSpec - query parameters', () => {
 });
 
 describe('parseOpenApiSpec - header parameters', () => {
-  it('maps header parameter with no default', () => {
+  it('maps header parameter with type but no default', () => {
     const content = readFixture('openapi-params.json');
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].headers['X-Trace-Id']).toBe('{{X-Trace-Id}}');
-    expect(result.variables).toContainEqual({ name: 'X-Trace-Id', value: '' });
+    expect(result.variables).toContainEqual({ name: 'X-Trace-Id', value: 'string' });
   });
 
   it('maps header parameter with default', () => {
@@ -280,7 +314,7 @@ describe('parseOpenApiSpec - cookie parameters', () => {
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].headers['Cookie']).toBe('session={{session}}');
-    expect(result.variables).toContainEqual({ name: 'session', value: '' });
+    expect(result.variables).toContainEqual({ name: 'session', value: 'string' });
   });
 
   it('combines multiple cookie parameters into Cookie header', () => {
