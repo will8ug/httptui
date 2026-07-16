@@ -345,6 +345,29 @@ describe('parseOpenApiSpec - $ref resolution', () => {
     expect(getWarnings()).toContain('External $ref');
     expect(result.requests).toHaveLength(1);
   });
+
+  it('deduplicates variables with the same name across multiple operations', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/users/{id}': {
+          get: {
+            operationId: 'getUser',
+            parameters: [{ name: 'id', in: 'path', schema: { type: 'integer', default: 1 } }],
+          },
+          delete: {
+            operationId: 'deleteUser',
+            parameters: [{ name: 'id', in: 'path', schema: { type: 'integer', default: 1 } }],
+          },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    const idVars = result.variables.filter((v) => v.name === 'id');
+    expect(idVars).toHaveLength(1);
+    expect(idVars[0]).toEqual({ name: 'id', value: '1' });
+  });
 });
 
 describe('parseOpenApiSpec - security / auth', () => {

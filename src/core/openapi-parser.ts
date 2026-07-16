@@ -385,6 +385,17 @@ function buildRequest(
   };
 }
 
+function deduplicate(variables: FileVariable[]) {
+  const seen = new Set<string>();
+  return variables.filter((v) => {
+    if (seen.has(v.name)) {
+      return false;
+    }
+    seen.add(v.name);
+    return true;
+  });
+}
+
 /**
  * Parse an OpenAPI 3.x JSON spec into a `ParseResult` with `ParsedRequest[]`
  * and `FileVariable[]`. Uses manual JSON parsing with zero external dependencies.
@@ -466,5 +477,6 @@ export function parseOpenApiSpec(content: string): ParseResult {
     }
   }
 
-  return { requests, variables };
+  const deduped = deduplicate(variables);
+  return { requests, variables: deduped };
 }
