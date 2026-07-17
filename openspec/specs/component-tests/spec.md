@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Component Tests
+
+## Purpose
+
+Direct ink-testing-library component tests for TUI components, covering behaviors that integration tests cannot reach with precise prop control.
+
+## Requirements
 
 ### Requirement: ResponseView component tests
 The test suite SHALL include direct ink-testing-library component tests for `ResponseView` (`test/components/ResponseView.test.tsx`) covering its content states, display modes, scroll/slicing behavior, and search rendering — the behaviors that integration tests cannot reach with precise prop control. Tests SHALL follow the established pattern (`render()` from ink-testing-library, `lastFrame() ?? ''`, `toContain`/`not.toContain` assertions, `afterEach(cleanup)`) and reuse `createMockResponse`/`longResponse`/`compactJsonResponse` from `test/helpers/responses.ts`. Tests SHALL NOT mock `formatResponseBody` or `computeResponseLayout`.
