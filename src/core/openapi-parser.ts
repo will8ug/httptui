@@ -289,9 +289,16 @@ function processRequestBody(
       let hasAny = false;
 
       for (const [propName, propSchema] of Object.entries(resolvedSchema.properties)) {
-        const prop = propSchema as any;
-        if (prop && prop.example !== undefined) {
+        const prop = resolveSchema(propSchema, doc) as any;
+        if (!prop) continue;
+        if (prop.example !== undefined) {
           synthesized[propName] = prop.example;
+          hasAny = true;
+        } else if (prop.default !== undefined) {
+          synthesized[propName] = prop.default;
+          hasAny = true;
+        } else if (typeof prop.type === 'string') {
+          synthesized[propName] = String(prop.type);
           hasAny = true;
         }
       }

@@ -533,14 +533,164 @@ describe('parseOpenApiSpec - request body', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
-    expect(result.requests[0].body).toBe('{"id":1,"name":"Widget","description":"A widget"}');
+    expect(result.requests[0].body).toBe('{"id":1,"name":"Widget","description":"A widget","secret":"string"}');
   });
 
-  it('omits properties without examples in synthesis', () => {
+  it('uses type as placeholder for properties without example or default', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
-    expect(result.requests[0].body).not.toContain('secret');
+    expect(result.requests[0].body).toContain('"secret":"string"');
+  });
+
+  it('synthesizes body from type-only properties', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/generate': {
+          post: {
+            operationId: 'generate-content',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      templateId: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests[0].body).toBe('{"templateId":"string"}');
+  });
+
+  it('uses property default when no example present', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/items': {
+          post: {
+            operationId: 'createItem',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      count: { type: 'integer', default: 0 },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests[0].body).toBe('{"count":0}');
+  });
+
+  it('resolves property $ref before value lookup', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/items': {
+          post: {
+            operationId: 'createItem',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      user: { $ref: '#/components/schemas/UserRef' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          UserRef: { type: 'string', example: 'alice' },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests[0].body).toBe('{"user":"alice"}');
+  });
+
+  it('resolves property $ref with type only', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/items': {
+          post: {
+            operationId: 'createItem',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      templateId: { $ref: '#/components/schemas/TemplateId' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          TemplateId: { type: 'string' },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests[0].body).toBe('{"templateId":"string"}');
+  });
+
+  it('skips property with nullable union type', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/items': {
+          post: {
+            operationId: 'createItem',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      optional: { type: ['string', 'null'] },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests[0].body).toBeUndefined();
   });
 
   it('returns undefined body when no examples exist', () => {
