@@ -24,6 +24,7 @@ export function parseArgs(argv: string[]): {
 
     if (ENV_FILE_FLAGS.has(arg)) {
       const nextArg = args[i + 1];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for missing next argument
       if (nextArg !== undefined && !nextArg.startsWith('-')) {
         envPath = nextArg;
         i += 1;
@@ -33,6 +34,7 @@ export function parseArgs(argv: string[]): {
 
     if (ENV_NAME_FLAGS.has(arg)) {
       const nextArg = args[i + 1];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for missing next argument
       if (nextArg !== undefined && !nextArg.startsWith('-')) {
         envName = nextArg;
         i += 1;

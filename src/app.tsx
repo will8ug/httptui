@@ -248,6 +248,7 @@ export function App(props: AppProps): React.ReactElement {
 
       if (key.return) {
         const option = state.availableEnvironments[state.envSelectIndex];
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds env option access
         if (!option) {
           return;
         }

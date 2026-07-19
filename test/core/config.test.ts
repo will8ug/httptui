@@ -24,6 +24,7 @@ beforeEach(() => {
 afterEach(() => {
   for (const key of ENV_KEYS) {
     if (savedEnv[key] === undefined) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- env var key is known from ENV_KEYS
       delete process.env[key];
     } else {
       process.env[key] = savedEnv[key];

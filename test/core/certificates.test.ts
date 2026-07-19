@@ -18,6 +18,7 @@ function saveEnv(key: string): void {
 
 function restoreEnv(key: string): void {
   if (savedEnv[key] === undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- env var key is known from saveEnv calls
     delete process.env[key];
   } else {
     process.env[key] = savedEnv[key];
@@ -204,11 +205,11 @@ describe('loadCertFiles', () => {
     const result = loadCertFiles(entry, '/tmp/config', 'api.example.com');
 
     expect(result.cert).toBeInstanceOf(Buffer);
-    expect(result.cert!.toString()).toBe('test-cert');
+    expect((result.cert as Buffer).toString()).toBe('test-cert');
     expect(result.key).toBeInstanceOf(Buffer);
-    expect(result.key!.toString()).toBe('test-key');
+    expect((result.key as Buffer).toString()).toBe('test-key');
     expect(result.ca).toBeInstanceOf(Buffer);
-    expect(result.ca!.toString()).toBe('test-ca');
+    expect((result.ca as Buffer).toString()).toBe('test-ca');
     expect(result.pfx).toBeUndefined();
     expect(result.passphrase).toBeUndefined();
   });
@@ -234,7 +235,7 @@ describe('loadCertFiles', () => {
     const result = loadCertFiles(entry, '/tmp/config', 'api.example.com');
 
     expect(result.ca).toBeInstanceOf(Buffer);
-    expect(result.ca!.toString()).toBe('test-ca');
+    expect((result.ca as Buffer).toString()).toBe('test-ca');
     expect(result.cert).toBeUndefined();
     expect(result.key).toBeUndefined();
     expect(result.pfx).toBeUndefined();
@@ -251,7 +252,7 @@ describe('loadCertFiles', () => {
     const result = loadCertFiles(entry, '/tmp/config', 'api.internal');
 
     expect(result.pfx).toBeInstanceOf(Buffer);
-    expect(result.pfx!.toString()).toBe('test-pfx');
+    expect((result.pfx as Buffer).toString()).toBe('test-pfx');
     expect(result.passphrase).toBe('secret-pfx');
   });
 

@@ -22,10 +22,12 @@ export function matchCertificate(
   const port = parsed.port || (parsed.protocol === 'https:' ? '443' : '80');
 
   const hostPortKey = `${hostname}:${port}`;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Record lookup; key may not exist at runtime
   if (certificates[hostPortKey]) {
     return certificates[hostPortKey];
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Record lookup; key may not exist at runtime
   if (certificates[hostname]) {
     return certificates[hostname];
   }

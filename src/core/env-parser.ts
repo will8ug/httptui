@@ -43,6 +43,7 @@ export function parseEnvironmentFile(content: string): {
     }
 
     const value = valueEntry.value;
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string -- non-string env values only occur in malformed env files; String() fallback is intentional
     const valueStr = typeof value === 'string' ? value : String(value ?? '');
 
     variables.push({

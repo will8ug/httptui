@@ -289,7 +289,7 @@ function processRequestBody(
       let hasAny = false;
 
       for (const [propName, propSchema] of Object.entries(resolvedSchema.properties)) {
-        const prop = resolveSchema(propSchema, doc) as any;
+        const prop = resolveSchema(propSchema, doc);
         if (!prop) continue;
         if (prop.example !== undefined) {
           synthesized[propName] = prop.example;

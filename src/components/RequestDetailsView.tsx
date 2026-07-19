@@ -118,7 +118,6 @@ export function RequestDetailsView({
     );
   }
 
-  const totalLines = allLines.length;
   const visibleHeight = maxHeight;
   const visibleLines = allLines.slice(scrollOffset, scrollOffset + visibleHeight);
 
