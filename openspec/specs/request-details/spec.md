@@ -38,7 +38,7 @@ The request details panel SHALL display the fully resolved request for the curre
 
 #### Scenario: Display request with formdata fields
 - **WHEN** the selected request carries `formdataFields`
-- **THEN** the panel SHALL display each formdata field line between the headers and body sections
+- **THEN** the panel SHALL display each formdata field as a `key=value` line
 
 ### Requirement: Request details panel layout
 The request details panel SHALL appear inside the right panel column, above the response view. When visible, the right column SHALL be a vertical flex container with the request details on top and the response view below. The panel height SHALL be content-driven (adapting to number of content lines) with a maximum of `maxContentLines` rows of content. The height calculation SHALL use `min(totalContentLines, maxContentLines) + BORDER_ROWS`, matching the slice-based rendering model used by the component.

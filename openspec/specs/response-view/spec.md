@@ -14,11 +14,11 @@ While a request is in flight, the `ResponseView` component SHALL render a spinne
 - **THEN** the frame SHALL contain the `Sending request` spinner label
 
 ### Requirement: Error state display
-When a request fails, the `ResponseView` component SHALL render the error message together with its error code in place of response content.
+When a request fails, the `ResponseView` component SHALL render the error message. When `error.code` is set, the error code SHALL be rendered alongside the message.
 
 #### Scenario: Error state renders message and code
-- **WHEN** `ResponseView` is rendered with `error` set and `response: null`
-- **THEN** the frame SHALL contain the error message and its code
+- **WHEN** `ResponseView` is rendered with an `error` carrying a `code` and `response: null`
+- **THEN** the frame SHALL contain the error message and the code
 
 ### Requirement: Empty state prompt
 When no request has been sent yet (no response, no error, not loading), the `ResponseView` component SHALL render the prompt `Press Enter to send a request`.
