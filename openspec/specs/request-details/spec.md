@@ -22,7 +22,7 @@ The system SHALL provide a toggleable panel that shows or hides request details 
 - **THEN** the request details panel SHALL be hidden
 
 ### Requirement: Display resolved request details
-The request details panel SHALL display the fully resolved request for the currently selected request, including: HTTP method, resolved URL (with all `{{variable}}` substitutions applied), resolved headers, and resolved body (if present). Variable resolution SHALL use the same `resolveVariables()` function that is used when sending requests.
+The request details panel SHALL display the fully resolved request for the currently selected request, including: HTTP method, resolved URL (with all `{{variable}}` substitutions applied), resolved headers, resolved formdata fields (when the request uses a formdata body), and resolved body (if present). Variable resolution SHALL use the same `resolveVariables()` function that is used when sending requests.
 
 #### Scenario: Display request with variables resolved
 - **WHEN** the request details panel is visible and the selected request contains `{{baseUrl}}` in the URL and `{{$dotenv API_KEY}}` in headers
@@ -35,6 +35,10 @@ The request details panel SHALL display the fully resolved request for the curre
 #### Scenario: Display request with body
 - **WHEN** the selected request has a body (e.g., POST with JSON payload)
 - **THEN** the panel SHALL display the request body after the method, URL, and headers sections
+
+#### Scenario: Display request with formdata fields
+- **WHEN** the selected request carries `formdataFields`
+- **THEN** the panel SHALL display each formdata field line between the headers and body sections
 
 ### Requirement: Request details panel layout
 The request details panel SHALL appear inside the right panel column, above the response view. When visible, the right column SHALL be a vertical flex container with the request details on top and the response view below. The panel height SHALL be content-driven (adapting to number of content lines) with a maximum of `maxContentLines` rows of content. The height calculation SHALL use `min(totalContentLines, maxContentLines) + BORDER_ROWS`, matching the slice-based rendering model used by the component.
