@@ -424,7 +424,6 @@ describe('parseOpenApiSpec - recursive $ref resolution', () => {
     expect(req.body).toBe(
       '{"customer":"object","shipping":{"street":"123 Main St","city":"Springfield"},"currency":"USD","metadata":{"source":"web"}}',
     );
-    expect(req.body).toContain('"shipping":{"street":"123 Main St","city":"Springfield"}');
   });
 
   it('resolves diamond $ref without cycle warning', () => {
@@ -449,20 +448,17 @@ describe('parseOpenApiSpec - recursive $ref resolution', () => {
 describe('parseOpenApiSpec - circular $ref guard', () => {
   it('handles direct self-cycle (A → A) with warning and no throw', () => {
     const content = readFixture('openapi-self-cycle.json');
-
-    expect(() => parseOpenApiSpec(content)).not.toThrow();
-
     const result = parseOpenApiSpec(content);
+
+    // The em-dash (U+2014) is intentional and spec-mandated.
     expect(getWarnings()).toContain('Circular $ref "#/components/schemas/A" — stop resolving');
     expect(result.requests[0].body).toBeUndefined();
   });
 
   it('handles indirect cycle (A → B → A) with warning and no throw', () => {
     const content = readFixture('openapi-circular-ref.json');
-
-    expect(() => parseOpenApiSpec(content)).not.toThrow();
-
     const result = parseOpenApiSpec(content);
+
     expect(getWarnings()).toContain('Circular $ref');
     expect(result.requests[0].body).toBeUndefined();
   });
@@ -518,14 +514,6 @@ describe('parseOpenApiSpec - circular $ref guard', () => {
       .split('\n')
       .filter((line) => line.includes('Circular $ref'));
     expect(circularWarnings.length).toBeGreaterThan(0);
-  });
-
-  it('emits the exact cycle warning message text from the spec', () => {
-    const content = readFixture('openapi-self-cycle.json');
-    parseOpenApiSpec(content);
-
-    // The em-dash (U+2014) is intentional and spec-mandated.
-    expect(getWarnings()).toContain('Circular $ref "#/components/schemas/A" — stop resolving');
   });
 });
 
