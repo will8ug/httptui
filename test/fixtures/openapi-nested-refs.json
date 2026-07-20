@@ -1,0 +1,48 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Order API", "version": "1.0.0" },
+  "servers": [{ "url": "https://api.example.com" }],
+  "paths": {
+    "/orders": {
+      "post": {
+        "operationId": "createOrder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateOrderRequest" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateOrderRequest": {
+        "type": "object",
+        "properties": {
+          "customer": { "$ref": "#/components/schemas/Customer" },
+          "shipping": { "$ref": "#/components/schemas/Address" },
+          "currency": { "type": "string", "example": "USD" },
+          "metadata": { "$ref": "#/components/schemas/Metadata" }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "name":  { "type": "string", "example": "Alice" },
+          "email": { "type": "string", "example": "alice@example.com" }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "example": { "street": "123 Main St", "city": "Springfield" }
+      },
+      "Metadata": {
+        "type": "object",
+        "example": { "source": "web" }
+      }
+    }
+  }
+}

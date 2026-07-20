@@ -1,0 +1,33 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "External Ref API", "version": "1.0.0" },
+  "paths": {
+    "/mixed": {
+      "post": {
+        "operationId": "testMixedRefs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Mixed" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Mixed": {
+        "type": "object",
+        "properties": {
+          "internal": { "$ref": "#/components/schemas/Internal" },
+          "external": { "$ref": "./other.json#/External" }
+        }
+      },
+      "Internal": {
+        "type": "object",
+        "example": { "id": 1 }
+      }
+    }
+  }
+}

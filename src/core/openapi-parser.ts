@@ -407,6 +407,70 @@ function deduplicate(variables: FileVariable[]) {
 }
 
 /**
+ * Recursively dereference every internal `$ref` (`#/...`) in the parsed JSON
+ * document in place, replacing each with its target object. External refs
+ * (non-`#/`) are left as stubs so the existing call-site resolution still
+ * warns. Circular internal refs are detected via a path-scoped visited set
+ * and left as stubs with a warning. A defensive depth counter guards against
+ * stack overflow on pathological specs.
+ *
+ * Mutates `doc` in place. `doc` is private to `parseOpenApiSpec`.
+ */
+function dereferenceDoc(doc: any): void {
+  function dereferenceNode(node: any, current: any, visited: Set<string>, depth: number): any {
+    if (node === null || typeof node !== 'object') {
+      return node;
+    }
+
+    // Defensive guard against deep recursion blowing the JS call stack.
+    if (depth > 100) {
+      logger.warn(`Max dereference depth (100) exceeded at "${node.$ref ?? '<root>'}" — stop resolving`);
+      return node;
+    }
+
+    if (Array.isArray(node)) {
+      for (let i = 0; i < node.length; i++) {
+        node[i] = dereferenceNode(node[i], current, visited, depth + 1);
+      }
+      return node;
+    }
+
+    if (node.$ref) {
+      // Circular ref on current resolution path — stop, leave the stub.
+      if (visited.has(node.$ref)) {
+        logger.warn(`Circular $ref "${node.$ref}" — stop resolving`);
+        return node;
+      }
+
+      // External ref (non-#/): leave stub. The existing call sites call
+      // resolveRef, which warns about unsupported external refs. Do NOT
+      // warn here — avoids double-warning.
+      if (!node.$ref.startsWith('#/')) {
+        return node;
+      }
+
+      visited.add(node.$ref);
+      const target = resolveRef(node.$ref, current);
+      if (target === undefined) {
+        // resolveRef already warned (external ref or broken path). Leave stub.
+        visited.delete(node.$ref);
+        return node;
+      }
+      const resolved = dereferenceNode(target, current, visited, depth + 1);
+      visited.delete(node.$ref);
+      return resolved;
+    }
+
+    for (const [key, value] of Object.entries(node)) {
+      node[key] = dereferenceNode(value, current, visited, depth + 1);
+    }
+    return node;
+  }
+
+  dereferenceNode(doc, doc, new Set(), 0);
+}
+
+/**
  * Parse an OpenAPI 3.x JSON spec into a `ParseResult` with `ParsedRequest[]`
  * and `FileVariable[]`. Uses manual JSON parsing with zero external dependencies.
  *
@@ -435,6 +499,8 @@ export function parseOpenApiSpec(content: string): ParseResult {
     variables.push({ name: 'baseUrl', value: '' });
     return { requests, variables };
   }
+
+  dereferenceDoc(doc);
 
   const { url: baseUrl, templateVars } = extractBaseUrl(doc);
   variables.push({ name: 'baseUrl', value: baseUrl });

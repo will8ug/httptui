@@ -1,0 +1,23 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Self Cycle API", "version": "1.0.0" },
+  "paths": {
+    "/self-cycle": {
+      "post": {
+        "operationId": "testSelfCycle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/A" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "A": { "$ref": "#/components/schemas/A" }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Ref Chain API", "version": "1.0.0" },
+  "paths": {
+    "/chain": {
+      "post": {
+        "operationId": "testChain",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/A" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "A": { "$ref": "#/components/schemas/B" },
+      "B": { "$ref": "#/components/schemas/C" },
+      "C": { "type": "object", "example": { "id": 1 } }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Diamond Ref API", "version": "1.0.0" },
+  "paths": {
+    "/diamond": {
+      "post": {
+        "operationId": "testDiamond",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Order" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Order": {
+        "type": "object",
+        "properties": {
+          "billing":  { "$ref": "#/components/schemas/Address" },
+          "shipping": { "$ref": "#/components/schemas/Address" }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "example": { "street": "123 Main St", "city": "Springfield" }
+      }
+    }
+  }
+}

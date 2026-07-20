@@ -1,0 +1,24 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Circular Ref API", "version": "1.0.0" },
+  "paths": {
+    "/cycle": {
+      "post": {
+        "operationId": "testCycle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/A" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "A": { "$ref": "#/components/schemas/B" },
+      "B": { "$ref": "#/components/schemas/A" }
+    }
+  }
+}

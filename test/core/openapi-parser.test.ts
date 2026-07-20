@@ -404,6 +404,157 @@ describe('parseOpenApiSpec - $ref resolution', () => {
   });
 });
 
+describe('parseOpenApiSpec - recursive $ref resolution', () => {
+  it('resolves $ref chain (A → B → C) to C content', () => {
+    const content = readFixture('openapi-ref-chain.json');
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests[0].body).toBe('{"id":1}');
+  });
+
+  it('resolves nested property $ref with top-level example on sub-schema', () => {
+    const content = readFixture('openapi-nested-refs.json');
+    const result = parseOpenApiSpec(content);
+
+    const req = result.requests.find((r) => r.name === 'createOrder');
+    expect(req).toBeDefined();
+    if (!req) throw new Error('Expected createOrder');
+    // customer has no top-level example so the synthesizer falls back to a type
+    // placeholder ("object"); shipping/currency/metadata resolve to their examples.
+    expect(req.body).toBe(
+      '{"customer":"object","shipping":{"street":"123 Main St","city":"Springfield"},"currency":"USD","metadata":{"source":"web"}}',
+    );
+    expect(req.body).toContain('"shipping":{"street":"123 Main St","city":"Springfield"}');
+  });
+
+  it('resolves diamond $ref without cycle warning', () => {
+    const content = readFixture('openapi-diamond-ref.json');
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests[0].body).toBe(
+      '{"billing":{"street":"123 Main St","city":"Springfield"},"shipping":{"street":"123 Main St","city":"Springfield"}}',
+    );
+    expect(getWarnings()).not.toContain('Circular');
+  });
+
+  it('leaves external $ref unresolved with warning at call site', () => {
+    const content = readFixture('openapi-external-ref-unaffected.json');
+    const result = parseOpenApiSpec(content);
+
+    expect(getWarnings()).toContain('External $ref');
+    expect(result.requests[0].body).toBe('{"internal":{"id":1}}');
+  });
+});
+
+describe('parseOpenApiSpec - circular $ref guard', () => {
+  it('handles direct self-cycle (A → A) with warning and no throw', () => {
+    const content = readFixture('openapi-self-cycle.json');
+
+    expect(() => parseOpenApiSpec(content)).not.toThrow();
+
+    const result = parseOpenApiSpec(content);
+    expect(getWarnings()).toContain('Circular $ref "#/components/schemas/A" — stop resolving');
+    expect(result.requests[0].body).toBeUndefined();
+  });
+
+  it('handles indirect cycle (A → B → A) with warning and no throw', () => {
+    const content = readFixture('openapi-circular-ref.json');
+
+    expect(() => parseOpenApiSpec(content)).not.toThrow();
+
+    const result = parseOpenApiSpec(content);
+    expect(getWarnings()).toContain('Circular $ref');
+    expect(result.requests[0].body).toBeUndefined();
+  });
+
+  it('does not warn on acyclic nested $ref', () => {
+    const content = readFixture('openapi-nested-refs.json');
+    parseOpenApiSpec(content);
+
+    expect(getWarnings()).not.toContain('Circular');
+  });
+
+  it('does not suppress other operations when one operation has a cycle', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/cyclic': {
+          post: {
+            operationId: 'cyclicOp',
+            requestBody: {
+              content: { 'application/json': { schema: { $ref: '#/components/schemas/CyclicA' } } },
+            },
+          },
+        },
+        '/acyclic': {
+          post: {
+            operationId: 'acyclicOp',
+            requestBody: {
+              content: { 'application/json': { schema: { $ref: '#/components/schemas/Simple' } } },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          CyclicA: { $ref: '#/components/schemas/CyclicB' },
+          CyclicB: { $ref: '#/components/schemas/CyclicA' },
+          Simple: { type: 'object', example: { id: 1 } },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    const cyclicReq = result.requests.find((r) => r.name === 'cyclicOp');
+    const acyclicReq = result.requests.find((r) => r.name === 'acyclicOp');
+    expect(cyclicReq).toBeDefined();
+    expect(acyclicReq).toBeDefined();
+    if (!cyclicReq || !acyclicReq) throw new Error('Expected both requests');
+
+    expect(cyclicReq.body).toBeUndefined();
+    expect(acyclicReq.body).toBe('{"id":1}');
+
+    const circularWarnings = getWarnings()
+      .split('\n')
+      .filter((line) => line.includes('Circular $ref'));
+    expect(circularWarnings.length).toBeGreaterThan(0);
+  });
+
+  it('emits the exact cycle warning message text from the spec', () => {
+    const content = readFixture('openapi-self-cycle.json');
+    parseOpenApiSpec(content);
+
+    // The em-dash (U+2014) is intentional and spec-mandated.
+    expect(getWarnings()).toContain('Circular $ref "#/components/schemas/A" — stop resolving');
+  });
+});
+
+describe('parseOpenApiSpec - recursive $ref regression', () => {
+  it('flat spec produces identical output after dereference pass', () => {
+    const content = readFixture('openapi-body-ref.json');
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests[0].body).toBe(
+      '{"id":1,"name":"Widget","description":"A widget","secret":"string"}',
+    );
+  });
+
+  it('spring-boot real-world spec produces identical request list', () => {
+    const content = readFileSync(
+      resolve(__dirname, '..', '..', 'examples', 'spring-boot-api-service-openapi.json'),
+      'utf8',
+    );
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests).toHaveLength(7);
+    for (const req of result.requests) {
+      expect(req.name).toBeTruthy();
+      expect(req.method).toMatch(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/);
+      expect(req.url).toMatch(/^{{baseUrl}}/);
+    }
+  });
+});
+
 describe('parseOpenApiSpec - security / auth', () => {
   it('maps bearer auth to Authorization header', () => {
     const content = readFixture('openapi-auth.json');
