@@ -223,20 +223,9 @@ function processSecurity(
 
 /**
  * Recursively synthesize an example value from an OpenAPI schema. Assumes the
- * document is already dereferenced (does not call resolveRef/resolveSchema).
- * Returns `undefined` for properties that should be omitted.
- *
- * Dispatch:
- * - `schema.example` / `schema.default` → returned verbatim (Tier 3 passthrough).
- * - `type: "object"` → build a nested object from per-property synthesis; omit
- *   properties that synthesize to `undefined`; return `undefined` if no
- *   property produced a value.
- * - `type: "array"` → synthesize a single item from `items` and wrap in a
- *   single-element array; return `undefined` if the item synthesizes to nothing.
- * - Primitive types without `example`/`default` → `undefined` (omit).
- *
- * A defensive depth counter (warn + stop at depth > 50) guards against
- * pathological schemas or unresolved cycles.
+ * document is already dereferenced. Returns `undefined` for properties that
+ * should be omitted. A defensive depth counter (warn + stop at depth > 50)
+ * guards against pathological schemas or unresolved cycles.
  */
 function synthesizeExample(schema: any, doc: any, depth = 0): any {
   if (!schema || depth > 50) {
@@ -282,10 +271,8 @@ function synthesizeExample(schema: any, doc: any, depth = 0): any {
 }
 
 /**
- * Flatten a nested object/array structure into urlencoded pairs using bracket
- * notation for nested objects (`key[prop]=value`) and repeated keys for arrays
- * (`key=val1&key=val2`). Null/undefined values are skipped. Returns an empty
- * string when nothing remains.
+ * Flatten a nested structure into urlencoded pairs: bracket notation for
+ * nested objects (`key[prop]=value`), repeated keys for arrays.
  */
 function flattenToUrlencoded(value: any, prefix: string): string {
   if (value === null || value === undefined) {

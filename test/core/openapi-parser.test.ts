@@ -419,10 +419,6 @@ describe('parseOpenApiSpec - recursive $ref resolution', () => {
     const req = result.requests.find((r) => r.name === 'createOrder');
     expect(req).toBeDefined();
     if (!req) throw new Error('Expected createOrder');
-    // After recursive-body-synthesis, customer is now synthesized from
-    // per-property examples instead of falling back to the type-name
-    // placeholder "object". shipping/metadata retain their top-level examples,
-    // currency retains its inline example.
     expect(req.body).toBe(
       '{"customer":{"name":"Alice","email":"alice@example.com"},"shipping":{"street":"123 Main St","city":"Springfield"},"currency":"USD","metadata":{"source":"web"}}',
     );
@@ -442,12 +438,6 @@ describe('parseOpenApiSpec - recursive $ref resolution', () => {
     const content = readFixture('openapi-external-ref-unaffected.json');
     const result = parseOpenApiSpec(content);
 
-    // After recursive-body-synthesis, synthesizeExample encounters the
-    // external $ref stub directly (per Decision 2, it does not call
-    // resolveRef/resolveSchema). The stub has no example/default/type, so
-    // the property is omitted. The warning is no longer emitted for body
-    // property external refs (only parameter-level external refs still warn
-    // via the resolveRef call site in collectParameters).
     expect(result.requests[0].body).toBe('{"internal":{"id":1}}');
   });
 });
@@ -529,8 +519,6 @@ describe('parseOpenApiSpec - recursive $ref regression', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
-    // After recursive-body-synthesis, secret (type-only, no example/default)
-    // is omitted instead of using the type-name placeholder "string".
     expect(result.requests[0].body).toBe(
       '{"id":1,"name":"Widget","description":"A widget"}',
     );
@@ -627,9 +615,6 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
     const content = readFixture('openapi-external-ref-stub.json');
     const result = parseOpenApiSpec(content);
 
-    // The external $ref stub has no example/default/type, so it is omitted.
-    // No "External $ref" warning fires for body property stubs — only
-    // parameter-level external refs warn via resolveRef in collectParameters.
     expect(result.requests[0].body).toBe('{"internal":"resolved"}');
     expect(getWarnings()).not.toContain('External $ref');
   });
@@ -664,8 +649,6 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
     });
     const result = parseOpenApiSpec(content);
 
-    // Composition keywords (allOf/anyOf/oneOf) have no `type` field, so the
-    // synthesizer cannot dispatch and returns undefined.
     expect(result.requests[0].body).toBeUndefined();
   });
 });
@@ -686,8 +669,6 @@ describe('parseOpenApiSpec - urlencoded nested encoding', () => {
     const content = readFixture('openapi-urlencoded-nested.json');
     const result = parseOpenApiSpec(content);
 
-    // The synthesizer produces a single-element array for `tags`, which
-    // flattens to one repeated key (not duplicated).
     expect(result.requests[0].body).toContain('tags=vip');
     expect(result.requests[0].body).not.toContain('tags=vip&tags=vip');
   });
@@ -702,10 +683,7 @@ describe('parseOpenApiSpec - urlencoded nested encoding', () => {
 
 describe('parseOpenApiSpec - recursive body synthesis depth guard', () => {
   it('fires depth guard for deeply nested schemas (depth > 50)', () => {
-    // parseOpenApiSpec takes a JSON string, which cannot represent object
-    // cycles. Instead, build a 55-level-deep nested object schema — the
-    // synthesizer's defensive depth guard (warn + stop at depth > 50) fires
-    // before reaching the bottom, and the body resolves to undefined.
+    // JSON can't represent cycles, so use deep nesting to trigger the depth guard.
     function buildNested(levels: number): Record<string, unknown> {
       let schema: Record<string, unknown> = { type: 'string', example: 'deep' };
       for (let i = 0; i < levels; i++) {
@@ -880,7 +858,6 @@ describe('parseOpenApiSpec - request body', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
-    // After recursive-body-synthesis, secret (no example/default) is omitted.
     expect(result.requests[0].body).toBe('{"id":1,"name":"Widget","description":"A widget"}');
   });
 
@@ -888,8 +865,7 @@ describe('parseOpenApiSpec - request body', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
-    // After recursive-body-synthesis, type-only properties without example/default
-    // are omitted (previously fell back to the type-name placeholder "string").
+
     expect(result.requests[0].body).not.toContain('secret');
   });
 
@@ -918,8 +894,6 @@ describe('parseOpenApiSpec - request body', () => {
     });
     const result = parseOpenApiSpec(content);
 
-    // After recursive-body-synthesis, type-only properties are omitted (not
-    // the type-name placeholder "string"), so the body is undefined.
     expect(result.requests[0].body).toBeUndefined();
   });
 
@@ -1014,8 +988,6 @@ describe('parseOpenApiSpec - request body', () => {
     });
     const result = parseOpenApiSpec(content);
 
-    // After recursive-body-synthesis, the resolved $ref has type-only (no
-    // example/default), so the property is omitted and the body is undefined.
     expect(result.requests[0].body).toBeUndefined();
   });
 
