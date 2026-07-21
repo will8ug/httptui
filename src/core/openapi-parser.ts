@@ -260,7 +260,7 @@ function synthesizeExample(schema: any, doc: any, depth = 0): any {
     return item !== undefined ? [item] : undefined;
   }
 
-  if (depth > 0 && typeof schema.type === 'string') {
+  if (typeof schema.type === 'string') {
     return String(schema.type);
   }
 
@@ -352,12 +352,14 @@ function processRequestBody(
     }
 
     // Tier 4: recursively synthesize example from schema
-    const synthesized = synthesizeExample(resolvedSchema, doc);
-    if (synthesized !== undefined) {
-      if (mediaType === 'application/x-www-form-urlencoded') {
-        return { body: flattenToUrlencoded(synthesized, ''), contentType: mediaType };
+    if (resolvedSchema && (resolvedSchema.type === 'object' || resolvedSchema.type === 'array')) {
+      const synthesized = synthesizeExample(resolvedSchema, doc);
+      if (synthesized !== undefined) {
+        if (mediaType === 'application/x-www-form-urlencoded') {
+          return { body: flattenToUrlencoded(synthesized, ''), contentType: mediaType };
+        }
+        return { body: JSON.stringify(synthesized), contentType: mediaType };
       }
-      return { body: JSON.stringify(synthesized), contentType: mediaType };
     }
   }
 
