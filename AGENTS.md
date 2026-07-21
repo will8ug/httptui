@@ -12,3 +12,15 @@ Main specs (`openspec/specs/`) describe **system capabilities and observable beh
 - **Before adding a scenario, check for an existing home.** If another capability spec already mandates the behavior, do not restate it — cross-reference instead. Duplicated behavior across specs means every change needs two spec updates.
 
 Precedent: the `testing` spec was deleted for being purely process-shaped (`1af0b01`), the `eslint-config` spec was removed as self-documenting tooling (`8fad1a7`), and `component-tests` was distributed into capability specs (`response-view`, `status-bar`, `request-details`) by the `distribute-component-tests-spec` change.
+
+## Comments
+
+Prefer self-documenting code over comments. Only add comments for knowledge that cannot be expressed in the code itself.
+
+- **Self-document first.** Use clear test names, descriptive assertion values, and meaningful function names. A switch statement or an `expect().toBe(...)` is already its own documentation.
+- **Never restate what the code says.** If a comment describes what the next line does, the code already says that — remove the comment.
+- **Never reference change history.** Comments like `// After recursive-body-synthesis, ...` are git-history noise. The commit message already captures what changed. Explain the *current state*, not the transition.
+- **Reserve comments for non-obvious knowledge only:** gotchas that look correct but aren't (e.g., an em-dash resembling a hyphen), design decisions not evident from the code (e.g., bracket-notation encoding), and contract invariants a maintainer might unknowingly violate (e.g., "assumes document is already dereferenced").
+- **Keep docstrings short.** If a docstring exceeds 5 lines, it is likely restating the function body. Trim to the contract and non-obvious behaviors.
+
+Precedent: 9 restating comments and 3 verbose docstrings were cleaned up in the `recursive-body-synthesis` change, keeping only gotcha warnings and contract notes.

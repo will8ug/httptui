@@ -37,11 +37,6 @@ function isSupportedMethod(method: string): method is HttpMethod {
   return SUPPORTED_METHODS.has(method.toUpperCase());
 }
 
-/**
- * Resolve an internal `$ref` (e.g. `#/components/parameters/UserIdParam`) by
- * traversing the parsed JSON document. External refs are logged as warnings
- * and return undefined.
- */
 function resolveRef(ref: string, doc: any): any {
   if (!ref.startsWith('#/')) {
     logger.warn(`External $ref "${ref}" is not supported — skipped`);
@@ -223,9 +218,7 @@ function processSecurity(
 
 /**
  * Recursively synthesize an example value from an OpenAPI schema. Assumes the
- * document is already dereferenced. Returns `undefined` for properties that
- * should be omitted. A defensive depth counter (warn + stop at depth > 50)
- * guards against pathological schemas or unresolved cycles.
+ * document is already dereferenced.
  */
 function synthesizeExample(schema: any, doc: any, depth = 0): any {
   if (!schema || depth > 50) {
@@ -270,10 +263,6 @@ function synthesizeExample(schema: any, doc: any, depth = 0): any {
   return undefined;
 }
 
-/**
- * Flatten a nested structure into urlencoded pairs: bracket notation for
- * nested objects (`key[prop]=value`), repeated keys for arrays.
- */
 function flattenToUrlencoded(value: any, prefix: string): string {
   if (value === null || value === undefined) {
     return '';
@@ -463,9 +452,7 @@ function deduplicate(variables: FileVariable[]) {
  * Recursively dereference every internal `$ref` (`#/...`) in the parsed JSON
  * document in place, replacing each with its target object. External refs
  * (non-`#/`) are left as stubs so the existing call-site resolution still
- * warns. Circular internal refs are detected via a path-scoped visited set
- * and left as stubs with a warning. A defensive depth counter guards against
- * stack overflow on pathological specs.
+ * warns.
  *
  * Mutates `doc` in place. `doc` is private to `parseOpenApiSpec`.
  */
@@ -475,7 +462,6 @@ function dereferenceDoc(doc: any): void {
       return node;
     }
 
-    // Defensive guard against deep recursion blowing the JS call stack.
     if (depth > 100) {
       logger.warn(`Max dereference depth (100) exceeded at "${node.$ref ?? '<root>'}" — stop resolving`);
       return node;
@@ -489,15 +475,12 @@ function dereferenceDoc(doc: any): void {
     }
 
     if (node.$ref) {
-      // Circular ref on current resolution path — stop, leave the stub.
       if (visited.has(node.$ref)) {
         logger.warn(`Circular $ref "${node.$ref}" — stop resolving`);
         return node;
       }
 
-      // External ref (non-#/): leave stub. The existing call sites call
-      // resolveRef, which warns about unsupported external refs. Do NOT
-      // warn here — avoids double-warning.
+      // Do NOT warn here — resolveRef warns at call sites to avoid double-warning.
       if (!node.$ref.startsWith('#/')) {
         return node;
       }
@@ -505,7 +488,6 @@ function dereferenceDoc(doc: any): void {
       visited.add(node.$ref);
       const target = resolveRef(node.$ref, current);
       if (target === undefined) {
-        // resolveRef already warned (external ref or broken path). Leave stub.
         visited.delete(node.$ref);
         return node;
       }
@@ -523,13 +505,6 @@ function dereferenceDoc(doc: any): void {
   dereferenceNode(doc, doc, new Set(), 0);
 }
 
-/**
- * Parse an OpenAPI 3.x JSON spec into a `ParseResult` with `ParsedRequest[]`
- * and `FileVariable[]`. Uses manual JSON parsing with zero external dependencies.
- *
- * Unsupported features (external $ref, OAuth2, webhooks, Swagger 2.0) are
- * logged as warnings to stderr and skipped.
- */
 export function parseOpenApiSpec(content: string): ParseResult {
   let doc: any;
 

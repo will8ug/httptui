@@ -865,7 +865,6 @@ describe('parseOpenApiSpec - request body', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
-
     expect(result.requests[0].body).not.toContain('secret');
   });
 
