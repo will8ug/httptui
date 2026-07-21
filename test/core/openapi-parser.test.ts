@@ -419,10 +419,12 @@ describe('parseOpenApiSpec - recursive $ref resolution', () => {
     const req = result.requests.find((r) => r.name === 'createOrder');
     expect(req).toBeDefined();
     if (!req) throw new Error('Expected createOrder');
-    // customer has no top-level example so the synthesizer falls back to a type
-    // placeholder ("object"); shipping/currency/metadata resolve to their examples.
+    // After recursive-body-synthesis, customer is now synthesized from
+    // per-property examples instead of falling back to the type-name
+    // placeholder "object". shipping/metadata retain their top-level examples,
+    // currency retains its inline example.
     expect(req.body).toBe(
-      '{"customer":"object","shipping":{"street":"123 Main St","city":"Springfield"},"currency":"USD","metadata":{"source":"web"}}',
+      '{"customer":{"name":"Alice","email":"alice@example.com"},"shipping":{"street":"123 Main St","city":"Springfield"},"currency":"USD","metadata":{"source":"web"}}',
     );
   });
 
@@ -436,11 +438,16 @@ describe('parseOpenApiSpec - recursive $ref resolution', () => {
     expect(getWarnings()).not.toContain('Circular');
   });
 
-  it('leaves external $ref unresolved with warning at call site', () => {
+  it('omits external $ref stub from synthesized body', () => {
     const content = readFixture('openapi-external-ref-unaffected.json');
     const result = parseOpenApiSpec(content);
 
-    expect(getWarnings()).toContain('External $ref');
+    // After recursive-body-synthesis, synthesizeExample encounters the
+    // external $ref stub directly (per Decision 2, it does not call
+    // resolveRef/resolveSchema). The stub has no example/default/type, so
+    // the property is omitted. The warning is no longer emitted for body
+    // property external refs (only parameter-level external refs still warn
+    // via the resolveRef call site in collectParameters).
     expect(result.requests[0].body).toBe('{"internal":{"id":1}}');
   });
 });
@@ -522,12 +529,213 @@ describe('parseOpenApiSpec - recursive $ref regression', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
+    // After recursive-body-synthesis, secret (type-only, no example/default)
+    // is omitted instead of using the type-name placeholder "string".
     expect(result.requests[0].body).toBe(
-      '{"id":1,"name":"Widget","description":"A widget","secret":"string"}',
+      '{"id":1,"name":"Widget","description":"A widget"}',
     );
   });
 
   it('spring-boot real-world spec produces identical request list', () => {
+    const content = readFileSync(
+      resolve(__dirname, '..', '..', 'examples', 'spring-boot-api-service-openapi.json'),
+      'utf8',
+    );
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests).toHaveLength(7);
+    for (const req of result.requests) {
+      expect(req.name).toBeTruthy();
+      expect(req.method).toMatch(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/);
+      expect(req.url).toMatch(/^{{baseUrl}}/);
+    }
+  });
+});
+
+describe('parseOpenApiSpec - recursive body synthesis', () => {
+  it('synthesizes nested object from per-property examples', () => {
+    const content = readFixture('openapi-nested-object-examples.json');
+    const result = parseOpenApiSpec(content);
+
+    const req = result.requests.find((r) => r.name === 'createOrder');
+    expect(req).toBeDefined();
+    if (!req) throw new Error('Expected createOrder');
+    expect(req.body).toBe(
+      '{"customer":{"name":"Alice","email":"alice@example.com"},"shipping":{"street":"123 Main St","city":"Springfield"},"currency":"USD","metadata":{"source":"web"}}',
+    );
+  });
+
+  it('synthesizes array of object refs', () => {
+    const content = readFixture('openapi-array-of-refs.json');
+    const result = parseOpenApiSpec(content);
+
+    const req = result.requests.find((r) => r.name === 'bulkCreate');
+    expect(req).toBeDefined();
+    if (!req) throw new Error('Expected bulkCreate');
+    expect(req.body).toBe('[{"sku":"W-001","quantity":2}]');
+  });
+
+  it('synthesizes array of primitives', () => {
+    const content = readFixture('openapi-array-of-primitives.json');
+    const result = parseOpenApiSpec(content);
+
+    const req = result.requests.find((r) => r.name === 'setTags');
+    expect(req).toBeDefined();
+    if (!req) throw new Error('Expected setTags');
+    expect(req.body).toBe('["priority"]');
+  });
+
+  it('synthesizes deeply-nested object (3+ levels)', () => {
+    const content = readFixture('openapi-deeply-nested.json');
+    const result = parseOpenApiSpec(content);
+
+    const req = result.requests.find((r) => r.name === 'createDeep');
+    expect(req).toBeDefined();
+    if (!req) throw new Error('Expected createDeep');
+    expect(req.body).toBe('{"order":{"customer":{"name":"Alice"}}}');
+  });
+
+  it('uses default value for primitive property without example', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/items': {
+          post: {
+            operationId: 'createItem',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      count: { type: 'integer', default: 10 },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests[0].body).toBe('{"count":10}');
+  });
+
+  it('omits external $ref stub from synthesized body', () => {
+    const content = readFixture('openapi-external-ref-stub.json');
+    const result = parseOpenApiSpec(content);
+
+    // The external $ref stub has no example/default/type, so it is omitted.
+    // No "External $ref" warning fires for body property stubs — only
+    // parameter-level external refs warn via resolveRef in collectParameters.
+    expect(result.requests[0].body).toBe('{"internal":"resolved"}');
+    expect(getWarnings()).not.toContain('External $ref');
+  });
+
+  it('returns undefined body for composition keyword (allOf)', () => {
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/items': {
+          post: {
+            operationId: 'createItem',
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/Base' },
+                      { properties: { name: { type: 'string', example: 'Alice' } } },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          Base: { type: 'object', properties: { id: { type: 'integer', example: 1 } } },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    // Composition keywords (allOf/anyOf/oneOf) have no `type` field, so the
+    // synthesizer cannot dispatch and returns undefined.
+    expect(result.requests[0].body).toBeUndefined();
+  });
+});
+
+describe('parseOpenApiSpec - urlencoded nested encoding', () => {
+  it('uses bracket notation for nested object properties', () => {
+    const content = readFixture('openapi-urlencoded-nested.json');
+    const result = parseOpenApiSpec(content);
+
+    const req = result.requests.find((r) => r.name === 'submitForm');
+    expect(req).toBeDefined();
+    if (!req) throw new Error('Expected submitForm');
+    expect(req.body).toBe('name=John&address%5Bcity%5D=SF&tags=vip');
+    expect(req.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+  });
+
+  it('uses repeated keys for array properties', () => {
+    const content = readFixture('openapi-urlencoded-nested.json');
+    const result = parseOpenApiSpec(content);
+
+    // The synthesizer produces a single-element array for `tags`, which
+    // flattens to one repeated key (not duplicated).
+    expect(result.requests[0].body).toContain('tags=vip');
+    expect(result.requests[0].body).not.toContain('tags=vip&tags=vip');
+  });
+
+  it('encodes mixed nested object and array properties', () => {
+    const content = readFixture('openapi-urlencoded-nested.json');
+    const result = parseOpenApiSpec(content);
+
+    expect(result.requests[0].body).toBe('name=John&address%5Bcity%5D=SF&tags=vip');
+  });
+});
+
+describe('parseOpenApiSpec - recursive body synthesis depth guard', () => {
+  it('fires depth guard for deeply nested schemas (depth > 50)', () => {
+    // parseOpenApiSpec takes a JSON string, which cannot represent object
+    // cycles. Instead, build a 55-level-deep nested object schema — the
+    // synthesizer's defensive depth guard (warn + stop at depth > 50) fires
+    // before reaching the bottom, and the body resolves to undefined.
+    function buildNested(levels: number): Record<string, unknown> {
+      let schema: Record<string, unknown> = { type: 'string', example: 'deep' };
+      for (let i = 0; i < levels; i++) {
+        schema = { type: 'object', properties: { level: schema } };
+      }
+      return schema;
+    }
+
+    const content = JSON.stringify({
+      openapi: '3.0.3',
+      paths: {
+        '/deep': {
+          post: {
+            operationId: 'deepOp',
+            requestBody: {
+              content: { 'application/json': { schema: buildNested(55) } },
+            },
+          },
+        },
+      },
+    });
+    const result = parseOpenApiSpec(content);
+
+    expect(getWarnings()).toContain('Max synthesis depth');
+    expect(result.requests[0].body).toBeUndefined();
+  });
+});
+
+describe('parseOpenApiSpec - recursive body synthesis real-world regression', () => {
+  it('spring-boot real-world spec produces correct output', () => {
     const content = readFileSync(
       resolve(__dirname, '..', '..', 'examples', 'spring-boot-api-service-openapi.json'),
       'utf8',
@@ -672,17 +880,20 @@ describe('parseOpenApiSpec - request body', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
-    expect(result.requests[0].body).toBe('{"id":1,"name":"Widget","description":"A widget","secret":"string"}');
+    // After recursive-body-synthesis, secret (no example/default) is omitted.
+    expect(result.requests[0].body).toBe('{"id":1,"name":"Widget","description":"A widget"}');
   });
 
-  it('uses type as placeholder for properties without example or default', () => {
+  it('omits properties without example or default', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
-    expect(result.requests[0].body).toContain('"secret":"string"');
+    // After recursive-body-synthesis, type-only properties without example/default
+    // are omitted (previously fell back to the type-name placeholder "string").
+    expect(result.requests[0].body).not.toContain('secret');
   });
 
-  it('synthesizes body from type-only properties', () => {
+  it('omits type-only properties without example or default', () => {
     const content = JSON.stringify({
       openapi: '3.0.3',
       paths: {
@@ -707,7 +918,9 @@ describe('parseOpenApiSpec - request body', () => {
     });
     const result = parseOpenApiSpec(content);
 
-    expect(result.requests[0].body).toBe('{"templateId":"string"}');
+    // After recursive-body-synthesis, type-only properties are omitted (not
+    // the type-name placeholder "string"), so the body is undefined.
+    expect(result.requests[0].body).toBeUndefined();
   });
 
   it('uses property default when no example present', () => {
@@ -801,7 +1014,9 @@ describe('parseOpenApiSpec - request body', () => {
     });
     const result = parseOpenApiSpec(content);
 
-    expect(result.requests[0].body).toBe('{"templateId":"string"}');
+    // After recursive-body-synthesis, the resolved $ref has type-only (no
+    // example/default), so the property is omitted and the body is undefined.
+    expect(result.requests[0].body).toBeUndefined();
   });
 
   it('skips property with nullable union type', () => {

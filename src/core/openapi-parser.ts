@@ -221,6 +221,94 @@ function processSecurity(
   }
 }
 
+/**
+ * Recursively synthesize an example value from an OpenAPI schema. Assumes the
+ * document is already dereferenced (does not call resolveRef/resolveSchema).
+ * Returns `undefined` for properties that should be omitted.
+ *
+ * Dispatch:
+ * - `schema.example` / `schema.default` → returned verbatim (Tier 3 passthrough).
+ * - `type: "object"` → build a nested object from per-property synthesis; omit
+ *   properties that synthesize to `undefined`; return `undefined` if no
+ *   property produced a value.
+ * - `type: "array"` → synthesize a single item from `items` and wrap in a
+ *   single-element array; return `undefined` if the item synthesizes to nothing.
+ * - Primitive types without `example`/`default` → `undefined` (omit).
+ *
+ * A defensive depth counter (warn + stop at depth > 50) guards against
+ * pathological schemas or unresolved cycles.
+ */
+function synthesizeExample(schema: any, doc: any, depth = 0): any {
+  if (!schema || depth > 50) {
+    if (depth > 50) {
+      logger.warn('Max synthesis depth (50) exceeded — stop');
+    }
+    return undefined;
+  }
+
+  if (schema.example !== undefined) {
+    return schema.example;
+  }
+
+  if (schema.default !== undefined) {
+    return schema.default;
+  }
+
+  if (schema.type === 'object') {
+    if (!schema.properties) {
+      return undefined;
+    }
+    const obj: Record<string, any> = {};
+    let hasAny = false;
+    for (const [name, propSchema] of Object.entries(schema.properties)) {
+      const val = synthesizeExample(propSchema, doc, depth + 1);
+      if (val !== undefined) {
+        obj[name] = val;
+        hasAny = true;
+      }
+    }
+    return hasAny ? obj : undefined;
+  }
+
+  if (schema.type === 'array') {
+    if (!schema.items) {
+      return undefined;
+    }
+    const item = synthesizeExample(schema.items, doc, depth + 1);
+    return item !== undefined ? [item] : undefined;
+  }
+
+  return undefined;
+}
+
+/**
+ * Flatten a nested object/array structure into urlencoded pairs using bracket
+ * notation for nested objects (`key[prop]=value`) and repeated keys for arrays
+ * (`key=val1&key=val2`). Null/undefined values are skipped. Returns an empty
+ * string when nothing remains.
+ */
+function flattenToUrlencoded(value: any, prefix: string): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (typeof value !== 'object') {
+    return `${encodeURIComponent(prefix)}=${encodeURIComponent(String(value))}`;
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => flattenToUrlencoded(v, prefix))
+      .filter((s) => s)
+      .join('&');
+  }
+
+  return Object.entries(value)
+    .map(([k, v]) => flattenToUrlencoded(v, prefix ? `${prefix}[${k}]` : k))
+    .filter((s) => s)
+    .join('&');
+}
+
 function processRequestBody(
   requestBody: any,
   doc: any,
@@ -283,35 +371,13 @@ function processRequestBody(
       return { body: serializeExample(resolvedSchema.example), contentType: mediaType };
     }
 
-    // Tier 4: synthesize flat object from per-property examples
-    if (resolvedSchema && resolvedSchema.type === 'object' && resolvedSchema.properties) {
-      const synthesized: Record<string, any> = {};
-      let hasAny = false;
-
-      for (const [propName, propSchema] of Object.entries(resolvedSchema.properties)) {
-        const prop = resolveSchema(propSchema, doc);
-        if (!prop) continue;
-        if (prop.example !== undefined) {
-          synthesized[propName] = prop.example;
-          hasAny = true;
-        } else if (prop.default !== undefined) {
-          synthesized[propName] = prop.default;
-          hasAny = true;
-        } else if (typeof prop.type === 'string') {
-          synthesized[propName] = String(prop.type);
-          hasAny = true;
-        }
+    // Tier 4: recursively synthesize example from schema
+    const synthesized = synthesizeExample(resolvedSchema, doc);
+    if (synthesized !== undefined) {
+      if (mediaType === 'application/x-www-form-urlencoded') {
+        return { body: flattenToUrlencoded(synthesized, ''), contentType: mediaType };
       }
-
-      if (hasAny) {
-        if (mediaType === 'application/x-www-form-urlencoded') {
-          const body = Object.entries(synthesized)
-            .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-            .join('&');
-          return { body, contentType: mediaType };
-        }
-        return { body: JSON.stringify(synthesized), contentType: mediaType };
-      }
+      return { body: JSON.stringify(synthesized), contentType: mediaType };
     }
   }
 

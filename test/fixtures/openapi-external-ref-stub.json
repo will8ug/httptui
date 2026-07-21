@@ -1,0 +1,31 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "External Ref Stub API", "version": "1.0.0" },
+  "servers": [{ "url": "https://api.example.com" }],
+  "paths": {
+    "/mixed": {
+      "post": {
+        "operationId": "testExternalStub",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Mixed" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Mixed": {
+        "type": "object",
+        "properties": {
+          "internal": { "type": "string", "example": "resolved" },
+          "external": { "$ref": "./external.json#/Foo" }
+        }
+      }
+    }
+  }
+}

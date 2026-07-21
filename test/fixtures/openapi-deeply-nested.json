@@ -1,0 +1,42 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Deeply Nested API", "version": "1.0.0" },
+  "servers": [{ "url": "https://api.example.com" }],
+  "paths": {
+    "/deep": {
+      "post": {
+        "operationId": "createDeep",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Root" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Root": {
+        "type": "object",
+        "properties": {
+          "order": { "$ref": "#/components/schemas/Order" }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "customer": { "$ref": "#/components/schemas/Customer" }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "example": "Alice" }
+        }
+      }
+    }
+  }
+}
