@@ -194,7 +194,7 @@ The system SHALL resolve security requirements for each operation (operation-lev
 - **THEN** the parsed request SHALL have no auth headers added
 
 ### Requirement: Synthesize request body from examples
-The system SHALL extract the request body based on a multi-tier example lookup. The system SHALL prefer `application/json` content type if present, otherwise use the first content type key. The body lookup order is: (1) `content[mediaType].example` (use verbatim), (2) `content[mediaType].examples[firstKey].value` (use verbatim), (3) resolve schema `$ref` (via the dereference pass) and use `schema.example` (use verbatim), (4) recursively synthesize an example value from the schema: for `type: "object"` with `properties`, iterate each property and recursively synthesize its value, omitting properties whose synthesis returns `undefined`; for `type: "array"` with `items`, recursively synthesize a single example item from `items` and wrap it in a single-element array (if item synthesis returns `undefined`, the array property is omitted); for primitive types (`string`, `integer`, `number`, `boolean`) with `example` or `default`, return that value; (5) otherwise `body: undefined`. The recursive synthesis SHALL terminate with a warning and return `undefined` if the recursion depth exceeds 50 levels (defensive guard against pathological schemas or unresolved cycles). For `application/x-www-form-urlencoded` content type, the synthesized body SHALL be serialized as `key=value` pairs for top-level primitive properties, using bracket notation (`key[prop]=value`) for nested object properties and repeated keys (`key=val1&key=val2`) for array properties, with all keys and values URL-encoded.
+The system SHALL extract the request body based on a multi-tier example lookup. The system SHALL prefer `application/json` content type if present, otherwise use the first content type key. The body lookup order is: (1) `content[mediaType].example` (use verbatim), (2) `content[mediaType].examples[firstKey].value` (use verbatim), (3) resolve schema `$ref` (via the dereference pass) and use `schema.example` (use verbatim), (4) recursively synthesize an example value from the schema: for `type: "object"` with `properties`, iterate each property and recursively synthesize its value, omitting properties whose synthesis returns `undefined`; for `type: "array"` with `items`, recursively synthesize a single example item from `items` and wrap it in a single-element array (if item synthesis returns `undefined`, the array property is omitted); for primitive types (`string`, `integer`, `number`, `boolean`), return `example`, else `default`, else the type name as a placeholder (e.g., `"string"`); the placeholder applies only to nested properties, not the top-level schema; when `type` is an array (nullable unions like `["string", "null"]`), skip the fallback and omit the property; (5) otherwise `body: undefined`. The recursive synthesis SHALL terminate with a warning and return `undefined` if the recursion depth exceeds 50 levels (defensive guard against pathological schemas or unresolved cycles). For `application/x-www-form-urlencoded` content type, the synthesized body SHALL be serialized as `key=value` pairs for top-level primitive properties, using bracket notation (`key[prop]=value`) for nested object properties and repeated keys (`key=val1&key=val2`) for array properties, with all keys and values URL-encoded.
 
 #### Scenario: Use content-level example
 - **WHEN** an operation has `requestBody.content.application/json.example: { "name": "Alice" }`
@@ -209,12 +209,20 @@ The system SHALL extract the request body based on a multi-tier example lookup. 
 - **THEN** the parsed request SHALL have body `{"name":"Alice"}`
 
 #### Scenario: Synthesize flat object from per-property examples
-- **WHEN** an operation has `requestBody.content.application/json.schema.$ref: "#/components/schemas/DemoItem"` and `DemoItem` has properties `id` (example: 1), `name` (example: "Widget"), `description` (example: "A widget")
-- **THEN** the parsed request SHALL have body `{"id":1,"name":"Widget","description":"A widget"}`
+- **WHEN** an operation has `requestBody.content.application/json.schema.$ref: "#/components/schemas/DemoItem"` and `DemoItem` has properties `id` (example: 1), `name` (example: "Widget"), `description` (example: "A widget"), and `secret` (no example, `type: "string"`)
+- **THEN** the parsed request SHALL have body `{"id":1,"name":"Widget","description":"A widget","secret":"string"}`
 
-#### Scenario: Omit properties without examples in synthesis
-- **WHEN** a schema has properties `name` (example: "Widget") and `secret` (no example)
-- **THEN** the synthesized body SHALL be `{"name":"Widget"}` (secret omitted)
+#### Scenario: Properties with type but no example or default use type as placeholder
+- **WHEN** a schema has a property `templateId` with `{ "type": "string" }` (no `example`, no `default`)
+- **THEN** the synthesized body SHALL include `"templateId":"string"`
+
+#### Scenario: Property $ref with type only uses type as placeholder
+- **WHEN** a schema has a property `templateId` with `{ "$ref": "#/components/schemas/TemplateId" }` and `TemplateId` is `{ "type": "string" }` (no `example`, no `default`)
+- **THEN** the synthesized body SHALL include `"templateId":"string"`
+
+#### Scenario: Omit properties without type, example, or default
+- **WHEN** a schema has a property `notes` with `{ "description": "Internal notes" }` (no `type`, no `example`, no `default`)
+- **THEN** the synthesized body SHALL omit `notes` entirely
 
 #### Scenario: No body when no examples exist
 - **WHEN** an operation has `requestBody.content.application/json.schema: { type: "string" }` with no example
@@ -236,9 +244,9 @@ The system SHALL extract the request body based on a multi-tier example lookup. 
 - **WHEN** an operation has `requestBody.content.application/json.schema.$ref: "#/components/schemas/Order"` and `Order` has properties `currency` (example: "USD") and `customer` which is `{ type: "object", properties: { name: { type: "string", example: "Alice" }, email: { type: "string", example: "alice@example.com" } } }` (no top-level `example`)
 - **THEN** the parsed request SHALL have body `{"currency":"USD","customer":{"name":"Alice","email":"alice@example.com"}}`
 
-#### Scenario: Omit nested object property when no nested examples exist
+#### Scenario: Synthesize nested object with type placeholders when no examples exist
 - **WHEN** a schema has a property `metadata` which is `{ type: "object", properties: { source: { type: "string" } } }` (no examples anywhere in the nested schema)
-- **THEN** the synthesized body SHALL omit `metadata` entirely (no `{"metadata":{}}`)
+- **THEN** the synthesized body SHALL include `"metadata":{"source":"string"}` (type-name placeholders used for type-only properties)
 
 #### Scenario: Synthesize array of object refs
 - **WHEN** an operation has `requestBody.content.application/json.schema: { type: "array", items: { "$ref": "#/components/schemas/LineItem" } }` and `LineItem` has properties `sku` (example: "W-001") and `quantity` (example: 2)
@@ -248,9 +256,9 @@ The system SHALL extract the request body based on a multi-tier example lookup. 
 - **WHEN** an operation has `requestBody.content.application/json.schema: { type: "array", items: { type: "string", example: "priority" } }`
 - **THEN** the parsed request SHALL have body `["priority"]`
 
-#### Scenario: Omit array property when items have no examples
+#### Scenario: Synthesize array with type placeholder when items have no examples
 - **WHEN** a schema has a property `tags` which is `{ type: "array", items: { type: "string" } }` (no example on items)
-- **THEN** the synthesized body SHALL omit `tags` entirely (no `{"tags":[]}`)
+- **THEN** the synthesized body SHALL include `"tags":["string"]` (type-name placeholder for items)
 
 #### Scenario: Synthesize deeply-nested object (3+ levels)
 - **WHEN** a schema has property `order` which is `{ type: "object", properties: { customer: { type: "object", properties: { name: { type: "string", example: "Alice" } } } } }`

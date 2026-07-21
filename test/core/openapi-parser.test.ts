@@ -520,7 +520,7 @@ describe('parseOpenApiSpec - recursive $ref regression', () => {
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe(
-      '{"id":1,"name":"Widget","description":"A widget"}',
+      '{"id":1,"name":"Widget","description":"A widget","secret":"string"}',
     );
   });
 
@@ -858,17 +858,17 @@ describe('parseOpenApiSpec - request body', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
-    expect(result.requests[0].body).toBe('{"id":1,"name":"Widget","description":"A widget"}');
+    expect(result.requests[0].body).toBe('{"id":1,"name":"Widget","description":"A widget","secret":"string"}');
   });
 
-  it('omits properties without example or default', () => {
+  it('uses type as placeholder for properties without example or default', () => {
     const content = readFixture('openapi-body-ref.json');
     const result = parseOpenApiSpec(content);
 
-    expect(result.requests[0].body).not.toContain('secret');
+    expect(result.requests[0].body).toContain('"secret":"string"');
   });
 
-  it('omits type-only properties without example or default', () => {
+  it('uses type as placeholder for type-only properties', () => {
     const content = JSON.stringify({
       openapi: '3.0.3',
       paths: {
@@ -893,7 +893,7 @@ describe('parseOpenApiSpec - request body', () => {
     });
     const result = parseOpenApiSpec(content);
 
-    expect(result.requests[0].body).toBeUndefined();
+    expect(result.requests[0].body).toBe('{"templateId":"string"}');
   });
 
   it('uses property default when no example present', () => {
@@ -987,7 +987,7 @@ describe('parseOpenApiSpec - request body', () => {
     });
     const result = parseOpenApiSpec(content);
 
-    expect(result.requests[0].body).toBeUndefined();
+    expect(result.requests[0].body).toBe('{"templateId":"string"}');
   });
 
   it('skips property with nullable union type', () => {

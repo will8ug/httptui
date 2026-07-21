@@ -260,6 +260,10 @@ function synthesizeExample(schema: any, doc: any, depth = 0): any {
     return item !== undefined ? [item] : undefined;
   }
 
+  if (depth > 0 && typeof schema.type === 'string') {
+    return String(schema.type);
+  }
+
   return undefined;
 }
 
