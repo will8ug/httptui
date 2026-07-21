@@ -24,3 +24,13 @@ Prefer self-documenting code over comments. Only add comments for knowledge that
 - **Keep docstrings short.** If a docstring exceeds 5 lines, it is likely restating the function body. Trim to the contract and non-obvious behaviors.
 
 Precedent: 9 restating comments and 3 verbose docstrings were cleaned up in the `recursive-body-synthesis` change, keeping only gotcha warnings and contract notes.
+
+## Design-goal consistency
+
+When a design decision contradicts a stated goal, resolve the contradiction before implementing — do not silently pick one side.
+
+- **Audit existing behavior before generalizing.** When replacing a feature with a more general one, enumerate every behavior of the old implementation — including edge cases like type-name placeholders — and decide explicitly whether each is preserved or dropped.
+- **Pseudocode is authoritative.** Implementation agents follow pseudocode literally. If the pseudocode contradicts the prose goals, the pseudocode wins — so the pseudocode must be consistent with the goals.
+- **Flag contradictions, don't resolve them silently.** A design doc that says "preserve existing behavior" in Goals but "do not do X" in Decisions is a bug in the design. Fix the design before implementing.
+
+Precedent: the `recursive-body-synthesis` design said "preserve all existing test behavior" and "fall back to the type name" in Goals, but Decision 1's pseudocode said "DO NOT return the type name." The implementation followed the pseudocode, dropping the type-name placeholder — a regression caught post-ship.
