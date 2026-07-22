@@ -33,7 +33,13 @@ if (envPath && envName) {
 }
 
 const content = readFileSync(filePath, 'utf8');
-const parseResult: ParseResult = parseAnyFormat(filePath, content);
+
+let parseResult: ParseResult;
+try {
+  parseResult = parseAnyFormat(filePath, content);
+} catch (error) {
+  exitWithError(error instanceof Error ? error.message : String(error));
+}
 
 if (parseResult.requests.length === 0) {
   exitWithError(`No requests found in ${filePath}`);

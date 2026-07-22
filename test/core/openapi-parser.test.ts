@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
+import { parse as parseYaml } from 'yaml';
 
 import { parseOpenApiSpec, logger } from '../../src/core/openapi-parser';
 
@@ -24,7 +25,7 @@ function getWarnings(): string {
 
 describe('parseOpenApiSpec - basic parsing', () => {
   it('parses a basic spec with a single GET operation', () => {
-    const content = readFixture('openapi-basic.json');
+    const content = JSON.parse(readFixture('openapi-basic.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests).toHaveLength(1);
@@ -33,8 +34,19 @@ describe('parseOpenApiSpec - basic parsing', () => {
     expect(result.requests[0].name).toBe('listUsers');
   });
 
+  it('parses a YAML spec with the same result as the JSON equivalent', () => {
+    const yamlContent = readFixture('openapi-basic.yaml');
+    const doc = parseYaml(yamlContent);
+    const result = parseOpenApiSpec(doc);
+
+    expect(result.requests).toHaveLength(1);
+    expect(result.requests[0].method).toBe('GET');
+    expect(result.requests[0].url).toBe('{{baseUrl}}/users');
+    expect(result.requests[0].name).toBe('listUsers');
+  });
+
   it('parses spec with multiple operations on same path', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/users/{id}': {
@@ -43,7 +55,7 @@ describe('parseOpenApiSpec - basic parsing', () => {
           delete: { operationId: 'deleteUser' },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests).toHaveLength(3);
@@ -53,19 +65,15 @@ describe('parseOpenApiSpec - basic parsing', () => {
   });
 
   it('parses empty spec with baseUrl variable', () => {
-    const content = readFixture('openapi-empty.json');
+    const content = JSON.parse(readFixture('openapi-empty.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests).toHaveLength(0);
     expect(result.variables).toContainEqual({ name: 'baseUrl', value: 'https://api.example.com' });
   });
 
-  it('rejects invalid JSON', () => {
-    expect(() => parseOpenApiSpec('not valid json')).toThrow('Failed to parse OpenAPI spec: invalid JSON');
-  });
-
   it('warns on Swagger 2.0 spec and returns empty results', () => {
-    const content = JSON.stringify({ swagger: '2.0', paths: {} });
+    const content = { swagger: '2.0', paths: {} };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests).toHaveLength(0);
@@ -75,35 +83,35 @@ describe('parseOpenApiSpec - basic parsing', () => {
 
 describe('parseOpenApiSpec - server URL / baseUrl', () => {
   it('extracts single server URL as baseUrl', () => {
-    const content = readFixture('openapi-auth.json');
+    const content = JSON.parse(readFixture('openapi-auth.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.variables).toContainEqual({ name: 'baseUrl', value: 'https://api.example.com' });
   });
 
   it('sets baseUrl to empty string when no servers', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: { '/test': { get: { operationId: 'test' } } },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.variables).toContainEqual({ name: 'baseUrl', value: '' });
   });
 
   it('resolves server template variable with default', () => {
-    const content = readFixture('openapi-variables.json');
+    const content = JSON.parse(readFixture('openapi-variables.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.variables).toContainEqual({ name: 'baseUrl', value: 'https://api.example.com/v1' });
   });
 
   it('leaves template variable as {{var}} when no default and emits FileVariable', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       servers: [{ url: 'https://{host}/v1', variables: { host: {} } }],
       paths: { '/test': { get: { operationId: 'test' } } },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.variables).toContainEqual({ name: 'baseUrl', value: 'https://{{host}}/v1' });
@@ -113,34 +121,34 @@ describe('parseOpenApiSpec - server URL / baseUrl', () => {
 
 describe('parseOpenApiSpec - operation names', () => {
   it('uses operationId as name', () => {
-    const content = readFixture('openapi-basic.json');
+    const content = JSON.parse(readFixture('openapi-basic.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].name).toBe('listUsers');
   });
 
   it('uses summary when operationId is absent', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: { '/users': { get: { summary: 'List all users' } } },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].name).toBe('List all users');
   });
 
   it('falls back to METHOD /path when no operationId or summary', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: { '/users': { get: {} } },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].name).toBe('GET /users');
   });
 
   it('prefixes with first tag', () => {
-    const content = readFixture('openapi-tags.json');
+    const content = JSON.parse(readFixture('openapi-tags.json'));
     const result = parseOpenApiSpec(content);
 
     const names = result.requests.map((r) => r.name);
@@ -150,7 +158,7 @@ describe('parseOpenApiSpec - operation names', () => {
   });
 
   it('does not add tag prefix when no tags', () => {
-    const content = readFixture('openapi-tags.json');
+    const content = JSON.parse(readFixture('openapi-tags.json'));
     const result = parseOpenApiSpec(content);
 
     const healthRequest = result.requests.find((r) => r.name === 'GET /health');
@@ -160,7 +168,7 @@ describe('parseOpenApiSpec - operation names', () => {
 
 describe('parseOpenApiSpec - line numbers', () => {
   it('assigns incrementing line numbers', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/users/{id}': {
@@ -169,7 +177,7 @@ describe('parseOpenApiSpec - line numbers', () => {
           delete: { operationId: 'deleteUser' },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].lineNumber).toBe(1);
@@ -180,7 +188,7 @@ describe('parseOpenApiSpec - line numbers', () => {
 
 describe('parseOpenApiSpec - path parameters', () => {
   it('maps path parameter with default', () => {
-    const content = readFixture('openapi-params.json');
+    const content = JSON.parse(readFixture('openapi-params.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].url).toContain('{{id}}');
@@ -188,7 +196,7 @@ describe('parseOpenApiSpec - path parameters', () => {
   });
 
   it('maps path parameter with example and no default', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/users/{id}': {
@@ -198,14 +206,14 @@ describe('parseOpenApiSpec - path parameters', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.variables).toContainEqual({ name: 'id', value: '42' });
   });
 
   it('maps path parameter with type but no default or example to type value', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/users/{id}': {
@@ -215,14 +223,14 @@ describe('parseOpenApiSpec - path parameters', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.variables).toContainEqual({ name: 'id', value: 'integer' });
   });
 
   it('maps path parameter with no schema to empty string', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/users/{id}': {
@@ -232,14 +240,14 @@ describe('parseOpenApiSpec - path parameters', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.variables).toContainEqual({ name: 'id', value: '' });
   });
 
   it('maps path parameter with nullable union type to empty string', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/users/{id}': {
@@ -249,7 +257,7 @@ describe('parseOpenApiSpec - path parameters', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.variables).toContainEqual({ name: 'id', value: '' });
@@ -258,7 +266,7 @@ describe('parseOpenApiSpec - path parameters', () => {
 
 describe('parseOpenApiSpec - query parameters', () => {
   it('appends query parameter with default to URL', () => {
-    const content = readFixture('openapi-params.json');
+    const content = JSON.parse(readFixture('openapi-params.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].url).toContain('?limit={{limit}}');
@@ -266,14 +274,14 @@ describe('parseOpenApiSpec - query parameters', () => {
   });
 
   it('appends multiple query parameters to URL', () => {
-    const content = readFixture('openapi-params.json');
+    const content = JSON.parse(readFixture('openapi-params.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].url).toContain('?limit={{limit}}&status={{status}}');
   });
 
   it('uses example value for query parameter', () => {
-    const content = readFixture('openapi-params.json');
+    const content = JSON.parse(readFixture('openapi-params.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.variables).toContainEqual({ name: 'status', value: 'active' });
@@ -282,7 +290,7 @@ describe('parseOpenApiSpec - query parameters', () => {
 
 describe('parseOpenApiSpec - header parameters', () => {
   it('maps header parameter with type but no default', () => {
-    const content = readFixture('openapi-params.json');
+    const content = JSON.parse(readFixture('openapi-params.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].headers['X-Trace-Id']).toBe('{{X-Trace-Id}}');
@@ -290,7 +298,7 @@ describe('parseOpenApiSpec - header parameters', () => {
   });
 
   it('maps header parameter with default', () => {
-    const content = readFixture('openapi-params.json');
+    const content = JSON.parse(readFixture('openapi-params.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].headers['Accept']).toBe('{{Accept}}');
@@ -300,7 +308,7 @@ describe('parseOpenApiSpec - header parameters', () => {
 
 describe('parseOpenApiSpec - cookie parameters', () => {
   it('combines single cookie parameter into Cookie header', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/test': {
@@ -310,7 +318,7 @@ describe('parseOpenApiSpec - cookie parameters', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].headers['Cookie']).toBe('session={{session}}');
@@ -318,7 +326,7 @@ describe('parseOpenApiSpec - cookie parameters', () => {
   });
 
   it('combines multiple cookie parameters into Cookie header', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/test': {
@@ -331,7 +339,7 @@ describe('parseOpenApiSpec - cookie parameters', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].headers['Cookie']).toBe('session={{session}}; theme={{theme}}');
@@ -340,7 +348,7 @@ describe('parseOpenApiSpec - cookie parameters', () => {
 
 describe('parseOpenApiSpec - $ref resolution', () => {
   it('resolves internal parameter $ref', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/users/{id}': {
@@ -355,7 +363,7 @@ describe('parseOpenApiSpec - $ref resolution', () => {
           UserIdParam: { name: 'id', in: 'path', schema: { type: 'integer', default: 1 } },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].url).toContain('{{id}}');
@@ -363,7 +371,7 @@ describe('parseOpenApiSpec - $ref resolution', () => {
   });
 
   it('warns on external $ref and skips parameter', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/users/{id}': {
@@ -373,7 +381,7 @@ describe('parseOpenApiSpec - $ref resolution', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(getWarnings()).toContain('External $ref');
@@ -381,7 +389,7 @@ describe('parseOpenApiSpec - $ref resolution', () => {
   });
 
   it('deduplicates variables with the same name across multiple operations', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/users/{id}': {
@@ -395,7 +403,7 @@ describe('parseOpenApiSpec - $ref resolution', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     const idVars = result.variables.filter((v) => v.name === 'id');
@@ -406,14 +414,14 @@ describe('parseOpenApiSpec - $ref resolution', () => {
 
 describe('parseOpenApiSpec - recursive $ref resolution', () => {
   it('resolves $ref chain (A → B → C) to C content', () => {
-    const content = readFixture('openapi-ref-chain.json');
+    const content = JSON.parse(readFixture('openapi-ref-chain.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('{"id":1}');
   });
 
   it('resolves nested property $ref with top-level example on sub-schema', () => {
-    const content = readFixture('openapi-nested-refs.json');
+    const content = JSON.parse(readFixture('openapi-nested-refs.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'createOrder');
@@ -425,7 +433,7 @@ describe('parseOpenApiSpec - recursive $ref resolution', () => {
   });
 
   it('resolves diamond $ref without cycle warning', () => {
-    const content = readFixture('openapi-diamond-ref.json');
+    const content = JSON.parse(readFixture('openapi-diamond-ref.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe(
@@ -435,7 +443,7 @@ describe('parseOpenApiSpec - recursive $ref resolution', () => {
   });
 
   it('omits external $ref stub from synthesized body', () => {
-    const content = readFixture('openapi-external-ref-unaffected.json');
+    const content = JSON.parse(readFixture('openapi-external-ref-unaffected.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('{"internal":{"id":1}}');
@@ -444,7 +452,7 @@ describe('parseOpenApiSpec - recursive $ref resolution', () => {
 
 describe('parseOpenApiSpec - circular $ref guard', () => {
   it('handles direct self-cycle (A → A) with warning and no throw', () => {
-    const content = readFixture('openapi-self-cycle.json');
+    const content = JSON.parse(readFixture('openapi-self-cycle.json'));
     const result = parseOpenApiSpec(content);
 
     // The em-dash (U+2014) is intentional and spec-mandated.
@@ -453,7 +461,7 @@ describe('parseOpenApiSpec - circular $ref guard', () => {
   });
 
   it('handles indirect cycle (A → B → A) with warning and no throw', () => {
-    const content = readFixture('openapi-circular-ref.json');
+    const content = JSON.parse(readFixture('openapi-circular-ref.json'));
     const result = parseOpenApiSpec(content);
 
     expect(getWarnings()).toContain('Circular $ref');
@@ -461,14 +469,14 @@ describe('parseOpenApiSpec - circular $ref guard', () => {
   });
 
   it('does not warn on acyclic nested $ref', () => {
-    const content = readFixture('openapi-nested-refs.json');
+    const content = JSON.parse(readFixture('openapi-nested-refs.json'));
     parseOpenApiSpec(content);
 
     expect(getWarnings()).not.toContain('Circular');
   });
 
   it('does not suppress other operations when one operation has a cycle', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/cyclic': {
@@ -495,7 +503,7 @@ describe('parseOpenApiSpec - circular $ref guard', () => {
           Simple: { type: 'object', example: { id: 1 } },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     const cyclicReq = result.requests.find((r) => r.name === 'cyclicOp');
@@ -516,7 +524,7 @@ describe('parseOpenApiSpec - circular $ref guard', () => {
 
 describe('parseOpenApiSpec - recursive $ref regression', () => {
   it('flat spec produces identical output after dereference pass', () => {
-    const content = readFixture('openapi-body-ref.json');
+    const content = JSON.parse(readFixture('openapi-body-ref.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe(
@@ -525,10 +533,10 @@ describe('parseOpenApiSpec - recursive $ref regression', () => {
   });
 
   it('spring-boot real-world spec produces identical request list', () => {
-    const content = readFileSync(
+    const content = JSON.parse(readFileSync(
       resolve(__dirname, '..', '..', 'examples', 'spring-boot-api-service-openapi.json'),
       'utf8',
-    );
+    ));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests).toHaveLength(7);
@@ -542,7 +550,7 @@ describe('parseOpenApiSpec - recursive $ref regression', () => {
 
 describe('parseOpenApiSpec - recursive body synthesis', () => {
   it('synthesizes nested object from per-property examples', () => {
-    const content = readFixture('openapi-nested-object-examples.json');
+    const content = JSON.parse(readFixture('openapi-nested-object-examples.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'createOrder');
@@ -554,7 +562,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
   });
 
   it('synthesizes array of object refs', () => {
-    const content = readFixture('openapi-array-of-refs.json');
+    const content = JSON.parse(readFixture('openapi-array-of-refs.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'bulkCreate');
@@ -564,7 +572,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
   });
 
   it('synthesizes array of primitives', () => {
-    const content = readFixture('openapi-array-of-primitives.json');
+    const content = JSON.parse(readFixture('openapi-array-of-primitives.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'setTags');
@@ -574,7 +582,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
   });
 
   it('synthesizes deeply-nested object (3+ levels)', () => {
-    const content = readFixture('openapi-deeply-nested.json');
+    const content = JSON.parse(readFixture('openapi-deeply-nested.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'createDeep');
@@ -584,7 +592,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
   });
 
   it('uses default value for primitive property without example', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/items': {
@@ -605,14 +613,14 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('{"count":10}');
   });
 
   it('omits external $ref stub from synthesized body', () => {
-    const content = readFixture('openapi-external-ref-stub.json');
+    const content = JSON.parse(readFixture('openapi-external-ref-stub.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('{"internal":"resolved"}');
@@ -620,7 +628,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
   });
 
   it('returns undefined body for composition keyword (allOf)', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/items': {
@@ -646,7 +654,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
           Base: { type: 'object', properties: { id: { type: 'integer', example: 1 } } },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBeUndefined();
@@ -655,7 +663,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
 
 describe('parseOpenApiSpec - urlencoded nested encoding', () => {
   it('uses bracket notation for nested object properties', () => {
-    const content = readFixture('openapi-urlencoded-nested.json');
+    const content = JSON.parse(readFixture('openapi-urlencoded-nested.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'submitForm');
@@ -666,7 +674,7 @@ describe('parseOpenApiSpec - urlencoded nested encoding', () => {
   });
 
   it('uses repeated keys for array properties', () => {
-    const content = readFixture('openapi-urlencoded-nested.json');
+    const content = JSON.parse(readFixture('openapi-urlencoded-nested.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toContain('tags=vip');
@@ -674,7 +682,7 @@ describe('parseOpenApiSpec - urlencoded nested encoding', () => {
   });
 
   it('encodes mixed nested object and array properties', () => {
-    const content = readFixture('openapi-urlencoded-nested.json');
+    const content = JSON.parse(readFixture('openapi-urlencoded-nested.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('name=John&address%5Bcity%5D=SF&tags=vip');
@@ -692,7 +700,7 @@ describe('parseOpenApiSpec - recursive body synthesis depth guard', () => {
       return schema;
     }
 
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/deep': {
@@ -704,7 +712,7 @@ describe('parseOpenApiSpec - recursive body synthesis depth guard', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(getWarnings()).toContain('Max synthesis depth');
@@ -714,10 +722,10 @@ describe('parseOpenApiSpec - recursive body synthesis depth guard', () => {
 
 describe('parseOpenApiSpec - recursive body synthesis real-world regression', () => {
   it('spring-boot real-world spec produces correct output', () => {
-    const content = readFileSync(
+    const content = JSON.parse(readFileSync(
       resolve(__dirname, '..', '..', 'examples', 'spring-boot-api-service-openapi.json'),
       'utf8',
-    );
+    ));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests).toHaveLength(7);
@@ -731,7 +739,7 @@ describe('parseOpenApiSpec - recursive body synthesis real-world regression', ()
 
 describe('parseOpenApiSpec - security / auth', () => {
   it('maps bearer auth to Authorization header', () => {
-    const content = readFixture('openapi-auth.json');
+    const content = JSON.parse(readFixture('openapi-auth.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'bearerEndpoint');
@@ -742,7 +750,7 @@ describe('parseOpenApiSpec - security / auth', () => {
   });
 
   it('maps basic auth to Authorization header', () => {
-    const content = readFixture('openapi-auth.json');
+    const content = JSON.parse(readFixture('openapi-auth.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'basicEndpoint');
@@ -753,7 +761,7 @@ describe('parseOpenApiSpec - security / auth', () => {
   });
 
   it('maps apiKey in header to custom header', () => {
-    const content = readFixture('openapi-auth.json');
+    const content = JSON.parse(readFixture('openapi-auth.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'apiKeyHeaderEndpoint');
@@ -764,7 +772,7 @@ describe('parseOpenApiSpec - security / auth', () => {
   });
 
   it('maps apiKey in query to URL query string', () => {
-    const content = readFixture('openapi-auth.json');
+    const content = JSON.parse(readFixture('openapi-auth.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'apiKeyQueryEndpoint');
@@ -775,7 +783,7 @@ describe('parseOpenApiSpec - security / auth', () => {
   });
 
   it('maps apiKey in cookie to Cookie header', () => {
-    const content = readFixture('openapi-auth.json');
+    const content = JSON.parse(readFixture('openapi-auth.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'apiKeyCookieEndpoint');
@@ -786,7 +794,7 @@ describe('parseOpenApiSpec - security / auth', () => {
   });
 
   it('warns on unsupported security scheme (oauth2)', () => {
-    const content = readFixture('openapi-auth.json');
+    const content = JSON.parse(readFixture('openapi-auth.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'oauthEndpoint');
@@ -797,7 +805,7 @@ describe('parseOpenApiSpec - security / auth', () => {
   });
 
   it('adds no auth headers when no security defined', () => {
-    const content = readFixture('openapi-basic.json');
+    const content = JSON.parse(readFixture('openapi-basic.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].headers['Authorization']).toBeUndefined();
@@ -806,7 +814,7 @@ describe('parseOpenApiSpec - security / auth', () => {
 
 describe('parseOpenApiSpec - request body', () => {
   it('uses content-level example verbatim', () => {
-    const content = readFixture('openapi-body-example.json');
+    const content = JSON.parse(readFixture('openapi-body-example.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'createUser');
@@ -817,7 +825,7 @@ describe('parseOpenApiSpec - request body', () => {
   });
 
   it('uses named examples (first key value)', () => {
-    const content = readFixture('openapi-body-example.json');
+    const content = JSON.parse(readFixture('openapi-body-example.json'));
     const result = parseOpenApiSpec(content);
 
     const req = result.requests.find((r) => r.name === 'createUserNamed');
@@ -827,7 +835,7 @@ describe('parseOpenApiSpec - request body', () => {
   });
 
   it('uses schema-level example via $ref', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/items': {
@@ -848,28 +856,28 @@ describe('parseOpenApiSpec - request body', () => {
           Item: { type: 'object', example: { name: 'Alice' } },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('{"name":"Alice"}');
   });
 
   it('synthesizes flat object from per-property examples', () => {
-    const content = readFixture('openapi-body-ref.json');
+    const content = JSON.parse(readFixture('openapi-body-ref.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('{"id":1,"name":"Widget","description":"A widget","secret":"string"}');
   });
 
   it('uses type as placeholder for properties without example or default', () => {
-    const content = readFixture('openapi-body-ref.json');
+    const content = JSON.parse(readFixture('openapi-body-ref.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toContain('"secret":"string"');
   });
 
   it('uses type as placeholder for type-only properties', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/generate': {
@@ -890,14 +898,14 @@ describe('parseOpenApiSpec - request body', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('{"templateId":"string"}');
   });
 
   it('uses property default when no example present', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/items': {
@@ -918,14 +926,14 @@ describe('parseOpenApiSpec - request body', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('{"count":0}');
   });
 
   it('resolves property $ref before value lookup', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/items': {
@@ -951,14 +959,14 @@ describe('parseOpenApiSpec - request body', () => {
           UserRef: { type: 'string', example: 'alice' },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('{"user":"alice"}');
   });
 
   it('resolves property $ref with type only', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/items': {
@@ -984,14 +992,14 @@ describe('parseOpenApiSpec - request body', () => {
           TemplateId: { type: 'string' },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('{"templateId":"string"}');
   });
 
   it('skips property with nullable union type', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/items': {
@@ -1012,14 +1020,14 @@ describe('parseOpenApiSpec - request body', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBeUndefined();
   });
 
   it('returns undefined body when no examples exist', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/items': {
@@ -1035,14 +1043,14 @@ describe('parseOpenApiSpec - request body', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBeUndefined();
   });
 
   it('prefers application/json over other content types', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/items': {
@@ -1057,7 +1065,7 @@ describe('parseOpenApiSpec - request body', () => {
           },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].headers['Content-Type']).toBe('application/json');
@@ -1065,7 +1073,7 @@ describe('parseOpenApiSpec - request body', () => {
   });
 
   it('serializes urlencoded body as key=value', () => {
-    const content = readFixture('openapi-urlencoded.json');
+    const content = JSON.parse(readFixture('openapi-urlencoded.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBe('name=John&email=john%40example.com');
@@ -1073,7 +1081,7 @@ describe('parseOpenApiSpec - request body', () => {
   });
 
   it('returns undefined body and no Content-Type when no requestBody', () => {
-    const content = readFixture('openapi-basic.json');
+    const content = JSON.parse(readFixture('openapi-basic.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests[0].body).toBeUndefined();
@@ -1083,14 +1091,14 @@ describe('parseOpenApiSpec - request body', () => {
 
 describe('parseOpenApiSpec - warnings', () => {
   it('warns on unsupported HTTP method (trace)', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/test': {
           trace: { operationId: 'traceTest' },
         },
       },
-    });
+    };
     const result = parseOpenApiSpec(content);
 
     expect(result.requests).toHaveLength(0);
@@ -1098,7 +1106,7 @@ describe('parseOpenApiSpec - warnings', () => {
   });
 
   it('warns on external $ref', () => {
-    const content = JSON.stringify({
+    const content = {
       openapi: '3.0.3',
       paths: {
         '/users/{id}': {
@@ -1108,14 +1116,14 @@ describe('parseOpenApiSpec - warnings', () => {
           },
         },
       },
-    });
+    };
     parseOpenApiSpec(content);
 
     expect(getWarnings()).toContain('External $ref');
   });
 
   it('produces no warnings for fully supported operations', () => {
-    const content = readFixture('openapi-basic.json');
+    const content = JSON.parse(readFixture('openapi-basic.json'));
     parseOpenApiSpec(content);
 
     expect(warnSpy).not.toHaveBeenCalled();
@@ -1124,7 +1132,7 @@ describe('parseOpenApiSpec - warnings', () => {
 
 describe('integration smoke test', () => {
   it('parsed spec produces valid requests', () => {
-    const content = readFixture('openapi-params.json');
+    const content = JSON.parse(readFixture('openapi-params.json'));
     const result = parseOpenApiSpec(content);
 
     expect(result.requests.length).toBeGreaterThan(0);

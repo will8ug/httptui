@@ -1,0 +1,71 @@
+openapi: "3.0.3"
+info:
+  title: Users API
+  version: "1.0.0"
+servers:
+  - url: "https://api.example.com/v1"
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      summary: List all users
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number
+      responses:
+        "200":
+          description: A list of users
+  /users/{userId}:
+    get:
+      operationId: getUser
+      summary: Get a user by ID
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A user object
+    post:
+      operationId: createUser
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+            examples:
+              alice:
+                value:
+                  name: Alice
+                  email: alice@example.com
+              bob:
+                value:
+                  name: Bob
+                  email: bob@example.com
+      responses:
+        "201":
+          description: User created
+    delete:
+      operationId: deleteUser
+      summary: Delete a user by ID
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: User deleted

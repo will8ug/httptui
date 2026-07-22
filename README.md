@@ -8,7 +8,7 @@ httptui is a fast, keyboard-driven REST client that lives in your terminal. It p
 
 ## Features
 
-- **Multi-Format Support**: Parse `.http`, `.rest`, and Postman collections with auth and multiple body types.
+- **Multi-Format Support**: Parse `.http`, `.rest`, Postman collections, and OpenAPI specs (JSON/YAML) with auth and multiple body types.
 - **Keyboard-Driven TUI**: Vim keys, split-panel layout, details panel (`d`), fullscreen (`f`), help overlay (`?`).
 - **Environment Management**: Load environment files, register named environments, switch at runtime (`E`).
 - **mTLS & Client Certificates**: Per-host client certificates (PEM/PFX) with wildcard matching.
@@ -45,6 +45,8 @@ npm link
 
 ```bash
 httptui path/to/api.http
+httptui openapi.yaml
+httptui openapi.json
 ```
 
 You can also open a different `.http` file from within the running TUI by pressing `o` and typing the file path. This is useful when working across multiple API definition files without restarting httptui.

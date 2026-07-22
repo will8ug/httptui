@@ -41,4 +41,51 @@ describe('detectFormat', () => {
     const content = JSON.stringify({ swagger: '2.0', paths: {} });
     expect(detectFormat('spec.json', content)).toBe('openapi');
   });
+
+  it('returns openapi for a .yaml file with top-level openapi key', () => {
+    const content = 'openapi: "3.0.3"\npaths:\n  /users:\n    get:\n      operationId: listUsers';
+    expect(detectFormat('spec.yaml', content)).toBe('openapi');
+  });
+
+  it('returns openapi for a .yml file with unquoted swagger: 2.0 (parsed as number)', () => {
+    const content = 'swagger: 2.0\npaths: {}';
+    expect(detectFormat('spec.yml', content)).toBe('openapi');
+  });
+
+  it('returns http for a .yaml file with valid YAML but no OpenAPI markers', () => {
+    const content = 'key: value\nlist:\n  - item';
+    expect(detectFormat('spec.yaml', content)).toBe('http');
+  });
+
+  it('returns http for .http and .rest extensions without parsing', () => {
+    expect(detectFormat('file.http', 'GET https://example.com')).toBe('http');
+    expect(detectFormat('file.rest', 'GET https://example.com')).toBe('http');
+  });
+
+  it('does not misclassify a Postman collection as OpenAPI', () => {
+    const content = readFixture('postman-basic.json');
+    expect(detectFormat('collection.json', content)).toBe('postman');
+  });
+
+  it('throws invalid YAML when a .yaml file has a marker but is malformed', () => {
+    const content = 'openapi: 3.0.3\nbad: [';
+    expect(() => detectFormat('spec.yaml', content)).toThrow('Failed to parse OpenAPI spec: invalid YAML');
+  });
+
+  it('throws invalid JSON when a .json file has a marker but is malformed', () => {
+    const content = '{"openapi": "3.0.3" invalid}';
+    expect(() => detectFormat('spec.json', content)).toThrow('Failed to parse OpenAPI spec: invalid JSON');
+  });
+
+  it('returns http for malformed JSON without an OpenAPI marker', () => {
+    expect(detectFormat('file.json', 'not valid json')).toBe('http');
+  });
+
+  it('ignores nested or commented marker lines in YAML', () => {
+    const nested = 'nested:\n  openapi: 3.0.3\nkey: value';
+    expect(detectFormat('spec.yaml', nested)).toBe('http');
+
+    const commented = '# openapi: 3.0.3\nkey: value';
+    expect(detectFormat('spec.yaml', commented)).toBe('http');
+  });
 });

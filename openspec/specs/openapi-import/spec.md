@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Parse OpenAPI 3.x JSON files into httptui's internal `ParseResult` format using manual JSON parsing (no external SDK). This enables httptui to serve as a terminal-based client for OpenAPI specs, projecting operations onto flat `ParsedRequest[]` entries with `{{varName}}` placeholders for parameters and auth values. The parser handles the most common real-world OpenAPI 3.x patterns (path/query/header parameters, basic auth schemes, flat object bodies with per-property examples, internal `$ref` resolution) while logging warnings for unsupported features.
+Parse OpenAPI 3.x JSON or YAML files into httptui's internal `ParseResult` format using manual parsing (no external SDK). This enables httptui to serve as a terminal-based client for OpenAPI specs, projecting operations onto flat `ParsedRequest[]` entries with `{{varName}}` placeholders for parameters and auth values. The parser handles the most common real-world OpenAPI 3.x patterns (path/query/header parameters, basic auth schemes, flat object bodies with per-property examples, internal `$ref` resolution) while logging warnings for unsupported features.
 ## Requirements
 ### Requirement: Parse OpenAPI 3.x JSON
 The system SHALL parse OpenAPI 3.x JSON files into the internal `ParseResult` format using manual JSON parsing. The parser SHALL iterate over `paths` and, for each path+method pair, create one `ParsedRequest` entry. The parser SHALL return an empty requests array for specs with no paths.

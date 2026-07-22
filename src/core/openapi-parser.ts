@@ -511,15 +511,7 @@ function dereferenceDoc(doc: any): void {
   dereferenceNode(doc, doc, new Set(), 0);
 }
 
-export function parseOpenApiSpec(content: string): ParseResult {
-  let doc: any;
-
-  try {
-    doc = JSON.parse(content);
-  } catch {
-    throw new Error('Failed to parse OpenAPI spec: invalid JSON');
-  }
-
+export function parseOpenApiSpec(doc: unknown): ParseResult {
   const variables: FileVariable[] = [];
   const requests: ParsedRequest[] = [];
 
@@ -528,25 +520,27 @@ export function parseOpenApiSpec(content: string): ParseResult {
     return { requests, variables };
   }
 
-  if (doc.swagger && !doc.openapi) {
+  const spec: any = doc;
+
+  if (spec.swagger && !spec.openapi) {
     logger.warn('Swagger 2.0 specs are not supported — returning empty results');
     variables.push({ name: 'baseUrl', value: '' });
     return { requests, variables };
   }
 
-  dereferenceDoc(doc);
+  dereferenceDoc(spec);
 
-  const { url: baseUrl, templateVars } = extractBaseUrl(doc);
+  const { url: baseUrl, templateVars } = extractBaseUrl(spec);
   variables.push({ name: 'baseUrl', value: baseUrl });
   variables.push(...templateVars);
 
-  if (!doc.paths || typeof doc.paths !== 'object' || Array.isArray(doc.paths)) {
+  if (!spec.paths || typeof spec.paths !== 'object' || Array.isArray(spec.paths)) {
     return { requests, variables };
   }
 
   let lineNumber = 0;
 
-  for (const [path, pathItem] of Object.entries(doc.paths)) {
+  for (const [path, pathItem] of Object.entries(spec.paths)) {
     if (!pathItem || typeof pathItem !== 'object') {
       continue;
     }
@@ -578,7 +572,7 @@ export function parseOpenApiSpec(content: string): ParseResult {
         path,
         pathItem,
         operation,
-        doc,
+        spec,
         lineNumber,
         variables,
       );

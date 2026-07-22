@@ -10,5 +10,5 @@ export default defineConfig({
   banner: {
     js: '#!/usr/bin/env node',
   },
-  external: ['react', 'ink', '@inkjs/ui', 'undici'],
+  external: ['react', 'ink', '@inkjs/ui', 'undici', 'yaml'],
 });
