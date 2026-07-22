@@ -79,6 +79,27 @@ describe('parseOpenApiSpec - basic parsing', () => {
     expect(result.requests).toHaveLength(0);
     expect(getWarnings()).toContain('Swagger 2.0');
   });
+
+  it('returns empty results with baseUrl when doc is null', () => {
+    const result = parseOpenApiSpec(null);
+
+    expect(result.requests).toHaveLength(0);
+    expect(result.variables).toContainEqual({ name: 'baseUrl', value: '' });
+  });
+
+  it('returns empty results with baseUrl when doc is a string', () => {
+    const result = parseOpenApiSpec('not an object');
+
+    expect(result.requests).toHaveLength(0);
+    expect(result.variables).toContainEqual({ name: 'baseUrl', value: '' });
+  });
+
+  it('returns empty results with baseUrl when doc is an array', () => {
+    const result = parseOpenApiSpec([{ openapi: '3.0.3' }]);
+
+    expect(result.requests).toHaveLength(0);
+    expect(result.variables).toContainEqual({ name: 'baseUrl', value: '' });
+  });
 });
 
 describe('parseOpenApiSpec - server URL / baseUrl', () => {
