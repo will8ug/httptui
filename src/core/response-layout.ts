@@ -2,6 +2,7 @@ import type { ResponseData, WrapMode } from './types';
 import { colorizeJson, getStatusColor, isJsonString } from '../utils/colors';
 import type { ColorSegment } from '../utils/wrap';
 import { wrapColorizedSegments, wrapLine } from '../utils/wrap';
+import { expandTabs } from '../utils/text';
 
 export type VisualSection =
   | { kind: 'status'; visualLines: ColorSegment[][] }
@@ -70,7 +71,7 @@ function buildBodyLineVisualLines(
   wrapMode: WrapMode,
   contentWidth: number,
 ): ColorSegment[][] {
-  const safeLine = rawLine === '' ? ' ' : rawLine;
+  const safeLine = rawLine === '' ? ' ' : expandTabs(rawLine);
 
   if (wrapMode === 'wrap') {
     if (isJsonBody) {

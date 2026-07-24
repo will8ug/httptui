@@ -227,4 +227,50 @@ describe('RequestDetailsView', () => {
       expect(frame).not.toContain('body-line-4');
     });
   });
+
+  describe('tab expansion', () => {
+    it('renders tab-indented body line with spaces instead of tabs', () => {
+      const body =
+        '\t\t\t\t<OutputClaim ClaimTypeReferenceId="acr" DefaultValue="{policy}" Required="true"/>';
+      const request = createRequest({ body });
+      const { lastFrame } = render(
+        <RequestDetailsView {...baseProps} contentWidthOverride={100} request={request} />,
+      );
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('    <OutputClaim');
+      expect(frame).not.toContain('\t');
+    });
+
+    it('truncates tab-expanded long line correctly when expanded width exceeds contentWidth', () => {
+      const body = '\t\t\t\txxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+      const request = createRequest({ body });
+      const { lastFrame } = render(
+        <RequestDetailsView {...baseProps} contentWidthOverride={20} request={request} />,
+      );
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('…');
+      expect(frame).not.toContain('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    });
+
+    it('renders body with spaces instead of tabs without regression', () => {
+      const body = '    <root>\n    </root>';
+      const request = createRequest({ body });
+      const { lastFrame } = render(
+        <RequestDetailsView {...baseProps} contentWidthOverride={100} request={request} />,
+      );
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('    <root>');
+      expect(frame).toContain('    </root>');
+    });
+
+    it('renders body without any whitespace correctly', () => {
+      const body = '{"key":"value"}';
+      const request = createRequest({ body });
+      const { lastFrame } = render(
+        <RequestDetailsView {...baseProps} contentWidthOverride={100} request={request} />,
+      );
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('{"key":"value"}');
+    });
+  });
 });

@@ -211,3 +211,23 @@ describe('computeResponseLayout — public shape', () => {
     expect(kinds).toEqual(['status', 'header', 'header', 'separator', 'body']);
   });
 });
+
+describe('computeResponseLayout — tab expansion', () => {
+  it('expands tab characters in raw-mode body to spaces', () => {
+    const response = makeResponse({ body: '\t\t<element/>' });
+    const layout = computeResponseLayout({
+      response,
+      verbose: false,
+      rawMode: true,
+      wrapMode: 'nowrap',
+      contentWidth: CONTENT_WIDTH,
+      formattedBody: response.body,
+    });
+
+    const bodySection = layout.sections.find((s) => s.kind === 'body');
+    expect(bodySection).toBeDefined();
+    const visualLine = bodySection!.visualLines[0][0];
+    expect(visualLine.text).not.toContain('\t');
+    expect(visualLine.text).toBe('                <element/>');
+  });
+});

@@ -5,7 +5,7 @@ import type { FileVariable, ParsedRequest } from '../core/types';
 import { resolveRequestDetails } from '../utils/request';
 import { getMethodColor } from '../utils/colors';
 import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
-import { shiftText, truncateText } from '../utils/text';
+import { expandTabs, shiftText, truncateText } from '../utils/text';
 
 interface RequestDetailsViewProps {
   request: ParsedRequest;
@@ -114,7 +114,7 @@ export function RequestDetailsView({
 
   for (let i = 0; i < bodyLines.length; i += 1) {
     allLines.push(
-      <Text key={`body-${i}`}>{shiftText(bodyLines[i] || ' ', horizontalOffset, contentWidth)}</Text>,
+      <Text key={`body-${i}`}>{shiftText(expandTabs(bodyLines[i] || ' '), horizontalOffset, contentWidth)}</Text>,
     );
   }
 
