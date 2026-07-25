@@ -1,5 +1,13 @@
 # httptui
 
+[![CI](https://github.com/will8ug/httptui/actions/workflows/ci.yml/badge.svg)](https://github.com/will8ug/httptui/actions/workflows/ci.yml)
+
+![Total Coverage](https://will8ug.github.io/httptui/badges/coverage-total.svg)
+![Lines Coverage](https://will8ug.github.io/httptui/badges/coverage-lines.svg)
+![Branches Coverage](https://will8ug.github.io/httptui/badges/coverage-branches.svg)
+![Statements Coverage](https://will8ug.github.io/httptui/badges/coverage-statements.svg)
+![Functions Coverage](https://will8ug.github.io/httptui/badges/coverage-functions.svg)
+
 Interactive terminal UI for .http files.
 
 ![httptui requests](assets/httptui-requests.png)

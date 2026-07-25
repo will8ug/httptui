@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  NODE_VERSION: '24.x'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js version
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: npm install, build, and test
+        run: |
+          npm install
+          npm run build
+          npm test
+
+      - name: Generate coverage badges
+        if: ${{ hashFiles('./coverage') != '' }}
+        continue-on-error: true
+        run: |
+          npm run cov-badges
+
+      - name: Upload coverage badges
+        id: upload-coverage-badges
+        if: ${{ hashFiles('./badges') != '' }}
+        uses: peaceiris/actions-gh-pages@v4
+        continue-on-error: true
+        with:
+          deploy_key: ${{ secrets.GH_PAGES_DEPLOY_KEY }}
+          external_repository: will8ug/will8ug.github.io
+          publish_dir: ./badges
+          publish_branch: main
+          destination_dir: httptui/badges
