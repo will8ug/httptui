@@ -16,7 +16,7 @@ const { agentMock, MockFormData, requestMock } = vi.hoisted(() => {
   }
 
   return {
-    agentMock: vi.fn().mockImplementation(() => ({})),
+    agentMock: vi.fn(),
     MockFormData: FormDataMock,
     requestMock: vi.fn(),
   };
@@ -327,7 +327,7 @@ describe('executeRequest', () => {
 
     expect(result.body).toBe('line1\nline2\nline3');
     expect(result.body).not.toContain('\r');
-    expect(result.size.bodyBytes).toBe(Buffer.byteLength('line1\nline2\nline3', 'utf-8')); 
+    expect(result.size.bodyBytes).toBe(Buffer.byteLength('line1\nline2\nline3', 'utf-8'));
   });
 
   it('normalizes lone CR in response body', async () => {
