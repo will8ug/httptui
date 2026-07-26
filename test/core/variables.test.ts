@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { assertDefinedToNarrowType } from '../helpers/assertions.js';
 import { mergeVariables, resolveVariables } from '../../src/core/variables.js';
 import type { ParsedRequest } from '../../src/core/types.js';
 
@@ -197,9 +198,7 @@ describe('resolveVariables', () => {
     expect(resolved.formdataFields).toHaveLength(2);
 
     const fields = resolved.formdataFields;
-    if (!fields) {
-      throw new Error('Expected formdataFields to be defined');
-    }
+    assertDefinedToNarrowType(fields, 'Expected formdataFields to be defined');
     expect(fields[0]).toEqual({ key: 'token', value: 'abc123', type: 'text' });
     expect(fields[1]).toEqual({ key: 'user', value: 'alice', type: 'text' });
   });
@@ -217,9 +216,7 @@ describe('resolveVariables', () => {
     expect(resolved.formdataFields).toBeDefined();
 
     const fields = resolved.formdataFields;
-    if (!fields) {
-      throw new Error('Expected formdataFields to be defined');
-    }
+    assertDefinedToNarrowType(fields, 'Expected formdataFields to be defined');
     expect(fields[0].key).toBe('{{fieldName}}');
     expect(fields[0].value).toBe('hello');
   });

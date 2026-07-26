@@ -34,3 +34,12 @@ When a design decision contradicts a stated goal, resolve the contradiction befo
 - **Flag contradictions, don't resolve them silently.** A design doc that says "preserve existing behavior" in Goals but "do not do X" in Decisions is a bug in the design. Fix the design before implementing.
 
 Precedent: the `recursive-body-synthesis` design said "preserve all existing test behavior" and "fall back to the type name" in Goals, but Decision 1's pseudocode said "DO NOT return the type name." The implementation followed the pseudocode, dropping the type-name placeholder — a regression caught post-ship.
+
+## Test directory layout
+
+Two test-adjacent directories exist with distinct purposes; do not blur them.
+
+- **`test/utils/`** houses unit tests for `src/utils/` modules — every file is `*.test.ts` and corresponds to a `src/utils/*.ts` source. Do not drop non-test helpers here.
+- **`test/helpers/`** houses shared test infrastructure consumed across test files — data factories (`createRequest`/`createMockResponse`/`createInitialState`), app renderers (`integration.tsx`), and assertion/type-guard helpers (`assertions.ts`). It is the catch-all for "stuff tests need to share but isn't itself a test."
+
+Precedent: the `assertDefinedToNarrowType` helper was first placed in `test/utils/` (introducing the first non-test file in a directory of `*.test.ts` files mirroring `src/utils/`), then moved to `test/helpers/` to preserve the `test/utils/` ↔ `src/utils/` symmetry.

@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { parse as parseYaml } from 'yaml';
 
+import { assertDefinedToNarrowType } from '../helpers/assertions.js';
 import { parseOpenApiSpec, logger } from '../../src/core/openapi-parser';
 
 function readFixture(name: string): string {
@@ -447,7 +448,7 @@ describe('parseOpenApiSpec - recursive $ref resolution', () => {
 
     const req = result.requests.find((r) => r.name === 'createOrder');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected createOrder');
+    assertDefinedToNarrowType(req, 'Expected createOrder');
     expect(req.body).toBe(
       '{"customer":{"name":"Alice","email":"alice@example.com"},"shipping":{"street":"123 Main St","city":"Springfield"},"currency":"USD","metadata":{"source":"web"}}',
     );
@@ -531,7 +532,8 @@ describe('parseOpenApiSpec - circular $ref guard', () => {
     const acyclicReq = result.requests.find((r) => r.name === 'acyclicOp');
     expect(cyclicReq).toBeDefined();
     expect(acyclicReq).toBeDefined();
-    if (!cyclicReq || !acyclicReq) throw new Error('Expected both requests');
+    assertDefinedToNarrowType(cyclicReq, 'Expected cyclicReq');
+    assertDefinedToNarrowType(acyclicReq, 'Expected acyclicReq');
 
     expect(cyclicReq.body).toBeUndefined();
     expect(acyclicReq.body).toBe('{"id":1}');
@@ -576,7 +578,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
 
     const req = result.requests.find((r) => r.name === 'createOrder');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected createOrder');
+    assertDefinedToNarrowType(req, 'Expected createOrder');
     expect(req.body).toBe(
       '{"customer":{"name":"Alice","email":"alice@example.com"},"shipping":{"street":"123 Main St","city":"Springfield"},"currency":"USD","metadata":{"source":"web"}}',
     );
@@ -588,7 +590,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
 
     const req = result.requests.find((r) => r.name === 'bulkCreate');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected bulkCreate');
+    assertDefinedToNarrowType(req, 'Expected bulkCreate');
     expect(req.body).toBe('[{"sku":"W-001","quantity":2}]');
   });
 
@@ -598,7 +600,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
 
     const req = result.requests.find((r) => r.name === 'setTags');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected setTags');
+    assertDefinedToNarrowType(req, 'Expected setTags');
     expect(req.body).toBe('["priority"]');
   });
 
@@ -608,7 +610,7 @@ describe('parseOpenApiSpec - recursive body synthesis', () => {
 
     const req = result.requests.find((r) => r.name === 'createDeep');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected createDeep');
+    assertDefinedToNarrowType(req, 'Expected createDeep');
     expect(req.body).toBe('{"order":{"customer":{"name":"Alice"}}}');
   });
 
@@ -689,7 +691,7 @@ describe('parseOpenApiSpec - urlencoded nested encoding', () => {
 
     const req = result.requests.find((r) => r.name === 'submitForm');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected submitForm');
+    assertDefinedToNarrowType(req, 'Expected submitForm');
     expect(req.body).toBe('name=John&address%5Bcity%5D=SF&tags=vip');
     expect(req.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
   });
@@ -765,7 +767,7 @@ describe('parseOpenApiSpec - security / auth', () => {
 
     const req = result.requests.find((r) => r.name === 'bearerEndpoint');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected bearerEndpoint');
+    assertDefinedToNarrowType(req, 'Expected bearerEndpoint');
     expect(req.headers['Authorization']).toBe('Bearer {{bearerAuth}}');
     expect(result.variables).toContainEqual({ name: 'bearerAuth', value: '' });
   });
@@ -776,7 +778,7 @@ describe('parseOpenApiSpec - security / auth', () => {
 
     const req = result.requests.find((r) => r.name === 'basicEndpoint');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected basicEndpoint');
+    assertDefinedToNarrowType(req, 'Expected basicEndpoint');
     expect(req.headers['Authorization']).toBe('Basic {{basicAuth}}');
     expect(result.variables).toContainEqual({ name: 'basicAuth', value: '' });
   });
@@ -787,7 +789,7 @@ describe('parseOpenApiSpec - security / auth', () => {
 
     const req = result.requests.find((r) => r.name === 'apiKeyHeaderEndpoint');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected apiKeyHeaderEndpoint');
+    assertDefinedToNarrowType(req, 'Expected apiKeyHeaderEndpoint');
     expect(req.headers['X-API-Key']).toBe('{{apiKeyHeader}}');
     expect(result.variables).toContainEqual({ name: 'apiKeyHeader', value: '' });
   });
@@ -798,7 +800,7 @@ describe('parseOpenApiSpec - security / auth', () => {
 
     const req = result.requests.find((r) => r.name === 'apiKeyQueryEndpoint');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected apiKeyQueryEndpoint');
+    assertDefinedToNarrowType(req, 'Expected apiKeyQueryEndpoint');
     expect(req.url).toContain('api_key={{apiKeyQuery}}');
     expect(result.variables).toContainEqual({ name: 'apiKeyQuery', value: '' });
   });
@@ -809,7 +811,7 @@ describe('parseOpenApiSpec - security / auth', () => {
 
     const req = result.requests.find((r) => r.name === 'apiKeyCookieEndpoint');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected apiKeyCookieEndpoint');
+    assertDefinedToNarrowType(req, 'Expected apiKeyCookieEndpoint');
     expect(req.headers['Cookie']).toBe('session={{apiKeyCookie}}');
     expect(result.variables).toContainEqual({ name: 'apiKeyCookie', value: '' });
   });
@@ -820,7 +822,7 @@ describe('parseOpenApiSpec - security / auth', () => {
 
     const req = result.requests.find((r) => r.name === 'oauthEndpoint');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected oauthEndpoint');
+    assertDefinedToNarrowType(req, 'Expected oauthEndpoint');
     expect(req.headers['Authorization']).toBeUndefined();
     expect(getWarnings()).toContain('oauth2');
   });
@@ -840,7 +842,7 @@ describe('parseOpenApiSpec - request body', () => {
 
     const req = result.requests.find((r) => r.name === 'createUser');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected createUser');
+    assertDefinedToNarrowType(req, 'Expected createUser');
     expect(req.body).toBe('{"name":"Alice","email":"alice@example.com"}');
     expect(req.headers['Content-Type']).toBe('application/json');
   });
@@ -851,7 +853,7 @@ describe('parseOpenApiSpec - request body', () => {
 
     const req = result.requests.find((r) => r.name === 'createUserNamed');
     expect(req).toBeDefined();
-    if (!req) throw new Error('Expected createUserNamed');
+    assertDefinedToNarrowType(req, 'Expected createUserNamed');
     expect(req.body).toBe('{"name":"Alice","email":"alice@example.com"}');
   });
 

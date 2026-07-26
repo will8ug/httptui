@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { assertDefinedToNarrowType } from '../helpers/assertions.js';
 import { parsePostmanCollection } from '../../src/core/postman-parser';
 
 function readFixture(name: string): string {
@@ -55,9 +56,7 @@ describe('parsePostmanCollection', () => {
 
     const loginRequest = result.requests.find((r) => r.name === 'Auth / Login');
     expect(loginRequest).toBeDefined();
-    if (!loginRequest) {
-      throw new Error('Expected login request to be defined');
-    }
+    assertDefinedToNarrowType(loginRequest, 'Expected login request to be defined');
     expect(loginRequest.headers.Authorization).toBe('Basic YWRtaW46c2VjcmV0');
   });
 
@@ -67,9 +66,7 @@ describe('parsePostmanCollection', () => {
 
     const profileRequest = result.requests.find((r) => r.name === 'Auth / Get Profile');
     expect(profileRequest).toBeDefined();
-    if (!profileRequest) {
-      throw new Error('Expected profile request to be defined');
-    }
+    assertDefinedToNarrowType(profileRequest, 'Expected profile request to be defined');
     expect(profileRequest.headers.Authorization).toBe('Bearer abc123token');
   });
 
@@ -79,9 +76,7 @@ describe('parsePostmanCollection', () => {
 
     const apiKeyRequest = result.requests.find((r) => r.name === 'API Key Auth');
     expect(apiKeyRequest).toBeDefined();
-    if (!apiKeyRequest) {
-      throw new Error('Expected API Key request to be defined');
-    }
+    assertDefinedToNarrowType(apiKeyRequest, 'Expected API Key request to be defined');
     expect(apiKeyRequest.headers['X-API-Key']).toBe('secret-api-key');
   });
 
@@ -101,9 +96,7 @@ describe('parsePostmanCollection', () => {
 
     const formRequest = result.requests.find((r) => r.name === 'Submit Form');
     expect(formRequest).toBeDefined();
-    if (!formRequest) {
-      throw new Error('Expected form request to be defined');
-    }
+    assertDefinedToNarrowType(formRequest, 'Expected form request to be defined');
     expect(formRequest.body).toBe('name=Alice&email=alice%40example.com');
   });
 
@@ -113,9 +106,7 @@ describe('parsePostmanCollection', () => {
 
     const formRequest = result.requests.find((r) => r.name === 'Submit Form');
     expect(formRequest).toBeDefined();
-    if (!formRequest) {
-      throw new Error('Expected form request to be defined');
-    }
+    assertDefinedToNarrowType(formRequest, 'Expected form request to be defined');
     expect(formRequest.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
   });
 
@@ -133,9 +124,7 @@ describe('parsePostmanCollection', () => {
 
     const getResource = result.requests.find((r) => r.name === 'Get Resource');
     expect(getResource).toBeDefined();
-    if (!getResource) {
-      throw new Error('Expected Get Resource request to be defined');
-    }
+    assertDefinedToNarrowType(getResource, 'Expected Get Resource request to be defined');
     expect(getResource.url).toContain('{{baseUrl}}');
     expect(getResource.url).toContain('{{userId}}');
     expect(getResource.headers.authorization).toBe('Bearer {{token}}');
@@ -167,9 +156,7 @@ describe('parsePostmanCollection', () => {
     expect(request.formdataFields).toHaveLength(3);
 
     const fields = request.formdataFields;
-    if (!fields) {
-      throw new Error('Expected formdataFields to be defined');
-    }
+    assertDefinedToNarrowType(fields, 'Expected formdataFields to be defined');
     expect(fields[0]).toEqual({ key: 'username', value: 'alice', type: 'text' });
     expect(fields[1]).toEqual({ key: 'email', value: 'alice@example.com', type: 'text' });
     expect(fields[2]).toEqual({ key: 'message', value: 'Hello World', type: 'text' });
@@ -200,9 +187,7 @@ describe('parsePostmanCollection', () => {
 
     const request = result.requests.find((r) => r.name === 'Raw JSON Body');
     expect(request).toBeDefined();
-    if (!request) {
-      throw new Error('Expected request to be defined');
-    }
+    assertDefinedToNarrowType(request, 'Expected request to be defined');
     expect(request.headers['Content-Type']).toBe('application/json');
   });
 
@@ -212,9 +197,7 @@ describe('parsePostmanCollection', () => {
 
     const request = result.requests.find((r) => r.name === 'Raw XML Body');
     expect(request).toBeDefined();
-    if (!request) {
-      throw new Error('Expected request to be defined');
-    }
+    assertDefinedToNarrowType(request, 'Expected request to be defined');
     expect(request.headers['Content-Type']).toBe('application/xml');
   });
 
@@ -224,9 +207,7 @@ describe('parsePostmanCollection', () => {
 
     const request = result.requests.find((r) => r.name === 'Raw Text Body');
     expect(request).toBeDefined();
-    if (!request) {
-      throw new Error('Expected request to be defined');
-    }
+    assertDefinedToNarrowType(request, 'Expected request to be defined');
     expect(request.headers['Content-Type']).toBe('text/plain');
   });
 
@@ -236,9 +217,7 @@ describe('parsePostmanCollection', () => {
 
     const request = result.requests.find((r) => r.name === 'Raw HTML Body');
     expect(request).toBeDefined();
-    if (!request) {
-      throw new Error('Expected request to be defined');
-    }
+    assertDefinedToNarrowType(request, 'Expected request to be defined');
     expect(request.headers['Content-Type']).toBe('text/html');
   });
 
@@ -248,9 +227,7 @@ describe('parsePostmanCollection', () => {
 
     const request = result.requests.find((r) => r.name === 'Raw JSON With Explicit Content-Type');
     expect(request).toBeDefined();
-    if (!request) {
-      throw new Error('Expected request to be defined');
-    }
+    assertDefinedToNarrowType(request, 'Expected request to be defined');
     const contentType = Object.entries(request.headers).find(
       ([key]) => key.toLowerCase() === 'content-type',
     )?.[1];
@@ -263,9 +240,7 @@ describe('parsePostmanCollection', () => {
 
     const request = result.requests.find((r) => r.name === 'Raw Unrecognized Language');
     expect(request).toBeDefined();
-    if (!request) {
-      throw new Error('Expected request to be defined');
-    }
+    assertDefinedToNarrowType(request, 'Expected request to be defined');
     expect(request.headers['Content-Type']).toBeUndefined();
   });
 
@@ -275,9 +250,7 @@ describe('parsePostmanCollection', () => {
 
     const request = result.requests.find((r) => r.name === 'Raw Without Language Hint');
     expect(request).toBeDefined();
-    if (!request) {
-      throw new Error('Expected request to be defined');
-    }
+    assertDefinedToNarrowType(request, 'Expected request to be defined');
     expect(request.headers['Content-Type']).toBeUndefined();
   });
 });
