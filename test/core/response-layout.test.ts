@@ -226,7 +226,10 @@ describe('computeResponseLayout — tab expansion', () => {
 
     const bodySection = layout.sections.find((s) => s.kind === 'body');
     expect(bodySection).toBeDefined();
-    const visualLine = bodySection!.visualLines[0][0];
+    if (!bodySection) {
+      throw new Error('Expected body section to be defined');
+    }
+    const visualLine = bodySection.visualLines[0][0];
     expect(visualLine.text).not.toContain('\t');
     expect(visualLine.text).toBe('                <element/>');
   });
