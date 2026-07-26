@@ -14,12 +14,12 @@
 
 ## 3. Optional: simplify `key.backspace || key.delete` sites
 
-- [ ] 3.1 (OPT-IN — confirm with user first) Simplify the three `key.backspace || key.delete` checks in `src/app.tsx` (`fileLoad` mode at line 197, `search` mode at line 231, `saveLoad` mode at line 339) to `key.backspace` only.
-- [ ] 3.2 (OPT-IN — pair with 3.1) Add a one-line comment at each of the three sites noting that `key.delete` is reserved for the actual Delete key (Fn+Backspace on macOS) under Ink v7, so the simplified check intentionally leaves Delete as a no-op in text-input modes. This comment qualifies under AGENTS.md's gotcha exception (v7's Backspace/Delete split is non-obvious).
-- [ ] 3.3 (If 3.1 applies) Re-run `npm run typecheck && npm test && npm run lint && npm run build` and confirm all four remain green. The test suite's backspace scenarios must pass unmodified.
+- [x] 3.1 (OPT-IN — confirm with user first) Simplify the three `key.backspace || key.delete` checks in `src/app.tsx` (`fileLoad` mode at line 197, `search` mode at line 231, `saveLoad` mode at line 339) to `key.backspace` only.
+- [~] 3.2 (OPT-IN — pair with 3.1) Add a one-line comment at each of the three sites noting that `key.delete` is reserved for the actual Delete key (Fn+Backspace on macOS) under Ink v7, so the simplified check intentionally leaves Delete as a no-op in text-input modes. This comment qualifies under AGENTS.md's gotcha exception (v7's Backspace/Delete split is non-obvious). — SKIPPED per user request
+- [x] 3.3 (If 3.1 applies) Re-run `npm run typecheck && npm test && npm run lint && npm run build` and confirm all four remain green. The test suite's backspace scenarios must pass unmodified. — all green: 50 files/704 tests, typecheck/lint/build clean
 
 ## 4. Close-out verification
 
-- [ ] 4.1 Re-run `npm run typecheck && npm test && npm run lint && npm run build` end-to-end to confirm a single green run after any optional cleanup.
-- [ ] 4.2 Inspect `git diff` and confirm the changeset is restricted to `package.json`, `package-lock.json`, and (only if Step 3 was opted-in) `src/app.tsx`. No other files should be modified by this change.
-- [ ] 4.3 Report a brief summary to the user with the resolved `ink` version, test counts, and any manual smoke-test observations.
+- [x] 4.1 Re-run `npm run typecheck && npm test && npm run lint && npm run build` end-to-end to confirm a single green run after any optional cleanup. — all four green: typecheck clean, 50 files/704 tests, lint clean, build clean (136.16 KB)
+- [x] 4.2 Inspect `git diff` and confirm the changeset is restricted to `package.json`, `package-lock.json`, and (only if Step 3 was opted-in) `src/app.tsx`. No other files should be modified by this change. — package.json already committed at HEAD (5ff3af9); package-lock.json is gitignored per repo convention; uncommitted diff is src/app.tsx (3 `|| key.delete` removals) + tasks.md
+- [x] 4.3 Report a brief summary to the user with the resolved `ink` version, test counts, and any manual smoke-test observations.

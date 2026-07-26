@@ -194,7 +194,7 @@ export function App(props: AppProps): React.ReactElement {
         return;
       }
 
-      if (key.backspace || key.delete) {
+      if (key.backspace) {
         dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: state.fileLoadInput.slice(0, -1) });
         return;
       }
@@ -228,7 +228,7 @@ export function App(props: AppProps): React.ReactElement {
         return;
       }
 
-      if (key.backspace || key.delete) {
+      if (key.backspace) {
         dispatch({ type: 'UPDATE_SEARCH_INPUT', value: state.searchQuery.slice(0, -1) });
         return;
       }
@@ -336,7 +336,7 @@ export function App(props: AppProps): React.ReactElement {
         return;
       }
 
-      if (key.backspace || key.delete) {
+      if (key.backspace) {
         dispatch({ type: 'UPDATE_SAVE_INPUT', value: state.saveInput.slice(0, -1) });
         return;
       }
