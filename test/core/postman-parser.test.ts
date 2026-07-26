@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { assertDefinedToNarrowType } from '../helpers/assertions.js';
 import { parsePostmanCollection } from '../../src/core/postman-parser';
@@ -252,6 +252,75 @@ describe('parsePostmanCollection', () => {
     expect(request).toBeDefined();
     assertDefinedToNarrowType(request, 'Expected request to be defined');
     expect(request.headers['Content-Type']).toBeUndefined();
+  });
+
+  it('skips requests with unsupported HTTP methods', () => {
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const content = readFixture('postman-unsupported-method.json');
+
+    const result = parsePostmanCollection(content);
+
+    expect(result.requests).toHaveLength(0);
+    expect(stderrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Unsupported HTTP method "TRACE"'),
+    );
+
+    stderrSpy.mockRestore();
+  });
+
+  it('warns about GraphQL body and drops the body', () => {
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const content = readFixture('postman-graphql-body.json');
+
+    const result = parsePostmanCollection(content);
+
+    expect(result.requests).toHaveLength(1);
+    expect(result.requests[0].body).toBeUndefined();
+    expect(stderrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('has GraphQL body'),
+    );
+
+    stderrSpy.mockRestore();
+  });
+
+  it('warns about binary file body and drops the body', () => {
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const content = readFixture('postman-file-body.json');
+
+    const result = parsePostmanCollection(content);
+
+    expect(result.requests).toHaveLength(1);
+    expect(result.requests[0].body).toBeUndefined();
+    expect(stderrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('has binary file body'),
+    );
+
+    stderrSpy.mockRestore();
+  });
+
+  it('uses synthetic name for requests without a name', () => {
+    const content = readFixture('postman-no-name.json');
+    const result = parsePostmanCollection(content);
+
+    expect(result.requests).toHaveLength(1);
+    expect(result.requests[0].name).toBe('Request 1');
+  });
+
+  it('handles urlencoded bodies with empty or missing-key parameters', () => {
+    const content = readFixture('postman-urlencoded-edge.json');
+    const result = parsePostmanCollection(content);
+
+    expect(result.requests).toHaveLength(2);
+
+    const emptyRequest = result.requests.find((r) => r.name === 'Empty Urlencoded');
+    expect(emptyRequest).toBeDefined();
+    assertDefinedToNarrowType(emptyRequest, 'Expected empty request to be defined');
+    expect(emptyRequest.body).toBeUndefined();
+
+    const missingKeyRequest = result.requests.find((r) => r.name === 'Missing Key Urlencoded');
+    expect(missingKeyRequest).toBeDefined();
+    assertDefinedToNarrowType(missingKeyRequest, 'Expected missing-key request to be defined');
+    expect(missingKeyRequest.body).toBe('name=Alice&token=');
   });
 });
 

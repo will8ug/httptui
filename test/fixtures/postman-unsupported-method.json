@@ -1,0 +1,16 @@
+{
+  "info": {
+    "name": "Unsupported Method Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Trace Request",
+      "request": {
+        "method": "TRACE",
+        "url": { "raw": "https://api.example.com/trace" },
+        "header": []
+      }
+    }
+  ]
+}

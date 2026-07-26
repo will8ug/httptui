@@ -1,0 +1,20 @@
+{
+  "info": {
+    "name": "No Name Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "request": {
+        "method": "POST",
+        "url": { "raw": "https://api.example.com/no-name" },
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": { "raw": { "language": "json" } }
+        }
+      }
+    }
+  ]
+}

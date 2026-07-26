@@ -1,0 +1,36 @@
+{
+  "info": {
+    "name": "Urlencoded Edge Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Empty Urlencoded",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "https://api.example.com/form" },
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": []
+        }
+      }
+    },
+    {
+      "name": "Missing Key Urlencoded",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "https://api.example.com/form" },
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "name", "value": "Alice" },
+            { "value": "orphan" },
+            { "key": "token" }
+          ]
+        }
+      }
+    }
+  ]
+}
