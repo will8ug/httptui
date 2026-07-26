@@ -8,9 +8,9 @@
 ![Statements Coverage](https://will8ug.github.io/httptui/badges/coverage-statements.svg)
 ![Functions Coverage](https://will8ug.github.io/httptui/badges/coverage-functions.svg)
 
-![httptui requests](assets/httptui-requests.png)
-
 httptui is a fast, keyboard-driven REST client that lives in your terminal. It parses `.http` and `.rest` files, allowing you to browse and execute requests without leaving your workflow.
+
+![httptui requests](assets/httptui-requests.png)
 
 ## Features
 
