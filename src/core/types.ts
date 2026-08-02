@@ -88,8 +88,34 @@ export interface ExecutorConfig {
 }
 
 export type FocusedPanel = 'requests' | 'details' | 'response';
-export type AppMode = 'normal' | 'fileLoad' | 'search' | 'envSelect' | 'saveLoad';
+
+export type AppMode =
+  | 'normal'
+  | 'fileLoad'
+  | 'search'
+  | 'envSelect'
+  | 'saveLoad'
+  | 'edit'
+  | 'confirmDiscard';
+
 export type WrapMode = 'nowrap' | 'wrap';
+
+// Single member is deliberate: widen to `| 'url' | 'headers'` only when those
+// editors exist, so no unreachable branches are introduced.
+export type EditTarget = 'body';
+
+export type PendingDiscardAction = 'reload' | 'fileLoad' | 'quit';
+
+export type EditOp =
+  | 'insert'
+  | 'deleteBackward'
+  | 'deleteForward'
+  | 'left'
+  | 'right'
+  | 'up'
+  | 'down'
+  | 'lineStart'
+  | 'lineEnd';
 
 export interface AppState {
   requests: ParsedRequest[];
@@ -130,6 +156,13 @@ export interface AppState {
   currentMatchIndex: number;
   lastSearchQuery: string;
   maximizedPanel: FocusedPanel | null;
+  editTarget: EditTarget;
+  editBuffer: string;
+  editCursor: number;
+  editScrollOffset: number;
+  editHorizontalOffset: number;
+  isDirty: boolean;
+  pendingDiscardAction: PendingDiscardAction | null;
   certificates?: Record<string, CertEntry>;
 }
 
@@ -186,4 +219,11 @@ export type Action =
   | { type: 'UPDATE_SAVE_INPUT'; value: string }
   | { type: 'SAVE_FILE'; message: string }
   | { type: 'SET_SAVE_ERROR'; error: string }
-  | { type: 'CANCEL_SAVE' };
+  | { type: 'CANCEL_SAVE' }
+  | { type: 'ENTER_EDIT'; target: EditTarget; buffer: string; visibleHeight: number; visibleWidth: number }
+  | { type: 'EDIT_KEY'; op: EditOp; insert?: string; visibleHeight: number; visibleWidth: number }
+  | { type: 'COMMIT_EDIT' }
+  | { type: 'CANCEL_EDIT' }
+  | { type: 'REQUEST_DISCARD_CONFIRM'; action: PendingDiscardAction }
+  | { type: 'CONFIRM_DISCARD' }
+  | { type: 'CANCEL_DISCARD' };

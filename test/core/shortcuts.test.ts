@@ -103,3 +103,25 @@ describe('SHORTCUTS registry — save-as-http entry', () => {
     expect(barKeys).not.toContain('S');
   });
 });
+
+describe('SHORTCUTS registry — edit-body entry', () => {
+  it('contains the `e` entry (edit request body)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'e');
+    expect(entry).toBeDefined();
+    expect(entry?.label).toBe('');
+    expect(entry?.description).toBe('Edit request body');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('request');
+  });
+
+  it('does not appear in the status bar', () => {
+    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
+    expect(barKeys).not.toContain('e');
+  });
+
+  it('preserves the 6-item status bar budget in order', () => {
+    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
+    expect(barKeys).toEqual(['Enter', 'h/j/k/l', 'Tab', 'v', 'q', '?']);
+  });
+});

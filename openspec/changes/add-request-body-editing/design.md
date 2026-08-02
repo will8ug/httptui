@@ -88,6 +88,8 @@ It is used by `MOVE_SELECTION` and `ENTER_ENV_SELECT`. The same function serves 
 
 The reducer does not know terminal dimensions, so — exactly as the existing `SCROLL` action does with its `maxOffset` payload — `app.tsx` computes the editor's `visibleHeight` and `visibleWidth` and passes them on every edit action. Reducer stays pure.
 
+This clamping applies on **entry** as well as on every keystroke. Because the cursor is seeded at the end of the buffer (matching the save overlay's convention), a buffer taller than the overlay would otherwise open scrolled to the top with the cursor off-screen. `ENTER_EDIT` therefore also carries `visibleHeight`/`visibleWidth` and clamps from 0. "The cursor is always within the visible slice" has no exception for the first frame.
+
 Horizontal scrolling (rather than soft-wrapping) is chosen for consistency with `RequestDetailsView`, and because soft-wrap would require mapping the cursor offset onto wrapped visual lines.
 
 ### Decision 6: Tab characters are expanded for display only

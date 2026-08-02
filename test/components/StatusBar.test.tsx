@@ -16,6 +16,7 @@ const baseProps = {
   responseTotalLines: 20,
   hasResponse: false,
   envName: null as string | null,
+  isDirty: false,
 };
 
 afterEach(() => {
@@ -56,6 +57,38 @@ describe('shortcut bar and status text', () => {
     const frame = lastFrame() ?? '';
     expect(frame).toContain('test.http');
     expect(frame).not.toContain('↕');
+  });
+});
+
+describe('unsaved-changes marker', () => {
+  it('prefixes file name with * when isDirty is true and focusedPanel is requests', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} isDirty={true} focusedPanel="requests" />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('*test.http');
+  });
+
+  it('does not prefix file name when isDirty is false and focusedPanel is requests', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} isDirty={false} focusedPanel="requests" />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('test.http');
+    expect(frame).not.toContain('*test.http');
+  });
+
+  it('prefixes file name with * when isDirty is true and focusedPanel is response', () => {
+    const { lastFrame } = render(
+      <StatusBar {...baseProps} isDirty={true} focusedPanel="response" hasResponse={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('*test.http');
+  });
+
+  it('does not prefix file name when isDirty is false and focusedPanel is response', () => {
+    const { lastFrame } = render(
+      <StatusBar {...baseProps} isDirty={false} focusedPanel="response" hasResponse={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('test.http');
+    expect(frame).not.toContain('*test.http');
   });
 });
 

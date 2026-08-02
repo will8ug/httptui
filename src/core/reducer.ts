@@ -1,8 +1,10 @@
 import { basename, dirname, extname } from 'node:path';
 
 import type { Action, AppState, AppProps } from './types';
+import { applyEditOp, offsetToLineCol } from './editor';
 import { formatResponseBody } from './formatter';
 import { mergeVariables, resolveVariables } from './variables';
+import { expandTabs } from '../utils/text';
 import { DEFAULT_TERMINAL_ROWS, getEnvPickerVisibleHeight, getRequestContentWidth, getRequestVisibleHeight, getResponseContentWidth } from '../utils/layout';
 import { getDetailsTotalLines, getMaxDetailsLineWidth, getMaxRequestLineWidth, getMaxResponseLineWidth, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
 
@@ -358,6 +360,7 @@ export function reducer(state: AppState, action: Action): AppState {
         requestScrollOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
+        isDirty: false,
         transientMessage: 'Reloaded',
       };
     }
@@ -414,6 +417,7 @@ export function reducer(state: AppState, action: Action): AppState {
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
         mode: 'normal',
+        isDirty: false,
         fileLoadInput: '',
         fileLoadError: null,
         transientMessage: `Loaded: ${action.filePath.split('/').pop() ?? ''}`,
@@ -458,6 +462,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         mode: 'normal',
+        isDirty: false,
         saveInput: '',
         saveError: null,
         transientMessage: action.message,
@@ -661,6 +666,96 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     }
 
+    case 'ENTER_EDIT': {
+      const { line, col } = offsetToLineCol(action.buffer, action.buffer.length);
+      const cursorLineText = action.buffer.split('\n')[line] ?? '';
+      const visualCol = expandTabs(cursorLineText.slice(0, col)).length;
+      return {
+        ...state,
+        mode: 'edit',
+        editTarget: action.target,
+        editBuffer: action.buffer,
+        editCursor: action.buffer.length,
+        editScrollOffset: clampScrollOffsetToCursor(line, 0, action.visibleHeight),
+        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, 0, action.visibleWidth),
+      };
+    }
+
+    case 'EDIT_KEY': {
+      const updated = applyEditOp(
+        { text: state.editBuffer, cursor: state.editCursor },
+        action.op,
+        action.insert,
+      );
+      const { line, col } = offsetToLineCol(updated.text, updated.cursor);
+      const cursorLineText = updated.text.split('\n')[line] ?? '';
+      const visualCol = expandTabs(cursorLineText.slice(0, col)).length;
+      return {
+        ...state,
+        editBuffer: updated.text,
+        editCursor: updated.cursor,
+        editScrollOffset: clampScrollOffsetToCursor(line, state.editScrollOffset, action.visibleHeight),
+        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, state.editHorizontalOffset, action.visibleWidth),
+      };
+    }
+
+    case 'COMMIT_EDIT': {
+      const request = state.requests[state.selectedIndex];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
+      if (!request) {
+        return state;
+      }
+      const nextBody = state.editBuffer === '' ? undefined : state.editBuffer;
+      const updatedRequests = state.requests.map((req, i) =>
+        i === state.selectedIndex ? { ...req, body: nextBody } : req,
+      );
+      return {
+        ...state,
+        requests: updatedRequests,
+        isDirty: state.isDirty || nextBody !== request.body,
+        mode: 'normal',
+        editTarget: 'body',
+        editBuffer: '',
+        editCursor: 0,
+        editScrollOffset: 0,
+        editHorizontalOffset: 0,
+        transientMessage: 'Body updated',
+      };
+    }
+
+    case 'CANCEL_EDIT':
+      return {
+        ...state,
+        mode: 'normal',
+        editTarget: 'body',
+        editBuffer: '',
+        editCursor: 0,
+        editScrollOffset: 0,
+        editHorizontalOffset: 0,
+      };
+
+    case 'REQUEST_DISCARD_CONFIRM':
+      return {
+        ...state,
+        mode: 'confirmDiscard',
+        pendingDiscardAction: action.action,
+      };
+
+    case 'CONFIRM_DISCARD':
+      return {
+        ...state,
+        mode: 'normal',
+        isDirty: false,
+        pendingDiscardAction: null,
+      };
+
+    case 'CANCEL_DISCARD':
+      return {
+        ...state,
+        mode: 'normal',
+        pendingDiscardAction: null,
+      };
+
     default:
       return state;
   }
@@ -707,5 +802,12 @@ export function createInitialState(props: AppProps): AppState {
     lastSearchQuery: '',
     maximizedPanel: null,
     certificates: props.executorConfig.certificates,
+    editTarget: 'body',
+    editBuffer: '',
+    editCursor: 0,
+    editScrollOffset: 0,
+    editHorizontalOffset: 0,
+    isDirty: false,
+    pendingDiscardAction: null,
   };
 }

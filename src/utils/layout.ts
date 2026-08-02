@@ -64,3 +64,11 @@ export const PANEL_VERTICAL_CHROME = 3;
 export function getFullscreenVisibleHeight(availableHeight: number): number {
   return Math.max(1, availableHeight - PANEL_VERTICAL_CHROME);
 }
+
+export function getEditorContentWidth(columns: number): number {
+  return Math.max(48, columns - 6) - 4;
+}
+
+export function getEditorVisibleHeight(rows: number): number {
+  return Math.max(1, Math.max(10, rows - 4) - 6);
+}

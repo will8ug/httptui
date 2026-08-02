@@ -181,6 +181,11 @@ Pressing `Enter` in edit mode SHALL insert a newline character at the cursor pos
 
 The editor SHALL display a slice of the buffer's lines bounded by the overlay's visible height, and SHALL adjust the vertical scroll offset so that the cursor's line is always within the visible slice. The editor SHALL likewise adjust a horizontal offset so that the cursor's visual column is always within the visible width. Content outside the visible region SHALL NOT render beyond the overlay's borders.
 
+#### Scenario: Cursor is visible immediately on opening a long body
+
+- **WHEN** the selected request's body has more lines than the overlay can display and the user presses `e`
+- **THEN** the initial vertical scroll offset SHALL place the end-of-buffer cursor within the visible slice, so the last line of the body is rendered and the first line is not
+
 #### Scenario: Scrolling down to keep the cursor visible
 
 - **WHEN** the buffer has more lines than the overlay can display and the user moves the cursor below the last visible line

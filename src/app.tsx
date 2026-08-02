@@ -7,6 +7,8 @@ import { useApp, useInput, useStdout } from 'ink';
 import { FileLoadOverlay } from './components/FileLoadOverlay';
 import { HelpOverlay } from './components/HelpOverlay';
 import { SaveOverlay } from './components/SaveOverlay';
+import { EditOverlay } from './components/EditOverlay';
+import { ConfirmDiscardOverlay } from './components/ConfirmDiscardOverlay';
 import { Layout } from './components/Layout';
 import { RequestList } from './components/RequestList';
 import { RequestDetailsView } from './components/RequestDetailsView';
@@ -25,7 +27,7 @@ import { parseEnvironmentFile } from './core/env-parser';
 import { resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
 import { loadConfig } from './core/config';
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getEditorContentWidth, getEditorVisibleHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
 import { resolveRequestDetails } from './utils/request';
 import { getResponseTotalLines } from './utils/scroll';
 
@@ -93,8 +95,14 @@ export function App(props: AppProps): React.ReactElement {
   const fullscreenContentWidth = getFullscreenContentWidth(columns);
   const fullscreenRequestContentWidth = getFullscreenRequestContentWidth(columns);
   const fullscreenVisibleHeight = getFullscreenVisibleHeight(fullscreenAvailableHeight);
+  const editorContentWidth = getEditorContentWidth(columns);
+  const editorVisibleHeight = getEditorVisibleHeight(rows);
   const effectiveResponseHeight = state.maximizedPanel === 'response' ? fullscreenAvailableHeight : responseAvailableHeight;
   const effectiveDetailMaxContent = state.maximizedPanel === 'details' ? fullscreenVisibleHeight : detailPanelMaxContent;
+
+  const scheduleTransientClear = (): void => {
+    setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
+  };
 
   const sendSelectedRequest = async (): Promise<void> => {
     if (state.isLoading) {
@@ -186,7 +194,7 @@ export function App(props: AppProps): React.ReactElement {
             filePath: resolvedPath,
             executorConfig: newExecutorConfig,
           });
-          setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
+          scheduleTransientClear();
         } catch (error) {
           dispatch({ type: 'SET_FILE_LOAD_ERROR', error: toRequestError(error).message });
         }
@@ -328,7 +336,7 @@ export function App(props: AppProps): React.ReactElement {
           writeFileSync(finalPath, content, 'utf8');
           const fileName = finalPath.split('/').pop() ?? finalPath;
           dispatch({ type: 'SAVE_FILE', message: `Saved ${state.requests.length} requests to ${fileName}` });
-          setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
+          scheduleTransientClear();
         } catch (error) {
           dispatch({ type: 'SET_SAVE_ERROR', error: toRequestError(error).message });
         }
@@ -348,6 +356,102 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (state.mode === 'edit') {
+      if (key.escape) {
+        dispatch({ type: 'CANCEL_EDIT' });
+        return;
+      }
+
+      if (key.ctrl && input === 's') {
+        dispatch({ type: 'COMMIT_EDIT' });
+        scheduleTransientClear();
+        return;
+      }
+
+      if (key.home || (key.ctrl && input === 'a')) {
+        dispatch({ type: 'EDIT_KEY', op: 'lineStart', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+        return;
+      }
+
+      if (key.end || (key.ctrl && input === 'e')) {
+        dispatch({ type: 'EDIT_KEY', op: 'lineEnd', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+        return;
+      }
+
+      if (key.return) {
+        dispatch({ type: 'EDIT_KEY', op: 'insert', insert: '\n', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+        return;
+      }
+
+      if (key.backspace) {
+        dispatch({ type: 'EDIT_KEY', op: 'deleteBackward', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+        return;
+      }
+
+      if (key.delete) {
+        dispatch({ type: 'EDIT_KEY', op: 'deleteForward', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+        return;
+      }
+
+      if (key.leftArrow) {
+        dispatch({ type: 'EDIT_KEY', op: 'left', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+        return;
+      }
+
+      if (key.rightArrow) {
+        dispatch({ type: 'EDIT_KEY', op: 'right', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+        return;
+      }
+
+      if (key.upArrow) {
+        dispatch({ type: 'EDIT_KEY', op: 'up', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+        return;
+      }
+
+      if (key.downArrow) {
+        dispatch({ type: 'EDIT_KEY', op: 'down', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+        return;
+      }
+
+      if (input && !key.ctrl && !key.meta) {
+        dispatch({ type: 'EDIT_KEY', op: 'insert', insert: input, visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+      }
+
+      return;
+    }
+
+    if (state.mode === 'confirmDiscard') {
+      if (input === 'y') {
+        const pendingAction = state.pendingDiscardAction;
+        dispatch({ type: 'CONFIRM_DISCARD' });
+        switch (pendingAction) {
+          case 'reload':
+            try {
+              const content = readFileSync(state.filePath, 'utf8');
+              const parseResult = parseAnyFormat(state.filePath, content);
+              dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
+              scheduleTransientClear();
+            } catch (error) {
+              dispatch({ type: 'REQUEST_ERROR', error: toRequestError(error) });
+            }
+            break;
+          case 'fileLoad':
+            dispatch({ type: 'ENTER_FILE_LOAD' });
+            break;
+          case 'quit':
+            exit();
+            break;
+        }
+        return;
+      }
+
+      if (input === 'n' || key.escape) {
+        dispatch({ type: 'CANCEL_DISCARD' });
+      }
+
+      return;
+    }
+
     if (key.escape && state.maximizedPanel !== null) {
       dispatch({ type: 'TOGGLE_FULLSCREEN' });
       return;
@@ -358,8 +462,17 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
-    if ((key.ctrl && input === 'c') || input === 'q') {
+    if (key.ctrl && input === 'c') {
       exit();
+      return;
+    }
+
+    if (input === 'q') {
+      if (state.isDirty) {
+        dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'quit' });
+      } else {
+        exit();
+      }
       return;
     }
 
@@ -399,7 +512,11 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'o') {
-      dispatch({ type: 'ENTER_FILE_LOAD' });
+      if (state.isDirty) {
+        dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'fileLoad' });
+      } else {
+        dispatch({ type: 'ENTER_FILE_LOAD' });
+      }
       return;
     }
 
@@ -408,13 +525,27 @@ export function App(props: AppProps): React.ReactElement {
         dispatch({ type: 'ENTER_ENV_SELECT' });
       } else {
         dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No environments configured' });
-        setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
+        scheduleTransientClear();
       }
       return;
     }
 
     if (input === 'S') {
       dispatch({ type: 'ENTER_SAVE' });
+      return;
+    }
+
+    if (input === 'e') {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
+      if (!selectedRequest) {
+        return;
+      }
+      if (selectedRequest.formdataFields) {
+        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'form-data request body is not supported to edit for now' });
+        scheduleTransientClear();
+        return;
+      }
+      dispatch({ type: 'ENTER_EDIT', target: 'body', buffer: selectedRequest.body ?? '', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
       return;
     }
 
@@ -444,11 +575,15 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'R') {
+      if (state.isDirty) {
+        dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'reload' });
+        return;
+      }
       try {
         const content = readFileSync(state.filePath, 'utf8');
         const parseResult = parseAnyFormat(state.filePath, content);
         dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
-        setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
+        scheduleTransientClear();
       } catch (error) {
         dispatch({ type: 'REQUEST_ERROR', error: toRequestError(error) });
       }
@@ -573,6 +708,7 @@ return (
           }) : 0}
           hasResponse={!!state.response}
           envName={state.activeEnvName}
+          isDirty={state.isDirty}
         />
       }
       overlay={
@@ -580,6 +716,8 @@ return (
         state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> :
         state.mode === 'saveLoad' ? <SaveOverlay value={state.saveInput} error={state.saveError} /> :
         state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} scrollOffset={state.envSelectScrollOffset} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
+        state.mode === 'edit' ? <EditOverlay title="Edit Body" buffer={state.editBuffer} cursor={state.editCursor} scrollOffset={state.editScrollOffset} horizontalOffset={state.editHorizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
+        state.mode === 'confirmDiscard' && state.pendingDiscardAction !== null ? <ConfirmDiscardOverlay pendingAction={state.pendingDiscardAction} /> :
         undefined
       }
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access

@@ -21,26 +21,29 @@ interface StatusBarProps {
   responseTotalLines: number;
   hasResponse: boolean;
   envName: string | null;
+  isDirty: boolean;
 }
 
 function getStatusText(props: StatusBarProps): string {
   const fileName = basename(props.filePath);
+  const prefix = props.isDirty ? '*' : '';
+  const displayName = `${prefix}${fileName}`;
 
   switch (props.focusedPanel) {
     case 'requests': {
-      return `${fileName} | ${props.selectedIndex + 1}/${props.requestCount}`;
+      return `${displayName} | ${props.selectedIndex + 1}/${props.requestCount}`;
     }
     case 'details': {
-      return `${fileName} | ↕ ${props.detailsScrollOffset + 1}/${props.detailsTotalLines} lines`;
+      return `${displayName} | ↕ ${props.detailsScrollOffset + 1}/${props.detailsTotalLines} lines`;
     }
     case 'response': {
       if (!props.hasResponse) {
-        return fileName;
+        return displayName;
       }
-      return `${fileName} | ↕ ${props.responseScrollOffset + 1}/${props.responseTotalLines} lines`;
+      return `${displayName} | ↕ ${props.responseScrollOffset + 1}/${props.responseTotalLines} lines`;
     }
     default: {
-      return fileName;
+      return displayName;
     }
   }
 }
@@ -58,6 +61,7 @@ export function StatusBar({
   responseTotalLines,
   hasResponse,
   envName,
+  isDirty,
 }: StatusBarProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
@@ -76,6 +80,7 @@ export function StatusBar({
     responseTotalLines,
     hasResponse,
     envName,
+    isDirty,
   });
   const reloadLabelWidth = transientMessage ? transientMessage.length + 2 : 0;
   const envNameLabelWidth = envName ? envName.length + 2 : 0;
