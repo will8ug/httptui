@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Content of the bottom status bar beyond the shortcut hints: the context-aware status text per focused panel and the transient confirmation message. The shortcut bar on the left is specified in the **shortcuts** spec; the environment-name indicator in the **runtime-environment-switching** spec; the INSECURE indicator in the **executor** spec.
+Content of the bottom status bar beyond the shortcut hints: the context-aware status text per focused panel and the transient confirmation message. The shortcut bar on the left is specified in the **shortcuts** spec; the environment-name indicator in the **runtime-environment-switching** spec; the INSECURE indicator in the **executor** spec; the unsaved-changes marker in the **unsaved-changes** spec.
 
 ## Requirements
 

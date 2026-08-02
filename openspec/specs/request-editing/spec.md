@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Request Editing
+
+## Purpose
+
+Entering and leaving edit mode, the body editor's observable text-manipulation and cursor behavior, the raw-versus-resolved contract, commit and cancel semantics, and the form-data restriction.
+
+## Requirements
 
 ### Requirement: Enter body edit mode with the `e` key
 

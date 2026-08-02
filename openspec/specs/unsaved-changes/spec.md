@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Spec: Unsaved Changes
+
+## Purpose
+
+The file-level unsaved-changes marker, when it is set and cleared, and the confirmation prompt that guards actions which would discard uncommitted-to-disk edits.
+
+## Requirements
 
 ### Requirement: Track unsaved changes at the file level
 
