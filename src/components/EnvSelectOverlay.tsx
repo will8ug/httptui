@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
 import type { EnvOption } from '../core/types';
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, ENV_PICKER_VERTICAL_OVERHEAD, getEnvPickerVisibleHeight } from '../utils/layout';
+import { CENTERED_OVERLAY_MARGIN, DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, ENV_PICKER_VERTICAL_OVERHEAD, getEnvPickerVisibleHeight } from '../utils/layout';
 
 interface EnvSelectOverlayProps {
   options: EnvOption[];
@@ -20,7 +20,7 @@ export function EnvSelectOverlay({
   error,
 }: EnvSelectOverlayProps): React.ReactElement {
   const { stdout } = useStdout();
-  const width = Math.min(72, Math.max(48, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - 6));
+  const width = Math.min(72, Math.max(48, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - CENTERED_OVERLAY_MARGIN));
   const visibleCount = getEnvPickerVisibleHeight(stdout.rows || DEFAULT_TERMINAL_ROWS);
   const visibleOptions = options.slice(scrollOffset, scrollOffset + visibleCount);
 

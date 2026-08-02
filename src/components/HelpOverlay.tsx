@@ -3,7 +3,7 @@ import { Box, Text, useStdout } from 'ink';
 
 import { SHORTCUTS, SHORTCUT_GROUP_LABELS, HELP_COLUMN_GROUPS } from '../core/shortcuts';
 import type { ShortcutGroup } from '../core/shortcuts';
-import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
+import { CENTERED_OVERLAY_MARGIN, DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
 
 interface HelpOverlayProps {
   visible: boolean;
@@ -30,7 +30,7 @@ export function HelpOverlay({ visible }: HelpOverlayProps): React.ReactElement |
     return null;
   }
 
-  const width = Math.min(90, Math.max(64, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - 6));
+  const width = Math.min(90, Math.max(64, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - CENTERED_OVERLAY_MARGIN));
   const grouped = groupShortcutsByGroup();
 
   return (

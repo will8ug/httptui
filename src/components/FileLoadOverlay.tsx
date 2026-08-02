@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
-import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
+import { CENTERED_OVERLAY_MARGIN, DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
 
 interface FileLoadOverlayProps {
   value: string;
@@ -10,7 +10,7 @@ interface FileLoadOverlayProps {
 
 export function FileLoadOverlay({ value, error }: FileLoadOverlayProps): React.ReactElement {
   const { stdout } = useStdout();
-  const width = Math.min(72, Math.max(48, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - 6));
+  const width = Math.min(72, Math.max(48, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - CENTERED_OVERLAY_MARGIN));
 
   return (
     <Box width="100%" height="100%" justifyContent="center" alignItems="center">

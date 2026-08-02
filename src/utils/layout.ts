@@ -67,8 +67,8 @@ export function getFullscreenVisibleHeight(availableHeight: number): number {
 
 const EDITOR_MIN_BOX_WIDTH = 48;
 const EDITOR_MIN_BOX_HEIGHT = 10;
-/** Columns reserved outside the editor overlay box, matching the other centered overlays */
-const EDITOR_BOX_MARGIN_COLUMNS = 6;
+/** Horizontal inset shared by every centered overlay (3 columns on each side when centered). */
+export const CENTERED_OVERLAY_MARGIN = 6;
 /** Rows reserved outside the editor overlay box: status bar (1) + vertical breathing room (3) */
 const EDITOR_BOX_MARGIN_ROWS = 4;
 /** Border (1 + 1) + paddingX (1 + 1) for the editor overlay */
@@ -77,7 +77,7 @@ const EDITOR_HORIZONTAL_CHROME = 4;
 const EDITOR_VERTICAL_CHROME = 6;
 
 export function getEditorBoxWidth(columns: number): number {
-  return Math.max(EDITOR_MIN_BOX_WIDTH, columns - EDITOR_BOX_MARGIN_COLUMNS);
+  return Math.max(EDITOR_MIN_BOX_WIDTH, columns - CENTERED_OVERLAY_MARGIN);
 }
 
 export function getEditorBoxHeight(rows: number): number {
