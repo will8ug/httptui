@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ENV_PICKER_VERTICAL_OVERHEAD,
   MAX_ENV_PICKER_VISIBLE,
+  getEditorBoxHeight,
+  getEditorBoxWidth,
   getEditorContentWidth,
   getEditorVisibleHeight,
   getEnvPickerVisibleHeight,
@@ -29,6 +31,30 @@ describe('getEnvPickerVisibleHeight', () => {
     const boundaryRows = MAX_ENV_PICKER_VISIBLE + ENV_PICKER_VERTICAL_OVERHEAD;
     expect(getEnvPickerVisibleHeight(boundaryRows)).toBe(MAX_ENV_PICKER_VISIBLE);
     expect(getEnvPickerVisibleHeight(boundaryRows - 1)).toBe(MAX_ENV_PICKER_VISIBLE - 1);
+  });
+});
+
+describe('editor box and content dimensions', () => {
+  it('derives content width from box width by subtracting horizontal chrome', () => {
+    for (const columns of [10, 40, 54, 80, 120, 200]) {
+      expect(getEditorContentWidth(columns)).toBe(getEditorBoxWidth(columns) - 4);
+    }
+  });
+
+  it('derives visible height from box height by subtracting vertical chrome', () => {
+    for (const rows of [1, 10, 14, 24, 40, 60]) {
+      expect(getEditorVisibleHeight(rows)).toBe(getEditorBoxHeight(rows) - 6);
+    }
+  });
+
+  it('floors the box at its minimum dimensions on tiny terminals', () => {
+    expect(getEditorBoxWidth(10)).toBe(48);
+    expect(getEditorBoxHeight(1)).toBe(10);
+  });
+
+  it('insets the box from the terminal edges on large terminals', () => {
+    expect(getEditorBoxWidth(120)).toBe(114);
+    expect(getEditorBoxHeight(40)).toBe(36);
   });
 });
 

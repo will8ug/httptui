@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
 import { offsetToLineCol } from '../core/editor';
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getEditorContentWidth, getEditorVisibleHeight } from '../utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getEditorBoxHeight, getEditorBoxWidth } from '../utils/layout';
 import { expandTabs, shiftText, truncateText } from '../utils/text';
 
 interface EditOverlayProps {
@@ -28,8 +28,8 @@ export function EditOverlay({
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
   const rows = stdout.rows || DEFAULT_TERMINAL_ROWS;
 
-  const width = getEditorContentWidth(columns) + 4;
-  const height = getEditorVisibleHeight(rows) + 6;
+  const width = getEditorBoxWidth(columns);
+  const height = getEditorBoxHeight(rows);
 
   const lines = buffer.split('\n');
   const { line: cursorLine, col: cursorCol } = offsetToLineCol(buffer, cursor);
