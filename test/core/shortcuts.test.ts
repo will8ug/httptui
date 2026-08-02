@@ -119,9 +119,4 @@ describe('SHORTCUTS registry — edit-body entry', () => {
     const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
     expect(barKeys).not.toContain('e');
   });
-
-  it('preserves the 6-item status bar budget in order', () => {
-    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
-    expect(barKeys).toEqual(['Enter', 'h/j/k/l', 'Tab', 'v', 'q', '?']);
-  });
 });

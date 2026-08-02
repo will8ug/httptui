@@ -232,10 +232,12 @@ describe('moveUp', () => {
   });
 
   it('moves to the same column on the previous line', () => {
-    const down = moveDown({ text: 'abcd\nefgh', cursor: 2 });
-    expect(down.cursor).toBe(7);
-    expect(moveUp(down).cursor).toBe(2);
+    expect(moveUp({ text: 'abcd\nefgh', cursor: 7 })).toEqual({ text: 'abcd\nefgh', cursor: 2 });
   });
+
+  it('clamps column to a shorter target line', () => {
+    expect(moveUp({ text: 'ab\ncdefgh', cursor: 7 })).toEqual({ text: 'ab\ncdefgh', cursor: 2 });
+  })
 
   it('does not mutate the original buffer', () => {
     const original = { text: 'ab\ncd', cursor: 4 };

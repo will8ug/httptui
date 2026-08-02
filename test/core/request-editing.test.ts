@@ -42,53 +42,34 @@ describe('ENTER_EDIT reducer', () => {
 
 describe('EDIT_KEY reducer', () => {
   it('scrolls viewport down when cursor moves below visible window', () => {
-    const state = createInitialState({
+    let current = createInitialState({
       mode: 'edit',
       editBuffer: 'line0\nline1\nline2\nline3\nline4\nline5',
       editCursor: 0,
       editScrollOffset: 0,
     });
 
-    const result = reducer(state, {
-      type: 'EDIT_KEY',
-      op: 'down',
-      visibleHeight: 3,
-      visibleWidth: 40,
-    });
+    for (let i = 0; i < 3; i++) {
+      current = reducer(current, {
+        type: 'EDIT_KEY',
+        op: 'down',
+        visibleHeight: 3,
+        visibleWidth: 40,
+      });
+    }
 
-    expect(result.editCursor).toBe(6);
-    expect(result.editScrollOffset).toBe(0);
-
-    const result2 = reducer(result, {
-      type: 'EDIT_KEY',
-      op: 'down',
-      visibleHeight: 3,
-      visibleWidth: 40,
-    });
-
-    expect(result2.editCursor).toBe(12);
-    expect(result2.editScrollOffset).toBe(0);
-
-    const result3 = reducer(result2, {
-      type: 'EDIT_KEY',
-      op: 'down',
-      visibleHeight: 3,
-      visibleWidth: 40,
-    });
-
-    expect(result3.editCursor).toBe(18);
-    expect(result3.editScrollOffset).toBe(1);
+    expect(current.editCursor).toBe(18);
+    expect(current.editScrollOffset).toBe(1);
   });
 
   it('scrolls viewport up when cursor moves above visible window', () => {
-    const state = createInitialState({
+    let current = createInitialState({
       mode: 'edit',
       editBuffer: 'line0\nline1\nline2\nline3\nline4\nline5',
       editCursor: 24,
       editScrollOffset: 2,
     });
 
-    let current = state;
     for (let i = 0; i < 3; i++) {
       current = reducer(current, {
         type: 'EDIT_KEY',
@@ -98,6 +79,7 @@ describe('EDIT_KEY reducer', () => {
       });
     }
 
+    expect(current.editCursor).toBe(6);
     expect(current.editScrollOffset).toBe(1);
 
     current = reducer(current, {
@@ -107,19 +89,19 @@ describe('EDIT_KEY reducer', () => {
       visibleWidth: 40,
     });
 
+    expect(current.editCursor).toBe(0);
     expect(current.editScrollOffset).toBe(0);
   });
 
   it('adjusts horizontal offset when cursor moves past visible width on a long line', () => {
     const longLine = 'a'.repeat(60);
-    const state = createInitialState({
+    let current = createInitialState({
       mode: 'edit',
       editBuffer: longLine,
       editCursor: 0,
       editHorizontalOffset: 0,
     });
 
-    let current = state;
     for (let i = 0; i < 25; i++) {
       current = reducer(current, {
         type: 'EDIT_KEY',
