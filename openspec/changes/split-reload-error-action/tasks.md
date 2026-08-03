@@ -2,6 +2,7 @@
 
 - [ ] 1.1 Rename `RequestError` interface to `ErrorInfo` in `src/core/types.ts` (interface body unchanged: `{ message: string; code?: string }`)
 - [ ] 1.2 Add `RELOAD_ERROR` action to the `Action` union in `src/core/types.ts`: `| { type: 'RELOAD_ERROR'; error: ErrorInfo }`
+- [ ] 1.3 Add `transientError: string | null` to the app `State` type in `src/core/types.ts` (initial value: `null`)
 
 ## 2. Executor changes
 
@@ -12,8 +13,9 @@
 
 ## 3. Reducer changes
 
-- [ ] 3.1 Add `case 'RELOAD_ERROR':` to `src/core/reducer.ts` with the same body as `REQUEST_ERROR` case (response: null, error: action.error, isLoading: false, responseScrollOffset: 0, ...CLEAR_SEARCH_STATE)
-- [ ] 3.2 Update `REQUEST_ERROR` case payload type reference from `RequestError` to `ErrorInfo` (if the reducer references the type name)
+- [ ] 3.1 Add `case 'RELOAD_ERROR':` to `src/core/reducer.ts` with body: `{ ...state, transientMessage: null, transientError: action.error.message }` — does NOT touch response, error, isLoading, scrollOffset, or search state
+- [ ] 3.2 Update `SET_TRANSIENT_MESSAGE` case in reducer to also clear `transientError`: add `transientError: null` to the returned state
+- [ ] 3.3 Update `REQUEST_ERROR` case payload type reference from `RequestError` to `ErrorInfo` (if the reducer references the type name)
 
 ## 4. App component changes
 
@@ -21,25 +23,33 @@
 - [ ] 4.2 Import `toErrorInfo` (and `isErrorInfo`) from `./core/executor` in `src/app.tsx`
 - [ ] 4.3 Update line 136 dispatch to use `isErrorInfo` (was `isRequestError`)
 - [ ] 4.4 Update line 142: `REQUEST_ERROR` dispatch with `toErrorInfo(error)` (was `toRequestError`)
-- [ ] 4.5 Update line 435: change `REQUEST_ERROR` to `RELOAD_ERROR`, use `toErrorInfo(error)`
-- [ ] 4.6 Update line 588: change `REQUEST_ERROR` to `RELOAD_ERROR`, use `toErrorInfo(error)`
+- [ ] 4.5 Update line 435: change `REQUEST_ERROR` to `RELOAD_ERROR`, use `toErrorInfo(error)`, and add `scheduleTransientClear()` call after dispatch
+- [ ] 4.6 Update line 588: change `REQUEST_ERROR` to `RELOAD_ERROR`, use `toErrorInfo(error)`, and add `scheduleTransientClear()` call after dispatch
 - [ ] 4.7 Update line 199 (`SET_FILE_LOAD_ERROR`): use `toErrorInfo(error).message` (was `toRequestError`)
 - [ ] 4.8 Update line 341 (`SET_SAVE_ERROR`): use `toErrorInfo(error).message` (was `toRequestError`)
+- [ ] 4.9 Pass `transientError={state.transientError}` prop to `StatusBar` in the render section (around line 697 where `transientMessage` is passed)
 
 ## 5. Component changes
 
 - [ ] 5.1 Update `src/components/ResponseView.tsx` type import: `RequestError` → `ErrorInfo` (line 7)
 - [ ] 5.2 Update `ResponseViewProps.error` type from `RequestError | null` to `ErrorInfo | null` (line 15)
+- [ ] 5.3 Add `transientError: string | null` to `StatusBarProps` in `src/components/StatusBar.tsx`
+- [ ] 5.4 Add `transientError` to StatusBar function params
+- [ ] 5.5 Add red bold render for `transientError` in StatusBar (next to the existing green `transientMessage` render, line 94): `{transientError ? <Text key="error-message" color="red" bold>{transientError}  </Text> : null}`
+- [ ] 5.6 Update `reloadLabelWidth` calculation in StatusBar to account for `transientError` length (the existing calculation uses `transientMessage` length — add the same for `transientError`)
 
 ## 6. Test updates
 
-- [ ] 6.1 Update `test/core/search.test.ts`: add or update test for `RELOAD_ERROR` clearing search state (mirror the existing `REQUEST_ERROR` test at line 297)
-- [ ] 6.2 Update `test/core/executor.test.ts`: rename `isRequestError` references to `isErrorInfo`
-- [ ] 6.3 Grep all test files for `RequestError`, `toRequestError`, `isRequestError` and update to `ErrorInfo`, `toErrorInfo`, `isErrorInfo`
+- [ ] 6.1 Update `test/core/executor.test.ts`: rename `isRequestError` references to `isErrorInfo`
+- [ ] 6.2 Add reducer test for `RELOAD_ERROR`: verify it sets `transientError`, clears `transientMessage`, and does NOT change `response`, `error`, `searchMatches`, `lastSearchQuery`, `isLoading`
+- [ ] 6.3 Add reducer test: `SET_TRANSIENT_MESSAGE` with `null` clears both `transientMessage` and `transientError`
+- [ ] 6.4 Add StatusBar test: renders `transientError` in red when set; hides it when null
+- [ ] 6.5 Grep all test files for `RequestError`, `toRequestError`, `isRequestError` and update to `ErrorInfo`, `toErrorInfo`, `isErrorInfo`
+- [ ] 6.6 Update `test/core/search.test.ts` line 297: the existing `REQUEST_ERROR` clears search test stays unchanged (REQUEST_ERROR still clears search). Do NOT add a RELOAD_ERROR search-clearing test (it does not clear search).
 
 ## 7. Spec prose update
 
-- [ ] 7.1 Update `openspec/specs/tui/spec.md` line 81: change `REQUEST_ERROR` to `RELOAD_ERROR` in the File Reload prose section
+- [ ] 7.1 Update `openspec/specs/tui/spec.md` line 81: change `REQUEST_ERROR` to `RELOAD_ERROR` and update the description to mention transient status-bar message instead of response-panel error
 
 ## 8. Verification
 
