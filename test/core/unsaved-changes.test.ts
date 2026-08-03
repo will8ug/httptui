@@ -80,7 +80,7 @@ describe('isDirty flag', () => {
     expect(result.isDirty).toBe(false);
   });
 
-  it('is cleared by CONFIRM_DISCARD', () => {
+  it('is preserved by CONFIRM_DISCARD', () => {
     const state = createInitialState({
       isDirty: true,
       mode: 'confirmDiscard',
@@ -89,7 +89,7 @@ describe('isDirty flag', () => {
 
     const result = reducer(state, { type: 'CONFIRM_DISCARD' });
 
-    expect(result.isDirty).toBe(false);
+    expect(result.isDirty).toBe(true);
     expect(result.mode).toBe('normal');
     expect(result.pendingDiscardAction).toBeNull();
   });

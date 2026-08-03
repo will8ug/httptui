@@ -75,6 +75,26 @@ describe('unsaved changes integration', () => {
     expect(frame).not.toContain('Reloaded');
   });
 
+  it('a failed reload after confirming leaves the * marker', async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-reload-fail-'));
+    try {
+      const filePath = join(tmpDir, 'gone.http');
+      const { stdin, lastFrame } = renderApp({ filePath, requests: makeBodyRequest() });
+      await delay(KEY_DELAY_MS);
+      await commitDirtyEdit(stdin);
+      expect(lastFrame() ?? '').toContain('*gone.http');
+
+      await press(stdin, 'R');
+      expect(lastFrame() ?? '').toContain('Unsaved Changes');
+
+      await press(stdin, 'y');
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('*gone.http');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it('o while dirty shows the prompt instead of the Open File overlay', async () => {
     const { stdin, lastFrame } = renderApp({ requests: makeBodyRequest() });
     await delay(KEY_DELAY_MS);
@@ -111,7 +131,25 @@ describe('unsaved changes integration', () => {
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Open File');
     expect(frame).not.toContain('Unsaved Changes');
-    expect(frame).not.toContain('*test.http');
+    expect(frame).toContain('*test.http');
+  });
+
+  it('Escape in the file-load overlay after confirming preserves the * marker', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeBodyRequest() });
+    await delay(KEY_DELAY_MS);
+    await commitDirtyEdit(stdin);
+
+    await press(stdin, 'o');
+    expect(lastFrame() ?? '').toContain('Unsaved Changes');
+
+    await press(stdin, 'y');
+    expect(lastFrame() ?? '').toContain('Open File');
+    expect(lastFrame() ?? '').toContain('*test.http');
+
+    await press(stdin, ESC);
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('Open File');
+    expect(frame).toContain('*test.http');
   });
 
   it('n at the confirm prompt abandons and leaves the * marker', async () => {

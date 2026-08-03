@@ -745,7 +745,6 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         mode: 'normal',
-        isDirty: false,
         pendingDiscardAction: null,
       };
 
