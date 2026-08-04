@@ -376,6 +376,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         transientMessage: null,
+        transientError: null,
       };
 
     case 'SET_TRANSIENT_MESSAGE':

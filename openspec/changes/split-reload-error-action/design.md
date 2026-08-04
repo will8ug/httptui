@@ -41,7 +41,7 @@ It does NOT touch `response`, `error`, `isLoading`, `responseScrollOffset`, or s
 
 Add `transientError: string | null` to app state. The StatusBar renders it in red bold, similar to `transientMessage` in green bold. The two fields are mutually exclusive:
 - `RELOAD_ERROR` sets `transientError` and clears `transientMessage`.
-- `SET_TRANSIENT_MESSAGE` sets `transientMessage` and clears `transientError`. This means `scheduleTransientClear()` (which dispatches `SET_TRANSIENT_MESSAGE` with `null`) clears both fields after 2 seconds.
+- `SET_TRANSIENT_MESSAGE` sets `transientMessage` and clears `transientError`. This means `scheduleTransientClear()` (which dispatches `CLEAR_TRANSIENT_MESSAGE`) clears both fields after 2 seconds.
 
 **Rationale**: Reusing the existing `transientMessage` field would show errors in green — incorrect for error messages. A separate field with red rendering is a minimal addition (one state field, one StatusBar render line, one reducer line) and gives correct UX. Making the fields mutually exclusive avoids conflicting messages.
 

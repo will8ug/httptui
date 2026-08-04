@@ -96,6 +96,17 @@ describe('CLEAR_TRANSIENT_MESSAGE reducer', () => {
     expect(result.selectedIndex).toBe(2);
     expect(result.transientMessage).toBeNull();
   });
+
+  it('clears transientError when set', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      transientError: 'Reload failed',
+    };
+
+    const result = reducer(state, { type: 'CLEAR_TRANSIENT_MESSAGE' });
+
+    expect(result.transientError).toBeNull();
+  });
 });
 
 describe('RELOAD_FILE preserves pristine file variables for later (none) switch', () => {
