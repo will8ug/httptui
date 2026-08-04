@@ -54,7 +54,7 @@ export interface ResponseData {
   };
 }
 
-export interface RequestError {
+export interface ErrorInfo {
   message: string;
   code?: string;
 }
@@ -125,7 +125,7 @@ export interface AppState {
   focusedPanel: FocusedPanel;
   response: ResponseData | null;
   isLoading: boolean;
-  error: RequestError | null;
+  error: ErrorInfo | null;
   insecure: boolean;
   verbose: boolean;
   showHelp: boolean;
@@ -137,6 +137,7 @@ export interface AppState {
   detailsScrollOffset: number;
   detailsHorizontalOffset: number;
   transientMessage: string | null;
+  transientError: string | null;
   mode: AppMode;
   fileLoadInput: string;
   fileLoadError: string | null;
@@ -182,7 +183,8 @@ export type Action =
   | { type: 'MOVE_SELECTION'; direction: 'up' | 'down'; rows?: number }
   | { type: 'SEND_REQUEST' }
   | { type: 'RECEIVE_RESPONSE'; response: ResponseData }
-  | { type: 'REQUEST_ERROR'; error: RequestError }
+  | { type: 'REQUEST_ERROR'; error: ErrorInfo }
+  | { type: 'RELOAD_ERROR'; error: ErrorInfo }
   | { type: 'SWITCH_PANEL' }
   | { type: 'TOGGLE_VERBOSE' }
   | { type: 'TOGGLE_HELP' }

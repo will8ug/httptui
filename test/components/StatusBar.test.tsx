@@ -9,6 +9,7 @@ const baseProps = {
   selectedIndex: 0,
   insecure: false,
   transientMessage: null as string | null,
+  transientError: null as string | null,
   focusedPanel: 'requests' as const,
   detailsScrollOffset: 0,
   detailsTotalLines: 10,
@@ -123,5 +124,21 @@ describe('indicators', () => {
     const { lastFrame } = render(<StatusBar {...baseProps} insecure={false} />);
     const frame = lastFrame() ?? '';
     expect(frame).not.toContain('INSECURE');
+  });
+});
+
+describe('transient error message', () => {
+  it('renders transient error text when set', () => {
+    const { lastFrame } = render(
+      <StatusBar {...baseProps} transientError="Reload failed" />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('Reload failed');
+  });
+
+  it('does not render transient error when null', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} transientError={null} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('Reload failed');
   });
 });

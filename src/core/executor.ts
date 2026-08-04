@@ -1,6 +1,6 @@
 import { Agent, FormData, request } from 'undici';
 
-import type { ExecutorConfig, RequestError, ResolvedRequest, ResponseData } from './types';
+import type { ExecutorConfig, ErrorInfo, ResolvedRequest, ResponseData } from './types';
 
 const STATUS_TEXTS: Record<number, string> = {
   200: 'OK',
@@ -64,7 +64,7 @@ function getTlsHint(code: string): string | undefined {
   return 'Hint: Try running with --insecure flag, or set NODE_EXTRA_CA_CERTS=/path/to/ca.pem';
 }
 
-function toRequestError(error: unknown): RequestError {
+export function toErrorInfo(error: unknown): ErrorInfo {
   if (error instanceof Error) {
     const errorWithCode = error as Error & { code?: string };
     const hint = errorWithCode.code ? getTlsHint(errorWithCode.code) : undefined;
@@ -96,11 +96,11 @@ export async function executeRequest(
   resolvedRequest: ResolvedRequest,
   config?: ExecutorConfig,
   certConfig?: CertConfig,
-): Promise<ResponseData | RequestError> {
+): Promise<ResponseData | ErrorInfo> {
   try {
     new URL(resolvedRequest.url);
   } catch (error) {
-    return toRequestError(error);
+    return toErrorInfo(error);
   }
 
   const headers = { ...resolvedRequest.headers };
@@ -177,10 +177,10 @@ export async function executeRequest(
       },
     };
   } catch (error) {
-    return toRequestError(error);
+    return toErrorInfo(error);
   }
 }
 
-export function isRequestError(result: ResponseData | RequestError): result is RequestError {
+export function isErrorInfo(result: ResponseData | ErrorInfo): result is ErrorInfo {
   return 'message' in result;
 }

@@ -14,6 +14,7 @@ interface StatusBarProps {
   selectedIndex: number;
   insecure: boolean;
   transientMessage: string | null;
+  transientError: string | null;
   focusedPanel: FocusedPanel;
   detailsScrollOffset: number;
   detailsTotalLines: number;
@@ -54,6 +55,7 @@ export function StatusBar({
   selectedIndex,
   insecure,
   transientMessage,
+  transientError,
   focusedPanel,
   detailsScrollOffset,
   detailsTotalLines,
@@ -73,6 +75,7 @@ export function StatusBar({
     selectedIndex,
     insecure,
     transientMessage,
+    transientError,
     focusedPanel,
     detailsScrollOffset,
     detailsTotalLines,
@@ -82,7 +85,7 @@ export function StatusBar({
     envName,
     isDirty,
   });
-  const reloadLabelWidth = transientMessage ? transientMessage.length + 2 : 0;
+  const reloadLabelWidth = transientMessage ? transientMessage.length + 2 : transientError ? transientError.length + 2 : 0;
   const envNameLabelWidth = envName ? envName.length + 2 : 0;
   const insecureLabelWidth = insecure ? 10 : 0;
   const availableLeftWidth = Math.max(0, columns - rightText.length - reloadLabelWidth - envNameLabelWidth - insecureLabelWidth - 1);
@@ -92,6 +95,7 @@ export function StatusBar({
       <Text color="gray">{truncateText(leftText, availableLeftWidth)}</Text>
       <Box>
         {transientMessage ? <Text key="reload-message" color="green" bold>{transientMessage}  </Text> : null}
+        {transientError ? <Text key="error-message" color="red" bold>{transientError}  </Text> : null}
         {envName ? <Text key="env-name" color="magenta" bold>{envName}  </Text> : null}
         {insecure ? <Text key="insecure" color="yellow" bold>INSECURE  </Text> : null}
         <Text key="status-text" color="gray">{rightText}</Text>

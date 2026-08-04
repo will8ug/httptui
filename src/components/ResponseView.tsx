@@ -4,7 +4,7 @@ import { Box, Text, useStdout } from 'ink';
 
 import { formatResponseBody } from "../core/formatter";
 import { computeResponseLayout } from '../core/response-layout';
-import type { RequestError, ResponseData, WrapMode } from '../core/types';
+import type { ErrorInfo, ResponseData, WrapMode } from '../core/types';
 import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
 import { RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
 import { truncateText } from '../utils/text';
@@ -12,7 +12,7 @@ import type { ColorSegment } from '../utils/wrap';
 
 interface ResponseViewProps {
   response: ResponseData | null;
-  error: RequestError | null;
+  error: ErrorInfo | null;
   isLoading: boolean;
   verbose: boolean;
   focused: boolean;

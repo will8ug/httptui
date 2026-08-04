@@ -15,12 +15,12 @@ import { RequestDetailsView } from './components/RequestDetailsView';
 import { ResponseView } from './components/ResponseView';
 import { StatusBar } from './components/StatusBar';
 import { EnvSelectOverlay } from './components/EnvSelectOverlay';
-import { executeRequest, isRequestError } from './core/executor';
+import { executeRequest, isErrorInfo, toErrorInfo } from './core/executor';
 import type { CertConfig } from './core/executor';
 import { formatResponseBody } from './core/formatter';
 import { computeVerticalMaxOffset, createInitialState, reducer } from './core/reducer';
 import { computeResponseLayout } from './core/response-layout';
-import type { AppProps, AppState, RequestError, ResponseData } from './core/types';
+import type { AppProps, AppState, ResponseData } from './core/types';
 import { serializeHttpFile } from './core/http-serializer';
 import { parseAnyFormat } from './core/format-detector';
 import { parseEnvironmentFile } from './core/env-parser';
@@ -58,19 +58,6 @@ function getBodyVisualStart(state: AppState, columns: number): number[] | null {
     formattedBody,
   });
   return layout.bodyVisualStart;
-}
-
-function toRequestError(error: unknown): RequestError {
-  if (error instanceof Error) {
-    const errorWithCode = error as Error & { code?: string };
-
-    return {
-      message: error.message,
-      code: errorWithCode.code,
-    };
-  }
-
-  return { message: String(error) };
 }
 
 export function App(props: AppProps): React.ReactElement {
@@ -132,14 +119,14 @@ export function App(props: AppProps): React.ReactElement {
 
       const result = await executeRequest(resolvedRequest, props.executorConfig, certConfig);
 
-      if (isRequestError(result)) {
+      if (isErrorInfo(result)) {
         dispatch({ type: 'REQUEST_ERROR', error: result });
         return;
       }
 
       dispatch({ type: 'RECEIVE_RESPONSE', response: result });
     } catch (error) {
-      dispatch({ type: 'REQUEST_ERROR', error: toRequestError(error) });
+      dispatch({ type: 'REQUEST_ERROR', error: toErrorInfo(error) });
     }
   };
 
@@ -196,7 +183,7 @@ export function App(props: AppProps): React.ReactElement {
           });
           scheduleTransientClear();
         } catch (error) {
-          dispatch({ type: 'SET_FILE_LOAD_ERROR', error: toRequestError(error).message });
+          dispatch({ type: 'SET_FILE_LOAD_ERROR', error: toErrorInfo(error).message });
         }
 
         return;
@@ -338,7 +325,7 @@ export function App(props: AppProps): React.ReactElement {
           dispatch({ type: 'SAVE_FILE', message: `Saved ${state.requests.length} requests to ${fileName}` });
           scheduleTransientClear();
         } catch (error) {
-          dispatch({ type: 'SET_SAVE_ERROR', error: toRequestError(error).message });
+          dispatch({ type: 'SET_SAVE_ERROR', error: toErrorInfo(error).message });
         }
 
         return;
@@ -432,7 +419,8 @@ export function App(props: AppProps): React.ReactElement {
               dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
               scheduleTransientClear();
             } catch (error) {
-              dispatch({ type: 'REQUEST_ERROR', error: toRequestError(error) });
+              dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
+              scheduleTransientClear();
             }
             break;
           case 'fileLoad':
@@ -585,7 +573,8 @@ export function App(props: AppProps): React.ReactElement {
         dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
         scheduleTransientClear();
       } catch (error) {
-        dispatch({ type: 'REQUEST_ERROR', error: toRequestError(error) });
+        dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
+        scheduleTransientClear();
       }
 
       return;
@@ -695,6 +684,7 @@ return (
           selectedIndex={state.selectedIndex}
           insecure={state.insecure}
           transientMessage={state.transientMessage}
+          transientError={state.transientError}
           focusedPanel={state.focusedPanel}
           detailsScrollOffset={state.detailsScrollOffset}
           detailsTotalLines={detailsTotalLines}

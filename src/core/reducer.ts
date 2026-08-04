@@ -138,6 +138,13 @@ export function reducer(state: AppState, action: Action): AppState {
         ...CLEAR_SEARCH_STATE,
       };
 
+    case 'RELOAD_ERROR':
+      return {
+        ...state,
+        transientMessage: null,
+        transientError: action.error.message,
+      };
+
     case 'SWITCH_PANEL': {
       const nextPanel = (() => {
         switch (state.focusedPanel) {
@@ -375,6 +382,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         transientMessage: action.message,
+        transientError: null,
       };
 
     case 'ENTER_FILE_LOAD':
@@ -787,6 +795,7 @@ export function createInitialState(props: AppProps): AppState {
     detailsHorizontalOffset: 0,
     insecure: props.executorConfig.insecure,
     transientMessage: null,
+    transientError: null,
     mode: 'normal',
     fileLoadInput: '',
     fileLoadError: null,

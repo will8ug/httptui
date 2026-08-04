@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { RequestError, ResponseData } from '../../src/core/types';
+import type { ErrorInfo, ResponseData } from '../../src/core/types';
 
 const { agentMock, MockFormData, requestMock } = vi.hoisted(() => {
   class FormDataMock {
@@ -28,7 +28,7 @@ vi.mock('undici', () => ({
   request: requestMock,
 }));
 
-import { executeRequest, isRequestError } from '../../src/core/executor';
+import { executeRequest, isErrorInfo } from '../../src/core/executor';
 import { createResolvedRequest } from '../helpers/requests';
 
 function createMockResponse(overrides: {
@@ -62,8 +62,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(false);
-    if (isRequestError(result)) {
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
       throw new Error('Expected successful response');
     }
 
@@ -178,14 +178,14 @@ describe('executeRequest', () => {
     );
   });
 
-  it('returns RequestError for network failures', async () => {
+  it('returns ErrorInfo for network failures', async () => {
     const error = new Error('connect ECONNREFUSED 127.0.0.1:3000') as Error & { code?: string };
     error.code = 'ECONNREFUSED';
     requestMock.mockRejectedValue(error);
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(true);
+    expect(isErrorInfo(result)).toBe(true);
     expect(result).toEqual({
       message: 'connect ECONNREFUSED 127.0.0.1:3000',
       code: 'ECONNREFUSED',
@@ -199,8 +199,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(true);
-    if (!isRequestError(result)) throw new Error('Expected error');
+    expect(isErrorInfo(result)).toBe(true);
+    if (!isErrorInfo(result)) throw new Error('Expected error');
     expect(result.message).toContain('unable to verify the first certificate');
     expect(result.message).toContain('--insecure');
     expect(result.message).toContain('NODE_EXTRA_CA_CERTS');
@@ -214,8 +214,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(true);
-    if (!isRequestError(result)) throw new Error('Expected error');
+    expect(isErrorInfo(result)).toBe(true);
+    if (!isErrorInfo(result)) throw new Error('Expected error');
     expect(result.message).toContain('self-signed certificate');
     expect(result.message).toContain('--insecure');
   });
@@ -227,8 +227,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(true);
-    if (!isRequestError(result)) throw new Error('Expected error');
+    expect(isErrorInfo(result)).toBe(true);
+    if (!isErrorInfo(result)) throw new Error('Expected error');
     expect(result.message).toBe('connect ECONNREFUSED 127.0.0.1:3000');
     expect(result.message).not.toContain('--insecure');
   });
@@ -268,13 +268,13 @@ describe('executeRequest', () => {
       timing: { durationMs: 1 },
       size: { bodyBytes: 0 },
     };
-    const error: RequestError = {
+    const error: ErrorInfo = {
       message: 'timeout',
       code: 'UND_ERR_CONNECT_TIMEOUT',
     };
 
-    expect(isRequestError(response)).toBe(false);
-    expect(isRequestError(error)).toBe(true);
+    expect(isErrorInfo(response)).toBe(false);
+    expect(isErrorInfo(error)).toBe(true);
   });
 
   it('captures positive request timing', async () => {
@@ -283,8 +283,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(false);
-    if (isRequestError(result)) {
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
       throw new Error('Expected successful response');
     }
 
@@ -304,8 +304,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(false);
-    if (isRequestError(result)) {
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
       throw new Error('Expected successful response');
     }
 
@@ -320,8 +320,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(false);
-    if (isRequestError(result)) {
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
       throw new Error('Expected successful response');
     }
 
@@ -335,8 +335,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(false);
-    if (isRequestError(result)) {
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
       throw new Error('Expected successful response');
     }
 
@@ -349,8 +349,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(false);
-    if (isRequestError(result)) {
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
       throw new Error('Expected successful response');
     }
 
@@ -363,8 +363,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(false);
-    if (isRequestError(result)) {
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
       throw new Error('Expected successful response');
     }
 
@@ -377,8 +377,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(false);
-    if (isRequestError(result)) {
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
       throw new Error('Expected successful response');
     }
 
@@ -391,8 +391,8 @@ describe('executeRequest', () => {
 
     const result = await executeRequest(createResolvedRequest());
 
-    expect(isRequestError(result)).toBe(false);
-    if (isRequestError(result)) {
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
       throw new Error('Expected successful response');
     }
 

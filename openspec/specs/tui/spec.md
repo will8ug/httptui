@@ -78,7 +78,7 @@ Defined in the centralized `SHORTCUTS` registry (`src/core/shortcuts.ts`). See *
 
 ## File Reload
 
-The `R` key triggers file reload. The reload handler reads the file at `state.filePath` using `readFileSync`, parses it with `parseHttpFile`, and dispatches a `RELOAD_FILE` action with the result. If the file read or parse fails, the handler dispatches a `REQUEST_ERROR` action with the error message.
+The `R` key triggers file reload. The reload handler reads the file at `state.filePath` using `readFileSync`, parses it with `parseHttpFile`, and dispatches a `RELOAD_FILE` action with the result. If the file read or parse fails, the handler dispatches a `RELOAD_ERROR` action that sets a transient error message in the status bar.
 
 - Selection preservation: if the currently selected request name still exists in the reloaded file, keep it selected; otherwise reset `selectedIndex` to 0
 - Reload clears `response`, `error`, and `responseScrollOffset`
