@@ -85,7 +85,7 @@ export function StatusBar({
     envName,
     isDirty,
   });
-  const reloadLabelWidth = transientMessage ? transientMessage.length + 2 : transientError ? transientError.length + 2 : 0;
+  const reloadLabelWidth = (transientMessage ? transientMessage.length + 2 : 0) + (transientError ? transientError.length + 2 : 0);
   const envNameLabelWidth = envName ? envName.length + 2 : 0;
   const insecureLabelWidth = insecure ? 10 : 0;
   const availableLeftWidth = Math.max(0, columns - rightText.length - reloadLabelWidth - envNameLabelWidth - insecureLabelWidth - 1);
