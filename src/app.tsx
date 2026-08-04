@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-import React, { useReducer } from 'react';
+import React, { useEffect, useReducer, useRef } from 'react';
 import { useApp, useInput, useStdout } from 'ink';
 
 import { FileLoadOverlay } from './components/FileLoadOverlay';
@@ -28,6 +28,7 @@ import { resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
 import { loadConfig } from './core/config';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getEditorContentWidth, getEditorVisibleHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
+import { TRANSIENT_CLEAR_MS } from './utils/timing';
 import { resolveRequestDetails } from './utils/request';
 import { getResponseTotalLines } from './utils/scroll';
 
@@ -87,9 +88,23 @@ export function App(props: AppProps): React.ReactElement {
   const effectiveResponseHeight = state.maximizedPanel === 'response' ? fullscreenAvailableHeight : responseAvailableHeight;
   const effectiveDetailMaxContent = state.maximizedPanel === 'details' ? fullscreenVisibleHeight : detailPanelMaxContent;
 
+  const transientClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const scheduleTransientClear = (): void => {
-    setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, 2000);
+    if (transientClearTimerRef.current) {
+      clearTimeout(transientClearTimerRef.current);
+    }
+    transientClearTimerRef.current = setTimeout(() => {
+      transientClearTimerRef.current = null;
+      dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' });
+    }, TRANSIENT_CLEAR_MS);
   };
+
+  useEffect(() => () => {
+    if (transientClearTimerRef.current) {
+      clearTimeout(transientClearTimerRef.current);
+    }
+  }, []);
 
   const sendSelectedRequest = async (): Promise<void> => {
     if (state.isLoading) {

@@ -76,4 +76,25 @@ describe('reload integration', () => {
     expect(frame).not.toContain('/a');
     expect(frame).not.toContain('/b');
   });
+
+  it('a second reload is not cleared early by the first reload timer', async () => {
+    const parsedRequests = parseHttpFile(INITIAL_HTTP_CONTENT);
+    const { stdin, lastFrame } = renderApp({
+      filePath: tempFilePath,
+      requests: parsedRequests.requests,
+      variables: parsedRequests.variables,
+    });
+
+    await delay(KEY_DELAY_MS);
+    await press(stdin, 'R');
+    await delay(800);
+    await press(stdin, 'R');
+
+    // The delays above place this assertion past the first timer's deadline (~2s after
+    // the first R) but before the second timer's: the race bug clears 'Reloaded' here,
+    // the fix keeps it visible until the second timer fires.
+    await delay(1600);
+
+    expect(lastFrame() ?? '').toContain('Reloaded');
+  });
 });
