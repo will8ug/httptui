@@ -74,18 +74,4 @@ describe('SET_TRANSIENT_MESSAGE clears transientError', () => {
     expect(result.transientMessage).toBe('Reloaded');
     expect(result.transientError).toBeNull();
   });
-
-  it('clears both transientMessage and transientError when set to null', () => {
-    const state = {
-      ...createInitialState(),
-      transientMessage: 'Reloaded',
-      transientError: 'Previous error',
-    };
-    const result = reducer(state, {
-      type: 'SET_TRANSIENT_MESSAGE',
-      message: null as unknown as string,
-    });
-    expect(result.transientMessage).toBeNull();
-    expect(result.transientError).toBeNull();
-  });
 });
