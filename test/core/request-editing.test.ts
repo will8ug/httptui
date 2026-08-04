@@ -223,6 +223,18 @@ describe('COMMIT_EDIT reducer', () => {
     expect(result.editScrollOffset).toBe(0);
     expect(result.editHorizontalOffset).toBe(0);
   });
+
+  it('clears transientError when set', () => {
+    const request = createRequest({ body: 'test' });
+    const state: AppState = {
+      ...createInitialState({ requests: [request], selectedIndex: 0 }),
+      transientError: 'Body edit failed',
+    };
+
+    const result = reducer(state, { type: 'COMMIT_EDIT' });
+
+    expect(result.transientError).toBeNull();
+  });
 });
 
 describe('CANCEL_EDIT reducer', () => {

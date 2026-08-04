@@ -369,6 +369,7 @@ export function reducer(state: AppState, action: Action): AppState {
         detailsHorizontalOffset: 0,
         isDirty: false,
         transientMessage: 'Reloaded',
+        transientError: null,
       };
     }
 
@@ -430,6 +431,7 @@ export function reducer(state: AppState, action: Action): AppState {
         fileLoadInput: '',
         fileLoadError: null,
         transientMessage: `Loaded: ${action.filePath.split('/').pop() ?? ''}`,
+        transientError: null,
         ...(action.executorConfig && {
           certificates: action.executorConfig.certificates,
         }),
@@ -475,6 +477,7 @@ export function reducer(state: AppState, action: Action): AppState {
         saveInput: '',
         saveError: null,
         transientMessage: action.message,
+        transientError: null,
       };
 
     case 'CANCEL_SAVE':
@@ -729,6 +732,7 @@ export function reducer(state: AppState, action: Action): AppState {
         editScrollOffset: 0,
         editHorizontalOffset: 0,
         transientMessage: 'Body updated',
+        transientError: null,
       };
     }
 

@@ -79,6 +79,21 @@ describe('RELOAD_FILE reducer', () => {
     expect(result.detailsScrollOffset).toBe(0);
     expect(result.detailsHorizontalOffset).toBe(0);
   });
+
+  it('clears transientError when set', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      transientError: 'Reload failed',
+    };
+
+    const result = reducer(state, {
+      type: 'RELOAD_FILE',
+      requests: sampleRequests,
+      variables: sampleVariables,
+    });
+
+    expect(result.transientError).toBeNull();
+  });
 });
 
 describe('CLEAR_TRANSIENT_MESSAGE reducer', () => {
@@ -249,6 +264,22 @@ describe('LOAD_FILE reducer', () => {
     });
 
     expect(result.transientMessage).toBe('Loaded: api.http');
+  });
+
+  it('clears transientError when set', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      transientError: 'Load failed',
+    };
+
+    const result = reducer(state, {
+      type: 'LOAD_FILE',
+      requests: sampleRequests,
+      variables: sampleVariables,
+      filePath: '/some/deep/path/api.http',
+    });
+
+    expect(result.transientError).toBeNull();
   });
 });
 

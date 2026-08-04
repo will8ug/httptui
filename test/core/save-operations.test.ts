@@ -125,6 +125,18 @@ describe('SAVE_FILE reducer', () => {
     expect(result.saveError).toBeNull();
     expect(result.transientMessage).toBe('Saved 3 requests to /tmp/api.http');
   });
+
+  it('clears a previous transientError on successful save', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'saveLoad',
+      transientError: 'Save failed',
+    };
+
+    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 3 requests to /tmp/api.http' });
+
+    expect(result.transientError).toBeNull();
+  });
 });
 
 describe('CANCEL_SAVE reducer', () => {
