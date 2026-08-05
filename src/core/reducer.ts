@@ -718,20 +718,21 @@ export function reducer(state: AppState, action: Action): AppState {
         return state;
       }
       const nextBody = state.editBuffer === '' ? undefined : state.editBuffer;
+      const changed = nextBody !== request.body;
       const updatedRequests = state.requests.map((req, i) =>
         i === state.selectedIndex ? { ...req, body: nextBody } : req,
       );
       return {
         ...state,
         requests: updatedRequests,
-        isDirty: state.isDirty || nextBody !== request.body,
+        isDirty: state.isDirty || changed,
         mode: 'normal',
         editTarget: 'body',
         editBuffer: '',
         editCursor: 0,
         editScrollOffset: 0,
         editHorizontalOffset: 0,
-        transientMessage: 'Body updated',
+        transientMessage: changed ? 'Body updated' : null,
         transientError: null,
       };
     }

@@ -178,6 +178,21 @@ describe('COMMIT_EDIT reducer', () => {
     expect(result.isDirty).toBe(false);
   });
 
+  it('does not set a transient message when committed value is unchanged', () => {
+    const request = createRequest({ body: 'unchanged' });
+    const state: AppState = {
+      ...createInitialState({ requests: [request], selectedIndex: 0 }),
+      mode: 'edit',
+      editBuffer: 'unchanged',
+      editCursor: 9,
+    };
+
+    const result = reducer(state, { type: 'COMMIT_EDIT' });
+
+    expect(result.transientMessage).toBeNull();
+    expect(result.mode).toBe('normal');
+  });
+
   it('sets isDirty when committed value differs from original body', () => {
     const request = createRequest({ body: 'original' });
     const state: AppState = {

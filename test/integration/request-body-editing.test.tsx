@@ -65,6 +65,19 @@ describe('request body editing integration', () => {
     expect(frame).toContain('{"name":"Alice"}X');
   });
 
+  it('Ctrl+S without edits closes the editor without showing Body updated', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeBodyRequest('{"name":"Alice"}') });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'e');
+    expect(lastFrame() ?? '').toContain('Edit Body');
+
+    await press(stdin, CTRL_S);
+
+    expect(lastFrame() ?? '').not.toContain('Edit Body');
+    expect(lastFrame() ?? '').not.toContain('Body updated');
+  });
+
   it('Escape discards the edit and reopening shows the original body', async () => {
     const { stdin, lastFrame } = renderApp({ requests: makeBodyRequest('original-body') });
     await delay(KEY_DELAY_MS);
