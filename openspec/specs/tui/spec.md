@@ -139,7 +139,7 @@ The request-list panel SHALL resolve file, system, and environment variables aga
 - **THEN** the request-list display SHALL resolve `{{$dotenv API_HOST}}` using the `.env` file in the loaded file's directory first (then CWD fallback), identical to the resolution used when the request is sent, so the displayed path matches the sent URL
 
 ### Requirement: File reload error display
-When a file reload fails (file read or parse error), the system SHALL dispatch a `RELOAD_ERROR` action that sets a transient error message in the status bar. The system SHALL NOT clear the current response, error state, or search state when a reload error occurs. The transient error message SHALL auto-clear after approximately 2 seconds.
+When a file reload fails (file read or parse error), the system SHALL dispatch a `RELOAD_ERROR` action that sets a transient error message in the status bar. The system SHALL NOT clear the current response, request error state, or search state when a reload error occurs. The transient error message SHALL auto-clear after approximately 2 seconds.
 
 #### Scenario: File read failure during reload
 - **WHEN** the user triggers a file reload and the file at `state.filePath` cannot be read
