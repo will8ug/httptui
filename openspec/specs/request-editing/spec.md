@@ -233,7 +233,7 @@ The editor SHALL expand tab characters to spaces for rendering, advancing to the
 
 ### Requirement: Commit the edit with Ctrl+S
 
-`Ctrl+S` SHALL commit the buffer to the selected request's `body`, close the overlay, and return to normal mode. An empty buffer SHALL be committed as `undefined` rather than as an empty string. The committed request SHALL replace the entry at the selected index in `state.requests` without mutating the previous object. A transient confirmation message SHALL be displayed and SHALL auto-clear using the existing transient-message mechanism.
+`Ctrl+S` SHALL commit the buffer to the selected request's `body`, close the overlay, and return to normal mode. An empty buffer SHALL be committed as `undefined` rather than as an empty string. The committed request SHALL replace the entry at the selected index in `state.requests` without mutating the previous object. When the committed value differs from the request's stored body, a transient confirmation message SHALL be displayed and SHALL auto-clear using the existing transient-message mechanism. When the committed value equals the stored body, no transient confirmation message SHALL be displayed.
 
 #### Scenario: Commit stores the edited body
 
@@ -247,8 +247,13 @@ The editor SHALL expand tab characters to spaces for rendering, advancing to the
 
 #### Scenario: Commit shows a transient confirmation
 
-- **WHEN** the user commits an edit
+- **WHEN** the user commits an edit whose buffer differs from the stored body
 - **THEN** the status bar SHALL display a transient confirmation message
+
+#### Scenario: Commit without changes shows no confirmation
+
+- **WHEN** the user presses `Ctrl+S` with a buffer identical to the stored body (or the editor was opened and closed without edits)
+- **THEN** the overlay SHALL close, `mode` SHALL return to `'normal'`, and the status bar SHALL NOT display a transient confirmation message
 
 #### Scenario: Committed body is used by the request-details panel
 
