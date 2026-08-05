@@ -125,7 +125,7 @@ export interface AppState {
   focusedPanel: FocusedPanel;
   response: ResponseData | null;
   isLoading: boolean;
-  error: ErrorInfo | null;
+  requestError: ErrorInfo | null;
   insecure: boolean;
   verbose: boolean;
   showHelp: boolean;

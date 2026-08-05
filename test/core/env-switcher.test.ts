@@ -328,7 +328,7 @@ describe('SWITCH_ENV reducer', () => {
         timing: { durationMs: 50 },
         size: { bodyBytes: 4 },
       },
-      error: { message: 'old error' },
+      requestError: { message: 'old error' },
       responseScrollOffset: 5,
       requestScrollOffset: 3,
       detailsScrollOffset: 2,
@@ -344,7 +344,7 @@ describe('SWITCH_ENV reducer', () => {
     });
 
     expect(result.response).toBeNull();
-    expect(result.error).toBeNull();
+    expect(result.requestError).toBeNull();
     expect(result.responseScrollOffset).toBe(0);
     expect(result.requestScrollOffset).toBe(0);
     expect(result.detailsScrollOffset).toBe(0);

@@ -59,7 +59,7 @@ describe('RELOAD_FILE reducer', () => {
         timing: { durationMs: 100 },
         size: { bodyBytes: 8 },
       },
-      error: null,
+      requestError: null,
       responseScrollOffset: 5,
       requestScrollOffset: 3,
       detailsScrollOffset: 2,
@@ -73,7 +73,7 @@ describe('RELOAD_FILE reducer', () => {
     });
 
     expect(result.response).toBeNull();
-    expect(result.error).toBeNull();
+    expect(result.requestError).toBeNull();
     expect(result.responseScrollOffset).toBe(0);
     expect(result.requestScrollOffset).toBe(0);
     expect(result.detailsScrollOffset).toBe(0);
@@ -232,7 +232,7 @@ describe('LOAD_FILE reducer', () => {
         timing: { durationMs: 100 },
         size: { bodyBytes: 8 },
       },
-      error: null,
+      requestError: null,
       responseScrollOffset: 5,
       requestScrollOffset: 3,
       detailsScrollOffset: 2,
@@ -247,7 +247,7 @@ describe('LOAD_FILE reducer', () => {
     });
 
     expect(result.response).toBeNull();
-    expect(result.error).toBeNull();
+    expect(result.requestError).toBeNull();
     expect(result.responseScrollOffset).toBe(0);
     expect(result.requestScrollOffset).toBe(0);
     expect(result.detailsScrollOffset).toBe(0);

@@ -675,7 +675,7 @@ return (
       right={
         <ResponseView
           response={state.response}
-          error={state.error}
+          error={state.requestError}
           isLoading={state.isLoading}
           verbose={state.verbose}
           focused={state.focusedPanel === 'response' || state.maximizedPanel === 'response'}

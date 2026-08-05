@@ -51,7 +51,7 @@ describe('RELOAD_ERROR reducer', () => {
       type: 'RELOAD_ERROR',
       error: { message: 'File not found' },
     });
-    expect(result.error).toBeNull();
+    expect(result.requestError).toBeNull();
   });
 
   it('does NOT change isLoading', () => {
