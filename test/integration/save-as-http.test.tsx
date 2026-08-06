@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup } from 'ink-testing-library';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 
 import {
   BACKSPACE,
@@ -133,7 +133,6 @@ describe('save-as-http integration', () => {
       const conflictPath = join(tmpDir, 'test-collection - 1.http');
       expect(existsSync(conflictPath)).toBe(true);
 
-      // Original file should NOT be overwritten
       expect(readFileSync(existingPath, 'utf8')).toBe('existing content');
 
       const frame = lastFrame() ?? '';
