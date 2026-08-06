@@ -50,7 +50,7 @@ describe('isDirty flag', () => {
   it('is cleared by SAVE_FILE', () => {
     const state = createInitialState({ isDirty: true });
 
-    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved' });
+    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved', filePath: 'test.http' });
 
     expect(result.isDirty).toBe(false);
   });

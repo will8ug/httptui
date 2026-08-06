@@ -474,6 +474,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         mode: 'normal',
         isDirty: false,
+        filePath: action.filePath,
         saveInput: '',
         saveError: null,
         transientMessage: action.message,

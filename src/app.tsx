@@ -337,7 +337,7 @@ export function App(props: AppProps): React.ReactElement {
 
           writeFileSync(finalPath, content, 'utf8');
           const fileName = finalPath.split('/').pop() ?? finalPath;
-          dispatch({ type: 'SAVE_FILE', message: `Saved ${state.requests.length} requests to ${fileName}` });
+          dispatch({ type: 'SAVE_FILE', message: `Saved ${state.requests.length} requests to ${fileName}`, filePath: finalPath });
           scheduleTransientClear();
         } catch (error) {
           dispatch({ type: 'SET_SAVE_ERROR', error: toErrorInfo(error).message });

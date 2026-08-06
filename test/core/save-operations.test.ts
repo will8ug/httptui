@@ -103,12 +103,13 @@ describe('SAVE_FILE reducer', () => {
       saveError: null,
     };
 
-    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 5 requests to /tmp/output.http' });
+    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 5 requests to /tmp/output.http', filePath: '/tmp/output.http' });
 
     expect(result.mode).toBe('normal');
     expect(result.saveInput).toBe('');
     expect(result.saveError).toBeNull();
     expect(result.transientMessage).toBe('Saved 5 requests to /tmp/output.http');
+    expect(result.filePath).toBe('/tmp/output.http');
   });
 
   it('clears a previous saveError on successful save', () => {
@@ -119,11 +120,12 @@ describe('SAVE_FILE reducer', () => {
       saveError: 'Permission denied',
     };
 
-    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 3 requests to /tmp/api.http' });
+    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 3 requests to /tmp/api.http', filePath: '/tmp/api.http' });
 
     expect(result.mode).toBe('normal');
     expect(result.saveError).toBeNull();
     expect(result.transientMessage).toBe('Saved 3 requests to /tmp/api.http');
+    expect(result.filePath).toBe('/tmp/api.http');
   });
 
   it('clears a previous transientError on successful save', () => {
@@ -133,9 +135,24 @@ describe('SAVE_FILE reducer', () => {
       transientError: 'Save failed',
     };
 
-    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 3 requests to /tmp/api.http' });
+    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 3 requests to /tmp/api.http', filePath: '/tmp/api.http' });
 
     expect(result.transientError).toBeNull();
+    expect(result.filePath).toBe('/tmp/api.http');
+  });
+
+  it('rebinds filePath to the conflict-suffixed path on save-as', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'saveLoad',
+      saveInput: 'api.http',
+      filePath: 'api.http',
+    };
+
+    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 2 requests to api - 1.http', filePath: 'api - 1.http' });
+
+    expect(result.filePath).toBe('api - 1.http');
+    expect(result.isDirty).toBe(false);
   });
 });
 

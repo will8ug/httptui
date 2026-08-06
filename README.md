@@ -16,7 +16,7 @@
 
 - **Multi-Format Support**: Parse `.http`, `.rest`, Postman collections, and OpenAPI specs (JSON/YAML).
 - **Keyboard-Driven TUI**: Vim keys, split-panel layout, details panel (`d`), fullscreen (`f`), help overlay (`?`).
-- **In-Session Body Editing**: Edit request bodies live in the TUI (`e`) and export the result with (`S`).
+- **In-Session Body Editing**: Edit request bodies live in the TUI (`e`).
 - **Environment Management**: Load environment files, register named environments, switch at runtime (`E`).
 - **mTLS & Client Certificates**: Per-host client certificates (PEM/PFX) with wildcard matching.
 - **Export as .http**: Save requests to `.http` format with variables preserved (`S`).

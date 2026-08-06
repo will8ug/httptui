@@ -83,6 +83,34 @@ describe('save-as-http integration', () => {
     }
   });
 
+  it('Status bar shows written file name after save-as', async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-save-test-'));
+    try {
+      const requests = makeShortUrlRequests(2);
+      const filePath = join(tmpDir, 'loaded-collection.json');
+
+      const { stdin, lastFrame } = renderApp({
+        filePath,
+        requests,
+      });
+      await delay(KEY_DELAY_MS);
+
+      expect(lastFrame() ?? '').toContain('loaded-collection.json');
+
+      await press(stdin, 'S');
+      await press(stdin, ENTER);
+
+      const expectedPath = join(tmpDir, 'loaded-collection.http');
+      expect(existsSync(expectedPath)).toBe(true);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('loaded-collection.http');
+      expect(frame).not.toContain('loaded-collection.json');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it('Conflict suffix auto-appended when file exists', async () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-save-test-'));
     try {

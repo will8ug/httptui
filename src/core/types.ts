@@ -219,7 +219,7 @@ export type Action =
   | { type: 'SET_ENV_SELECT_ERROR'; error: string }
   | { type: 'ENTER_SAVE' }
   | { type: 'UPDATE_SAVE_INPUT'; value: string }
-  | { type: 'SAVE_FILE'; message: string }
+  | { type: 'SAVE_FILE'; message: string; filePath: string }
   | { type: 'SET_SAVE_ERROR'; error: string }
   | { type: 'CANCEL_SAVE' }
   | { type: 'ENTER_EDIT'; target: EditTarget; buffer: string; visibleHeight: number; visibleWidth: number }

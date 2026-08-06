@@ -4,6 +4,8 @@ After opening a Postman collection (or any file), press `S` to save all requests
 
 If the target file already exists, a ` - N` suffix is automatically appended (e.g., `api - 1.http`) without confirmation.
 
+On a successful save, the app switches to the written file — the status bar shows its name, and `R` reloads it.
+
 The saved `.http` file contains all requests with their names, methods, URLs, headers, and bodies. File-level variables are preserved as `@name = value` declarations, and `{{variable}}` placeholders are kept intact for round-trippability.
 
 **Limitations**: Multipart form-data bodies (text fields) are omitted with an inline comment, as the `.http` format has no multipart syntax. GraphQL bodies, file uploads, and Postman scripts are already dropped during import and cannot be recovered. Postman folder structure is preserved as request names (e.g., `### Users / Create User`).
