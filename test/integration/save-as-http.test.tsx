@@ -143,6 +143,40 @@ describe('save-as-http integration', () => {
     }
   });
 
+  it('Save a second time increase the number of N', async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-save-test-'));
+    try {
+      const requests = makeShortUrlRequests(1);
+      const filePath = join(tmpDir, 'test-collection.http');
+      writeFileSync(filePath, 'existing content', 'utf8');
+
+      const { stdin, lastFrame } = renderApp({
+        filePath,
+        requests,
+      });
+      await delay(KEY_DELAY_MS);
+      await press(stdin, 'S');
+      await press(stdin, ENTER);
+
+      const conflictPath = join(tmpDir, 'test-collection - 1.http');
+      expect(existsSync(conflictPath)).toBe(true);
+
+      // Press 'S' the second time
+      await delay(KEY_DELAY_MS);
+      await press(stdin, 'S');
+      await press(stdin, ENTER);
+
+      const conflictPath2 = join(tmpDir, 'test-collection - 2.http');
+      expect(existsSync(conflictPath2)).toBe(true);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Saved');
+      expect(frame).toContain('test-collection - 2.http');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it('S key is ignored in non-normal modes', async () => {
     const { stdin, lastFrame } = renderApp({
       filePath: '/path/to/collection.json',
