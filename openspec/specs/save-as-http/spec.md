@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Serialize the currently loaded requests and file variables to a `.http` file via a save-path overlay triggered by the `S` key, with default-path derivation, conflict-suffix auto-increment, and form-data omission handling.
+Serialize the currently loaded requests and file variables to a `.http` file via a save-path overlay triggered by the `S` key, with default-path derivation, conflict refusal, and form-data omission handling.
 
 ## Requirements
 
@@ -98,34 +98,30 @@ The save overlay SHALL display the current input value and allow the user to mod
 - **WHEN** the user presses `Escape` while the save overlay is open
 - **THEN** the system SHALL close the overlay and return to normal mode without writing any file
 
-### Requirement: File-name conflict auto-suffix
-When the resolved target path already exists, the system SHALL NOT overwrite it. The system SHALL append ` - N` to the basename (before the extension) and increment `N` starting from `1` until a non-existing path is found. The system SHALL write to the first available path without prompting the user for confirmation. The actual saved path (which may differ from the user's input) SHALL be reflected in the confirmation message.
+### Requirement: File-name conflict refusal
+
+When the resolved target path already exists, the system SHALL refuse the save: it SHALL NOT write any file, SHALL NOT change the current file path, and SHALL NOT change the unsaved-changes flag. The system SHALL display an error in the save overlay and SHALL keep the overlay open so the user can modify the path. The error SHALL be cleared when the user modifies the save input (see the **Save error handling** requirement).
 
 #### Scenario: Target path does not exist
+
 - **WHEN** the resolved target path is `/tmp/api.http` and no file exists at that path
 - **THEN** the system SHALL write to `/tmp/api.http` directly
 
-#### Scenario: Target path exists, first suffix is free
-- **WHEN** the resolved target path is `/tmp/api.http` and `/tmp/api.http` already exists, but `/tmp/api - 1.http` does not
-- **THEN** the system SHALL write to `/tmp/api - 1.http`
+#### Scenario: Target path exists
 
-#### Scenario: Target path and first suffix both exist
-- **WHEN** the resolved target path is `/tmp/api.http`, and both `/tmp/api.http` and `/tmp/api - 1.http` exist, but `/tmp/api - 2.http` does not
-- **THEN** the system SHALL write to `/tmp/api - 2.http`
+- **WHEN** the resolved target path is `/tmp/api.http` and `/tmp/api.http` already exists
+- **THEN** the system SHALL NOT write any file
+- **AND** the save overlay SHALL display an error and SHALL remain open
+- **AND** the current file path and the unsaved-changes flag SHALL remain unchanged
 
 ### Requirement: Save rebinds the current file to the written path
 
-On a successful write, the system SHALL set the current file path to the actual written path — the conflict-resolved path, including any auto-incremented suffix. The status bar SHALL display the written file's name, the reload command (`R`) SHALL read from the written file, and the next save overlay default SHALL derive from the written file's basename. The current file path SHALL NOT change when the save is cancelled or fails.
+On a successful write, the system SHALL set the current file path to the actual written path — the path the user resolved and confirmed. The status bar SHALL display the written file's name, the reload command (`R`) SHALL read from the written file, and the next save overlay default SHALL derive from the written file's basename. The current file path SHALL NOT change when the save is cancelled, refused, or fails.
 
 #### Scenario: Save-as to a new path rebinds the current file
 
 - **WHEN** the loaded file is `/home/user/collections/MyAPI.json` and the user saves to `/home/user/collections/MyAPI.http`
 - **THEN** the current file SHALL become `/home/user/collections/MyAPI.http` and the status bar SHALL display `MyAPI.http`
-
-#### Scenario: Conflict-suffixed save rebinds to the suffixed path
-
-- **WHEN** the loaded file is `api.http`, the user accepts the default `api.http`, and the save writes to `api - 1.http` because `api.http` already exists
-- **THEN** the current file SHALL become `api - 1.http`
 
 #### Scenario: Cancelled save leaves the current file unchanged
 
@@ -143,10 +139,6 @@ On successful write, the system SHALL display a transient status message indicat
 #### Scenario: Successful save shows confirmation
 - **WHEN** the serializer produces text for 5 requests and the file is written to `/tmp/api.http`
 - **THEN** the status bar SHALL display a transient message like "Saved 5 requests to /tmp/api.http"
-
-#### Scenario: Successful save with conflict suffix shows actual path
-- **WHEN** the file is written to `/tmp/api - 1.http` due to a conflict
-- **THEN** the transient message SHALL show "Saved 5 requests to /tmp/api - 1.http" (the actual path, not the user's input)
 
 ### Requirement: Save error handling
 If the write fails (e.g., permission denied, invalid path), the system SHALL display an error message in the save overlay (not a transient message) and SHALL keep the overlay open so the user can correct the path and retry. The error SHALL be cleared when the user modifies the input.
