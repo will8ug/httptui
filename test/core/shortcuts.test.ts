@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SHORTCUTS } from '../../src/core/shortcuts';
+import { HELP_COLUMN_GROUPS, SHORTCUT_GROUP_LABELS, SHORTCUTS } from '../../src/core/shortcuts';
 
 describe('SHORTCUTS registry — edge-jump entries', () => {
   it('contains the `g` entry (jump to top)', () => {
@@ -118,5 +118,52 @@ describe('SHORTCUTS registry — edit-body entry', () => {
   it('does not appear in the status bar', () => {
     const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
     expect(barKeys).not.toContain('e');
+  });
+});
+
+describe('SHORTCUTS registry — edit group', () => {
+  it('contains the `Ctrl+S` entry (save and close editor)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'Ctrl+S');
+    expect(entry).toBeDefined();
+    expect(entry?.label).toBe('');
+    expect(entry?.description).toBe('Save and close editor');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('edit');
+  });
+
+  it('contains the `Ctrl+A` entry (jump to start of line)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'Ctrl+A');
+    expect(entry).toBeDefined();
+    expect(entry?.description).toBe('Jump to start of line');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('edit');
+  });
+
+  it('contains the `Ctrl+E` entry (jump to end of line)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'Ctrl+E');
+    expect(entry).toBeDefined();
+    expect(entry?.description).toBe('Jump to end of line');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('edit');
+  });
+
+  it('labels the edit group as Edit', () => {
+    expect(SHORTCUT_GROUP_LABELS.edit).toBe('Edit');
+  });
+
+  it('arranges help groups in two columns', () => {
+    expect(HELP_COLUMN_GROUPS[0]).toEqual(['general', 'navigation', 'edit']);
+    expect(HELP_COLUMN_GROUPS[1]).toEqual(['request', 'display', 'search']);
+  });
+
+  it('none of the edit shortcuts appear in the status bar', () => {
+    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
+
+    expect(barKeys).not.toContain('Ctrl+S');
+    expect(barKeys).not.toContain('Ctrl+A');
+    expect(barKeys).not.toContain('Ctrl+E');
   });
 });

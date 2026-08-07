@@ -41,5 +41,33 @@ describe('HelpOverlay', () => {
       const frame = lastFrame() ?? '';
       expect(frame).toContain('Press Escape or ? to close this overlay');
     });
+
+    it('renders the Edit group header', () => {
+      const { lastFrame } = render(<HelpOverlay visible={true} />);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Edit');
+    });
+
+    it('renders the Ctrl+S shortcut description', () => {
+      const { lastFrame } = render(<HelpOverlay visible={true} />);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Save and close editor');
+    });
+
+    it('renders the Ctrl+A shortcut description', () => {
+      const { lastFrame } = render(<HelpOverlay visible={true} />);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Jump to start of line');
+    });
+
+    it('renders the Ctrl+E shortcut description', () => {
+      const { lastFrame } = render(<HelpOverlay visible={true} />);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Jump to end of line');
+    });
   });
 });
