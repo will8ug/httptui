@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 
 import React, { useEffect, useReducer, useRef } from 'react';
 import { useApp, useInput, useStdout } from 'ink';
@@ -319,25 +319,17 @@ export function App(props: AppProps): React.ReactElement {
         const baseDir = dirname(state.filePath);
         const targetPath = resolve(baseDir, inputPath);
 
+        if (existsSync(targetPath)) {
+          dispatch({ type: 'SET_SAVE_ERROR', error: `File exists: ${basename(targetPath)}` });
+          return;
+        }
+
         try {
           const content = serializeHttpFile(state.requests, state.fileVariables);
 
-          // Conflict resolution: append " - N" suffix if file exists
-          let finalPath = targetPath;
-          if (existsSync(finalPath)) {
-            const ext = targetPath.match(/\.[^.]+$/);
-            const extPart = ext ? ext[0] : '';
-            const basePart = ext ? targetPath.slice(0, -extPart.length) : targetPath;
-            let suffix = 1;
-            while (existsSync(`${basePart} - ${suffix}${extPart}`)) {
-              suffix += 1;
-            }
-            finalPath = `${basePart} - ${suffix}${extPart}`;
-          }
-
-          writeFileSync(finalPath, content, 'utf8');
-          const fileName = finalPath.split('/').pop() ?? finalPath;
-          dispatch({ type: 'SAVE_FILE', message: `Saved ${state.requests.length} requests to ${fileName}`, filePath: finalPath });
+          writeFileSync(targetPath, content, 'utf8');
+          const fileName = targetPath.split('/').pop() ?? targetPath;
+          dispatch({ type: 'SAVE_FILE', message: `Saved ${state.requests.length} requests to ${fileName}`, filePath: targetPath });
           scheduleTransientClear();
         } catch (error) {
           dispatch({ type: 'SET_SAVE_ERROR', error: toErrorInfo(error).message });

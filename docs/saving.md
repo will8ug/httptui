@@ -2,7 +2,7 @@
 
 After opening a Postman collection (or any file), press `S` to save all requests as a `.http` file. A save overlay appears with a default path — `<collection-basename>.http` in the same directory as the loaded file. You can type a new path (absolute or relative to the loaded file's directory) and press `Enter` to save, or `Escape` to cancel.
 
-If the target file already exists, a ` - N` suffix is automatically appended (e.g., `api - 1.http`) without confirmation.
+If the target file already exists, the save is refused: the overlay shows an inline error and stays open so the path can be edited. No file is overwritten.
 
 On a successful save, the app switches to the written file — the status bar shows its name, and `R` reloads it.
 

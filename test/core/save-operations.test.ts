@@ -141,7 +141,7 @@ describe('SAVE_FILE reducer', () => {
     expect(result.filePath).toBe('/tmp/api.http');
   });
 
-  it('rebinds filePath to the conflict-suffixed path on save-as', () => {
+  it('rebinds filePath to the written path on save-as', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
