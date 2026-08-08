@@ -353,6 +353,7 @@ export function parsePostmanCollection(content: string): ParseResult {
       url,
       headers,
       body: convertedBody,
+      isDirty: false,
       formdataFields,
       lineNumber: requestIndex,
     });

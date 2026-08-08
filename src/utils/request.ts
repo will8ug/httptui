@@ -11,6 +11,10 @@ export interface ResolvedRequestDetails {
   totalContentLines: number;
 }
 
+export function hasUnsavedChanges(requests: ParsedRequest[]): boolean {
+  return requests.some((r) => r.isDirty);
+}
+
 export function getRequestTarget(url: string): string {
   try {
     const parsedUrl = new URL(url);

@@ -367,7 +367,6 @@ export function reducer(state: AppState, action: Action): AppState {
         requestScrollOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
-        isDirty: false,
         transientMessage: 'Reloaded',
         transientError: null,
       };
@@ -427,7 +426,6 @@ export function reducer(state: AppState, action: Action): AppState {
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
         mode: 'normal',
-        isDirty: false,
         fileLoadInput: '',
         fileLoadError: null,
         transientMessage: `Loaded: ${action.filePath.split('/').pop() ?? ''}`,
@@ -473,7 +471,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         mode: 'normal',
-        isDirty: false,
+        requests: state.requests.map(r => ({ ...r, isDirty: false })),
         filePath: action.filePath,
         saveInput: '',
         saveError: null,
@@ -721,12 +719,11 @@ export function reducer(state: AppState, action: Action): AppState {
       const nextBody = state.editBuffer === '' ? undefined : state.editBuffer;
       const changed = nextBody !== request.body;
       const updatedRequests = state.requests.map((req, i) =>
-        i === state.selectedIndex ? { ...req, body: nextBody } : req,
+        i === state.selectedIndex ? { ...req, body: nextBody, isDirty: req.isDirty || changed } : req,
       );
       return {
         ...state,
         requests: updatedRequests,
-        isDirty: state.isDirty || changed,
         mode: 'normal',
         editTarget: 'body',
         editBuffer: '',
@@ -822,7 +819,6 @@ export function createInitialState(props: AppProps): AppState {
     editCursor: 0,
     editScrollOffset: 0,
     editHorizontalOffset: 0,
-    isDirty: false,
     pendingDiscardAction: null,
   };
 }

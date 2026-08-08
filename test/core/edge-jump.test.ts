@@ -167,6 +167,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
           headers: {},
           body: undefined,
           lineNumber: 1,
+          isDirty: false,
         },
       ];
 

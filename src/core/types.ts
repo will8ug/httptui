@@ -21,6 +21,7 @@ export interface ParsedRequest {
   body: string | undefined;
   formdataFields?: FormDataParam[];
   lineNumber: number;
+  isDirty: boolean;
 }
 
 export interface ResolvedRequest {
@@ -162,7 +163,6 @@ export interface AppState {
   editCursor: number;
   editScrollOffset: number;
   editHorizontalOffset: number;
-  isDirty: boolean;
   pendingDiscardAction: PendingDiscardAction | null;
   certificates?: Record<string, CertEntry>;
 }

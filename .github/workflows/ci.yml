@@ -27,6 +27,7 @@ jobs:
         run: |
           npm install
           npm run typecheck
+          npm run typecheck:test
           npm run build
           npm test
 

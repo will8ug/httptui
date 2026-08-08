@@ -28,6 +28,7 @@ function makeRequest(): ParsedRequest[] {
       headers: {},
       body: undefined,
       lineNumber: 1,
+      isDirty: false,
     },
   ];
 }

@@ -105,6 +105,7 @@ describe('file-load regression — env revert shows file variables', () => {
       headers: {},
       body: undefined,
       lineNumber: 4,
+      isDirty: false,
     },
   ];
 

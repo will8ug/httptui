@@ -29,7 +29,7 @@ import { matchCertificate, loadCertFiles } from './core/certificates';
 import { loadConfig } from './core/config';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getEditorContentWidth, getEditorVisibleHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
 import { TRANSIENT_CLEAR_MS } from './utils/timing';
-import { resolveRequestDetails } from './utils/request';
+import { hasUnsavedChanges, resolveRequestDetails } from './utils/request';
 import { getResponseTotalLines } from './utils/scroll';
 
 function findMatchIndices(response: ResponseData, rawMode: boolean, query: string): number[] {
@@ -463,7 +463,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'q') {
-      if (state.isDirty) {
+      if (hasUnsavedChanges(state.requests)) {
         dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'quit' });
       } else {
         exit();
@@ -507,7 +507,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'o') {
-      if (state.isDirty) {
+      if (hasUnsavedChanges(state.requests)) {
         dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'fileLoad' });
       } else {
         dispatch({ type: 'ENTER_FILE_LOAD' });
@@ -570,7 +570,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'R') {
-      if (state.isDirty) {
+      if (hasUnsavedChanges(state.requests)) {
         dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'reload' });
         return;
       }
@@ -705,7 +705,7 @@ return (
           }) : 0}
           hasResponse={!!state.response}
           envName={state.activeEnvName}
-          isDirty={state.isDirty}
+          isDirty={hasUnsavedChanges(state.requests)}
         />
       }
       overlay={
