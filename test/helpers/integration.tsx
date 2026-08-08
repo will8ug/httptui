@@ -70,6 +70,7 @@ export function makeShortUrlRequests(count: number): ParsedRequest[] {
     headers: {},
     body: undefined,
     lineNumber: i + 1,
+    isDirty: false,
   }));
 }
 
@@ -81,5 +82,6 @@ export function makeLongUrlRequests(count: number): ParsedRequest[] {
     headers: {},
     body: undefined,
     lineNumber: i + 1,
+    isDirty: false,
   }));
 }

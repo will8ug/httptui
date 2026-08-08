@@ -31,6 +31,7 @@ function makeBodyRequest(body: string = 'original-body'): ParsedRequest[] {
       headers: {},
       body,
       lineNumber: 1,
+      isDirty: false,
     },
   ];
 }
@@ -134,6 +135,7 @@ describe('request body editing integration', () => {
         body: undefined,
         formdataFields: [{ key: 'file', value: 'data', type: 'text' as const }],
         lineNumber: 1,
+        isDirty: false,
       },
     ];
     const { stdin, lastFrame } = renderApp({ requests });
@@ -155,6 +157,7 @@ describe('request body editing integration', () => {
         headers: {},
         body: '{"host":"{{host}}"}',
         lineNumber: 1,
+        isDirty: false,
       },
     ];
     const variables: FileVariable[] = [{ name: 'host', value: 'example.com' }];

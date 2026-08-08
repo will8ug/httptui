@@ -29,6 +29,7 @@ function makeBodyRequest(body: string = 'original-body'): ParsedRequest[] {
       headers: {},
       body,
       lineNumber: 1,
+      isDirty: false,
     },
   ];
 }

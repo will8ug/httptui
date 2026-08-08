@@ -35,6 +35,7 @@ describe('TOGGLE_WRAP reducer', () => {
           headers: {},
           body: undefined,
           lineNumber: 1,
+          isDirty: false,
         },
       ],
     });

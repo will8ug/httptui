@@ -14,7 +14,8 @@
     "cov-badges": "generateBadges --input ./coverage/coverage-summary.json --output ./badges",
     "lint": "eslint src/ test/",
     "format": "prettier --write 'src/**/*.{ts,tsx}' 'test/**/*.ts'",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json"
   },
   "engines": {
     "node": ">=24"
