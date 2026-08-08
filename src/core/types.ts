@@ -118,10 +118,6 @@ export type EditOp =
   | 'lineStart'
   | 'lineEnd';
 
-export function hasUnsavedChanges(requests: ParsedRequest[]): boolean {
-  return requests.some((r) => r.isDirty);
-}
-
 export interface AppState {
   requests: ParsedRequest[];
   variables: FileVariable[];

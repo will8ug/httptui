@@ -40,7 +40,7 @@ This is exactly the behavior of today's monotonic global flag (`state.isDirty ||
 
 ### Decision: Global `isDirty` is removed from `AppState` and derived
 
-`AppState.isDirty` is deleted. Every read site (`app.tsx` lines 466, 510, 573, 708) computes `state.requests.some(r => r.isDirty)` via a small exported helper `hasUnsavedChanges(requests: ParsedRequest[]): boolean` in `src/core/types.ts`, so the derivation lives in one place and cannot drift across the four call sites. `StatusBar` keeps its boolean prop — the component itself is untouched.
+`AppState.isDirty` is deleted. Every read site (`app.tsx` lines 466, 510, 573, 708) computes `state.requests.some(r => r.isDirty)` via a small exported helper `hasUnsavedChanges(requests: ParsedRequest[]): boolean` in `src/utils/request.ts`, so the derivation lives in one place and cannot drift across the four call sites. `StatusBar` keeps its boolean prop — the component itself is untouched.
 
 Deriving from the array is always consistent with the markers, eliminates the "two flags could disagree" hazard, and makes the file-level flag strictly more accurate than today's global (it can un-set a request that was reverted — though the tombstone decision above means a *request* marker never un-sets; the derivation is a projection, not a second decision).
 

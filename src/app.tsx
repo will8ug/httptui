@@ -21,7 +21,6 @@ import { formatResponseBody } from './core/formatter';
 import { computeVerticalMaxOffset, createInitialState, reducer } from './core/reducer';
 import { computeResponseLayout } from './core/response-layout';
 import type { AppProps, AppState, ResponseData } from './core/types';
-import { hasUnsavedChanges } from './core/types';
 import { serializeHttpFile } from './core/http-serializer';
 import { parseAnyFormat } from './core/format-detector';
 import { parseEnvironmentFile } from './core/env-parser';
@@ -30,7 +29,7 @@ import { matchCertificate, loadCertFiles } from './core/certificates';
 import { loadConfig } from './core/config';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getEditorContentWidth, getEditorVisibleHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
 import { TRANSIENT_CLEAR_MS } from './utils/timing';
-import { resolveRequestDetails } from './utils/request';
+import { hasUnsavedChanges, resolveRequestDetails } from './utils/request';
 import { getResponseTotalLines } from './utils/scroll';
 
 function findMatchIndices(response: ResponseData, rawMode: boolean, query: string): number[] {

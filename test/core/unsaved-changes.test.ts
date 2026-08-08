@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AppState } from '../../src/core/types';
-import { hasUnsavedChanges } from '../../src/core/types';
+import { hasUnsavedChanges } from '../../src/utils/request';
 import { createRequest } from '../helpers/requests';
 import { createInitialState, reducer } from '../helpers/state';
 

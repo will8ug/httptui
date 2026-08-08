@@ -3,7 +3,7 @@
 ## 1. Type groundwork
 
 - [x] 1.1 Add `isDirty: boolean` to the `ParsedRequest` interface in `src/core/types.ts` (required field; docstring notes it is a tombstone meaning "edited in-session since the last load, reload, or save").
-- [x] 1.2 Remove `isDirty: boolean` from the `AppState` interface in `src/core/types.ts`; add an exported helper `hasUnsavedChanges(requests: ParsedRequest[]): boolean` returning `requests.some(r => r.isDirty)` (place next to the other type helpers in the same file).
+- [x] 1.2 Remove `isDirty: boolean` from the `AppState` interface in `src/core/types.ts`; add an exported helper `hasUnsavedChanges(requests: ParsedRequest[]): boolean` returning `requests.some(r => r.isDirty)` in `src/utils/request.ts` (kept out of the type-only `core/types` module).
 
 ## 2. Parse sites mark requests clean
 
