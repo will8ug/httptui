@@ -145,6 +145,7 @@ function finalizeRequest(
     url: builder.url,
     headers: builder.headers,
     body: buildBody(builder.bodyLines),
+    isDirty: false,
     lineNumber: builder.lineNumber,
   });
 

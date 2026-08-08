@@ -21,6 +21,7 @@ export interface ParsedRequest {
   body: string | undefined;
   formdataFields?: FormDataParam[];
   lineNumber: number;
+  isDirty: boolean;
 }
 
 export interface ResolvedRequest {
@@ -117,6 +118,10 @@ export type EditOp =
   | 'lineStart'
   | 'lineEnd';
 
+export function hasUnsavedChanges(requests: ParsedRequest[]): boolean {
+  return requests.some((r) => r.isDirty);
+}
+
 export interface AppState {
   requests: ParsedRequest[];
   variables: FileVariable[];
@@ -162,7 +167,6 @@ export interface AppState {
   editCursor: number;
   editScrollOffset: number;
   editHorizontalOffset: number;
-  isDirty: boolean;
   pendingDiscardAction: PendingDiscardAction | null;
   certificates?: Record<string, CertEntry>;
 }

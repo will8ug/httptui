@@ -21,6 +21,7 @@ import { formatResponseBody } from './core/formatter';
 import { computeVerticalMaxOffset, createInitialState, reducer } from './core/reducer';
 import { computeResponseLayout } from './core/response-layout';
 import type { AppProps, AppState, ResponseData } from './core/types';
+import { hasUnsavedChanges } from './core/types';
 import { serializeHttpFile } from './core/http-serializer';
 import { parseAnyFormat } from './core/format-detector';
 import { parseEnvironmentFile } from './core/env-parser';
@@ -463,7 +464,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'q') {
-      if (state.isDirty) {
+      if (hasUnsavedChanges(state.requests)) {
         dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'quit' });
       } else {
         exit();
@@ -507,7 +508,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'o') {
-      if (state.isDirty) {
+      if (hasUnsavedChanges(state.requests)) {
         dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'fileLoad' });
       } else {
         dispatch({ type: 'ENTER_FILE_LOAD' });
@@ -570,7 +571,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (input === 'R') {
-      if (state.isDirty) {
+      if (hasUnsavedChanges(state.requests)) {
         dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'reload' });
         return;
       }
@@ -705,7 +706,7 @@ return (
           }) : 0}
           hasResponse={!!state.response}
           envName={state.activeEnvName}
-          isDirty={state.isDirty}
+          isDirty={hasUnsavedChanges(state.requests)}
         />
       }
       overlay={

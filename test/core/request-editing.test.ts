@@ -9,7 +9,7 @@ describe('ENTER_EDIT reducer', () => {
     const request = createRequest({ body: '{"name":"Alice"}' });
     const state = createInitialState({ requests: [request], selectedIndex: 0 });
 
-    const result = reducer(state, { type: 'ENTER_EDIT', target: 'body', buffer: '{"name":"Alice"}' });
+    const result = reducer(state, { type: 'ENTER_EDIT', target: 'body', buffer: '{"name":"Alice"}', visibleHeight: 10, visibleWidth: 40 });
 
     expect(result.mode).toBe('edit');
     expect(result.editTarget).toBe('body');
@@ -21,7 +21,7 @@ describe('ENTER_EDIT reducer', () => {
     const request = createRequest({ body: undefined });
     const state = createInitialState({ requests: [request], selectedIndex: 0 });
 
-    const result = reducer(state, { type: 'ENTER_EDIT', target: 'body', buffer: '' });
+    const result = reducer(state, { type: 'ENTER_EDIT', target: 'body', buffer: '', visibleHeight: 10, visibleWidth: 40 });
 
     expect(result.editBuffer).toBe('');
     expect(result.editCursor).toBe(0);
@@ -33,7 +33,7 @@ describe('ENTER_EDIT reducer', () => {
       editHorizontalOffset: 10,
     });
 
-    const result = reducer(state, { type: 'ENTER_EDIT', target: 'body', buffer: 'hello' });
+    const result = reducer(state, { type: 'ENTER_EDIT', target: 'body', buffer: 'hello', visibleHeight: 10, visibleWidth: 40 });
 
     expect(result.editScrollOffset).toBe(0);
     expect(result.editHorizontalOffset).toBe(0);
@@ -167,7 +167,7 @@ describe('COMMIT_EDIT reducer', () => {
   it('does not set isDirty when committed value is unchanged', () => {
     const request = createRequest({ body: 'unchanged' });
     const state: AppState = {
-      ...createInitialState({ requests: [request], selectedIndex: 0, isDirty: false }),
+      ...createInitialState({ requests: [request], selectedIndex: 0 }),
       mode: 'edit',
       editBuffer: 'unchanged',
       editCursor: 9,
@@ -175,7 +175,7 @@ describe('COMMIT_EDIT reducer', () => {
 
     const result = reducer(state, { type: 'COMMIT_EDIT' });
 
-    expect(result.isDirty).toBe(false);
+    expect(result.requests[0].isDirty).toBe(false);
   });
 
   it('does not set a transient message when committed value is unchanged', () => {
@@ -196,7 +196,7 @@ describe('COMMIT_EDIT reducer', () => {
   it('sets isDirty when committed value differs from original body', () => {
     const request = createRequest({ body: 'original' });
     const state: AppState = {
-      ...createInitialState({ requests: [request], selectedIndex: 0, isDirty: false }),
+      ...createInitialState({ requests: [request], selectedIndex: 0 }),
       mode: 'edit',
       editBuffer: 'changed',
       editCursor: 7,
@@ -204,7 +204,39 @@ describe('COMMIT_EDIT reducer', () => {
 
     const result = reducer(state, { type: 'COMMIT_EDIT' });
 
-    expect(result.isDirty).toBe(true);
+    expect(result.requests[0].isDirty).toBe(true);
+  });
+
+  it('marks only the selected request dirty when committed value changes', () => {
+    const request0 = createRequest({ body: 'original' });
+    const request1 = createRequest({ body: 'other' });
+    const state: AppState = {
+      ...createInitialState({ requests: [request0, request1], selectedIndex: 0 }),
+      mode: 'edit',
+      editBuffer: 'changed',
+      editCursor: 7,
+    };
+
+    const result = reducer(state, { type: 'COMMIT_EDIT' });
+
+    expect(result.requests[0].isDirty).toBe(true);
+    expect(result.requests[1].isDirty).toBe(false);
+  });
+
+  it('leaves marker unset when committed value is unchanged', () => {
+    const request0 = createRequest({ body: 'unchanged' });
+    const request1 = createRequest({ body: 'other' });
+    const state: AppState = {
+      ...createInitialState({ requests: [request0, request1], selectedIndex: 0 }),
+      mode: 'edit',
+      editBuffer: 'unchanged',
+      editCursor: 9,
+    };
+
+    const result = reducer(state, { type: 'COMMIT_EDIT' });
+
+    expect(result.requests[0].isDirty).toBe(false);
+    expect(result.requests[1].isDirty).toBe(false);
   });
 
   it('returns state unchanged when no request at selectedIndex', () => {
@@ -268,5 +300,19 @@ describe('CANCEL_EDIT reducer', () => {
     expect(result.requests[0].body).toBe('original');
     expect(result.editBuffer).toBe('');
     expect(result.editCursor).toBe(0);
+  });
+
+  it('leaves marker unset on cancelled edit', () => {
+    const request = createRequest({ body: 'original' });
+    const state: AppState = {
+      ...createInitialState({ requests: [request], selectedIndex: 0 }),
+      mode: 'edit',
+      editBuffer: 'modified',
+      editCursor: 8,
+    };
+
+    const result = reducer(state, { type: 'CANCEL_EDIT' });
+
+    expect(result.requests[0].isDirty).toBe(false);
   });
 });

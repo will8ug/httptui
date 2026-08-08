@@ -12,6 +12,7 @@ export function makeRequests(count: number, opts?: { longUrl?: boolean }): Parse
     headers: {},
     body: undefined,
     lineNumber: i + 1,
+    isDirty: false,
   }));
 }
 
@@ -23,6 +24,7 @@ export function createRequest(overrides: Partial<ParsedRequest> = {}): ParsedReq
     headers: {},
     body: undefined,
     lineNumber: 1,
+    isDirty: false,
     ...overrides,
   };
 }

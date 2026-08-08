@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AppState } from '../../src/core/types';
+import { hasUnsavedChanges, type AppState } from '../../src/core/types';
+import { createRequest } from '../helpers/requests';
 import { createInitialState, reducer } from '../helpers/state';
 
 describe('ENTER_SAVE reducer', () => {
@@ -152,7 +153,23 @@ describe('SAVE_FILE reducer', () => {
     const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 2 requests to api - 1.http', filePath: 'api - 1.http' });
 
     expect(result.filePath).toBe('api - 1.http');
-    expect(result.isDirty).toBe(false);
+    expect(hasUnsavedChanges(result.requests)).toBe(false);
+  });
+
+  it('clears per-request dirty markers after a successful save', () => {
+    const state: AppState = {
+      ...createInitialState({
+        requests: [createRequest({ isDirty: true }), createRequest({ isDirty: true })],
+      }),
+      mode: 'saveLoad',
+      saveInput: 'api.http',
+      filePath: 'api.http',
+    };
+
+    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 2 requests to api.http', filePath: 'api.http' });
+
+    expect(result.requests.every((r) => r.isDirty === false)).toBe(true);
+    expect(hasUnsavedChanges(result.requests)).toBe(false);
   });
 });
 

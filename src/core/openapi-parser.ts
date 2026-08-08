@@ -439,6 +439,7 @@ function buildRequest(
     url,
     headers,
     body,
+    isDirty: false,
     lineNumber,
   };
 }
