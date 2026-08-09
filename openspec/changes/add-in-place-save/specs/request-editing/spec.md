@@ -40,4 +40,4 @@
 
 - **WHEN** the application is in normal mode and the user presses `Ctrl+S`
 - **THEN** no edit overlay SHALL open and no edit SHALL be committed
-- **AND** the source file SHALL be saved in place (see the **in-place-save** spec)
+- **AND** the in-place save flow SHALL begin, subject to its confirmation prompt (see the **in-place-save** spec)
