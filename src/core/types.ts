@@ -97,7 +97,8 @@ export type AppMode =
   | 'envSelect'
   | 'saveLoad'
   | 'edit'
-  | 'confirmDiscard';
+  | 'confirmDiscard'
+  | 'confirmInPlaceSave';
 
 export type WrapMode = 'nowrap' | 'wrap';
 
@@ -228,4 +229,7 @@ export type Action =
   | { type: 'CANCEL_EDIT' }
   | { type: 'REQUEST_DISCARD_CONFIRM'; action: PendingDiscardAction }
   | { type: 'CONFIRM_DISCARD' }
-  | { type: 'CANCEL_DISCARD' };
+  | { type: 'CANCEL_DISCARD' }
+  | { type: 'ENTER_IN_PLACE_SAVE_CONFIRM' }
+  | { type: 'CONFIRM_IN_PLACE_SAVE' }
+  | { type: 'CANCEL_IN_PLACE_SAVE' };

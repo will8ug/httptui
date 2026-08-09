@@ -122,14 +122,15 @@ describe('SHORTCUTS registry — edit-body entry', () => {
 });
 
 describe('SHORTCUTS registry — edit group', () => {
-  it('contains the `Ctrl+S` entry (save and close editor)', () => {
-    const entry = SHORTCUTS.find((s) => s.key === 'Ctrl+S');
-    expect(entry).toBeDefined();
-    expect(entry?.label).toBe('');
-    expect(entry?.description).toBe('Save and close editor');
-    expect(entry?.showInBar).toBe(false);
-    expect(entry?.showInHelp).toBe(true);
-    expect(entry?.group).toBe('edit');
+  it('contains a single `Ctrl+S` entry covering both save contexts', () => {
+    const entries = SHORTCUTS.filter((s) => s.key === 'Ctrl+S');
+    expect(entries).toHaveLength(1);
+    const [entry] = entries;
+    expect(entry.label).toBe('');
+    expect(entry.description).toBe('Commit edit or save file');
+    expect(entry.showInBar).toBe(false);
+    expect(entry.showInHelp).toBe(true);
+    expect(entry.group).toBe('edit');
   });
 
   it('contains the `Ctrl+A` entry (jump to start of line)', () => {

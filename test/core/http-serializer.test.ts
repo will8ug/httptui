@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { serializeHttpFile } from '../../src/core/http-serializer';
+import { serializeHttpFile, serializeRequestBlock } from '../../src/core/http-serializer';
 import { parseHttpFile } from '../../src/core/parser';
 import type { FileVariable, FormDataParam, ParsedRequest } from '../../src/core/types';
 import { createRequest } from '../helpers/requests';
@@ -540,5 +540,33 @@ describe('serializeHttpFile', () => {
       expect(request.headers).toEqual({ Authorization: 'Bearer token' });
       expect(request.body).toBe('# form-data body omitted (2 text fields: username, email)');
     });
+  });
+});
+
+describe('serializeRequestBlock', () => {
+  it('emits the canonical block for a request with headers and body', () => {
+    const request = createRequest({
+      name: 'Create User',
+      method: 'POST',
+      url: 'https://api.example.com/users',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"name":"Alice"}',
+    });
+
+    expect(serializeRequestBlock(request)).toBe(
+      '### Create User\nPOST https://api.example.com/users\nContent-Type: application/json\n\n{"name":"Alice"}',
+    );
+  });
+
+  it('emits no trailing newline', () => {
+    const request = createRequest({
+      name: 'Get Users',
+      method: 'GET',
+      url: 'https://api.example.com/users',
+      headers: {},
+      body: undefined,
+    });
+
+    expect(serializeRequestBlock(request)).toBe('### Get Users\nGET https://api.example.com/users');
   });
 });

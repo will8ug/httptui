@@ -51,7 +51,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'o', label: '', description: 'Open a different file', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'e', label: '', description: 'Edit request body', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'f', label: '', description: 'Toggle fullscreen', showInBar: false, showInHelp: true, group: 'display' },
-  { key: 'Ctrl+S', label: '', description: 'Save and close editor', showInBar: false, showInHelp: true, group: 'edit' },
+  { key: 'Ctrl+S', label: '', description: 'Commit edit or save file', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Ctrl+A', label: '', description: 'Jump to start of line', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Ctrl+E', label: '', description: 'Jump to end of line', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Escape', label: '', description: 'Close current overlay', showInBar: false, showInHelp: true, group: 'general' },

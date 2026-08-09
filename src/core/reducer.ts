@@ -767,6 +767,24 @@ export function reducer(state: AppState, action: Action): AppState {
         pendingDiscardAction: null,
       };
 
+    case 'ENTER_IN_PLACE_SAVE_CONFIRM':
+      return {
+        ...state,
+        mode: 'confirmInPlaceSave',
+      };
+
+    case 'CONFIRM_IN_PLACE_SAVE':
+      return {
+        ...state,
+        mode: 'normal',
+      };
+
+    case 'CANCEL_IN_PLACE_SAVE':
+      return {
+        ...state,
+        mode: 'normal',
+      };
+
     default:
       return state;
   }
