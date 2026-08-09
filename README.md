@@ -84,6 +84,14 @@ httptui api.http -E Staging
 
 ## Keyboard Shortcuts
 
+### General
+
+| Key | Action |
+|-----|--------|
+| `?` | Toggle help overlay |
+| `Escape` | Close current overlay / Exit fullscreen |
+| `q` | Quit application |
+
 ### Navigation
 
 | Key | Action |
@@ -127,13 +135,13 @@ httptui api.http -E Staging
 | `n` | Go to next match |
 | `N` | Go to previous match |
 
-### General
+### Edit
 
-| Key | Action |
-|-----|--------|
-| `?` | Toggle help overlay |
-| `Escape` | Close current overlay / Exit fullscreen |
-| `q` | Quit application |
+| Key | Action                             |
+|-----|------------------------------------|
+| `Ctrl+S` | Commit edit or save to source file |
+| `Ctrl+A` | Jump to start of line              |
+| `Ctrl+E` | Jump to end of line                |
 
 ## Documentation
 
