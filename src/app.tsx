@@ -409,6 +409,12 @@ export function App(props: AppProps): React.ReactElement {
         return;
       }
 
+      if (key.tab && key.shift) {
+        const nextTarget = state.editTarget === 'url' ? 'body' : 'url';
+        dispatch({ type: 'SWITCH_EDIT_TAB', target: nextTarget, visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+        return;
+      }
+
       if (input && !key.ctrl && !key.meta) {
         dispatch({ type: 'EDIT_KEY', op: 'insert', insert: input, visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
       }
@@ -599,12 +605,7 @@ export function App(props: AppProps): React.ReactElement {
       if (!selectedRequest) {
         return;
       }
-      if (selectedRequest.formdataFields) {
-        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'form-data request body is not supported to edit for now' });
-        scheduleTransientClear();
-        return;
-      }
-      dispatch({ type: 'ENTER_EDIT', target: 'body', buffer: selectedRequest.body ?? '', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+      dispatch({ type: 'ENTER_EDIT', buffers: { url: selectedRequest.url, body: selectedRequest.body ?? '' }, visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
       return;
     }
 
@@ -777,7 +778,7 @@ return (
         state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> :
         state.mode === 'saveLoad' ? <SaveOverlay value={state.saveInput} error={state.saveError} /> :
         state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} scrollOffset={state.envSelectScrollOffset} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
-        state.mode === 'edit' ? <EditOverlay title="Edit Body" buffer={state.editBuffer} cursor={state.editCursor} scrollOffset={state.editScrollOffset} horizontalOffset={state.editHorizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
+        state.mode === 'edit' ? <EditOverlay title="Edit Request" tabs={['url', 'body']} activeTab={state.editTarget} buffer={state.editBuffers[state.editTarget].text} cursor={state.editBuffers[state.editTarget].cursor} scrollOffset={state.editScrollOffset} horizontalOffset={state.editHorizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
         state.mode === 'confirmDiscard' && state.pendingDiscardAction !== null ? <ConfirmDiscardOverlay pendingAction={state.pendingDiscardAction} /> :
         state.mode === 'confirmInPlaceSave' ? <ConfirmInPlaceSaveOverlay fileName={basename(state.filePath)} markedCount={state.requests.filter(r => r.isDirty).length} /> :
         undefined

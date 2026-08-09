@@ -73,8 +73,8 @@ export const CENTERED_OVERLAY_MARGIN = 6;
 const EDITOR_BOX_MARGIN_ROWS = 4;
 /** Border (1 + 1) + paddingX (1 + 1) for the editor overlay */
 const EDITOR_HORIZONTAL_CHROME = 4;
-/** Border (1 + 1) + title (1) + spacer (1) + spacer (1) + hint (1) = 6 rows */
-const EDITOR_VERTICAL_CHROME = 6;
+/** Border (1 + 1) + title (1) + tab strip (1) + spacer (1) + spacer (1) + hint (1) = 7 rows */
+const EDITOR_VERTICAL_CHROME = 7;
 
 export function getEditorBoxWidth(columns: number): number {
   return Math.max(EDITOR_MIN_BOX_WIDTH, columns - CENTERED_OVERLAY_MARGIN);

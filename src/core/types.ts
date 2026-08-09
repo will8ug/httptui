@@ -102,9 +102,7 @@ export type AppMode =
 
 export type WrapMode = 'nowrap' | 'wrap';
 
-// Single member is deliberate: widen to `| 'url' | 'headers'` only when those
-// editors exist, so no unreachable branches are introduced.
-export type EditTarget = 'body';
+export type EditTarget = 'body' | 'url';
 
 export type PendingDiscardAction = 'reload' | 'fileLoad' | 'quit';
 
@@ -160,8 +158,7 @@ export interface AppState {
   lastSearchQuery: string;
   maximizedPanel: FocusedPanel | null;
   editTarget: EditTarget;
-  editBuffer: string;
-  editCursor: number;
+  editBuffers: Record<EditTarget, { text: string; cursor: number }>;
   editScrollOffset: number;
   editHorizontalOffset: number;
   pendingDiscardAction: PendingDiscardAction | null;
@@ -223,8 +220,9 @@ export type Action =
   | { type: 'SAVE_FILE'; message: string; filePath: string }
   | { type: 'SET_SAVE_ERROR'; error: string }
   | { type: 'CANCEL_SAVE' }
-  | { type: 'ENTER_EDIT'; target: EditTarget; buffer: string; visibleHeight: number; visibleWidth: number }
+  | { type: 'ENTER_EDIT'; buffers: Record<EditTarget, string>; visibleHeight: number; visibleWidth: number }
   | { type: 'EDIT_KEY'; op: EditOp; insert?: string; visibleHeight: number; visibleWidth: number }
+  | { type: 'SWITCH_EDIT_TAB'; target: EditTarget; visibleHeight: number; visibleWidth: number }
   | { type: 'COMMIT_EDIT' }
   | { type: 'CANCEL_EDIT' }
   | { type: 'REQUEST_DISCARD_CONFIRM'; action: PendingDiscardAction }

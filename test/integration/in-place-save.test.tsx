@@ -12,6 +12,7 @@ import {
   ENTER,
   ESC,
   KEY_DELAY_MS,
+  SHIFT_TAB,
   delay,
   press,
   renderApp,
@@ -92,6 +93,7 @@ async function gotoCreateUser(stdin: { write: (data: string) => void }): Promise
 
 async function commitDirtyEdit(stdin: { write: (data: string) => void }): Promise<void> {
   await press(stdin, 'e');
+  await press(stdin, SHIFT_TAB);
   await press(stdin, 'X');
   await press(stdin, CTRL_S);
 }
@@ -263,6 +265,7 @@ describe('in-place save integration', () => {
 
       await gotoCreateUser(stdin);
       await press(stdin, 'e');
+      await press(stdin, SHIFT_TAB);
       await press(stdin, ENTER);
       await press(stdin, '#');
       await press(stdin, '#');
@@ -296,11 +299,13 @@ describe('in-place save integration', () => {
 
       await gotoCreateUser(stdin);
       await press(stdin, 'e');
+      await press(stdin, SHIFT_TAB);
       await press(stdin, 'X');
       await press(stdin, CTRL_S);
       expect(lastFrame() ?? '').toContain('*collection.http');
 
       await press(stdin, 'e');
+      await press(stdin, SHIFT_TAB);
       await press(stdin, BACKSPACE);
       await press(stdin, CTRL_S);
       expect(lastFrame() ?? '').toContain('*collection.http');

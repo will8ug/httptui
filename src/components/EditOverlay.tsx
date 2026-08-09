@@ -1,12 +1,15 @@
 import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
+import type { EditTarget } from '../core/types';
 import { offsetToLineCol } from '../core/editor';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getEditorBoxHeight, getEditorBoxWidth } from '../utils/layout';
 import { expandTabs, shiftText, truncateText } from '../utils/text';
 
 interface EditOverlayProps {
   title: string;
+  tabs: EditTarget[];
+  activeTab: EditTarget;
   buffer: string;
   cursor: number;
   scrollOffset: number;
@@ -17,6 +20,8 @@ interface EditOverlayProps {
 
 export function EditOverlay({
   title,
+  tabs,
+  activeTab,
   buffer,
   cursor,
   scrollOffset,
@@ -49,6 +54,15 @@ export function EditOverlay({
         <Text color="cyanBright" bold>
           {title}
         </Text>
+        <Box flexDirection="row" gap={1}>
+          {tabs.map((tab) =>
+            tab === activeTab ? (
+              <Text key={tab} inverse>{tab}</Text>
+            ) : (
+              <Text key={tab} color="gray">{tab}</Text>
+            ),
+          )}
+        </Box>
         <Text>{' '}</Text>
         <Box flexDirection="column" flexGrow={1}>
           {visibleLines.map((line, i) => {
@@ -97,7 +111,7 @@ export function EditOverlay({
           })}
         </Box>
         <Text>{' '}</Text>
-        <Text color="gray">Ctrl+S to save, Esc to cancel</Text>
+        <Text color="gray">Shift+Tab to switch, Ctrl+S to save, Esc to cancel</Text>
       </Box>
     </Box>
   );

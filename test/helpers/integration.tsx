@@ -12,6 +12,7 @@ export const ENTER = '\r';
 export const BACKSPACE = '\u007F';
 export const CTRL_S = '\u0013';
 export const TAB = '\t';
+export const SHIFT_TAB = '\u001B[Z';
 export const UP_ARROW = '\u001B[A';
 export const DOWN_ARROW = '\u001B[B';
 export const LEFT_ARROW = '\u001B[D';
