@@ -121,9 +121,26 @@ describe('SHORTCUTS registry — edit-body entry', () => {
   });
 });
 
+describe('SHORTCUTS registry — in-place save entry', () => {
+  it('contains the `Ctrl+S` entry (save to source file)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'Ctrl+S' && s.group === 'request');
+    expect(entry).toBeDefined();
+    expect(entry?.label).toBe('');
+    expect(entry?.description).toBe('Save to source file');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('request');
+  });
+
+  it('does not appear in the status bar', () => {
+    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
+    expect(barKeys).not.toContain('Ctrl+S');
+  });
+});
+
 describe('SHORTCUTS registry — edit group', () => {
   it('contains the `Ctrl+S` entry (save and close editor)', () => {
-    const entry = SHORTCUTS.find((s) => s.key === 'Ctrl+S');
+    const entry = SHORTCUTS.find((s) => s.key === 'Ctrl+S' && s.group === 'edit');
     expect(entry).toBeDefined();
     expect(entry?.label).toBe('');
     expect(entry?.description).toBe('Save and close editor');

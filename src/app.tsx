@@ -9,6 +9,7 @@ import { HelpOverlay } from './components/HelpOverlay';
 import { SaveOverlay } from './components/SaveOverlay';
 import { EditOverlay } from './components/EditOverlay';
 import { ConfirmDiscardOverlay } from './components/ConfirmDiscardOverlay';
+import { ConfirmInPlaceSaveOverlay } from './components/ConfirmInPlaceSaveOverlay';
 import { Layout } from './components/Layout';
 import { RequestList } from './components/RequestList';
 import { RequestDetailsView } from './components/RequestDetailsView';
@@ -22,7 +23,8 @@ import { computeVerticalMaxOffset, createInitialState, reducer } from './core/re
 import { computeResponseLayout } from './core/response-layout';
 import type { AppProps, AppState, ResponseData } from './core/types';
 import { serializeHttpFile } from './core/http-serializer';
-import { parseAnyFormat } from './core/format-detector';
+import { buildInPlaceContent } from './core/in-place-save';
+import { detectFormat, parseAnyFormat } from './core/format-detector';
 import { parseEnvironmentFile } from './core/env-parser';
 import { resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
@@ -447,6 +449,44 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (state.mode === 'confirmInPlaceSave') {
+      if (input === 'y') {
+        dispatch({ type: 'CONFIRM_IN_PLACE_SAVE' });
+
+        try {
+          const rawContent = readFileSync(state.filePath, 'utf8');
+          const result = buildInPlaceContent(rawContent, state.requests);
+
+          if (!result.ok) {
+            dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: result.error });
+            scheduleTransientClear();
+            return;
+          }
+
+          if (result.editedCount === 0) {
+            dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No changes to save' });
+            scheduleTransientClear();
+            return;
+          }
+
+          writeFileSync(state.filePath, result.content, 'utf8');
+          dispatch({ type: 'SAVE_FILE', message: `Saved ${result.editedCount} request(s) to ${basename(state.filePath)}`, filePath: state.filePath });
+          scheduleTransientClear();
+        } catch (error) {
+          dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: toErrorInfo(error).message });
+          scheduleTransientClear();
+        }
+
+        return;
+      }
+
+      if (input === 'n' || key.escape) {
+        dispatch({ type: 'CANCEL_IN_PLACE_SAVE' });
+      }
+
+      return;
+    }
+
     if (key.escape && state.maximizedPanel !== null) {
       dispatch({ type: 'TOGGLE_FULLSCREEN' });
       return;
@@ -522,6 +562,30 @@ export function App(props: AppProps): React.ReactElement {
         dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No environments configured' });
         scheduleTransientClear();
       }
+      return;
+    }
+
+    if (key.ctrl && input === 's') {
+      if (!hasUnsavedChanges(state.requests)) {
+        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No changes to save' });
+        scheduleTransientClear();
+        return;
+      }
+
+      try {
+        const content = readFileSync(state.filePath, 'utf8');
+        if (detectFormat(state.filePath, content) !== 'http') {
+          dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'In-place save is only available for .http files; press S to save as a new file' });
+          scheduleTransientClear();
+          return;
+        }
+      } catch (error) {
+        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: toErrorInfo(error).message });
+        scheduleTransientClear();
+        return;
+      }
+
+      dispatch({ type: 'ENTER_IN_PLACE_SAVE_CONFIRM' });
       return;
     }
 
@@ -715,6 +779,7 @@ return (
         state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} scrollOffset={state.envSelectScrollOffset} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
         state.mode === 'edit' ? <EditOverlay title="Edit Body" buffer={state.editBuffer} cursor={state.editCursor} scrollOffset={state.editScrollOffset} horizontalOffset={state.editHorizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
         state.mode === 'confirmDiscard' && state.pendingDiscardAction !== null ? <ConfirmDiscardOverlay pendingAction={state.pendingDiscardAction} /> :
+        state.mode === 'confirmInPlaceSave' ? <ConfirmInPlaceSaveOverlay fileName={basename(state.filePath)} markedCount={state.requests.filter(r => r.isDirty).length} /> :
         undefined
       }
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access

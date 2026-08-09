@@ -4,7 +4,7 @@ function isMultipartContentType(name: string, value: string): boolean {
   return name.toLowerCase() === 'content-type' && value.toLowerCase().startsWith('multipart/form-data');
 }
 
-function serializeRequestBlock(request: ParsedRequest): string {
+export function serializeRequestBlock(request: ParsedRequest): string {
   const hasFormdataOmission =
     request.formdataFields !== undefined && request.formdataFields.length > 0 && request.body === undefined;
 

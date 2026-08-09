@@ -45,6 +45,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'R', label: '', description: 'Reload file from disk', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'E', label: 'Env', description: 'Switch environment', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'S', label: '', description: 'Save as .http file', showInBar: false, showInHelp: true, group: 'request' },
+  { key: 'Ctrl+S', label: '', description: 'Save to source file', showInBar: false, showInHelp: true, group: 'request' },
   { key: '/', label: '', description: 'Search response body', showInBar: false, showInHelp: true, group: 'search' },
   { key: 'n', label: '', description: 'Go to next search match', showInBar: false, showInHelp: true, group: 'search' },
   { key: 'N', label: '', description: 'Go to previous search match', showInBar: false, showInHelp: true, group: 'search' },
