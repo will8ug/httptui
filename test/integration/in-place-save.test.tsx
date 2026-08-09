@@ -110,7 +110,7 @@ describe('in-place save integration', () => {
       await press(stdin, CTRL_S);
 
       const frame = lastFrame() ?? '';
-      expect(frame).toContain('Confirm in-place save');
+      expect(frame).toContain('Confirm overriding');
       expect(frame).toContain('collection.http');
 
       expect(readFileSync(filePath, 'utf8')).toBe(HTTP_FILE_CONTENT);
@@ -130,12 +130,12 @@ describe('in-place save integration', () => {
       expect(lastFrame() ?? '').toContain('*collection.http');
 
       await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('Confirm in-place save');
+      expect(lastFrame() ?? '').toContain('Confirm overriding');
 
       await press(stdin, 'y');
 
       const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Confirm in-place save');
+      expect(frame).not.toContain('Confirm overriding');
       expect(frame).not.toContain('*collection.http');
       expect(frame).toContain('collection.http');
       expect(frame).toContain('Saved');
@@ -173,12 +173,12 @@ describe('in-place save integration', () => {
       expect(lastFrame() ?? '').toContain('*collection.http');
 
       await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('Confirm in-place save');
+      expect(lastFrame() ?? '').toContain('Confirm overriding');
 
       await press(stdin, 'n');
 
       const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Confirm in-place save');
+      expect(frame).not.toContain('Confirm overriding');
       expect(frame).toContain('*collection.http');
 
       expect(readFileSync(filePath, 'utf8')).toBe(HTTP_FILE_CONTENT);
@@ -198,12 +198,12 @@ describe('in-place save integration', () => {
       expect(lastFrame() ?? '').toContain('*collection.http');
 
       await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('Confirm in-place save');
+      expect(lastFrame() ?? '').toContain('Confirm overriding');
 
       await press(stdin, ESC);
 
       const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Confirm in-place save');
+      expect(frame).not.toContain('Confirm overriding');
       expect(frame).toContain('*collection.http');
 
       expect(readFileSync(filePath, 'utf8')).toBe(HTTP_FILE_CONTENT);
@@ -227,7 +227,7 @@ describe('in-place save integration', () => {
       const frame = lastFrame() ?? '';
       expect(frame).toContain('In-place save is only available for .http files');
       expect(frame).toContain('press S to save as a new file');
-      expect(frame).not.toContain('Confirm in-place save');
+      expect(frame).not.toContain('Confirm overriding');
 
       expect(readFileSync(filePath, 'utf8')).toBe(POSTMAN_CONTENT);
     } finally {
@@ -247,7 +247,7 @@ describe('in-place save integration', () => {
 
       const frame = lastFrame() ?? '';
       expect(frame).toContain('No changes to save');
-      expect(frame).not.toContain('Confirm in-place save');
+      expect(frame).not.toContain('Confirm overriding');
 
       expect(readFileSync(filePath, 'utf8')).toBe(HTTP_FILE_CONTENT);
     } finally {
@@ -272,12 +272,12 @@ describe('in-place save integration', () => {
       expect(lastFrame() ?? '').toContain('*collection.http');
 
       await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('Confirm in-place save');
+      expect(lastFrame() ?? '').toContain('Confirm overriding');
 
       await press(stdin, 'y');
 
       const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Confirm in-place save');
+      expect(frame).not.toContain('Confirm overriding');
       expect(frame).toContain('###');
       expect(frame).toContain('separator');
       expect(frame).toContain('*collection.http');
@@ -306,12 +306,12 @@ describe('in-place save integration', () => {
       expect(lastFrame() ?? '').toContain('*collection.http');
 
       await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('Confirm in-place save');
+      expect(lastFrame() ?? '').toContain('Confirm overriding');
 
       await press(stdin, 'y');
 
       const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Confirm in-place save');
+      expect(frame).not.toContain('Confirm overriding');
       expect(frame).not.toContain('*collection.http');
       expect(frame).toContain('collection.http');
       expect(frame).toContain('Saved');

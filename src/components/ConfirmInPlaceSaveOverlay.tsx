@@ -23,7 +23,7 @@ export function ConfirmInPlaceSaveOverlay({ fileName, markedCount }: ConfirmInPl
         width={width}
       >
         <Text color="cyanBright" bold>
-          Confirm in-place save
+          Confirm overriding
         </Text>
         <Text>{' '}</Text>
         <Text>

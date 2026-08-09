@@ -11,7 +11,7 @@ describe('ConfirmInPlaceSaveOverlay', () => {
   it('renders the title', () => {
     const { lastFrame } = render(<ConfirmInPlaceSaveOverlay fileName="api.http" markedCount={3} />);
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('Confirm in-place save');
+    expect(frame).toContain('Confirm overriding');
   });
 
   it('renders the file name in the body', () => {
