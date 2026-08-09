@@ -94,9 +94,9 @@ If any marked body contains a line matching `^#{3,}` (after `trim()`, matching t
 
 On success the handler dispatches `{ type: 'SAVE_FILE', message, filePath: state.filePath }`. `SAVE_FILE` already sets `mode: 'normal'`, clears **every** request's `isDirty` marker (`requests.map(r => ({ ...r, isDirty: false }))`), sets the transient message, and clears save-input/error — and rebinding `filePath` to the same value is a no-op. Reusing it keeps the "any successful save clears the markers" contract (see the **unsaved-changes** spec) in one code path with no new action.
 
-### Decision: No-op when no request is marked
+### Decision: No-op with feedback when no request is marked
 
-When `editedCount === 0` (no request carries the `isDirty` marker), the handler writes nothing and shows no message — matching editor convention for a clean `Ctrl+S`. The handler may early-return via `hasUnsavedChanges(state.requests)` before any file I/O, since an unmarked state means there is nothing to write.
+When no request carries the `isDirty` marker, the handler writes nothing and displays a transient `No changes to save` message (auto-cleared via the existing transient-message mechanism). The handler early-returns via `hasUnsavedChanges(state.requests)` before any file I/O — the message needs no read — so an unmarked state never reaches the confirmation prompt.
 
 ### Decision: Confirm before overwriting the source file
 

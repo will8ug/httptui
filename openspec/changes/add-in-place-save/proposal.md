@@ -12,6 +12,7 @@ httptui allows in-session body editing (`e`), but the only persistence path is `
 - **Separator handling.** The replacement always emits a `### <name>` separator line (canonical form, matching save-as output). A separator-less first request gains a `### Request N` line; comments above it survive because they lie outside the replaced region.
 - **Line-ending preservation.** The replaced block uses the source file's line-ending convention (CRLF vs LF), so writes do not introduce mixed line endings.
 - **Success semantics.** A successful in-place save clears every request's `isDirty` marker (the file-level `*` indicator is derived from them) via the reused `SAVE_FILE` action, and leaves `state.filePath` unchanged (no rebind, unlike save-as).
+- **No-change feedback.** If `Ctrl+S` is pressed with no marked requests, the status bar shows a transient `No changes to save` message instead of silently doing nothing (and no confirmation prompt appears).
 - **Guard.** In-place save refuses (transient message) if an edited body contains a line starting with `###`, which would split the request on reload.
 
 ## Capabilities

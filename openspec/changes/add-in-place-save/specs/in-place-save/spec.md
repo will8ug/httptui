@@ -88,6 +88,7 @@ When the user presses `Ctrl+S` on an http-format source with at least one marked
 
 - **WHEN** the user presses `Ctrl+S` with no request marked
 - **THEN** no confirmation prompt SHALL be displayed and no file SHALL be written
+- **AND** a transient `No changes to save` message SHALL be displayed
 
 #### Scenario: No confirmation for a non-http source
 
@@ -96,7 +97,7 @@ When the user presses `Ctrl+S` on an http-format source with at least one marked
 
 ### Requirement: Only marked request blocks are rewritten
 
-The in-place save SHALL rewrite only the blocks of requests whose `isDirty` marker is set (see the **unsaved-changes** spec). The source file SHALL be re-read and re-parsed to locate each marked request's block in the current on-disk content. Content outside a rewritten block — comments, variables, blank lines, and unmarked requests — SHALL remain byte-identical. When no request's marker is set, the system SHALL NOT write any file and SHALL NOT display a confirmation message.
+The in-place save SHALL rewrite only the blocks of requests whose `isDirty` marker is set (see the **unsaved-changes** spec). The source file SHALL be re-read and re-parsed to locate each marked request's block in the current on-disk content. Content outside a rewritten block — comments, variables, blank lines, and unmarked requests — SHALL remain byte-identical. When no request's marker is set, the system SHALL NOT write any file, SHALL NOT display the confirmation prompt, and SHALL display a transient `No changes to save` message.
 
 #### Scenario: Editing one of several requests rewrites only that block
 
@@ -112,8 +113,8 @@ The in-place save SHALL rewrite only the blocks of requests whose `isDirty` mark
 #### Scenario: No marked requests produce no write
 
 - **WHEN** the user presses `Ctrl+S` and no request's `isDirty` marker is set
-- **THEN** the system SHALL NOT write any file
-- **AND** the system SHALL NOT display a confirmation message
+- **THEN** the system SHALL NOT write any file and SHALL NOT display the confirmation prompt
+- **AND** the system SHALL display a transient `No changes to save` message
 
 #### Scenario: A request reverted to its original body is still rewritten
 
