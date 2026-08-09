@@ -233,7 +233,7 @@ The editor SHALL expand tab characters to spaces for rendering, advancing to the
 
 ### Requirement: Commit the edit with Ctrl+S
 
-`Ctrl+S` SHALL commit the buffer to the selected request's `body`, close the overlay, and return to normal mode. An empty buffer SHALL be committed as `undefined` rather than as an empty string. The committed request SHALL replace the entry at the selected index in `state.requests` without mutating the previous object. When the committed value differs from the request's stored body, a transient confirmation message SHALL be displayed and SHALL auto-clear using the existing transient-message mechanism. When the committed value equals the stored body, no transient confirmation message SHALL be displayed.
+`Ctrl+S` SHALL commit the buffer to the selected request's `body`, close the overlay, and return to normal mode. This commit behavior applies only while the body editor is open; in normal mode `Ctrl+S` performs an in-place save of the source file instead (see the **in-place-save** spec). An empty buffer SHALL be committed as `undefined` rather than as an empty string. The committed request SHALL replace the entry at the selected index in `state.requests` without mutating the previous object. When the committed value differs from the request's stored body, a transient confirmation message SHALL be displayed and SHALL auto-clear using the existing transient-message mechanism. When the committed value equals the stored body, no transient confirmation message SHALL be displayed.
 
 #### Scenario: Commit stores the edited body
 
@@ -264,6 +264,12 @@ The editor SHALL expand tab characters to spaces for rendering, advancing to the
 
 - **WHEN** the user commits a body edit and then saves with `S`
 - **THEN** the written `.http` file SHALL contain the edited body
+
+#### Scenario: Ctrl+S in normal mode saves in place instead of committing
+
+- **WHEN** the application is in normal mode and the user presses `Ctrl+S`
+- **THEN** no edit overlay SHALL open and no edit SHALL be committed
+- **AND** the in-place save flow SHALL begin, subject to its confirmation prompt (see the **in-place-save** spec)
 
 ### Requirement: Cancel the edit with Escape
 

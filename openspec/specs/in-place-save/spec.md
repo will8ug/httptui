@@ -4,7 +4,7 @@
 
 Writing edited requests back to the source `.http`/`.rest` file via `Ctrl+S` in normal mode: surgical block replacement of only the requests marked as changed in memory (per-request `isDirty`), source-format gating, overwrite semantics, line-ending preservation, and the guards against separator lines in edited bodies and structural source changes.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Enter in-place save with Ctrl+S in normal mode
 
