@@ -53,14 +53,7 @@ describe('HelpOverlay', () => {
       const { lastFrame } = render(<HelpOverlay visible={true} />);
 
       const frame = lastFrame() ?? '';
-      expect(frame).toContain('Save and close editor');
-    });
-
-    it('renders the in-place save Ctrl+S description in the Request group', () => {
-      const { lastFrame } = render(<HelpOverlay visible={true} />);
-
-      const frame = lastFrame() ?? '';
-      expect(frame).toContain('Save to source file');
+      expect(frame).toContain('Commit edit or save file');
     });
 
     it('renders the Ctrl+A shortcut description', () => {
