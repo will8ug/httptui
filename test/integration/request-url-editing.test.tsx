@@ -167,6 +167,21 @@ describe('request URL editing integration', () => {
     expect(frame).toContain('https://example.com/upload');
   });
 
+  it('on a form-data request: the refusal message auto-clears while the editor stays open', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeFormDataRequest() });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'e');
+    await press(stdin, SHIFT_TAB);
+    expect(lastFrame() ?? '').toContain('form-data request body is not supported to edit for now');
+
+    await delay(2200);
+
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('form-data request body is not supported to edit for now');
+    expect(frame).toContain('Edit Request');
+  });
+
   it('on a form-data request: editing the URL and Ctrl+S still commits with dirty marker set', async () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-formdata-url-'));
     try {

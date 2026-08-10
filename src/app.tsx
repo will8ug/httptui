@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 
-import React, { useEffect, useReducer, useRef } from 'react';
+import React, { useEffect, useReducer } from 'react';
 import { useApp, useInput, useStdout } from 'ink';
 
 import { FileLoadOverlay } from './components/FileLoadOverlay';
@@ -90,23 +90,13 @@ export function App(props: AppProps): React.ReactElement {
   const effectiveResponseHeight = state.maximizedPanel === 'response' ? fullscreenAvailableHeight : responseAvailableHeight;
   const effectiveDetailMaxContent = state.maximizedPanel === 'details' ? fullscreenVisibleHeight : detailPanelMaxContent;
 
-  const transientClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const scheduleTransientClear = (): void => {
-    if (transientClearTimerRef.current) {
-      clearTimeout(transientClearTimerRef.current);
+  useEffect(() => {
+    if (state.transientMessage === null && state.transientError === null) {
+      return;
     }
-    transientClearTimerRef.current = setTimeout(() => {
-      transientClearTimerRef.current = null;
-      dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' });
-    }, TRANSIENT_CLEAR_MS);
-  };
-
-  useEffect(() => () => {
-    if (transientClearTimerRef.current) {
-      clearTimeout(transientClearTimerRef.current);
-    }
-  }, []);
+    const timer = setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, TRANSIENT_CLEAR_MS);
+    return () => { clearTimeout(timer); };
+  }, [state.transientMessage, state.transientError]);
 
   const sendSelectedRequest = async (): Promise<void> => {
     if (state.isLoading) {
@@ -198,7 +188,6 @@ export function App(props: AppProps): React.ReactElement {
             filePath: resolvedPath,
             executorConfig: newExecutorConfig,
           });
-          scheduleTransientClear();
         } catch (error) {
           dispatch({ type: 'SET_FILE_LOAD_ERROR', error: toErrorInfo(error).message });
         }
@@ -332,7 +321,6 @@ export function App(props: AppProps): React.ReactElement {
           writeFileSync(targetPath, content, 'utf8');
           const fileName = targetPath.split('/').pop() ?? targetPath;
           dispatch({ type: 'SAVE_FILE', message: `Saved ${state.requests.length} requests to ${fileName}`, filePath: targetPath });
-          scheduleTransientClear();
         } catch (error) {
           dispatch({ type: 'SET_SAVE_ERROR', error: toErrorInfo(error).message });
         }
@@ -360,7 +348,6 @@ export function App(props: AppProps): React.ReactElement {
 
       if (key.ctrl && input === 's') {
         dispatch({ type: 'COMMIT_EDIT' });
-        scheduleTransientClear();
         return;
       }
 
@@ -432,10 +419,8 @@ export function App(props: AppProps): React.ReactElement {
               const content = readFileSync(state.filePath, 'utf8');
               const parseResult = parseAnyFormat(state.filePath, content);
               dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
-              scheduleTransientClear();
             } catch (error) {
               dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
-              scheduleTransientClear();
             }
             break;
           case 'fileLoad':
@@ -465,22 +450,18 @@ export function App(props: AppProps): React.ReactElement {
 
           if (!result.ok) {
             dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: result.error });
-            scheduleTransientClear();
             return;
           }
 
           if (result.editedCount === 0) {
             dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No changes to save' });
-            scheduleTransientClear();
             return;
           }
 
           writeFileSync(state.filePath, result.content, 'utf8');
           dispatch({ type: 'SAVE_FILE', message: `Saved ${result.editedCount} request(s) to ${basename(state.filePath)}`, filePath: state.filePath });
-          scheduleTransientClear();
         } catch (error) {
           dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: toErrorInfo(error).message });
-          scheduleTransientClear();
         }
 
         return;
@@ -566,7 +547,6 @@ export function App(props: AppProps): React.ReactElement {
         dispatch({ type: 'ENTER_ENV_SELECT' });
       } else {
         dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No environments configured' });
-        scheduleTransientClear();
       }
       return;
     }
@@ -574,7 +554,6 @@ export function App(props: AppProps): React.ReactElement {
     if (key.ctrl && input === 's') {
       if (!hasUnsavedChanges(state.requests)) {
         dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No changes to save' });
-        scheduleTransientClear();
         return;
       }
 
@@ -582,12 +561,10 @@ export function App(props: AppProps): React.ReactElement {
         const content = readFileSync(state.filePath, 'utf8');
         if (detectFormat(state.filePath, content) !== 'http') {
           dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'In-place save is only available for .http files; press S to save as a new file' });
-          scheduleTransientClear();
           return;
         }
       } catch (error) {
         dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: toErrorInfo(error).message });
-        scheduleTransientClear();
         return;
       }
 
@@ -643,10 +620,8 @@ export function App(props: AppProps): React.ReactElement {
         const content = readFileSync(state.filePath, 'utf8');
         const parseResult = parseAnyFormat(state.filePath, content);
         dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
-        scheduleTransientClear();
       } catch (error) {
         dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
-        scheduleTransientClear();
       }
 
       return;

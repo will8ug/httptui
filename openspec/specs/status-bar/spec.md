@@ -28,6 +28,8 @@ The right segment of the status bar SHALL show the current file name followed by
 ### Requirement: Transient status message
 The status bar SHALL display a transient message (e.g. the `Reloaded` / `Loaded: {name}` confirmations and the `No environments configured` notice) while one is set, and SHALL NOT display it when none is set. Transient messages auto-clear after approximately 2 seconds.
 
+The auto-clear SHALL apply to every transient message regardless of which action set it. The 2-second window SHALL be measured from the moment the displayed text last changed: replacing the message with different text SHALL restart the window, whereas re-setting the identical text SHALL NOT extend it.
+
 #### Scenario: Transient message is shown when set
 - **WHEN** `StatusBar` is rendered with a non-null `transientMessage`
 - **THEN** the frame SHALL contain the transient message text
@@ -35,6 +37,18 @@ The status bar SHALL display a transient message (e.g. the `Reloaded` / `Loaded:
 #### Scenario: Transient message is hidden when null
 - **WHEN** `StatusBar` is rendered with `transientMessage: null`
 - **THEN** the frame SHALL contain no transient message
+
+#### Scenario: Any transient message auto-clears
+- **WHEN** any action sets a transient message and approximately 2 seconds elapse without the text changing
+- **THEN** the status bar SHALL no longer display that message, even if the originating mode or overlay is still active
+
+#### Scenario: Replacing the text restarts the clear window
+- **WHEN** a transient message is replaced by different text before its window elapses
+- **THEN** the new text SHALL remain visible for approximately 2 seconds measured from the replacement
+
+#### Scenario: Repeating identical text does not extend the window
+- **WHEN** an action re-sets a transient message to text identical to the one already displayed
+- **THEN** the message SHALL clear approximately 2 seconds after the text first appeared rather than 2 seconds after the repeat
 
 ### Requirement: Transient error message
 The status bar SHALL display a transient error message in red bold while one is set, and SHALL NOT display it when none is set. Transient error messages auto-clear after approximately 2 seconds via the same mechanism as transient success messages. When a transient error message is set, any transient success message SHALL be cleared, and vice versa.
