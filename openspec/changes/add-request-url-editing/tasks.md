@@ -48,4 +48,4 @@
 - [x] 7.2 Run `npm run lint` and confirm it passes
 - [x] 7.3 Run `npm test` and confirm all tests pass with no coverage regression against the badges in `README.md`
 - [x] 7.4 Run `npm run build` and confirm it succeeds
-- [ ] 7.5 HUMAN CHECK (cannot be automated): run `httptui examples/basic.http` in a real TTY and confirm Shift+Tab delivery and tab-strip rendering, edit a URL and send the request, open the editor on a form-data request and confirm the body-tab refusal, and repeat the Shift+Tab check inside tmux if available
+- [x] 7.5 HUMAN CHECK (cannot be automated): run `httptui examples/basic.http` in a real TTY and confirm Shift+Tab delivery and tab-strip rendering, edit a URL and send the request, open the editor on a form-data request and confirm the body-tab refusal, and repeat the Shift+Tab check inside tmux if available
