@@ -21,4 +21,8 @@ export function createInitialState(overrides: Partial<AppState> = {}): AppState 
   return { ...base, ...overrides };
 }
 
+export function createEditState(overrides: Partial<AppState> = {}): AppState {
+  return { ...createInitialState(), mode: 'edit', ...overrides };
+}
+
 export { defaultAppProps, reducer };

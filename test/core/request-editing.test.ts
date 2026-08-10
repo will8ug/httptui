@@ -2,15 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { AppState } from '../../src/core/types';
 import { createRequest } from '../helpers/requests';
-import { createInitialState, reducer } from '../helpers/state';
-
-function editState(overrides: Partial<AppState> = {}): AppState {
-  return {
-    ...createInitialState(overrides),
-    mode: 'edit',
-    ...overrides,
-  };
-}
+import { createInitialState, createEditState, reducer } from '../helpers/state';
 
 describe('ENTER_EDIT reducer', () => {
   it('seeds both buffers with the URL tab active and cursors at end', () => {
@@ -52,7 +44,7 @@ describe('ENTER_EDIT reducer', () => {
 
 describe('EDIT_KEY reducer', () => {
   it('applies the op to the active target buffer only', () => {
-    const state = editState({
+    const state = createEditState({
       editTarget: 'url',
       editBuffers: {
         url: { text: 'abc', cursor: 3 },
@@ -67,7 +59,7 @@ describe('EDIT_KEY reducer', () => {
   });
 
   it('applies the op to the body buffer when body is active', () => {
-    const state = editState({
+    const state = createEditState({
       editTarget: 'body',
       editBuffers: {
         url: { text: 'abc', cursor: 3 },
@@ -82,7 +74,7 @@ describe('EDIT_KEY reducer', () => {
   });
 
   it('strips newlines from insert when the URL tab is active (Enter is a no-op)', () => {
-    const state = editState({
+    const state = createEditState({
       editTarget: 'url',
       editBuffers: {
         url: { text: 'https://a.com', cursor: 12 },
@@ -97,7 +89,7 @@ describe('EDIT_KEY reducer', () => {
   });
 
   it('strips newlines from multi-character paste when the URL tab is active', () => {
-    const state = editState({
+    const state = createEditState({
       editTarget: 'url',
       editBuffers: {
         url: { text: '', cursor: 0 },
@@ -112,7 +104,7 @@ describe('EDIT_KEY reducer', () => {
   });
 
   it('inserts a newline in the body tab', () => {
-    const state = editState({
+    const state = createEditState({
       editTarget: 'body',
       editBuffers: {
         url: { text: 'abc', cursor: 0 },
@@ -127,7 +119,7 @@ describe('EDIT_KEY reducer', () => {
   });
 
   it('scrolls viewport down when cursor moves below visible window', () => {
-    let current = editState({
+    let current = createEditState({
       editTarget: 'body',
       editBuffers: {
         url: { text: '', cursor: 0 },
@@ -150,7 +142,7 @@ describe('EDIT_KEY reducer', () => {
   });
 
   it('scrolls viewport up when cursor moves above visible window', () => {
-    let current = editState({
+    let current = createEditState({
       editTarget: 'body',
       editBuffers: {
         url: { text: '', cursor: 0 },
@@ -184,7 +176,7 @@ describe('EDIT_KEY reducer', () => {
 
   it('adjusts horizontal offset when cursor moves past visible width on a long line', () => {
     const longLine = 'a'.repeat(60);
-    let current = editState({
+    let current = createEditState({
       editTarget: 'body',
       editBuffers: {
         url: { text: '', cursor: 0 },
@@ -209,7 +201,7 @@ describe('EDIT_KEY reducer', () => {
 
 describe('SWITCH_EDIT_TAB reducer', () => {
   it('switches from url to body and preserves both buffers and cursors', () => {
-    const state = editState({
+    const state = createEditState({
       editTarget: 'url',
       editBuffers: {
         url: { text: 'https://a.com', cursor: 5 },
@@ -229,7 +221,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
   });
 
   it('re-clamps scroll offsets from 0 against the restored buffer cursor', () => {
-    const state = editState({
+    const state = createEditState({
       editTarget: 'url',
       editBuffers: {
         url: { text: 'short', cursor: 5 },
@@ -245,7 +237,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
   });
 
   it('switches from body back to url', () => {
-    const state = editState({
+    const state = createEditState({
       editTarget: 'body',
       editBuffers: {
         url: { text: 'https://a.com', cursor: 5 },
@@ -259,7 +251,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
   });
 
   it('is a no-op when the target is already active', () => {
-    const state = editState({
+    const state = createEditState({
       editTarget: 'url',
       editBuffers: {
         url: { text: 'abc', cursor: 0 },
@@ -274,7 +266,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
 
   it('refuses switching to body on a form-data request and sets the transient message', () => {
     const request = createRequest({ formdataFields: [{ key: 'k', value: 'v', type: 'text' }] });
-    const state = editState({
+    const state = createEditState({
       requests: [request],
       selectedIndex: 0,
       editTarget: 'url',

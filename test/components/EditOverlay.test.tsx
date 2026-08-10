@@ -36,8 +36,8 @@ describe('EditOverlay', () => {
   });
 
   describe('tab strip', () => {
-    it('renders both labels with the active one distinguished', () => {
-      const { lastFrame } = render(<EditOverlay {...baseProps} activeTab="url" />);
+    it('renders both tab labels', () => {
+      const { lastFrame } = render(<EditOverlay {...baseProps} />);
       const frame = lastFrame() ?? '';
       expect(frame).toContain('url');
       expect(frame).toContain('body');

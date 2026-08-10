@@ -8,7 +8,7 @@ import { expandTabs, shiftText, truncateText } from '../utils/text';
 
 interface EditOverlayProps {
   title: string;
-  tabs: EditTarget[];
+  tabs: readonly EditTarget[];
   activeTab: EditTarget;
   buffer: string;
   cursor: number;
