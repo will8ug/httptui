@@ -49,3 +49,4 @@
 - [x] 7.3 Run `npm test` and confirm all tests pass with no coverage regression against the badges in `README.md`
 - [x] 7.4 Run `npm run build` and confirm it succeeds
 - [x] 7.5 HUMAN CHECK (cannot be automated): run `httptui examples/basic.http` in a real TTY and confirm Shift+Tab delivery and tab-strip rendering, edit a URL and send the request, open the editor on a form-data request and confirm the body-tab refusal, and repeat the Shift+Tab check inside tmux if available
+- [x] 7.6 Replace per-dispatch-site `scheduleTransientClear` arming with a declarative auto-clear effect keyed on the transient message state — the Shift+Tab refusal message never faded because its dispatch site forgot to arm the timer. The status-bar spec gained the universal auto-clear semantics; the reload regression test was re-spec'd to the text-keyed window.
