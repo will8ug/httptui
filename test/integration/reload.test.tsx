@@ -90,9 +90,6 @@ describe('reload integration', () => {
     await delay(800);
     await press(stdin, 'R');
 
-    // The clear timer is keyed on the message text, so re-setting an identical
-    // 'Reloaded' does not re-arm it. Total elapsed puts this past the ~2s deadline
-    // measured from the first R, though only ~1.6s after the second.
     await delay(1600);
 
     expect(lastFrame() ?? '').not.toContain('Reloaded');
@@ -111,8 +108,6 @@ describe('reload integration', () => {
     await delay(800);
     await press(stdin, CTRL_S);
 
-    // Past the ~2s deadline of 'Reloaded', but inside the window of the message
-    // that replaced it.
     await delay(1600);
 
     expect(lastFrame() ?? '').toContain('No changes to save');
