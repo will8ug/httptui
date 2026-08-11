@@ -43,7 +43,7 @@ describe('editor box and content dimensions', () => {
 
   it('derives visible height from box height by subtracting vertical chrome', () => {
     for (const rows of [1, 10, 14, 24, 40, 60]) {
-      expect(getEditorVisibleHeight(rows)).toBe(getEditorBoxHeight(rows) - 6);
+      expect(getEditorVisibleHeight(rows)).toBe(getEditorBoxHeight(rows) - 7);
     }
   });
 
@@ -75,17 +75,17 @@ describe('getEditorContentWidth', () => {
 });
 
 describe('getEditorVisibleHeight', () => {
-  it('returns rows minus 10 on standard terminals', () => {
-    expect(getEditorVisibleHeight(24)).toBe(14);
-    expect(getEditorVisibleHeight(40)).toBe(30);
+  it('returns rows minus 11 on standard terminals', () => {
+    expect(getEditorVisibleHeight(24)).toBe(13);
+    expect(getEditorVisibleHeight(40)).toBe(29);
   });
 
-  it('returns 4 at the boundary where rows - 4 equals 10', () => {
-    expect(getEditorVisibleHeight(14)).toBe(4);
+  it('returns 3 at the boundary where rows - 4 equals 10', () => {
+    expect(getEditorVisibleHeight(14)).toBe(3);
   });
 
-  it('returns at least 4 on tiny terminals', () => {
-    expect(getEditorVisibleHeight(10)).toBe(4);
-    expect(getEditorVisibleHeight(1)).toBe(4);
+  it('returns 3 on tiny terminals', () => {
+    expect(getEditorVisibleHeight(10)).toBe(3);
+    expect(getEditorVisibleHeight(1)).toBe(3);
   });
 });

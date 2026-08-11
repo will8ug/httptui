@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { cleanup } from 'ink-testing-library';
 
 import { parseHttpFile } from '../../src/core/parser';
-import { delay, KEY_DELAY_MS, press, renderApp } from '../helpers/integration';
+import { CTRL_S, delay, KEY_DELAY_MS, press, renderApp } from '../helpers/integration';
 
 const INITIAL_HTTP_CONTENT = '### Test 1\nGET https://example.com/a\n\n### Test 2\nGET https://example.com/b\n';
 const UPDATED_HTTP_CONTENT = '### Test 3\nGET https://example.com/c\n\n### Test 4\nGET https://example.com/d\n\n### Test 5\nGET https://example.com/e\n';
@@ -77,7 +77,7 @@ describe('reload integration', () => {
     expect(frame).not.toContain('/b');
   });
 
-  it('a second reload is not cleared early by the first reload timer', async () => {
+  it('a repeated reload does not extend the visible window of an identical message', async () => {
     const parsedRequests = parseHttpFile(INITIAL_HTTP_CONTENT);
     const { stdin, lastFrame } = renderApp({
       filePath: tempFilePath,
@@ -90,11 +90,31 @@ describe('reload integration', () => {
     await delay(800);
     await press(stdin, 'R');
 
-    // The delays above place this assertion past the first timer's deadline (~2s after
-    // the first R) but before the second timer's: the race bug clears 'Reloaded' here,
-    // the fix keeps it visible until the second timer fires.
+    // The clear timer is keyed on the message text, so re-setting an identical
+    // 'Reloaded' does not re-arm it. Total elapsed puts this past the ~2s deadline
+    // measured from the first R, though only ~1.6s after the second.
     await delay(1600);
 
-    expect(lastFrame() ?? '').toContain('Reloaded');
+    expect(lastFrame() ?? '').not.toContain('Reloaded');
+  });
+
+  it('a distinct message restarts the clear window', async () => {
+    const parsedRequests = parseHttpFile(INITIAL_HTTP_CONTENT);
+    const { stdin, lastFrame } = renderApp({
+      filePath: tempFilePath,
+      requests: parsedRequests.requests,
+      variables: parsedRequests.variables,
+    });
+
+    await delay(KEY_DELAY_MS);
+    await press(stdin, 'R');
+    await delay(800);
+    await press(stdin, CTRL_S);
+
+    // Past the ~2s deadline of 'Reloaded', but inside the window of the message
+    // that replaced it.
+    await delay(1600);
+
+    expect(lastFrame() ?? '').toContain('No changes to save');
   });
 });

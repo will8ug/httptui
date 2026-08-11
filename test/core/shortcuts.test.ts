@@ -104,12 +104,12 @@ describe('SHORTCUTS registry — save-as-http entry', () => {
   });
 });
 
-describe('SHORTCUTS registry — edit-body entry', () => {
-  it('contains the `e` entry (edit request body)', () => {
+describe('SHORTCUTS registry — edit-request entry', () => {
+  it('contains the `e` entry (edit request URL or body)', () => {
     const entry = SHORTCUTS.find((s) => s.key === 'e');
     expect(entry).toBeDefined();
     expect(entry?.label).toBe('');
-    expect(entry?.description).toBe('Edit request body');
+    expect(entry?.description).toBe('Edit request URL or body');
     expect(entry?.showInBar).toBe(false);
     expect(entry?.showInHelp).toBe(true);
     expect(entry?.group).toBe('request');
@@ -151,6 +151,16 @@ describe('SHORTCUTS registry — edit group', () => {
     expect(entry?.group).toBe('edit');
   });
 
+  it('contains the `Shift+Tab` entry (switch editor tab)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'Shift+Tab');
+    expect(entry).toBeDefined();
+    expect(entry?.label).toBe('');
+    expect(entry?.description).toBe('Switch editor tab');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('edit');
+  });
+
   it('labels the edit group as Edit', () => {
     expect(SHORTCUT_GROUP_LABELS.edit).toBe('Edit');
   });
@@ -166,5 +176,6 @@ describe('SHORTCUTS registry — edit group', () => {
     expect(barKeys).not.toContain('Ctrl+S');
     expect(barKeys).not.toContain('Ctrl+A');
     expect(barKeys).not.toContain('Ctrl+E');
+    expect(barKeys).not.toContain('Shift+Tab');
   });
 });

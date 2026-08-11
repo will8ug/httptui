@@ -678,35 +678,69 @@ export function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'ENTER_EDIT': {
-      const { line, col } = offsetToLineCol(action.buffer, action.buffer.length);
-      const cursorLineText = action.buffer.split('\n')[line] ?? '';
+      const urlText = action.buffers.url;
+      const bodyText = action.buffers.body;
+      const { line, col } = offsetToLineCol(urlText, urlText.length);
+      const cursorLineText = urlText.split('\n')[line] ?? '';
       const visualCol = expandTabs(cursorLineText.slice(0, col)).length;
       return {
         ...state,
         mode: 'edit',
-        editTarget: action.target,
-        editBuffer: action.buffer,
-        editCursor: action.buffer.length,
+        editTarget: 'url',
+        editBuffers: {
+          url: { text: urlText, cursor: urlText.length },
+          body: { text: bodyText, cursor: bodyText.length },
+        },
         editScrollOffset: clampScrollOffsetToCursor(line, 0, action.visibleHeight),
         editHorizontalOffset: clampScrollOffsetToCursor(visualCol, 0, action.visibleWidth),
       };
     }
 
     case 'EDIT_KEY': {
+      const active = state.editBuffers[state.editTarget];
+      const insert = state.editTarget === 'url' && action.insert !== undefined
+        ? action.insert.replace(/[\n\r]/g, '')
+        : action.insert;
       const updated = applyEditOp(
-        { text: state.editBuffer, cursor: state.editCursor },
+        { text: active.text, cursor: active.cursor },
         action.op,
-        action.insert,
+        insert,
       );
       const { line, col } = offsetToLineCol(updated.text, updated.cursor);
       const cursorLineText = updated.text.split('\n')[line] ?? '';
       const visualCol = expandTabs(cursorLineText.slice(0, col)).length;
       return {
         ...state,
-        editBuffer: updated.text,
-        editCursor: updated.cursor,
+        editBuffers: {
+          ...state.editBuffers,
+          [state.editTarget]: updated,
+        },
         editScrollOffset: clampScrollOffsetToCursor(line, state.editScrollOffset, action.visibleHeight),
         editHorizontalOffset: clampScrollOffsetToCursor(visualCol, state.editHorizontalOffset, action.visibleWidth),
+      };
+    }
+
+    case 'SWITCH_EDIT_TAB': {
+      if (action.target === state.editTarget) {
+        return state;
+      }
+      const request = state.requests[state.selectedIndex];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
+      if (action.target === 'body' && request?.formdataFields) {
+        return {
+          ...state,
+          transientMessage: 'form-data request body is not supported to edit for now',
+        };
+      }
+      const buffer = state.editBuffers[action.target];
+      const { line, col } = offsetToLineCol(buffer.text, buffer.cursor);
+      const cursorLineText = buffer.text.split('\n')[line] ?? '';
+      const visualCol = expandTabs(cursorLineText.slice(0, col)).length;
+      return {
+        ...state,
+        editTarget: action.target,
+        editScrollOffset: clampScrollOffsetToCursor(line, 0, action.visibleHeight),
+        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, 0, action.visibleWidth),
       };
     }
 
@@ -716,21 +750,21 @@ export function reducer(state: AppState, action: Action): AppState {
       if (!request) {
         return state;
       }
-      const nextBody = state.editBuffer === '' ? undefined : state.editBuffer;
-      const changed = nextBody !== request.body;
+      const nextBody = state.editBuffers.body.text === '' ? undefined : state.editBuffers.body.text;
+      const nextUrl = state.editBuffers.url.text;
+      const changed = nextBody !== request.body || nextUrl !== request.url;
       const updatedRequests = state.requests.map((req, i) =>
-        i === state.selectedIndex ? { ...req, body: nextBody, isDirty: req.isDirty || changed } : req,
+        i === state.selectedIndex ? { ...req, body: nextBody, url: nextUrl, isDirty: req.isDirty || changed } : req,
       );
       return {
         ...state,
         requests: updatedRequests,
         mode: 'normal',
-        editTarget: 'body',
-        editBuffer: '',
-        editCursor: 0,
+        editTarget: 'url',
+        editBuffers: { body: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
         editScrollOffset: 0,
         editHorizontalOffset: 0,
-        transientMessage: changed ? 'Body updated' : null,
+        transientMessage: changed ? 'Request updated' : null,
         transientError: null,
       };
     }
@@ -739,9 +773,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         mode: 'normal',
-        editTarget: 'body',
-        editBuffer: '',
-        editCursor: 0,
+        editTarget: 'url',
+        editBuffers: { body: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
         editScrollOffset: 0,
         editHorizontalOffset: 0,
       };
@@ -832,9 +865,8 @@ export function createInitialState(props: AppProps): AppState {
     lastSearchQuery: '',
     maximizedPanel: null,
     certificates: props.executorConfig.certificates,
-    editTarget: 'body',
-    editBuffer: '',
-    editCursor: 0,
+    editTarget: 'url',
+    editBuffers: { body: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
     editScrollOffset: 0,
     editHorizontalOffset: 0,
     pendingDiscardAction: null,

@@ -1,19 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AppState } from '../../src/core/types';
 import { hasUnsavedChanges } from '../../src/utils/request';
 import { createRequest } from '../helpers/requests';
-import { createInitialState, reducer } from '../helpers/state';
+import { createInitialState, createEditState, reducer } from '../helpers/state';
 
 describe('per-request dirty markers', () => {
   it('is set by COMMIT_EDIT when body changes', () => {
-    const request = createRequest({ body: 'original' });
-    const state: AppState = {
-      ...createInitialState({ requests: [request], selectedIndex: 0 }),
-      mode: 'edit',
-      editBuffer: 'changed',
-      editCursor: 7,
-    };
+    const request = createRequest({ url: 'https://same.com', body: 'original' });
+    const state = createEditState({
+      requests: [request],
+      selectedIndex: 0,
+      editBuffers: {
+        url: { text: 'https://same.com', cursor: 15 },
+        body: { text: 'changed', cursor: 7 },
+      },
+    });
 
     const result = reducer(state, { type: 'COMMIT_EDIT' });
 
@@ -22,13 +23,15 @@ describe('per-request dirty markers', () => {
   });
 
   it('is not set by COMMIT_EDIT when body is unchanged', () => {
-    const request = createRequest({ body: 'same' });
-    const state: AppState = {
-      ...createInitialState({ requests: [request], selectedIndex: 0 }),
-      mode: 'edit',
-      editBuffer: 'same',
-      editCursor: 4,
-    };
+    const request = createRequest({ url: 'https://same.com', body: 'same' });
+    const state = createEditState({
+      requests: [request],
+      selectedIndex: 0,
+      editBuffers: {
+        url: { text: 'https://same.com', cursor: 15 },
+        body: { text: 'same', cursor: 4 },
+      },
+    });
 
     const result = reducer(state, { type: 'COMMIT_EDIT' });
 
@@ -37,13 +40,15 @@ describe('per-request dirty markers', () => {
   });
 
   it('remains set by COMMIT_EDIT when already dirty even if value is unchanged', () => {
-    const request = createRequest({ body: 'original', isDirty: true });
-    const state: AppState = {
-      ...createInitialState({ requests: [request], selectedIndex: 0 }),
-      mode: 'edit',
-      editBuffer: 'original',
-      editCursor: 8,
-    };
+    const request = createRequest({ url: 'https://same.com', body: 'original', isDirty: true });
+    const state = createEditState({
+      requests: [request],
+      selectedIndex: 0,
+      editBuffers: {
+        url: { text: 'https://same.com', cursor: 15 },
+        body: { text: 'original', cursor: 8 },
+      },
+    });
 
     const result = reducer(state, { type: 'COMMIT_EDIT' });
 
@@ -52,14 +57,16 @@ describe('per-request dirty markers', () => {
   });
 
   it('marks only the selected request dirty; other requests stay clean', () => {
-    const first = createRequest({ body: 'original' });
-    const second = createRequest({ body: 'other' });
-    const state: AppState = {
-      ...createInitialState({ requests: [first, second], selectedIndex: 0 }),
-      mode: 'edit',
-      editBuffer: 'changed',
-      editCursor: 7,
-    };
+    const first = createRequest({ url: 'https://same.com', body: 'original' });
+    const second = createRequest({ url: 'https://other.com', body: 'other' });
+    const state = createEditState({
+      requests: [first, second],
+      selectedIndex: 0,
+      editBuffers: {
+        url: { text: 'https://same.com', cursor: 15 },
+        body: { text: 'changed', cursor: 7 },
+      },
+    });
 
     const result = reducer(state, { type: 'COMMIT_EDIT' });
 
@@ -69,20 +76,22 @@ describe('per-request dirty markers', () => {
   });
 
   it('keeps the marker set when a body is reverted to its load-time value', () => {
-    const request = createRequest({ body: 'original' });
-    const state: AppState = {
-      ...createInitialState({ requests: [request], selectedIndex: 0 }),
-      mode: 'edit',
-      editBuffer: 'changed',
-      editCursor: 7,
-    };
+    const request = createRequest({ url: 'https://same.com', body: 'original' });
+    const state = createEditState({
+      requests: [request],
+      selectedIndex: 0,
+      editBuffers: {
+        url: { text: 'https://same.com', cursor: 15 },
+        body: { text: 'changed', cursor: 7 },
+      },
+    });
 
     const first = reducer(state, { type: 'COMMIT_EDIT' });
     expect(first.requests[0].isDirty).toBe(true);
     expect(hasUnsavedChanges(first.requests)).toBe(true);
 
     const second = reducer(
-      { ...first, mode: 'edit', editBuffer: 'original', editCursor: 8 },
+      { ...first, mode: 'edit', editBuffers: { url: { text: 'https://same.com', cursor: 15 }, body: { text: 'original', cursor: 8 } } },
       { type: 'COMMIT_EDIT' },
     );
 

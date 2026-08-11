@@ -8,7 +8,9 @@ afterEach(() => {
 });
 
 const baseProps = {
-  title: 'Edit Body',
+  title: 'Edit Request',
+  tabs: ['url', 'body'] as const,
+  activeTab: 'url' as const,
   buffer: '{"hello":"world"}',
   cursor: 0,
   scrollOffset: 0,
@@ -22,14 +24,30 @@ describe('EditOverlay', () => {
     it('renders the title and hint line', () => {
       const { lastFrame } = render(<EditOverlay {...baseProps} />);
       const frame = lastFrame() ?? '';
-      expect(frame).toContain('Edit Body');
-      expect(frame).toContain('Ctrl+S to save, Esc to cancel');
+      expect(frame).toContain('Edit Request');
+      expect(frame).toContain('Shift+Tab to switch, Ctrl+S to save, Esc to cancel');
     });
 
     it('renders an empty buffer without crashing', () => {
       const { lastFrame } = render(<EditOverlay {...baseProps} buffer="" cursor={0} />);
       const frame = lastFrame() ?? '';
-      expect(frame).toContain('Edit Body');
+      expect(frame).toContain('Edit Request');
+    });
+  });
+
+  describe('tab strip', () => {
+    it('renders both tab labels', () => {
+      const { lastFrame } = render(<EditOverlay {...baseProps} />);
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('url');
+      expect(frame).toContain('body');
+    });
+
+    it('renders both labels when body is the active tab', () => {
+      const { lastFrame } = render(<EditOverlay {...baseProps} activeTab="body" />);
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('url');
+      expect(frame).toContain('body');
     });
   });
 
