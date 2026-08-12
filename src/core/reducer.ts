@@ -3,6 +3,7 @@ import { basename, dirname, extname } from 'node:path';
 import type { Action, AppState, AppProps } from './types';
 import { applyEditOp, offsetToLineCol } from './editor';
 import { formatResponseBody } from './formatter';
+import { headersEqual, parseHeadersText } from './headers';
 import { mergeVariables, resolveVariables } from './variables';
 import { expandTabs } from '../utils/text';
 import { DEFAULT_TERMINAL_ROWS, getEnvPickerVisibleHeight, getRequestContentWidth, getRequestVisibleHeight, getResponseContentWidth } from '../utils/layout';
@@ -680,6 +681,7 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'ENTER_EDIT': {
       const urlText = action.buffers.url;
       const bodyText = action.buffers.body;
+      const headersText = action.buffers.headers;
       const { line, col } = offsetToLineCol(urlText, urlText.length);
       const cursorLineText = urlText.split('\n')[line] ?? '';
       const visualCol = expandTabs(cursorLineText.slice(0, col)).length;
@@ -690,6 +692,7 @@ export function reducer(state: AppState, action: Action): AppState {
         editBuffers: {
           url: { text: urlText, cursor: urlText.length },
           body: { text: bodyText, cursor: bodyText.length },
+          headers: { text: headersText, cursor: headersText.length },
         },
         editScrollOffset: clampScrollOffsetToCursor(line, 0, action.visibleHeight),
         editHorizontalOffset: clampScrollOffsetToCursor(visualCol, 0, action.visibleWidth),
@@ -750,18 +753,26 @@ export function reducer(state: AppState, action: Action): AppState {
       if (!request) {
         return state;
       }
+      const parsedHeaders = parseHeadersText(state.editBuffers.headers.text);
+      if (!parsedHeaders.ok) {
+        return {
+          ...state,
+          transientError: `Cannot save: header line ${parsedHeaders.line} is ${parsedHeaders.error}`,
+        };
+      }
       const nextBody = state.editBuffers.body.text === '' ? undefined : state.editBuffers.body.text;
       const nextUrl = state.editBuffers.url.text;
-      const changed = nextBody !== request.body || nextUrl !== request.url;
+      const nextHeaders = parsedHeaders.headers;
+      const changed = nextUrl !== request.url || nextBody !== request.body || !headersEqual(nextHeaders, request.headers);
       const updatedRequests = state.requests.map((req, i) =>
-        i === state.selectedIndex ? { ...req, body: nextBody, url: nextUrl, isDirty: req.isDirty || changed } : req,
+        i === state.selectedIndex ? { ...req, headers: nextHeaders, body: nextBody, url: nextUrl, isDirty: req.isDirty || changed } : req,
       );
       return {
         ...state,
         requests: updatedRequests,
         mode: 'normal',
         editTarget: 'url',
-        editBuffers: { body: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
+        editBuffers: { body: { text: '', cursor: 0 }, headers: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
         editScrollOffset: 0,
         editHorizontalOffset: 0,
         transientMessage: changed ? 'Request updated' : null,
@@ -774,7 +785,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         mode: 'normal',
         editTarget: 'url',
-        editBuffers: { body: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
+        editBuffers: { body: { text: '', cursor: 0 }, headers: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
         editScrollOffset: 0,
         editHorizontalOffset: 0,
       };
@@ -866,7 +877,7 @@ export function createInitialState(props: AppProps): AppState {
     maximizedPanel: null,
     certificates: props.executorConfig.certificates,
     editTarget: 'url',
-    editBuffers: { body: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
+    editBuffers: { body: { text: '', cursor: 0 }, headers: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
     editScrollOffset: 0,
     editHorizontalOffset: 0,
     pendingDiscardAction: null,

@@ -102,7 +102,9 @@ export type AppMode =
 
 export type WrapMode = 'nowrap' | 'wrap';
 
-export type EditTarget = 'body' | 'url';
+export type EditTarget = 'body' | 'headers' | 'url';
+
+export const EDIT_TAB_ORDER: readonly EditTarget[] = ['url', 'headers', 'body'];
 
 export type PendingDiscardAction = 'reload' | 'fileLoad' | 'quit';
 

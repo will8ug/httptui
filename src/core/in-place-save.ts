@@ -29,6 +29,12 @@ function bodyContainsSeparator(body: string): boolean {
   return body.split('\n').some((line) => SEPARATOR_RE.test(line.trim()));
 }
 
+function headersContainSeparator(headers: Record<string, string>): boolean {
+  return Object.entries(headers).some(([name, value]) =>
+    `${name}: ${value}`.split('\n').some((line) => SEPARATOR_RE.test(line.trim())),
+  );
+}
+
 function resolveBlockRegion(lines: string[], requestLineIndex: number): { blockStart: number; blockEnd: number } {
   let blockStart = requestLineIndex;
   for (let j = requestLineIndex - 1; j >= 0; j -= 1) {
@@ -82,7 +88,7 @@ function spliceRegions(lines: string[], regions: Region[]): void {
 /**
  * Rewrite only the blocks of requests whose `isDirty` marker is set, keeping every
  * other line byte-identical. Refuses on structural source changes and on edited
- * bodies containing a request separator. Pure: no I/O.
+ * bodies or headers containing a request separator. Pure: no I/O.
  */
 export function buildInPlaceContent(rawContent: string, currentRequests: ParsedRequest[]): InPlaceSaveResult {
   const lines = rawContent.split('\n');
@@ -107,6 +113,9 @@ export function buildInPlaceContent(rawContent: string, currentRequests: ParsedR
   for (const i of editedIndexes) {
     if (currentRequests[i].body !== undefined && bodyContainsSeparator(currentRequests[i].body)) {
       return { ok: false, error: 'Cannot save: an edited body contains a "###" separator line' };
+    }
+    if (headersContainSeparator(currentRequests[i].headers)) {
+      return { ok: false, error: 'Cannot save: an edited header contains a "###" separator line' };
     }
 
     const requestLineIndex = original.requests[i].lineNumber - 1;

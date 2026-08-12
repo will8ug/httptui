@@ -27,7 +27,7 @@ function makeUrlRequest(url: string = 'https://example.com/users'): ParsedReques
       name: 'create',
       method: 'POST' as const,
       url,
-      headers: {},
+      headers: { Accept: 'application/json' },
       body: '{"name":"Alice"}',
       lineNumber: 1,
       isDirty: false,
@@ -101,12 +101,15 @@ describe('request URL editing integration', () => {
     expect(frame).toContain('https://example.com/usersX');
   });
 
-  it('Shift+Tab switches to the body tab and back, preserving in-progress edits in both buffers', async () => {
+  it('Shift+Tab cycles through all tabs, preserving in-progress edits in the url and body buffers', async () => {
     const { stdin, lastFrame } = renderApp({ requests: makeUrlRequest('https://example.com/users') });
     await delay(KEY_DELAY_MS);
 
     await press(stdin, 'e');
     await press(stdin, 'X');
+
+    await press(stdin, SHIFT_TAB);
+    expect(lastFrame() ?? '').toContain('Accept');
 
     await press(stdin, SHIFT_TAB);
     expect(lastFrame() ?? '').toContain('{"name":"Alice"}');
@@ -152,7 +155,7 @@ describe('request URL editing integration', () => {
     expect(frame).toContain('https://a.com/x');
   });
 
-  it('on a form-data request: e opens the editor, SHIFT_TAB shows the refusal message, URL tab stays active', async () => {
+  it('on a form-data request: e opens the editor, switching to the body tab shows the refusal message and keeps the headers tab active', async () => {
     const { stdin, lastFrame } = renderApp({ requests: makeFormDataRequest() });
     await delay(KEY_DELAY_MS);
 
@@ -162,9 +165,12 @@ describe('request URL editing integration', () => {
     expect(editorFrame).toContain('https://example.com/upload');
 
     await press(stdin, SHIFT_TAB);
+    expect(lastFrame() ?? '').toContain('Content-Type: multipart/form-data; boundary=---');
+
+    await press(stdin, SHIFT_TAB);
     const frame = lastFrame() ?? '';
     expect(frame).toContain('form-data request body is not supported to edit for now');
-    expect(frame).toContain('https://example.com/upload');
+    expect(frame).toContain('Content-Type: multipart/form-data; boundary=---');
   });
 
   it('on a form-data request: the refusal message auto-clears while the editor stays open', async () => {
@@ -172,6 +178,7 @@ describe('request URL editing integration', () => {
     await delay(KEY_DELAY_MS);
 
     await press(stdin, 'e');
+    await press(stdin, SHIFT_TAB);
     await press(stdin, SHIFT_TAB);
     expect(lastFrame() ?? '').toContain('form-data request body is not supported to edit for now');
 

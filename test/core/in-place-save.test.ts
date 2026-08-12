@@ -362,4 +362,46 @@ describe('buildInPlaceContent', () => {
     if (result.ok) return;
     expect(result.error).toContain('###');
   });
+
+  it('refuses when a marked header serializes to a separator line', () => {
+    const raw = [
+      '### Get Users',
+      'GET https://api.example.com/users',
+      'Accept: application/json',
+      '',
+    ].join('\n');
+    const requests = parseHttpFile(raw).requests.map((r) => ({
+      ...r,
+      isDirty: true,
+      headers: { 'X-Custom': 'value\n### oops' },
+    }));
+
+    const result = buildInPlaceContent(raw, requests);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toContain('header');
+    expect(result.error).toContain('###');
+  });
+
+  it('saves a marked request with normal headers', () => {
+    const raw = [
+      '### Get Users',
+      'GET https://api.example.com/users',
+      'Accept: application/json',
+      '',
+    ].join('\n');
+    const requests = parseHttpFile(raw).requests.map((r) => ({
+      ...r,
+      isDirty: true,
+      headers: { Accept: 'text/html', 'X-Custom': 'plain value' },
+    }));
+
+    const result = buildInPlaceContent(raw, requests);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.content).toContain('Accept: text/html');
+    expect(result.content).toContain('X-Custom: plain value');
+  });
 });

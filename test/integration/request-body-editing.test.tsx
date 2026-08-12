@@ -46,6 +46,7 @@ describe('request body editing integration', () => {
     expect(lastFrame() ?? '').toContain('Edit Request');
 
     await press(stdin, SHIFT_TAB);
+    await press(stdin, SHIFT_TAB);
 
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Edit Request');
@@ -58,6 +59,7 @@ describe('request body editing integration', () => {
     await delay(KEY_DELAY_MS);
 
     await press(stdin, 'e');
+    await press(stdin, SHIFT_TAB);
     await press(stdin, SHIFT_TAB);
     await press(stdin, 'X');
     await press(stdin, CTRL_S);
@@ -77,6 +79,7 @@ describe('request body editing integration', () => {
 
     await press(stdin, 'e');
     await press(stdin, SHIFT_TAB);
+    await press(stdin, SHIFT_TAB);
     expect(lastFrame() ?? '').toContain('Edit Request');
 
     await press(stdin, CTRL_S);
@@ -91,12 +94,14 @@ describe('request body editing integration', () => {
 
     await press(stdin, 'e');
     await press(stdin, SHIFT_TAB);
+    await press(stdin, SHIFT_TAB);
     await press(stdin, 'X');
     await press(stdin, ESC);
 
     expect(lastFrame() ?? '').not.toContain('Edit Request');
 
     await press(stdin, 'e');
+    await press(stdin, SHIFT_TAB);
     await press(stdin, SHIFT_TAB);
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Edit Request');
@@ -110,6 +115,7 @@ describe('request body editing integration', () => {
 
     await press(stdin, 'e');
     await press(stdin, SHIFT_TAB);
+    await press(stdin, SHIFT_TAB);
     await press(stdin, ENTER);
 
     const frame = lastFrame() ?? '';
@@ -122,6 +128,7 @@ describe('request body editing integration', () => {
     await delay(KEY_DELAY_MS);
 
     await press(stdin, 'e');
+    await press(stdin, SHIFT_TAB);
     await press(stdin, SHIFT_TAB);
     await press(stdin, LEFT_ARROW);
     await press(stdin, LEFT_ARROW);
@@ -153,6 +160,7 @@ describe('request body editing integration', () => {
 
     await press(stdin, 'e');
     await press(stdin, SHIFT_TAB);
+    await press(stdin, SHIFT_TAB);
     const editorFrame = lastFrame() ?? '';
     expect(editorFrame).toContain('Edit Request');
     expect(editorFrame).toContain('{{host}}');
@@ -176,6 +184,7 @@ describe('request body editing integration', () => {
       await delay(KEY_DELAY_MS);
 
       await press(stdin, 'e');
+      await press(stdin, SHIFT_TAB);
       await press(stdin, SHIFT_TAB);
       for (const char of 'XYZ') {
         await press(stdin, char);
@@ -201,6 +210,7 @@ describe('request body editing integration', () => {
 
     await press(stdin, 'e');
     await press(stdin, SHIFT_TAB);
+    await press(stdin, SHIFT_TAB);
 
     const atEnd = lastFrame() ?? '';
     expect(atEnd).toContain('line-19');
@@ -220,6 +230,7 @@ describe('request body editing integration', () => {
     await delay(KEY_DELAY_MS);
 
     await press(stdin, 'e');
+    await press(stdin, SHIFT_TAB);
     await press(stdin, SHIFT_TAB);
     await press(stdin, '{"a":1,\n"b":2}');
     await press(stdin, CTRL_S);
