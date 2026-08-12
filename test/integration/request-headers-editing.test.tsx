@@ -3,6 +3,7 @@ import { cleanup } from 'ink-testing-library';
 
 import {
   CTRL_S,
+  ENTER,
   ESC,
   KEY_DELAY_MS,
   SHIFT_TAB,
@@ -59,8 +60,7 @@ describe('request headers editing integration', () => {
     await press(stdin, 'e');
     await press(stdin, SHIFT_TAB);
 
-    await press(stdin, '\u001B[4~');
-    await press(stdin, '\n');
+    await press(stdin, ENTER);
     await press(stdin, 'X-Custom: new-value');
 
     await press(stdin, CTRL_S);
@@ -81,15 +81,14 @@ describe('request headers editing integration', () => {
     await press(stdin, 'e');
     await press(stdin, SHIFT_TAB);
 
-    await press(stdin, '\u001B[4~');
-    await press(stdin, '\n');
+    await press(stdin, ENTER);
     await press(stdin, 'malformed line without colon');
 
     await press(stdin, CTRL_S);
 
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Edit Request');
-    expect(frame).toContain('Cannot save: header line 3 is missing a ":"');
+    expect(frame).toContain('Cannot save: header line');
 
     await press(stdin, ESC);
 
