@@ -49,7 +49,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'n', label: '', description: 'Go to next search match', showInBar: false, showInHelp: true, group: 'search' },
   { key: 'N', label: '', description: 'Go to previous search match', showInBar: false, showInHelp: true, group: 'search' },
   { key: 'o', label: '', description: 'Open a different file', showInBar: false, showInHelp: true, group: 'request' },
-  { key: 'e', label: '', description: 'Edit request URL or body', showInBar: false, showInHelp: true, group: 'request' },
+  { key: 'e', label: '', description: 'Edit request URL, headers, or body', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'f', label: '', description: 'Toggle fullscreen', showInBar: false, showInHelp: true, group: 'display' },
   { key: 'Ctrl+S', label: '', description: 'Commit edit or save file', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Ctrl+A', label: '', description: 'Jump to start of line', showInBar: false, showInHelp: true, group: 'edit' },

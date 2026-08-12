@@ -5,11 +5,11 @@ import { createRequest } from '../helpers/requests';
 import { createInitialState, createEditState, reducer } from '../helpers/state';
 
 describe('ENTER_EDIT reducer', () => {
-  it('seeds both buffers with the URL tab active and cursors at end', () => {
+  it('seeds all buffers with the URL tab active and cursors at end', () => {
     const request = createRequest({ url: 'https://{{host}}/users', body: '{"name":"Alice"}' });
     const state = createInitialState({ requests: [request], selectedIndex: 0 });
 
-    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: 'https://{{host}}/users', body: '{"name":"Alice"}' }, visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: 'https://{{host}}/users', body: '{"name":"Alice"}', headers: '' }, visibleHeight: 10, visibleWidth: 40 });
 
     expect(result.mode).toBe('edit');
     expect(result.editTarget).toBe('url');
@@ -17,13 +17,26 @@ describe('ENTER_EDIT reducer', () => {
     expect(result.editBuffers.url.cursor).toBe('https://{{host}}/users'.length);
     expect(result.editBuffers.body.text).toBe('{"name":"Alice"}');
     expect(result.editBuffers.body.cursor).toBe('{"name":"Alice"}'.length);
+    expect(result.editBuffers.headers.text).toBe('');
+    expect(result.editBuffers.headers.cursor).toBe(0);
+  });
+
+  it('seeds the headers buffer from the action buffers with the cursor at end', () => {
+    const headersText = 'Accept: application/json\nAuthorization: Bearer {{token}}';
+    const request = createRequest({ headers: { Accept: 'application/json', Authorization: 'Bearer {{token}}' } });
+    const state = createInitialState({ requests: [request], selectedIndex: 0 });
+
+    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: request.url, body: '', headers: headersText }, visibleHeight: 10, visibleWidth: 40 });
+
+    expect(result.editBuffers.headers.text).toBe(headersText);
+    expect(result.editBuffers.headers.cursor).toBe(headersText.length);
   });
 
   it('seeds the body buffer as empty with cursor at 0 when body is undefined', () => {
     const request = createRequest({ body: undefined });
     const state = createInitialState({ requests: [request], selectedIndex: 0 });
 
-    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: request.url, body: '' }, visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: request.url, body: '', headers: '' }, visibleHeight: 10, visibleWidth: 40 });
 
     expect(result.editBuffers.body.text).toBe('');
     expect(result.editBuffers.body.cursor).toBe(0);
@@ -35,7 +48,7 @@ describe('ENTER_EDIT reducer', () => {
       editHorizontalOffset: 10,
     });
 
-    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: 'hello', body: '' }, visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: 'hello', body: '', headers: '' }, visibleHeight: 10, visibleWidth: 40 });
 
     expect(result.editScrollOffset).toBe(0);
     expect(result.editHorizontalOffset).toBe(0);
@@ -49,6 +62,7 @@ describe('EDIT_KEY reducer', () => {
       editBuffers: {
         url: { text: 'abc', cursor: 3 },
         body: { text: 'xyz', cursor: 3 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -64,6 +78,7 @@ describe('EDIT_KEY reducer', () => {
       editBuffers: {
         url: { text: 'abc', cursor: 3 },
         body: { text: 'xyz', cursor: 3 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -79,6 +94,7 @@ describe('EDIT_KEY reducer', () => {
       editBuffers: {
         url: { text: 'https://a.com', cursor: 12 },
         body: { text: '', cursor: 0 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -94,6 +110,7 @@ describe('EDIT_KEY reducer', () => {
       editBuffers: {
         url: { text: '', cursor: 0 },
         body: { text: '', cursor: 0 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -109,6 +126,7 @@ describe('EDIT_KEY reducer', () => {
       editBuffers: {
         url: { text: 'abc', cursor: 0 },
         body: { text: 'abcd', cursor: 2 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -124,6 +142,7 @@ describe('EDIT_KEY reducer', () => {
       editBuffers: {
         url: { text: '', cursor: 0 },
         body: { text: 'line0\nline1\nline2\nline3\nline4\nline5', cursor: 0 },
+        headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 0,
     });
@@ -147,6 +166,7 @@ describe('EDIT_KEY reducer', () => {
       editBuffers: {
         url: { text: '', cursor: 0 },
         body: { text: 'line0\nline1\nline2\nline3\nline4\nline5', cursor: 24 },
+        headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 2,
     });
@@ -181,6 +201,7 @@ describe('EDIT_KEY reducer', () => {
       editBuffers: {
         url: { text: '', cursor: 0 },
         body: { text: longLine, cursor: 0 },
+        headers: { text: '', cursor: 0 },
       },
       editHorizontalOffset: 0,
     });
@@ -206,6 +227,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       editBuffers: {
         url: { text: 'https://a.com', cursor: 5 },
         body: { text: '{"k":"v"}', cursor: 7 },
+        headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 3,
       editHorizontalOffset: 2,
@@ -226,6 +248,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       editBuffers: {
         url: { text: 'short', cursor: 5 },
         body: { text: 'line0\nline1\nline2\nline3', cursor: 18 },
+        headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 0,
       editHorizontalOffset: 0,
@@ -242,6 +265,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       editBuffers: {
         url: { text: 'https://a.com', cursor: 5 },
         body: { text: 'hello', cursor: 5 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -250,12 +274,65 @@ describe('SWITCH_EDIT_TAB reducer', () => {
     expect(result.editTarget).toBe('url');
   });
 
+  it('switches from url to headers and preserves the headers buffer and cursor', () => {
+    const state = createEditState({
+      editTarget: 'url',
+      editBuffers: {
+        url: { text: 'https://a.com', cursor: 5 },
+        body: { text: 'hello', cursor: 5 },
+        headers: { text: 'Accept: application/json', cursor: 10 },
+      },
+    });
+
+    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'headers', visibleHeight: 10, visibleWidth: 40 });
+
+    expect(result.editTarget).toBe('headers');
+    expect(result.editBuffers.headers.text).toBe('Accept: application/json');
+    expect(result.editBuffers.headers.cursor).toBe(10);
+  });
+
+  it('switches from headers to body', () => {
+    const state = createEditState({
+      editTarget: 'headers',
+      editBuffers: {
+        url: { text: 'https://a.com', cursor: 5 },
+        body: { text: 'hello', cursor: 5 },
+        headers: { text: 'Accept: a', cursor: 9 },
+      },
+    });
+
+    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'body', visibleHeight: 10, visibleWidth: 40 });
+
+    expect(result.editTarget).toBe('body');
+  });
+
+  it('cycles url to body to headers and wraps back to url', () => {
+    let current = createEditState({
+      editTarget: 'url',
+      editBuffers: {
+        url: { text: 'https://a.com', cursor: 5 },
+        body: { text: 'hello', cursor: 5 },
+        headers: { text: 'Accept: a', cursor: 9 },
+      },
+    });
+
+    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'body', visibleHeight: 10, visibleWidth: 40 });
+    expect(current.editTarget).toBe('body');
+
+    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'headers', visibleHeight: 10, visibleWidth: 40 });
+    expect(current.editTarget).toBe('headers');
+
+    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'url', visibleHeight: 10, visibleWidth: 40 });
+    expect(current.editTarget).toBe('url');
+  });
+
   it('is a no-op when the target is already active', () => {
     const state = createEditState({
       editTarget: 'url',
       editBuffers: {
         url: { text: 'abc', cursor: 0 },
         body: { text: 'xyz', cursor: 0 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -273,6 +350,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       editBuffers: {
         url: { text: 'https://a.com', cursor: 12 },
         body: { text: '', cursor: 0 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -293,6 +371,7 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'https://new.com', cursor: 15 },
         body: { text: '{"name":"Bob"}', cursor: 14 },
+        headers: { text: '', cursor: 0 },
       },
     };
 
@@ -304,6 +383,63 @@ describe('COMMIT_EDIT reducer', () => {
     expect(result.transientMessage).toBe('Request updated');
   });
 
+  it('stores parsed headers on the request and returns to normal mode', () => {
+    const request = createRequest({ headers: { Accept: 'application/json' } });
+    const state: AppState = {
+      ...createInitialState({ requests: [request], selectedIndex: 0 }),
+      mode: 'edit',
+      editBuffers: {
+        url: { text: request.url, cursor: request.url.length },
+        body: { text: '', cursor: 0 },
+        headers: { text: 'Content-Type: application/json\nAccept: text/html', cursor: 'Content-Type: application/json\nAccept: text/html'.length },
+      },
+    };
+
+    const result = reducer(state, { type: 'COMMIT_EDIT' });
+
+    expect(result.mode).toBe('normal');
+    expect(result.requests[0].headers).toEqual({ 'Content-Type': 'application/json', Accept: 'text/html' });
+  });
+
+  it('commits an empty headers buffer as an empty record', () => {
+    const request = createRequest({ headers: { Accept: 'application/json' } });
+    const state: AppState = {
+      ...createInitialState({ requests: [request], selectedIndex: 0 }),
+      mode: 'edit',
+      editBuffers: {
+        url: { text: request.url, cursor: request.url.length },
+        body: { text: '', cursor: 0 },
+        headers: { text: '', cursor: 0 },
+      },
+    };
+
+    const result = reducer(state, { type: 'COMMIT_EDIT' });
+
+    expect(result.requests[0].headers).toEqual({});
+  });
+
+  it('rejects the commit when a header line is malformed', () => {
+    const request = createRequest({ url: 'https://old.com', body: 'original' });
+    const state: AppState = {
+      ...createInitialState({ requests: [request], selectedIndex: 0 }),
+      mode: 'edit',
+      editBuffers: {
+        url: { text: 'https://new.com', cursor: 15 },
+        body: { text: 'changed', cursor: 7 },
+        headers: { text: 'Accept: application/json\nbrokenheader', cursor: 0 },
+      },
+    };
+
+    const result = reducer(state, { type: 'COMMIT_EDIT' });
+
+    expect(result.mode).toBe('edit');
+    expect(result.requests[0].url).toBe('https://old.com');
+    expect(result.requests[0].body).toBe('original');
+    expect(result.requests[0].headers).toEqual({});
+    expect(result.editBuffers).toBe(state.editBuffers);
+    expect(result.transientError).toBe('Cannot save: header line 2 is missing a ":"');
+  });
+
   it('does not mutate the original request object', () => {
     const request = createRequest({ url: 'https://old.com', body: 'original' });
     const originalRef = request;
@@ -313,6 +449,7 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'https://new.com', cursor: 15 },
         body: { text: 'modified', cursor: 8 },
+        headers: { text: '', cursor: 0 },
       },
     };
 
@@ -333,6 +470,7 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: request.url, cursor: request.url.length },
         body: { text: '', cursor: 0 },
+        headers: { text: '', cursor: 0 },
       },
     };
 
@@ -349,6 +487,7 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: '', cursor: 0 },
         body: { text: request.body ?? '', cursor: 0 },
+        headers: { text: '', cursor: 0 },
       },
     };
 
@@ -365,6 +504,7 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'https://new.com', cursor: 15 },
         body: { text: 'same', cursor: 4 },
+        headers: { text: '', cursor: 0 },
       },
     };
 
@@ -382,6 +522,25 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'https://same.com', cursor: 15 },
         body: { text: 'new', cursor: 3 },
+        headers: { text: '', cursor: 0 },
+      },
+    };
+
+    const result = reducer(state, { type: 'COMMIT_EDIT' });
+
+    expect(result.requests[0].isDirty).toBe(true);
+    expect(result.transientMessage).toBe('Request updated');
+  });
+
+  it('detects a change in headers only', () => {
+    const request = createRequest({ url: 'https://same.com', body: 'same', headers: { Accept: 'a' } });
+    const state: AppState = {
+      ...createInitialState({ requests: [request], selectedIndex: 0 }),
+      mode: 'edit',
+      editBuffers: {
+        url: { text: 'https://same.com', cursor: 15 },
+        body: { text: 'same', cursor: 4 },
+        headers: { text: 'Accept: b', cursor: 9 },
       },
     };
 
@@ -399,6 +558,26 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'https://same.com', cursor: 15 },
         body: { text: 'unchanged', cursor: 9 },
+        headers: { text: '', cursor: 0 },
+      },
+    };
+
+    const result = reducer(state, { type: 'COMMIT_EDIT' });
+
+    expect(result.requests[0].isDirty).toBe(false);
+    expect(result.transientMessage).toBeNull();
+    expect(result.mode).toBe('normal');
+  });
+
+  it('does not mark the request changed when header lines are only reordered', () => {
+    const request = createRequest({ headers: { Accept: 'a', 'X-B': 'b' } });
+    const state: AppState = {
+      ...createInitialState({ requests: [request], selectedIndex: 0 }),
+      mode: 'edit',
+      editBuffers: {
+        url: { text: request.url, cursor: request.url.length },
+        body: { text: '', cursor: 0 },
+        headers: { text: 'X-B: b\nAccept: a', cursor: 'X-B: b\nAccept: a'.length },
       },
     };
 
@@ -418,6 +597,7 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'https://new.com', cursor: 15 },
         body: { text: 'changed', cursor: 7 },
+        headers: { text: '', cursor: 0 },
       },
     };
 
@@ -435,6 +615,7 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'https://same.com', cursor: 15 },
         body: { text: 'original', cursor: 8 },
+        headers: { text: '', cursor: 0 },
       },
     };
 
@@ -450,6 +631,7 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'hello', cursor: 5 },
         body: { text: '', cursor: 0 },
+        headers: { text: '', cursor: 0 },
       },
     };
 
@@ -466,6 +648,7 @@ describe('COMMIT_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'https://new.com', cursor: 15 },
         body: { text: 'new value', cursor: 9 },
+        headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 3,
       editHorizontalOffset: 5,
@@ -477,6 +660,8 @@ describe('COMMIT_EDIT reducer', () => {
     expect(result.editBuffers.url.cursor).toBe(0);
     expect(result.editBuffers.body.text).toBe('');
     expect(result.editBuffers.body.cursor).toBe(0);
+    expect(result.editBuffers.headers.text).toBe('');
+    expect(result.editBuffers.headers.cursor).toBe(0);
     expect(result.editTarget).toBe('url');
     expect(result.editScrollOffset).toBe(0);
     expect(result.editHorizontalOffset).toBe(0);
@@ -504,6 +689,7 @@ describe('CANCEL_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'https://modified.com', cursor: 20 },
         body: { text: 'modified', cursor: 8 },
+        headers: { text: '', cursor: 0 },
       },
     };
 
@@ -514,7 +700,7 @@ describe('CANCEL_EDIT reducer', () => {
     expect(result.requests[0].body).toBe('original');
   });
 
-  it('discards both buffers and resets editTarget to url', () => {
+  it('discards all buffers and resets editTarget to url', () => {
     const state: AppState = {
       ...createInitialState({ selectedIndex: 0 }),
       mode: 'edit',
@@ -522,6 +708,7 @@ describe('CANCEL_EDIT reducer', () => {
       editBuffers: {
         url: { text: 'https://modified.com', cursor: 20 },
         body: { text: 'modified', cursor: 8 },
+        headers: { text: 'Accept: a', cursor: 9 },
       },
       editScrollOffset: 3,
       editHorizontalOffset: 5,
@@ -533,6 +720,8 @@ describe('CANCEL_EDIT reducer', () => {
     expect(result.editBuffers.url.cursor).toBe(0);
     expect(result.editBuffers.body.text).toBe('');
     expect(result.editBuffers.body.cursor).toBe(0);
+    expect(result.editBuffers.headers.text).toBe('');
+    expect(result.editBuffers.headers.cursor).toBe(0);
     expect(result.editTarget).toBe('url');
     expect(result.editScrollOffset).toBe(0);
     expect(result.editHorizontalOffset).toBe(0);
@@ -546,6 +735,7 @@ describe('CANCEL_EDIT reducer', () => {
       editBuffers: {
         url: { text: request.url, cursor: request.url.length },
         body: { text: 'modified', cursor: 8 },
+        headers: { text: '', cursor: 0 },
       },
     };
 

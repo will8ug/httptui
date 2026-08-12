@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import chalk from 'chalk';
 import { cleanup, render } from 'ink-testing-library';
 
 import { EditOverlay } from '../../src/components/EditOverlay';
@@ -7,9 +8,12 @@ afterEach(() => {
   cleanup();
 });
 
+const INVERSE_ON = '\u001b[7m';
+const INVERSE_OFF = '\u001b[27m';
+
 const baseProps = {
   title: 'Edit Request',
-  tabs: ['url', 'body'] as const,
+  tabs: ['url', 'body', 'headers'] as const,
   activeTab: 'url' as const,
   buffer: '{"hello":"world"}',
   cursor: 0,
@@ -36,18 +40,42 @@ describe('EditOverlay', () => {
   });
 
   describe('tab strip', () => {
-    it('renders both tab labels', () => {
+    it('renders all three tab labels', () => {
       const { lastFrame } = render(<EditOverlay {...baseProps} />);
       const frame = lastFrame() ?? '';
       expect(frame).toContain('url');
       expect(frame).toContain('body');
+      expect(frame).toContain('headers');
     });
 
-    it('renders both labels when body is the active tab', () => {
+    it('renders all three labels when body is the active tab', () => {
       const { lastFrame } = render(<EditOverlay {...baseProps} activeTab="body" />);
       const frame = lastFrame() ?? '';
       expect(frame).toContain('url');
       expect(frame).toContain('body');
+      expect(frame).toContain('headers');
+    });
+
+    it('renders all three labels when headers is the active tab', () => {
+      const { lastFrame } = render(<EditOverlay {...baseProps} activeTab="headers" />);
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('url');
+      expect(frame).toContain('body');
+      expect(frame).toContain('headers');
+    });
+
+    it('styles the active tab with inverse ANSI escapes', () => {
+      const previousLevel = chalk.level;
+      chalk.level = 3;
+      try {
+        const { lastFrame } = render(<EditOverlay {...baseProps} activeTab="headers" />);
+        const frame = lastFrame() ?? '';
+        expect(frame).toContain(`${INVERSE_ON}headers${INVERSE_OFF}`);
+        expect(frame).not.toContain(`${INVERSE_ON}url`);
+        expect(frame).not.toContain(`${INVERSE_ON}body`);
+      } finally {
+        chalk.level = previousLevel;
+      }
     });
   });
 

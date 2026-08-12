@@ -19,9 +19,11 @@ import { EnvSelectOverlay } from './components/EnvSelectOverlay';
 import { executeRequest, isErrorInfo, toErrorInfo } from './core/executor';
 import type { CertConfig } from './core/executor';
 import { formatResponseBody } from './core/formatter';
+import { headersToText } from './core/headers';
 import { computeVerticalMaxOffset, createInitialState, reducer } from './core/reducer';
 import { computeResponseLayout } from './core/response-layout';
 import type { AppProps, AppState, ResponseData } from './core/types';
+import { EDIT_TAB_ORDER } from './core/types';
 import { serializeHttpFile } from './core/http-serializer';
 import { buildInPlaceContent } from './core/in-place-save';
 import { detectFormat, parseAnyFormat } from './core/format-detector';
@@ -397,7 +399,7 @@ export function App(props: AppProps): React.ReactElement {
       }
 
       if (key.tab && key.shift) {
-        const nextTarget = state.editTarget === 'url' ? 'body' : 'url';
+        const nextTarget = EDIT_TAB_ORDER[(EDIT_TAB_ORDER.indexOf(state.editTarget) + 1) % EDIT_TAB_ORDER.length];
         dispatch({ type: 'SWITCH_EDIT_TAB', target: nextTarget, visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
         return;
       }
@@ -582,7 +584,7 @@ export function App(props: AppProps): React.ReactElement {
       if (!selectedRequest) {
         return;
       }
-      dispatch({ type: 'ENTER_EDIT', buffers: { url: selectedRequest.url, body: selectedRequest.body ?? '' }, visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+      dispatch({ type: 'ENTER_EDIT', buffers: { url: selectedRequest.url, body: selectedRequest.body ?? '', headers: headersToText(selectedRequest.headers) }, visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
       return;
     }
 
@@ -753,7 +755,7 @@ return (
         state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> :
         state.mode === 'saveLoad' ? <SaveOverlay value={state.saveInput} error={state.saveError} /> :
         state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} scrollOffset={state.envSelectScrollOffset} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
-        state.mode === 'edit' ? <EditOverlay title="Edit Request" tabs={['url', 'body']} activeTab={state.editTarget} buffer={state.editBuffers[state.editTarget].text} cursor={state.editBuffers[state.editTarget].cursor} scrollOffset={state.editScrollOffset} horizontalOffset={state.editHorizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
+        state.mode === 'edit' ? <EditOverlay title="Edit Request" tabs={EDIT_TAB_ORDER} activeTab={state.editTarget} buffer={state.editBuffers[state.editTarget].text} cursor={state.editBuffers[state.editTarget].cursor} scrollOffset={state.editScrollOffset} horizontalOffset={state.editHorizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
         state.mode === 'confirmDiscard' && state.pendingDiscardAction !== null ? <ConfirmDiscardOverlay pendingAction={state.pendingDiscardAction} /> :
         state.mode === 'confirmInPlaceSave' ? <ConfirmInPlaceSaveOverlay fileName={basename(state.filePath)} markedCount={state.requests.filter(r => r.isDirty).length} /> :
         undefined

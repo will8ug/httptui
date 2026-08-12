@@ -27,7 +27,7 @@ function makeUrlRequest(url: string = 'https://example.com/users'): ParsedReques
       name: 'create',
       method: 'POST' as const,
       url,
-      headers: {},
+      headers: { Accept: 'application/json' },
       body: '{"name":"Alice"}',
       lineNumber: 1,
       isDirty: false,
@@ -101,7 +101,7 @@ describe('request URL editing integration', () => {
     expect(frame).toContain('https://example.com/usersX');
   });
 
-  it('Shift+Tab switches to the body tab and back, preserving in-progress edits in both buffers', async () => {
+  it('Shift+Tab cycles through all tabs, preserving in-progress edits in the url and body buffers', async () => {
     const { stdin, lastFrame } = renderApp({ requests: makeUrlRequest('https://example.com/users') });
     await delay(KEY_DELAY_MS);
 
@@ -113,6 +113,8 @@ describe('request URL editing integration', () => {
 
     await press(stdin, 'Y');
 
+    await press(stdin, SHIFT_TAB);
+    expect(lastFrame() ?? '').toContain('Accept');
     await press(stdin, SHIFT_TAB);
     expect(lastFrame() ?? '').toContain('https://example.com/usersX');
 

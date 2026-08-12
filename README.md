@@ -16,7 +16,7 @@
 
 - **Multi-Format Support**: Parse `.http`, `.rest`, Postman collections, and OpenAPI specs (JSON/YAML).
 - **Keyboard-Driven TUI**: Vim keys, split-panel layout, details panel (`d`), fullscreen (`f`), help overlay (`?`).
-- **In-Session Editing**: Edit request URLs and bodies live in the TUI (`e`).
+- **In-Session Editing**: Edit request URLs, headers, and bodies live in the TUI (`e`).
 - **Environment Management**: Load environment files, register named environments, switch at runtime (`E`).
 - **mTLS & Client Certificates**: Per-host client certificates (PEM/PFX) with wildcard matching.
 - **Export as .http**: Save requests to `.http` format with variables preserved (`S`).
@@ -113,7 +113,7 @@ httptui api.http -E Staging
 | `Enter` | Send selected request |
 | `R` | Reload file from disk |
 | `o` | Open a different .http file |
-| `e` | Edit request URL or body |
+| `e` | Edit request URL, headers, or body |
 | `E` | Switch environment |
 | `S` | Save as .http file |
 

@@ -13,6 +13,7 @@ describe('per-request dirty markers', () => {
       editBuffers: {
         url: { text: 'https://same.com', cursor: 15 },
         body: { text: 'changed', cursor: 7 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -30,6 +31,7 @@ describe('per-request dirty markers', () => {
       editBuffers: {
         url: { text: 'https://same.com', cursor: 15 },
         body: { text: 'same', cursor: 4 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -47,6 +49,7 @@ describe('per-request dirty markers', () => {
       editBuffers: {
         url: { text: 'https://same.com', cursor: 15 },
         body: { text: 'original', cursor: 8 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -65,6 +68,7 @@ describe('per-request dirty markers', () => {
       editBuffers: {
         url: { text: 'https://same.com', cursor: 15 },
         body: { text: 'changed', cursor: 7 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -83,6 +87,7 @@ describe('per-request dirty markers', () => {
       editBuffers: {
         url: { text: 'https://same.com', cursor: 15 },
         body: { text: 'changed', cursor: 7 },
+        headers: { text: '', cursor: 0 },
       },
     });
 
@@ -91,7 +96,7 @@ describe('per-request dirty markers', () => {
     expect(hasUnsavedChanges(first.requests)).toBe(true);
 
     const second = reducer(
-      { ...first, mode: 'edit', editBuffers: { url: { text: 'https://same.com', cursor: 15 }, body: { text: 'original', cursor: 8 } } },
+      { ...first, mode: 'edit', editBuffers: { url: { text: 'https://same.com', cursor: 15 }, body: { text: 'original', cursor: 8 }, headers: { text: '', cursor: 0 } } },
       { type: 'COMMIT_EDIT' },
     );
 
