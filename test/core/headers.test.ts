@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { headersToText, parseHeadersText } from '../../src/core/headers';
+import { headersEqual, headersToText, parseHeadersText } from '../../src/core/headers';
 
 describe('headersToText', () => {
   it('serializes one Name: Value line per entry in insertion order', () => {
@@ -78,5 +78,40 @@ describe('parseHeadersText', () => {
 
   it('returns an empty record for empty input', () => {
     expect(parseHeadersText('')).toEqual({ ok: true, headers: {} });
+  });
+});
+
+describe('headersEqual', () => {
+  it('returns true for identical records', () => {
+    expect(headersEqual({ Accept: 'application/json' }, { Accept: 'application/json' })).toBe(true);
+  });
+
+  it('is insensitive to insertion order', () => {
+    expect(
+      headersEqual(
+        { Accept: 'application/json', 'X-Custom': 'v1' },
+        { 'X-Custom': 'v1', Accept: 'application/json' },
+      ),
+    ).toBe(true);
+  });
+
+  it('returns false when key sets differ in size', () => {
+    expect(headersEqual({ Accept: 'application/json' }, {})).toBe(false);
+  });
+
+  it('returns false when a key is missing from the second record', () => {
+    expect(headersEqual({ Accept: 'application/json' }, { 'X-Custom': 'v1' })).toBe(false);
+  });
+
+  it('returns false when a value differs', () => {
+    expect(headersEqual({ Accept: 'application/json' }, { Accept: 'text/plain' })).toBe(false);
+  });
+
+  it('compares keys case-sensitively as stored', () => {
+    expect(headersEqual({ Accept: 'a' }, { accept: 'a' })).toBe(false);
+  });
+
+  it('returns true for two empty records', () => {
+    expect(headersEqual({}, {})).toBe(true);
   });
 });

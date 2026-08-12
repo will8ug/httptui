@@ -3,7 +3,7 @@ import { basename, dirname, extname } from 'node:path';
 import type { Action, AppState, AppProps } from './types';
 import { applyEditOp, offsetToLineCol } from './editor';
 import { formatResponseBody } from './formatter';
-import { parseHeadersText } from './headers';
+import { headersEqual, parseHeadersText } from './headers';
 import { mergeVariables, resolveVariables } from './variables';
 import { expandTabs } from '../utils/text';
 import { DEFAULT_TERMINAL_ROWS, getEnvPickerVisibleHeight, getRequestContentWidth, getRequestVisibleHeight, getResponseContentWidth } from '../utils/layout';
@@ -74,15 +74,6 @@ export function computeSearchScrollOffset(visualIndex: number, maxOffset?: numbe
     return Math.min(Math.max(0, visualIndex), maxOffset);
   }
   return Math.max(0, visualIndex);
-}
-
-// Order-insensitive: same key set (case-sensitive as stored) and same values.
-function headersEqual(a: Record<string, string>, b: Record<string, string>): boolean {
-  const keys = Object.keys(a);
-  if (keys.length !== Object.keys(b).length) {
-    return false;
-  }
-  return keys.every((key) => Object.prototype.hasOwnProperty.call(b, key) && b[key] === a[key]);
 }
 
 export function reducer(state: AppState, action: Action): AppState {
