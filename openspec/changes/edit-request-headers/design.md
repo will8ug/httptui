@@ -42,13 +42,13 @@ Round-trip property: `parseHeadersText(headersToText(h))` equals `h` (order-inse
 
 - **Rationale**: per user decision — no silent data loss; a malformed line must be fixed, and keeping the overlay open preserves all in-progress buffers.
 
-### D4: Single source of truth for tab order — headers appended last
+### D4: Single source of truth for tab order — headers between url and body
 
-Define `EDIT_TAB_ORDER: readonly EditTarget[] = ['url', 'body', 'headers']` (in `src/core/types.ts` next to `EditTarget`). Both consumers use it:
+Define `EDIT_TAB_ORDER: readonly EditTarget[] = ['url', 'headers', 'body']` (in `src/core/types.ts` next to `EditTarget`). Both consumers use it:
 - `app.tsx` `Shift+Tab` handler — currently hardcoded `url ? 'body' : 'url'` (`app.tsx:400`) — becomes `EDIT_TAB_ORDER[(index + 1) % length]`.
 - `app.tsx` overlay render — `tabs={EDIT_TAB_ORDER}` instead of the literal `['url', 'body']` (`app.tsx:756`).
 
-Headers is **appended** (url → body → headers) rather than inserted between url and body. The `.http` format puts headers before the body, but the editor's existing tab order is url → body, and the archived scenario "Shift+Tab switches from the URL tab to the body tab" must stay literally true — the spec validator refuses to drop or rename existing scenarios. Appending preserves that scenario verbatim; the only original scenario whose content must change is the generic "wraps from the last tab to the first", which now wraps body → headers → url. This also matches the user framing of "add one another tab".
+Headers sits **between** url and body (url → headers → body), mirroring the `.http` format where headers precede the body. This reverses an earlier append-order draft; the user requested headers before body. The spec-validator constraint that existing scenario names must survive a MODIFIED rewrite is satisfied by keeping the archived names and evolving their content: "Shift+Tab switches from the URL tab to the body tab" now describes the two-press journey through headers, and "Shift+Tab wraps from the last tab to the first" reverts to its original body → url content, since body is again the last tab.
 
 ### D5: Commit writes headers and detects change order-insensitively
 

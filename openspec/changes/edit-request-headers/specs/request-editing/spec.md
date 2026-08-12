@@ -232,12 +232,12 @@ In the body and headers tabs, pressing `Enter` in edit mode SHALL insert a newli
 
 ### Requirement: Editor overlay presentation
 
-The editor SHALL render through the existing overlay slot, replacing the panel area while open, and SHALL follow the established overlay styling: a rounded border in `cyanBright`, a bold `cyanBright` title, and a hint line describing the available keys. The overlay SHALL be sized to use most of the available terminal area so that multi-line bodies have room to render. The cursor SHALL be rendered by inverting the character at the cursor position, and by inverting a trailing space when the cursor is at the end of a line. Beneath the title the overlay SHALL render a tab strip listing one label per edit target — `url`, `body`, and `headers` — with the active tab's label visually distinguished from the inactive labels. The title SHALL be target-agnostic; the tab strip SHALL carry the target identity. The hint line SHALL name the tab-switch, commit, and cancel keys.
+The editor SHALL render through the existing overlay slot, replacing the panel area while open, and SHALL follow the established overlay styling: a rounded border in `cyanBright`, a bold `cyanBright` title, and a hint line describing the available keys. The overlay SHALL be sized to use most of the available terminal area so that multi-line bodies have room to render. The cursor SHALL be rendered by inverting the character at the cursor position, and by inverting a trailing space when the cursor is at the end of a line. Beneath the title the overlay SHALL render a tab strip listing one label per edit target — `url`, `headers`, and `body` — with the active tab's label visually distinguished from the inactive labels. The title SHALL be target-agnostic; the tab strip SHALL carry the target identity. The hint line SHALL name the tab-switch, commit, and cancel keys.
 
 #### Scenario: Tab strip shows both targets with the active one distinguished
 
 - **WHEN** the editor is open
-- **THEN** the tab strip SHALL display the labels `url`, `body`, and `headers` in that order, and the active tab's label SHALL be rendered distinctly from the inactive labels
+- **THEN** the tab strip SHALL display the labels `url`, `headers`, and `body` in that order, and the active tab's label SHALL be rendered distinctly from the inactive labels
 
 #### Scenario: Overlay uses the shared styling
 
@@ -256,26 +256,31 @@ The editor SHALL render through the existing overlay slot, replacing the panel a
 
 ### Requirement: Switch edit target with Shift+Tab
 
-In edit mode, `Shift+Tab` SHALL activate the next tab in tab-strip order — `url`, then `body`, then `headers` — wrapping to the first tab after the last. Each tab's buffer and cursor SHALL be preserved across switches for the duration of the editing session, so switching never loses an in-progress edit. After a switch, the newly active tab SHALL render its own buffer and cursor, and the scroll offsets SHALL be adjusted so the restored cursor is within the visible region.
+In edit mode, `Shift+Tab` SHALL activate the next tab in tab-strip order — `url`, then `headers`, then `body` — wrapping to the first tab after the last. Each tab's buffer and cursor SHALL be preserved across switches for the duration of the editing session, so switching never loses an in-progress edit. After a switch, the newly active tab SHALL render its own buffer and cursor, and the scroll offsets SHALL be adjusted so the restored cursor is within the visible region.
 
 #### Scenario: Shift+Tab switches from the URL tab to the body tab
 
-- **WHEN** the editor is open with the URL tab active and the user presses `Shift+Tab`
+- **WHEN** the editor is open with the URL tab active and the user presses `Shift+Tab` twice
 - **THEN** the body tab SHALL become active and its buffer and cursor SHALL be displayed
 
-#### Scenario: Shift+Tab switches from the body tab to the headers tab
+#### Scenario: Shift+Tab switches from the URL tab to the headers tab
 
-- **WHEN** the editor is open with the body tab active and the user presses `Shift+Tab`
+- **WHEN** the editor is open with the URL tab active and the user presses `Shift+Tab`
 - **THEN** the headers tab SHALL become active and its buffer and cursor SHALL be displayed
+
+#### Scenario: Shift+Tab switches from the headers tab to the body tab
+
+- **WHEN** the editor is open with the headers tab active and the user presses `Shift+Tab`
+- **THEN** the body tab SHALL become active and its buffer and cursor SHALL be displayed
 
 #### Scenario: Switching preserves in-progress edits
 
-- **WHEN** the user modifies the URL buffer, switches to the body tab, modifies the body buffer, switches to the headers tab, modifies the headers buffer, and switches back to the URL tab
+- **WHEN** the user modifies the URL buffer, switches to the headers tab, modifies the headers buffer, switches to the body tab, modifies the body buffer, and switches back to the URL tab
 - **THEN** each tab's buffer SHALL contain the earlier modifications with the cursor where the user left it
 
 #### Scenario: Shift+Tab wraps from the last tab to the first
 
-- **WHEN** the headers tab is active and the user presses `Shift+Tab`
+- **WHEN** the body tab is active and the user presses `Shift+Tab`
 - **THEN** the URL tab SHALL become active
 
 ### Requirement: The URL tab is a single-line editor

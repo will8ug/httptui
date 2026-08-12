@@ -38,6 +38,7 @@ function makeBodyRequest(body: string = 'original-body'): ParsedRequest[] {
 async function commitDirtyEdit(stdin: { write: (data: string) => void }): Promise<void> {
   await press(stdin, 'e');
   await press(stdin, SHIFT_TAB);
+  await press(stdin, SHIFT_TAB);
   await press(stdin, 'X');
   await press(stdin, CTRL_S);
 }

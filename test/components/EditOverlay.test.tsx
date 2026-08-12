@@ -13,7 +13,7 @@ const INVERSE_OFF = '\u001b[27m';
 
 const baseProps = {
   title: 'Edit Request',
-  tabs: ['url', 'body', 'headers'] as const,
+  tabs: ['url', 'headers', 'body'] as const,
   activeTab: 'url' as const,
   buffer: '{"hello":"world"}',
   cursor: 0,

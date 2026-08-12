@@ -306,7 +306,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
     expect(result.editTarget).toBe('body');
   });
 
-  it('cycles url to body to headers and wraps back to url', () => {
+  it('cycles url to headers to body and wraps back to url', () => {
     let current = createEditState({
       editTarget: 'url',
       editBuffers: {
@@ -316,11 +316,11 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       },
     });
 
-    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'body', visibleHeight: 10, visibleWidth: 40 });
-    expect(current.editTarget).toBe('body');
-
     current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'headers', visibleHeight: 10, visibleWidth: 40 });
     expect(current.editTarget).toBe('headers');
+
+    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'body', visibleHeight: 10, visibleWidth: 40 });
+    expect(current.editTarget).toBe('body');
 
     current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'url', visibleHeight: 10, visibleWidth: 40 });
     expect(current.editTarget).toBe('url');

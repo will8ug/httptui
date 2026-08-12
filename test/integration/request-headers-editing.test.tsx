@@ -33,14 +33,13 @@ function makeHeadersRequest(
 }
 
 describe('request headers editing integration', () => {
-  it('e opens the editor and two Shift+Tab presses land on the headers tab with raw placeholders seeded', async () => {
+  it('e opens the editor and one Shift+Tab press lands on the headers tab with raw placeholders seeded', async () => {
     const requests = makeHeadersRequest();
     const variables: FileVariable[] = [{ name: 'token', value: 'secret123' }];
     const { stdin, lastFrame } = renderApp({ requests, variables });
     await delay(KEY_DELAY_MS);
 
     await press(stdin, 'e');
-    await press(stdin, SHIFT_TAB);
     await press(stdin, SHIFT_TAB);
 
     const frame = lastFrame() ?? '';
@@ -58,7 +57,6 @@ describe('request headers editing integration', () => {
     await delay(KEY_DELAY_MS);
 
     await press(stdin, 'e');
-    await press(stdin, SHIFT_TAB);
     await press(stdin, SHIFT_TAB);
 
     await press(stdin, '\u001B[4~');
@@ -81,7 +79,6 @@ describe('request headers editing integration', () => {
     await delay(KEY_DELAY_MS);
 
     await press(stdin, 'e');
-    await press(stdin, SHIFT_TAB);
     await press(stdin, SHIFT_TAB);
 
     await press(stdin, '\u001B[4~');

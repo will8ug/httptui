@@ -4,12 +4,12 @@ The in-session editor (`e`) can edit a request's URL and body, but not its heade
 
 ## What Changes
 
-- Add a third tab, `headers`, to the multi-tab request editor, appended after `body` in the tab strip.
+- Add a third tab, `headers`, to the multi-tab request editor, between `url` and `body` in the tab strip.
 - Seed the headers buffer from the request's `Record<string, string>` headers, serialized as one `Name: Value` line per header, preserving insertion order and `{{variable}}` placeholders verbatim.
 - On commit, parse the buffer back into a `Record<string, string>`: split each line on the first `:`, trim the value's leading whitespace, resolve case-insensitive duplicate keys with last-wins (mirroring `parser.addHeader`), and skip blank lines.
 - Reject the commit with a transient error, staying in edit mode, when any non-blank line lacks a `:` — no silent data loss.
 - Commit an empty headers buffer as `{}` (unlike body, which commits as `undefined`).
-- Extend `Shift+Tab` to cycle through all three tabs (`url` → `body` → `headers` → `url`), each buffer and cursor preserved across switches.
+- Extend `Shift+Tab` to cycle through all three tabs (`url` → `headers` → `body` → `url`), each buffer and cursor preserved across switches.
 - Allow `Enter` to insert newlines in the headers tab (one header per line), matching body-tab behavior; the URL tab remains single-line.
 - Include header changes in the commit's `changed` detection so `isDirty`/unsaved-changes markers fire and header edits flow through in-place save and save-as.
 - Update the `e` shortcut description from "Edit request URL or body" to mention headers.
