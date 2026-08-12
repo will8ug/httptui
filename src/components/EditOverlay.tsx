@@ -55,13 +55,16 @@ export function EditOverlay({
           {title}
         </Text>
         <Box flexDirection="row" gap={1}>
-          {tabs.map((tab) =>
-            tab === activeTab ? (
-              <Text key={tab} inverse>{tab}</Text>
-            ) : (
-              <Text key={tab} color="gray">{tab}</Text>
-            ),
-          )}
+          {tabs.map((tab, index) => (
+            <React.Fragment key={tab}>
+              {index > 0 && <Text color="gray">|</Text>}
+              {tab === activeTab ? (
+                <Text inverse>{tab}</Text>
+              ) : (
+                <Text color="gray">{tab}</Text>
+              )}
+            </React.Fragment>
+          ))}
         </Box>
         <Text>{' '}</Text>
         <Box flexDirection="column" flexGrow={1}>
