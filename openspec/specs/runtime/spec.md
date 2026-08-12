@@ -50,40 +50,8 @@ User-facing documentation SHALL state that Node.js 24 or newer is required. Spec
 - **WHEN** a user reads `README.md`
 - **THEN** the document SHALL state that Node.js 24 or newer is required to install and run httptui
 
-### Requirement: OpenSSL 3.5 security defaults documented
+### Requirement: OpenSSL 3.5 behavior documented
 The `README.md` SHALL document that Node.js 24 ships OpenSSL 3.5 with security level 2, which rejects RSA/DSA/DH keys shorter than 2048 bits and prohibits RC4 cipher suites. This affects connections to legacy servers with weak certificates.
-
-#### Scenario: README mentions OpenSSL 3.5 restrictions
-- **WHEN** a user reads the TLS Troubleshooting section of `README.md`
-- **THEN** the document SHALL mention that RSA keys shorter than 2048 bits are rejected by Node.js 24's OpenSSL 3.5 defaults
-- **AND** the document SHALL mention that RC4 cipher suites are prohibited
-
-### Requirement: OpenSSL 3.5 security defaults documented
-The README SHALL document that Node.js 24 ships OpenSSL 3.5 with security level 2, which rejects RSA/DSA/DH keys shorter than 2048 bits and prohibits RC4 cipher suites. This affects connections to legacy servers with weak certificates.
-
-#### Scenario: README mentions OpenSSL 3.5 restrictions
-- **WHEN** a user reads the TLS Troubleshooting section of `README.md`
-- **THEN** the document SHALL mention that RSA keys shorter than 2048 bits are rejected by Node.js 24's OpenSSL 3.5 defaults
-- **AND** the document SHALL mention that RC4 cipher suites are prohibited
-
-### Requirement: OpenSSL 3.5 behavior documented
-The README SHALL document that Node.js 24 ships OpenSSL 3.5 with security level 2, which rejects RSA/DSA/DH keys shorter than 2048 bits and prohibits RC4 cipher suites. This affects connections to legacy servers with weak certificates.
-
-#### Scenario: README mentions OpenSSL 3.5 restrictions
-- **WHEN** a user reads the TLS Troubleshooting section of `README.md`
-- **THEN** the document SHALL mention that RSA keys shorter than 2048 bits are rejected by Node.js 24's OpenSSL 3.5 defaults
-- **AND** the document SHALL mention that RC4 cipher suites are prohibited
-
-### Requirement: OpenSSL 3.5 behavior documented
-The README SHALL document that Node.js 24 ships OpenSSL 3.5 with security level 2, which rejects RSA/DSA/DH keys shorter than 2048 bits and prohibits RC4 cipher suites. This affects connections to legacy servers with weak certificates.
-
-#### Scenario: README mentions OpenSSL 3.5 restrictions
-- **WHEN** a user reads the TLS Troubleshooting section of `README.md`
-- **THEN** the document SHALL mention that RSA keys shorter than 2048 bits are rejected by Node.js 24's OpenSSL 3.5 defaults
-- **AND** the document SHALL mention that RC4 cipher suites are prohibited
-
-### Requirement: OpenSSL 3.5 behavior documented
-The README SHALL document that Node.js 24 ships OpenSSL 3.5 with security level 2, which rejects RSA/DSA/DH keys shorter than 2048 bits and prohibits RC4 cipher suites. This affects connections to legacy servers with weak certificates.
 
 #### Scenario: README mentions OpenSSL 3.5 restrictions
 - **WHEN** a user reads the TLS Troubleshooting section of `README.md`
