@@ -112,7 +112,7 @@ describe('SHORTCUTS registry — edit-request entry', () => {
     expect(entry?.description).toBe('Edit request');
     expect(entry?.showInBar).toBe(false);
     expect(entry?.showInHelp).toBe(true);
-    expect(entry?.group).toBe('request');
+    expect(entry?.group).toBe('edit');
   });
 
   it('does not appear in the status bar', () => {
@@ -166,8 +166,8 @@ describe('SHORTCUTS registry — edit group', () => {
   });
 
   it('arranges help groups in two columns', () => {
-    expect(HELP_COLUMN_GROUPS[0]).toEqual(['general', 'navigation', 'edit']);
-    expect(HELP_COLUMN_GROUPS[1]).toEqual(['request', 'display', 'search']);
+    expect(HELP_COLUMN_GROUPS[0]).toEqual(['general', 'navigation', 'search']);
+    expect(HELP_COLUMN_GROUPS[1]).toEqual(['request', 'display', 'edit']);
   });
 
   it('none of the edit shortcuts appear in the status bar', () => {

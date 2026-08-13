@@ -127,13 +127,13 @@ The four edge-jump entries SHALL be rendered in the help overlay alongside the o
 
 ### Requirement: Help overlay renders shortcut groups in two columns
 
-The HelpOverlay component SHALL render shortcut groups in a two-column layout. The left column SHALL contain the "General", "Navigation", and "Edit" groups (in that order). The right column SHALL contain the "Request", "Display", and "Search" groups (in that order).
+The HelpOverlay component SHALL render shortcut groups in a two-column layout. The left column SHALL contain the "General", "Navigation", and "Search" groups (in that order). The right column SHALL contain the "Request", "Display", and "Edit" groups (in that order).
 
 #### Scenario: Two-column layout renders with correct group placement
 
 - **WHEN** the help overlay is visible
-- **THEN** the left column displays the "General" group header followed by its shortcuts, then the "Navigation" group header followed by its shortcuts, then the "Edit" group header followed by its shortcuts
-- **AND** the right column displays the "Request" group header followed by its shortcuts, then the "Display" group header followed by its shortcuts, then the "Search" group header followed by its shortcuts
+- **THEN** the left column displays the "General" group header followed by its shortcuts, then the "Navigation" group header followed by its shortcuts, then the "Search" group header followed by its shortcuts
+- **AND** the right column displays the "Request" group header followed by its shortcuts, then the "Display" group header followed by its shortcuts, then the "Edit" group header followed by its shortcuts
 
 #### Scenario: Columns render side-by-side reducing overall height
 
@@ -148,8 +148,8 @@ A `HELP_COLUMN_GROUPS` constant SHALL be exported from `src/core/shortcuts.ts` d
 
 - **WHEN** a developer imports `HELP_COLUMN_GROUPS` from `src/core/shortcuts.ts`
 - **THEN** it SHALL be a readonly array with exactly 2 elements
-- **AND** the first element SHALL be `['general', 'navigation', 'edit']`
-- **AND** the second element SHALL be `['request', 'display', 'search']`
+- **AND** the first element SHALL be `['general', 'navigation', 'search']`
+- **AND** the second element SHALL be `['request', 'display', 'edit']`
 
 ### Requirement: Help overlay width accommodates two columns
 
@@ -211,11 +211,11 @@ The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an entry for the 
 - **THEN** the `S` entry SHALL appear with key `S` in yellow (padded to 8 characters) and description `Save as .http file` in white, within the Request group
 
 ### Requirement: Edit request shortcut in registry
-The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an entry for the request-edit command with the following properties: `key: 'e'`, `label: ''` (empty, consistent with help-only entries like `o`, `R`, and `S`), `description: 'Edit request URL or body'`, `showInBar: false`, `showInHelp: true`, and `group: 'request'`.
+The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an entry for the request-edit command with the following properties: `key: 'e'`, `label: ''` (empty, consistent with help-only entries like `o`, `R`, and `S`), `description: 'Edit request URL or body'`, `showInBar: false`, `showInHelp: true`, and `group: 'edit'`.
 
 #### Scenario: Registry contains e entry
 - **WHEN** the `SHORTCUTS` array is inspected
-- **THEN** it SHALL contain an entry with `key` equal to `'e'`, `description` equal to `'Edit request URL or body'`, `showInBar` equal to `false`, `showInHelp` equal to `true`, and `group` equal to `'request'`
+- **THEN** it SHALL contain an entry with `key` equal to `'e'`, `description` equal to `'Edit request URL or body'`, `showInBar` equal to `false`, `showInHelp` equal to `true`, and `group` equal to `'edit'`
 
 #### Scenario: Edit shortcut not in status bar
 - **WHEN** the StatusBar component renders
@@ -223,10 +223,10 @@ The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an entry for the 
 
 #### Scenario: Edit shortcut in help overlay
 - **WHEN** the help overlay is visible
-- **THEN** the `e` entry SHALL appear with key `e` in yellow (padded to 8 characters) and description `Edit request URL or body` in white, within the Request group
+- **THEN** the `e` entry SHALL appear with key `e` in yellow (padded to 8 characters) and description `Edit request URL or body` in white, within the Edit group
 
 ### Requirement: Edit shortcut group in registry
-The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an `edit` group with three entries corresponding to the existing body-editor keybindings: `Ctrl+S` (save and close editor), `Ctrl+A` (jump to start of line), and `Ctrl+E` (jump to end of line). Each entry SHALL have `showInBar: false`, `showInHelp: true`, and `group: 'edit'`. The `ShortcutGroup` union and `SHORTCUT_GROUP_LABELS` SHALL include `edit` with the label `'Edit'`.
+The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an `edit` group with four entries: `e` (edit request), `Ctrl+S` (save and close editor), `Ctrl+A` (jump to start of line), and `Ctrl+E` (jump to end of line). Each entry SHALL have `showInBar: false`, `showInHelp: true`, and `group: 'edit'`. The `ShortcutGroup` union and `SHORTCUT_GROUP_LABELS` SHALL include `edit` with the label `'Edit'`.
 
 #### Scenario: Registry contains Ctrl+S entry
 - **WHEN** the `SHORTCUTS` array is inspected
