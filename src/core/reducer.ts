@@ -775,6 +775,7 @@ export function reducer(state: AppState, action: Action): AppState {
         editBuffers: { body: { text: '', cursor: 0 }, headers: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
         editScrollOffset: 0,
         editHorizontalOffset: 0,
+        editEscapeArmedAt: null,
         transientMessage: changed ? 'Request updated' : null,
         transientError: null,
       };
@@ -788,6 +789,17 @@ export function reducer(state: AppState, action: Action): AppState {
         editBuffers: { body: { text: '', cursor: 0 }, headers: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
         editScrollOffset: 0,
         editHorizontalOffset: 0,
+        editEscapeArmedAt: null,
+        transientMessage: null,
+        transientError: null,
+      };
+
+    case 'ARM_EDIT_CANCEL':
+      return {
+        ...state,
+        editEscapeArmedAt: action.now,
+        transientMessage: 'Press Esc again to discard changes',
+        transientError: null,
       };
 
     case 'REQUEST_DISCARD_CONFIRM':
@@ -880,6 +892,7 @@ export function createInitialState(props: AppProps): AppState {
     editBuffers: { body: { text: '', cursor: 0 }, headers: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
     editScrollOffset: 0,
     editHorizontalOffset: 0,
+    editEscapeArmedAt: null,
     pendingDiscardAction: null,
   };
 }

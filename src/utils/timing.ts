@@ -1,1 +1,2 @@
 export const TRANSIENT_CLEAR_MS = 2000;
+export const EDIT_CANCEL_WINDOW_MS = 2000;

@@ -91,6 +91,7 @@ describe('request headers editing integration', () => {
     expect(frame).toContain('Cannot save: header line');
 
     await press(stdin, ESC);
+    await press(stdin, ESC);
 
     expect(lastFrame() ?? '').not.toContain('Edit Request');
     expect(lastFrame() ?? '').not.toContain('Request updated');
