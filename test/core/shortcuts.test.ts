@@ -105,11 +105,11 @@ describe('SHORTCUTS registry — save-as-http entry', () => {
 });
 
 describe('SHORTCUTS registry — edit-request entry', () => {
-  it('contains the `e` entry (edit request URL, headers, or body)', () => {
+  it('contains the `e` entry (edit request)', () => {
     const entry = SHORTCUTS.find((s) => s.key === 'e');
     expect(entry).toBeDefined();
     expect(entry?.label).toBe('');
-    expect(entry?.description).toBe('Edit request URL, headers, or body');
+    expect(entry?.description).toBe('Edit request');
     expect(entry?.showInBar).toBe(false);
     expect(entry?.showInHelp).toBe(true);
     expect(entry?.group).toBe('request');
