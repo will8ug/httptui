@@ -113,7 +113,6 @@ httptui api.http -E Staging
 | `Enter` | Send selected request |
 | `R` | Reload file from disk |
 | `o` | Open a different .http file |
-| `e` | Edit request URL, headers, or body |
 | `E` | Switch environment |
 | `S` | Save as .http file |
 
@@ -139,6 +138,7 @@ httptui api.http -E Staging
 
 | Key | Action                             |
 |-----|------------------------------------|
+| `e` | Edit request URL, headers, or body |
 | `Shift+Tab` | Switch editor tab |
 | `Ctrl+S` | Commit edit or save to source file |
 | `Ctrl+A` | Jump to start of line              |
