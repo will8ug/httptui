@@ -97,6 +97,7 @@ describe('request body editing integration', () => {
     await press(stdin, SHIFT_TAB);
     await press(stdin, 'X');
     await press(stdin, ESC);
+    await press(stdin, ESC);
 
     expect(lastFrame() ?? '').not.toContain('Edit Request');
 
@@ -107,6 +108,52 @@ describe('request body editing integration', () => {
     expect(frame).toContain('Edit Request');
     expect(frame).toContain('original-body');
     expect(frame).not.toContain('original-bodyX');
+  });
+
+  it('first Escape with uncommitted changes shows a hint and keeps the editor open', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeBodyRequest('original-body') });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'e');
+    await press(stdin, SHIFT_TAB);
+    await press(stdin, SHIFT_TAB);
+    await press(stdin, 'X');
+    await press(stdin, ESC);
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('Edit Request');
+    expect(frame).toContain('Press Esc again to discard changes');
+  });
+
+  it('Escape with no changes closes immediately without a hint', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeBodyRequest('original-body') });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'e');
+    await press(stdin, ESC);
+
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('Edit Request');
+    expect(frame).not.toContain('Press Esc again to discard changes');
+  });
+
+  it('Escape after the window expires re-arms and keeps the editor open', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeBodyRequest('original-body') });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'e');
+    await press(stdin, SHIFT_TAB);
+    await press(stdin, SHIFT_TAB);
+    await press(stdin, 'X');
+    await press(stdin, ESC);
+
+    await delay(2200);
+
+    await press(stdin, ESC);
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('Edit Request');
+    expect(frame).toContain('Press Esc again to discard changes');
   });
 
   it('Enter inserts a newline and keeps the overlay open', async () => {

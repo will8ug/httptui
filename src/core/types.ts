@@ -163,6 +163,7 @@ export interface AppState {
   editBuffers: Record<EditTarget, { text: string; cursor: number }>;
   editScrollOffset: number;
   editHorizontalOffset: number;
+  editEscapeArmedAt: number | null;
   pendingDiscardAction: PendingDiscardAction | null;
   certificates?: Record<string, CertEntry>;
 }
@@ -227,6 +228,7 @@ export type Action =
   | { type: 'SWITCH_EDIT_TAB'; target: EditTarget; visibleHeight: number; visibleWidth: number }
   | { type: 'COMMIT_EDIT' }
   | { type: 'CANCEL_EDIT' }
+  | { type: 'ARM_EDIT_CANCEL'; now: number }
   | { type: 'REQUEST_DISCARD_CONFIRM'; action: PendingDiscardAction }
   | { type: 'CONFIRM_DISCARD' }
   | { type: 'CANCEL_DISCARD' }

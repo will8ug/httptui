@@ -32,7 +32,7 @@ import { resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
 import { loadConfig } from './core/config';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getEditorContentWidth, getEditorVisibleHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
-import { TRANSIENT_CLEAR_MS } from './utils/timing';
+import { EDIT_CANCEL_WINDOW_MS, TRANSIENT_CLEAR_MS } from './utils/timing';
 import { hasUnsavedChanges, resolveRequestDetails } from './utils/request';
 import { getResponseTotalLines } from './utils/scroll';
 
@@ -344,7 +344,29 @@ export function App(props: AppProps): React.ReactElement {
 
     if (state.mode === 'edit') {
       if (key.escape) {
-        dispatch({ type: 'CANCEL_EDIT' });
+        if (!selectedRequest) {
+          dispatch({ type: 'CANCEL_EDIT' });
+          return;
+        }
+
+        const isEditorDirty =
+          state.editBuffers.url.text !== selectedRequest.url ||
+          state.editBuffers.body.text !== (selectedRequest.body ?? '') ||
+          state.editBuffers.headers.text !== headersToText(selectedRequest.headers);
+
+        if (!isEditorDirty) {
+          dispatch({ type: 'CANCEL_EDIT' });
+          return;
+        }
+
+        if (
+          state.editEscapeArmedAt !== null &&
+          Date.now() - state.editEscapeArmedAt <= EDIT_CANCEL_WINDOW_MS
+        ) {
+          dispatch({ type: 'CANCEL_EDIT' });
+        } else {
+          dispatch({ type: 'ARM_EDIT_CANCEL', now: Date.now() });
+        }
         return;
       }
 
