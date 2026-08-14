@@ -1,8 +1,10 @@
+# Spec: File Load
+
 ## Purpose
 
 Open a different `.http`, `.rest`, Postman collection, or OpenAPI file from within the running TUI, replacing the currently loaded requests, variables, and file path without restarting the application.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Enter file-load mode with the `o` key
 
