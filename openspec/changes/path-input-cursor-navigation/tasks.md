@@ -17,8 +17,8 @@
 
 ## 3. Input handling
 
-- [ ] 3.1 Import `insertText`, `deleteBackward`, `moveLeft`, `moveRight` from `./core/editor` in `src/app.tsx`
-- [ ] 3.2 In the `saveLoad` branch: build a local `{ text, cursor }` buffer, handle `←`/`→` via `moveLeft`/`moveRight` dispatching `MOVE_SAVE_CURSOR`, `Backspace` via `deleteBackward` dispatching `UPDATE_SAVE_INPUT`, and printable input via `insertText` dispatching `UPDATE_SAVE_INPUT`
+- [ ] 3.1 Import `insertText`, `deleteBackward`, `deleteForward`, `moveLeft`, `moveRight`, `moveLineStart`, `moveLineEnd` from `./core/editor` in `src/app.tsx`
+- [ ] 3.2 In the `saveLoad` branch: build a local `{ text, cursor }` buffer, handle `←`/`→` via `moveLeft`/`moveRight` and `Home`/`End` (and `Ctrl+A`/`Ctrl+E`) via `moveLineStart`/`moveLineEnd` dispatching `MOVE_SAVE_CURSOR`, `Backspace` via `deleteBackward` and `Delete` via `deleteForward` dispatching `UPDATE_SAVE_INPUT`, and printable input via `insertText` dispatching `UPDATE_SAVE_INPUT`
 - [ ] 3.3 In the `fileLoad` branch: mirror 3.2 with `fileLoadInput`/`fileLoadCursor` and `MOVE_FILE_LOAD_CURSOR`/`UPDATE_FILE_LOAD_INPUT`
 
 ## 4. Overlay rendering
@@ -32,7 +32,7 @@
 - [ ] 5.1 Update `test/components/SaveOverlay.test.tsx` and `test/components/FileLoadOverlay.test.tsx` to pass `cursor`; add cases for inverted char mid-string and inverted trailing space at end
 - [ ] 5.2 Update `test/core/save-operations.test.ts`: `UPDATE_SAVE_INPUT` gains `cursor`; `ENTER_SAVE` asserts `saveCursor` equals the default path length; add `MOVE_SAVE_CURSOR` cases including "does not clear `saveError`"
 - [ ] 5.3 Update `test/core/file-load-operations.test.ts`: `UPDATE_FILE_LOAD_INPUT` gains `cursor`; `ENTER_FILE_LOAD` asserts `fileLoadCursor` is `0`; add `MOVE_FILE_LOAD_CURSOR` cases
-- [ ] 5.4 Add integration coverage for `←`/`→` and cursor-aware insert/backspace in `test/integration/save-as-http.test.tsx` and `test/integration/file-load.test.tsx`
+- [ ] 5.4 Add integration coverage for `←`/`→`/`Home`/`End` and cursor-aware insert/backspace/delete in `test/integration/save-as-http.test.tsx` and `test/integration/file-load.test.tsx`
 
 ## 6. Verification
 

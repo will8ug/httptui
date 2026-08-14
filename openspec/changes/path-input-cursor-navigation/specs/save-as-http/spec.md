@@ -2,7 +2,7 @@
 
 ### Requirement: Save overlay path input and confirmation
 
-The save overlay SHALL display the current input value and allow the user to modify it via keyboard input. The path input SHALL behave as a single-line editor: printable characters SHALL be inserted at the cursor, `Backspace` SHALL delete the character before the cursor, and `←`/`→` SHALL move the cursor one character, clamping at the input bounds. The cursor SHALL be rendered by inverting the cell at the cursor position, and by inverting a trailing space when the cursor is at the end of the input. The user SHALL press `Enter` to confirm the save or `Escape` to cancel. The entered path MAY be absolute or relative. If relative, the system SHALL resolve it against the directory of the currently loaded file (`path.dirname(state.filePath)`). If absolute, the system SHALL use it directly.
+The save overlay SHALL display the current input value and allow the user to modify it via keyboard input. The path input SHALL behave as a single-line editor: printable characters SHALL be inserted at the cursor, `Backspace` SHALL delete the character before the cursor, `Delete` SHALL delete the character after the cursor, and `←`/`→` SHALL move the cursor one character, clamping at the input bounds. `Home` SHALL move the cursor to the start of the input and `End` SHALL move it to the end, with `Ctrl+A` and `Ctrl+E` as aliases. The cursor SHALL be rendered by inverting the cell at the cursor position, and by inverting a trailing space when the cursor is at the end of the input. The user SHALL press `Enter` to confirm the save or `Escape` to cancel. The entered path MAY be absolute or relative. If relative, the system SHALL resolve it against the directory of the currently loaded file (`path.dirname(state.filePath)`). If absolute, the system SHALL use it directly.
 
 #### Scenario: Confirm save with an absolute path
 - **WHEN** the user types `/tmp/output.http` and presses `Enter`
@@ -40,9 +40,29 @@ The save overlay SHALL display the current input value and allow the user to mod
 - **WHEN** the save input is `api.http` with the cursor at offset 8 and the user presses `→`
 - **THEN** the cursor SHALL remain at offset 8
 
+#### Scenario: Delete removes the character after the cursor
+- **WHEN** the save input is `api.http` with the cursor at offset 0 and the user presses `Delete`
+- **THEN** the input SHALL become `pi.http` and the cursor SHALL remain at offset 0
+
+#### Scenario: Delete at the end of the input is a no-op
+- **WHEN** the save input is `api.http` with the cursor at offset 8 and the user presses `Delete`
+- **THEN** the input SHALL remain `api.http` and the cursor SHALL remain at offset 8
+
+#### Scenario: Home moves the cursor to the start of the input
+- **WHEN** the save input is `api.http` with the cursor at offset 4 and the user presses `Home`
+- **THEN** the cursor SHALL be at offset 0 and the input SHALL be unchanged
+
+#### Scenario: End moves the cursor to the end of the input
+- **WHEN** the save input is `api.http` with the cursor at offset 4 and the user presses `End`
+- **THEN** the cursor SHALL be at offset 8 and the input SHALL be unchanged
+
+#### Scenario: Ctrl+A and Ctrl+E alias Home and End
+- **WHEN** the save input is `api.http` with the cursor at offset 4 and the user presses `Ctrl+A` then `Ctrl+E`
+- **THEN** the cursor SHALL move to offset 0 then to offset 8, with no `a` or `e` character inserted
+
 ### Requirement: Save error handling
 
-If the write fails (e.g., permission denied, invalid path), the system SHALL display an error message in the save overlay (not a transient message) and SHALL keep the overlay open so the user can correct the path and retry. The error SHALL be cleared when the user modifies the input text (types or deletes a character). Moving the cursor with `←`/`→` SHALL NOT clear the error.
+If the write fails (e.g., permission denied, invalid path), the system SHALL display an error message in the save overlay (not a transient message) and SHALL keep the overlay open so the user can correct the path and retry. The error SHALL be cleared when the user modifies the input text (types, or deletes a character with `Backspace` or `Delete`). Moving the cursor with `←`/`→`/`Home`/`End` SHALL NOT clear the error.
 
 #### Scenario: Write fails with permission error
 - **WHEN** the user confirms a path that the process cannot write to (e.g., `/root/api.http` without permissions)

@@ -8,8 +8,10 @@ The save-as (`S`) and file-load (`o`) overlays are single-line path inputs with 
   - `←` / `→` move the cursor one character (clamped to the input bounds).
   - Typing inserts characters at the cursor instead of appending to the end.
   - `Backspace` deletes the character before the cursor instead of always the last character.
+  - `Delete` deletes the character after the cursor.
+  - `Home` / `Ctrl+A` moves the cursor to the start of the input; `End` / `Ctrl+E` moves it to the end.
   - The cursor is rendered by inverting the cell at the cursor position (an inverted trailing space when the cursor is at the end), matching the editor overlay.
-- Cursor movement (`←` / `→`) does **not** clear the save error; only text edits (insert/backspace) clear it, preserving the existing "error clears on input modification" contract.
+- Cursor movement (`←` / `→` / `Home` / `End`) does **not** clear the save error; only text edits (insert/backspace/delete) clear it, preserving the existing "error clears on input modification" contract.
 - `AppState` gains two cursor fields (`saveCursor`, `fileLoadCursor`); the existing input actions gain a cursor payload, and two cursor-move actions are added.
 - Search mode and all other overlays are unchanged.
 
@@ -19,7 +21,7 @@ The save-as (`S`) and file-load (`o`) overlays are single-line path inputs with 
 - `file-load`: the open-file overlay (`o`) path input — entry, cancel, load, error handling, and single-line cursor navigation.
 
 ### Modified Capabilities
-- `save-as-http`: the save overlay path input gains single-line cursor navigation (left/right movement, insert-at-cursor, backspace-before-cursor, inverted cursor rendering, error-clearing rules).
+- `save-as-http`: the save overlay path input gains single-line cursor navigation (left/right/home/end movement, insert-at-cursor, backspace/delete, inverted cursor rendering, error-clearing rules).
 
 ## Impact
 

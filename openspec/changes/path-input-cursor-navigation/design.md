@@ -10,7 +10,6 @@ The save-as (`S`) and file-load (`o`) overlays are pure presentational component
 - Keep the "error clears on input modification" contract, where cursor movement is not a modification.
 
 **Non-Goals:**
-- No `Home`/`End` (`Ctrl+A`/`Ctrl+E`) or forward `Delete` for path inputs — only `←`/`→` plus cursor-aware insert/backspace (required for coherence).
 - No newline stripping; path inputs remain single-line in practice and current raw-append behavior is preserved.
 - Search mode input is untouched.
 - File-load error behavior is unchanged (its error persists until cancel/reload today, unlike save; not in scope).
@@ -19,7 +18,7 @@ The save-as (`S`) and file-load (`o`) overlays are pure presentational component
 
 ### 1. Reuse `editor.ts` granular helpers, not `EditOverlay` or `applyEditOp`
 
-`editor.ts` is a pure-logic module with no React. We import `insertText`, `deleteBackward`, `moveLeft`, `moveRight` directly into the `app.tsx` handlers and operate on a locally-built `{ text, cursor }` buffer.
+`editor.ts` is a pure-logic module with no React. We import `insertText`, `deleteBackward`, `deleteForward`, `moveLeft`, `moveRight`, `moveLineStart`, `moveLineEnd` directly into the `app.tsx` handlers and operate on a locally-built `{ text, cursor }` buffer.
 
 - **Chosen**: compute in `app.tsx` (mirroring the existing save/fileLoad pattern where the handler already computes `slice`/append), then dispatch the result.
 - **Alternative A** — reuse `applyEditOp` via a new `EDIT_KEY`-style action in the reducer. Rejected: `EditOp` carries multi-line ops (`up`/`down`/`lineStart`/`lineEnd`) and `EDIT_KEY` also threads scroll-clamping (`visibleHeight`/`visibleWidth`) that single-line inputs don't need.
@@ -36,10 +35,10 @@ Invariant: `0 <= cursor <= text.length`. All mutations go through `editor.ts` he
 
 ### 3. Separate text-edit and cursor-move actions per field
 
-- `UPDATE_SAVE_INPUT { value, cursor }` and `UPDATE_FILE_LOAD_INPUT { value, cursor }` — text edits (insert/backspace), extended from the existing value-only actions.
-- New `MOVE_SAVE_CURSOR { cursor }` and `MOVE_FILE_LOAD_CURSOR { cursor }` — cursor-only movement.
+- `UPDATE_SAVE_INPUT { value, cursor }` and `UPDATE_FILE_LOAD_INPUT { value, cursor }` — text edits (insert/backspace/delete), extended from the existing value-only actions.
+- New `MOVE_SAVE_CURSOR { cursor }` and `MOVE_FILE_LOAD_CURSOR { cursor }` — cursor-only movement (`←`/`→`/`Home`/`End`).
 
-**Rationale**: `UPDATE_SAVE_INPUT` clears `saveError` (the existing "error clears on input change" contract), but `MOVE_SAVE_CURSOR` must not. Keeping them as distinct actions makes that contract explicit rather than inferred. The file-load side is symmetric even though its `UPDATE_FILE_LOAD_INPUT` never cleared errors.
+**Rationale**: `UPDATE_SAVE_INPUT` clears `saveError` (the existing "error clears on input change" contract), but `MOVE_SAVE_CURSOR` must not. Keeping them as distinct actions makes that contract explicit rather than inferred. The file-load side is symmetric even though its `UPDATE_FILE_LOAD_INPUT` never cleared errors. `Delete` maps onto `UPDATE_*_INPUT` (a text edit, so it clears the error), while `Home`/`End` map onto `MOVE_*_CURSOR` (cursor-only, so they do not).
 
 **Alternative** — one action per field where the reducer clears the error only when `value` changed. Rejected: implicit and harder to reason about.
 

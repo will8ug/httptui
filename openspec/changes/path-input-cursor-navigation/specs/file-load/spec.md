@@ -18,7 +18,7 @@ Pressing `o` in normal mode SHALL enter file-load mode, displaying the file-load
 
 ### Requirement: File-load overlay path input is a single-line editor
 
-The file-load overlay SHALL display the current input value and route all keystrokes to the path input. The path input SHALL behave as a single-line editor: printable characters SHALL be inserted at the cursor, `Backspace` SHALL delete the character before the cursor, and `←`/`→` SHALL move the cursor one character, clamping at the input bounds. The cursor SHALL be rendered by inverting the cell at the cursor position, and by inverting a trailing space when the cursor is at the end of the input.
+The file-load overlay SHALL display the current input value and route all keystrokes to the path input. The path input SHALL behave as a single-line editor: printable characters SHALL be inserted at the cursor, `Backspace` SHALL delete the character before the cursor, `Delete` SHALL delete the character after the cursor, and `←`/`→` SHALL move the cursor one character, clamping at the input bounds. `Home` SHALL move the cursor to the start of the input and `End` SHALL move it to the end, with `Ctrl+A` and `Ctrl+E` as aliases. The cursor SHALL be rendered by inverting the cell at the cursor position, and by inverting a trailing space when the cursor is at the end of the input.
 
 #### Scenario: Typing a character inserts it at the cursor
 - **WHEN** the input is `api.http` with the cursor at offset 0 and the user types `x`
@@ -47,6 +47,26 @@ The file-load overlay SHALL display the current input value and route all keystr
 #### Scenario: Cursor is rendered as an inverted trailing space at the end
 - **WHEN** the input is `api.http` with the cursor at offset 8
 - **THEN** an inverted space SHALL be rendered after the final `p`
+
+#### Scenario: Delete removes the character after the cursor
+- **WHEN** the input is `api.http` with the cursor at offset 0 and the user presses `Delete`
+- **THEN** the input SHALL become `pi.http` and the cursor SHALL remain at offset 0
+
+#### Scenario: Delete at the end of the input is a no-op
+- **WHEN** the input is `api.http` with the cursor at offset 8 and the user presses `Delete`
+- **THEN** the input SHALL remain `api.http` and the cursor SHALL remain at offset 8
+
+#### Scenario: Home moves the cursor to the start of the input
+- **WHEN** the input is `api.http` with the cursor at offset 4 and the user presses `Home`
+- **THEN** the cursor SHALL be at offset 0 and the input SHALL be unchanged
+
+#### Scenario: End moves the cursor to the end of the input
+- **WHEN** the input is `api.http` with the cursor at offset 4 and the user presses `End`
+- **THEN** the cursor SHALL be at offset 8 and the input SHALL be unchanged
+
+#### Scenario: Ctrl+A and Ctrl+E alias Home and End
+- **WHEN** the input is `api.http` with the cursor at offset 4 and the user presses `Ctrl+A` then `Ctrl+E`
+- **THEN** the cursor SHALL move to offset 0 then to offset 8, with no `a` or `e` character inserted
 
 ### Requirement: Confirm file load with Enter
 
