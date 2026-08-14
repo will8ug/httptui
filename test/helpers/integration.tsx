@@ -20,6 +20,8 @@ export const RIGHT_ARROW = '\u001B[C';
 export const HOME = '\u001B[H';
 export const END = '\u001B[F';
 export const DELETE = '\u001B[3~';
+export const CTRL_A = '\u0001';
+export const CTRL_E = '\u0005';
 
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

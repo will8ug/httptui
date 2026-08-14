@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 
 import {
   BACKSPACE,
+  CTRL_A,
+  CTRL_E,
   DELETE,
   END,
   ENTER,
@@ -146,6 +148,22 @@ describe('file-load cursor navigation', () => {
 
     await press(stdin, END);
     await press(stdin, 'Y');
+    expect(lastFrame() ?? '').toContain('XabcY');
+  });
+
+  it('Ctrl+A and Ctrl+E alias Home and End', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeShortUrlRequests(1) });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'o');
+    for (const char of 'abc') {
+      await press(stdin, char);
+    }
+    await press(stdin, CTRL_A);
+    await press(stdin, 'X');
+    await press(stdin, CTRL_E);
+    await press(stdin, 'Y');
+
     expect(lastFrame() ?? '').toContain('XabcY');
   });
 

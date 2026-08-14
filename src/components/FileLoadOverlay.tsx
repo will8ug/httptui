@@ -29,9 +29,11 @@ export function FileLoadOverlay({ value, error, cursor }: FileLoadOverlayProps):
         <Text>{' '}</Text>
         <Box>
           <Text color="gray">File: </Text>
-          <Text color="white">{value.slice(0, cursor)}</Text>
-          <Text inverse>{value[cursor] ?? ' '}</Text>
-          <Text color="white">{value.slice(cursor + 1)}</Text>
+          <Text color="white">
+            <Text>{value.slice(0, cursor)}</Text>
+            <Text inverse>{value[cursor] ?? ' '}</Text>
+            <Text>{value.slice(cursor + 1)}</Text>
+          </Text>
         </Box>
         {error ? (
           <Box>
