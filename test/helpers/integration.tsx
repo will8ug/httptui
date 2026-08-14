@@ -17,6 +17,9 @@ export const UP_ARROW = '\u001B[A';
 export const DOWN_ARROW = '\u001B[B';
 export const LEFT_ARROW = '\u001B[D';
 export const RIGHT_ARROW = '\u001B[C';
+export const HOME = '\u001B[H';
+export const END = '\u001B[F';
+export const DELETE = '\u001B[3~';
 
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

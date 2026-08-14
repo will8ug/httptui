@@ -16,6 +16,7 @@ import { RequestDetailsView } from './components/RequestDetailsView';
 import { ResponseView } from './components/ResponseView';
 import { StatusBar } from './components/StatusBar';
 import { EnvSelectOverlay } from './components/EnvSelectOverlay';
+import { deleteBackward, deleteForward, insertText, moveLeft, moveLineEnd, moveLineStart, moveRight } from './core/editor';
 import { executeRequest, isErrorInfo, toErrorInfo } from './core/executor';
 import type { CertConfig } from './core/executor';
 import { formatResponseBody } from './core/formatter';
@@ -197,13 +198,47 @@ export function App(props: AppProps): React.ReactElement {
         return;
       }
 
+      const fileLoadBuffer = { text: state.fileLoadInput, cursor: state.fileLoadCursor };
+
+      if (key.home || (key.ctrl && input === 'a')) {
+        const moved = moveLineStart(fileLoadBuffer);
+        dispatch({ type: 'MOVE_FILE_LOAD_CURSOR', cursor: moved.cursor });
+        return;
+      }
+
+      if (key.end || (key.ctrl && input === 'e')) {
+        const moved = moveLineEnd(fileLoadBuffer);
+        dispatch({ type: 'MOVE_FILE_LOAD_CURSOR', cursor: moved.cursor });
+        return;
+      }
+
       if (key.backspace) {
-        dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: state.fileLoadInput.slice(0, -1) });
+        const moved = deleteBackward(fileLoadBuffer);
+        dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: moved.text, cursor: moved.cursor });
+        return;
+      }
+
+      if (key.delete) {
+        const moved = deleteForward(fileLoadBuffer);
+        dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: moved.text, cursor: moved.cursor });
+        return;
+      }
+
+      if (key.leftArrow) {
+        const moved = moveLeft(fileLoadBuffer);
+        dispatch({ type: 'MOVE_FILE_LOAD_CURSOR', cursor: moved.cursor });
+        return;
+      }
+
+      if (key.rightArrow) {
+        const moved = moveRight(fileLoadBuffer);
+        dispatch({ type: 'MOVE_FILE_LOAD_CURSOR', cursor: moved.cursor });
         return;
       }
 
       if (input && !key.ctrl && !key.meta) {
-        dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: state.fileLoadInput + input });
+        const moved = insertText(fileLoadBuffer, input);
+        dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: moved.text, cursor: moved.cursor });
       }
 
       return;
@@ -330,13 +365,47 @@ export function App(props: AppProps): React.ReactElement {
         return;
       }
 
+      const saveBuffer = { text: state.saveInput, cursor: state.saveCursor };
+
+      if (key.home || (key.ctrl && input === 'a')) {
+        const moved = moveLineStart(saveBuffer);
+        dispatch({ type: 'MOVE_SAVE_CURSOR', cursor: moved.cursor });
+        return;
+      }
+
+      if (key.end || (key.ctrl && input === 'e')) {
+        const moved = moveLineEnd(saveBuffer);
+        dispatch({ type: 'MOVE_SAVE_CURSOR', cursor: moved.cursor });
+        return;
+      }
+
       if (key.backspace) {
-        dispatch({ type: 'UPDATE_SAVE_INPUT', value: state.saveInput.slice(0, -1) });
+        const moved = deleteBackward(saveBuffer);
+        dispatch({ type: 'UPDATE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
+        return;
+      }
+
+      if (key.delete) {
+        const moved = deleteForward(saveBuffer);
+        dispatch({ type: 'UPDATE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
+        return;
+      }
+
+      if (key.leftArrow) {
+        const moved = moveLeft(saveBuffer);
+        dispatch({ type: 'MOVE_SAVE_CURSOR', cursor: moved.cursor });
+        return;
+      }
+
+      if (key.rightArrow) {
+        const moved = moveRight(saveBuffer);
+        dispatch({ type: 'MOVE_SAVE_CURSOR', cursor: moved.cursor });
         return;
       }
 
       if (input && !key.ctrl && !key.meta) {
-        dispatch({ type: 'UPDATE_SAVE_INPUT', value: state.saveInput + input });
+        const moved = insertText(saveBuffer, input);
+        dispatch({ type: 'UPDATE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
       }
 
       return;
@@ -774,8 +843,8 @@ return (
       }
       overlay={
         state.showHelp ? <HelpOverlay visible={state.showHelp} /> :
-        state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} error={state.fileLoadError} /> :
-        state.mode === 'saveLoad' ? <SaveOverlay value={state.saveInput} error={state.saveError} /> :
+        state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} cursor={state.fileLoadCursor} error={state.fileLoadError} /> :
+        state.mode === 'saveLoad' ? <SaveOverlay value={state.saveInput} cursor={state.saveCursor} error={state.saveError} /> :
         state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} scrollOffset={state.envSelectScrollOffset} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
         state.mode === 'edit' ? <EditOverlay title="Edit Request" tabs={EDIT_TAB_ORDER} activeTab={state.editTarget} buffer={state.editBuffers[state.editTarget].text} cursor={state.editBuffers[state.editTarget].cursor} scrollOffset={state.editScrollOffset} horizontalOffset={state.editHorizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
         state.mode === 'confirmDiscard' && state.pendingDiscardAction !== null ? <ConfirmDiscardOverlay pendingAction={state.pendingDiscardAction} /> :

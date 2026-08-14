@@ -392,6 +392,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         mode: 'fileLoad',
         fileLoadInput: '',
+        fileLoadCursor: 0,
         fileLoadError: null,
       };
 
@@ -399,6 +400,13 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         fileLoadInput: action.value,
+        fileLoadCursor: action.cursor,
+      };
+
+    case 'MOVE_FILE_LOAD_CURSOR':
+      return {
+        ...state,
+        fileLoadCursor: action.cursor,
       };
 
     case 'SET_FILE_LOAD_ERROR':
@@ -428,6 +436,7 @@ export function reducer(state: AppState, action: Action): AppState {
         detailsHorizontalOffset: 0,
         mode: 'normal',
         fileLoadInput: '',
+        fileLoadCursor: 0,
         fileLoadError: null,
         transientMessage: `Loaded: ${action.filePath.split('/').pop() ?? ''}`,
         transientError: null,
@@ -442,6 +451,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         mode: 'normal',
         fileLoadInput: '',
+        fileLoadCursor: 0,
         fileLoadError: null,
       };
 
@@ -451,6 +461,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         mode: 'saveLoad',
         saveInput: defaultPath,
+        saveCursor: defaultPath.length,
         saveError: null,
       };
     }
@@ -459,7 +470,14 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         saveInput: action.value,
+        saveCursor: action.cursor,
         saveError: null,
+      };
+
+    case 'MOVE_SAVE_CURSOR':
+      return {
+        ...state,
+        saveCursor: action.cursor,
       };
 
     case 'SET_SAVE_ERROR':
@@ -475,6 +493,7 @@ export function reducer(state: AppState, action: Action): AppState {
         requests: state.requests.map(r => ({ ...r, isDirty: false })),
         filePath: action.filePath,
         saveInput: '',
+        saveCursor: 0,
         saveError: null,
         transientMessage: action.message,
         transientError: null,
@@ -485,6 +504,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         mode: 'normal',
         saveInput: '',
+        saveCursor: 0,
         saveError: null,
       };
 
@@ -876,8 +896,10 @@ export function createInitialState(props: AppProps): AppState {
     transientError: null,
     mode: 'normal',
     fileLoadInput: '',
+    fileLoadCursor: 0,
     fileLoadError: null,
     saveInput: '',
+    saveCursor: 0,
     saveError: null,
     wrapMode: 'nowrap',
     showRequestDetails: false,

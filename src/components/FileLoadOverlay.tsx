@@ -6,9 +6,10 @@ import { CENTERED_OVERLAY_MARGIN, DEFAULT_TERMINAL_COLUMNS } from '../utils/layo
 interface FileLoadOverlayProps {
   value: string;
   error: string | null;
+  cursor: number;
 }
 
-export function FileLoadOverlay({ value, error }: FileLoadOverlayProps): React.ReactElement {
+export function FileLoadOverlay({ value, error, cursor }: FileLoadOverlayProps): React.ReactElement {
   const { stdout } = useStdout();
   const width = Math.min(72, Math.max(48, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - CENTERED_OVERLAY_MARGIN));
 
@@ -28,8 +29,9 @@ export function FileLoadOverlay({ value, error }: FileLoadOverlayProps): React.R
         <Text>{' '}</Text>
         <Box>
           <Text color="gray">File: </Text>
-          <Text color="white">{value}</Text>
-          <Text color="white" bold>_</Text>
+          <Text color="white">{value.slice(0, cursor)}</Text>
+          <Text inverse>{value[cursor] ?? ' '}</Text>
+          <Text color="white">{value.slice(cursor + 1)}</Text>
         </Box>
         {error ? (
           <Box>

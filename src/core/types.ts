@@ -142,8 +142,10 @@ export interface AppState {
   transientError: string | null;
   mode: AppMode;
   fileLoadInput: string;
+  fileLoadCursor: number;
   fileLoadError: string | null;
   saveInput: string;
+  saveCursor: number;
   saveError: string | null;
   fileVariables: FileVariable[];
   activeEnvName: string | null;
@@ -196,7 +198,8 @@ export type Action =
   | { type: 'SET_TRANSIENT_MESSAGE'; message: string }
   | { type: 'CLEAR_TRANSIENT_MESSAGE' }
   | { type: 'ENTER_FILE_LOAD' }
-  | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string }
+  | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string; cursor: number }
+  | { type: 'MOVE_FILE_LOAD_CURSOR'; cursor: number }
   | { type: 'SET_FILE_LOAD_ERROR'; error: string }
   | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string; executorConfig?: ExecutorConfig }
   | { type: 'CANCEL_FILE_LOAD' }
@@ -219,7 +222,8 @@ export type Action =
   | { type: 'CANCEL_ENV_SELECT' }
   | { type: 'SET_ENV_SELECT_ERROR'; error: string }
   | { type: 'ENTER_SAVE' }
-  | { type: 'UPDATE_SAVE_INPUT'; value: string }
+  | { type: 'UPDATE_SAVE_INPUT'; value: string; cursor: number }
+  | { type: 'MOVE_SAVE_CURSOR'; cursor: number }
   | { type: 'SAVE_FILE'; message: string; filePath: string }
   | { type: 'SET_SAVE_ERROR'; error: string }
   | { type: 'CANCEL_SAVE' }
