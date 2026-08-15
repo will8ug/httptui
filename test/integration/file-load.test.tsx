@@ -4,9 +4,16 @@ import { resolve } from 'node:path';
 
 import {
   BACKSPACE,
+  CTRL_A,
+  CTRL_E,
+  DELETE,
+  END,
   ENTER,
   ESC,
+  HOME,
   KEY_DELAY_MS,
+  LEFT_ARROW,
+  RIGHT_ARROW,
   delay,
   makeShortUrlRequests,
   press,
@@ -91,6 +98,105 @@ describe('file-load integration', () => {
     await press(stdin, ENTER);
 
     expect(lastFrame() ?? '').toMatch(/enter a file path/i);
+  });
+});
+
+describe('file-load cursor navigation', () => {
+  it('left arrow moves the cursor for mid-string insertion', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeShortUrlRequests(1) });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'o');
+    for (const char of 'abc') {
+      await press(stdin, char);
+    }
+    await press(stdin, LEFT_ARROW);
+    await press(stdin, 'X');
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('abXc');
+    expect(frame).not.toContain('abc');
+  });
+
+  it('right arrow moves the cursor back to the end', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeShortUrlRequests(1) });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'o');
+    for (const char of 'abc') {
+      await press(stdin, char);
+    }
+    await press(stdin, LEFT_ARROW);
+    await press(stdin, RIGHT_ARROW);
+    await press(stdin, 'X');
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('abcX');
+  });
+
+  it('Home moves the cursor to the start and End to the end', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeShortUrlRequests(1) });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'o');
+    for (const char of 'abc') {
+      await press(stdin, char);
+    }
+    await press(stdin, HOME);
+    await press(stdin, 'X');
+    expect(lastFrame() ?? '').toContain('Xabc');
+
+    await press(stdin, END);
+    await press(stdin, 'Y');
+    expect(lastFrame() ?? '').toContain('XabcY');
+  });
+
+  it('Ctrl+A and Ctrl+E alias Home and End', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeShortUrlRequests(1) });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'o');
+    for (const char of 'abc') {
+      await press(stdin, char);
+    }
+    await press(stdin, CTRL_A);
+    await press(stdin, 'X');
+    await press(stdin, CTRL_E);
+    await press(stdin, 'Y');
+
+    expect(lastFrame() ?? '').toContain('XabcY');
+  });
+
+  it('backspace deletes the character before the cursor', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeShortUrlRequests(1) });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'o');
+    for (const char of 'abc') {
+      await press(stdin, char);
+    }
+    await press(stdin, LEFT_ARROW);
+    await press(stdin, BACKSPACE);
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('ac');
+    expect(frame).not.toContain('abc');
+  });
+
+  it('delete removes the character after the cursor', async () => {
+    const { stdin, lastFrame } = renderApp({ requests: makeShortUrlRequests(1) });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'o');
+    for (const char of 'abc') {
+      await press(stdin, char);
+    }
+    await press(stdin, HOME);
+    await press(stdin, DELETE);
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('bc');
+    expect(frame).not.toContain('abc');
   });
 });
 

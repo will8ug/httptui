@@ -6,9 +6,16 @@ import { join } from 'node:path';
 
 import {
   BACKSPACE,
+  CTRL_A,
+  CTRL_E,
+  DELETE,
+  END,
   ENTER,
   ESC,
+  HOME,
   KEY_DELAY_MS,
+  LEFT_ARROW,
+  RIGHT_ARROW,
   delay,
   makeShortUrlRequests,
   press,
@@ -272,6 +279,104 @@ describe('save-as-http integration', () => {
     const frame = lastFrame() ?? '';
     // After removing one character from "collection.http", we get "collection.htt"
     expect(frame).toContain('collection.htt');
+    expect(frame).not.toContain('collection.http');
+  });
+});
+
+describe('save-as-http cursor navigation', () => {
+  it('left arrow moves the cursor; typing inserts before the last character', async () => {
+    const { stdin, lastFrame } = renderApp({
+      filePath: '/path/to/collection.json',
+      requests: makeShortUrlRequests(1),
+    });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'S');
+    await press(stdin, LEFT_ARROW);
+    await press(stdin, 'X');
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('collection.httXp');
+  });
+
+  it('right arrow moves the cursor back to the end', async () => {
+    const { stdin, lastFrame } = renderApp({
+      filePath: '/path/to/collection.json',
+      requests: makeShortUrlRequests(1),
+    });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'S');
+    await press(stdin, LEFT_ARROW);
+    await press(stdin, RIGHT_ARROW);
+    await press(stdin, 'X');
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('collection.httpX');
+  });
+
+  it('Home moves the cursor to the start and End to the end', async () => {
+    const { stdin, lastFrame } = renderApp({
+      filePath: '/path/to/collection.json',
+      requests: makeShortUrlRequests(1),
+    });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'S');
+    await press(stdin, HOME);
+    await press(stdin, 'X');
+    expect(lastFrame() ?? '').toContain('Xcollection.http');
+
+    await press(stdin, END);
+    await press(stdin, 'Y');
+    expect(lastFrame() ?? '').toContain('Xcollection.httpY');
+  });
+
+  it('Ctrl+A and Ctrl+E alias Home and End', async () => {
+    const { stdin, lastFrame } = renderApp({
+      filePath: '/path/to/collection.json',
+      requests: makeShortUrlRequests(1),
+    });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'S');
+    await press(stdin, CTRL_A);
+    await press(stdin, 'X');
+    await press(stdin, CTRL_E);
+    await press(stdin, 'Y');
+
+    expect(lastFrame() ?? '').toContain('Xcollection.httpY');
+  });
+
+  it('backspace deletes the character before the cursor', async () => {
+    const { stdin, lastFrame } = renderApp({
+      filePath: '/path/to/collection.json',
+      requests: makeShortUrlRequests(1),
+    });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'S');
+    await press(stdin, LEFT_ARROW);
+    await press(stdin, BACKSPACE);
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('collection.htp');
+    expect(frame).not.toContain('collection.http');
+  });
+
+  it('delete removes the character after the cursor', async () => {
+    const { stdin, lastFrame } = renderApp({
+      filePath: '/path/to/collection.json',
+      requests: makeShortUrlRequests(1),
+    });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, 'S');
+    await press(stdin, HOME);
+    await press(stdin, DELETE);
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('ollection.http');
     expect(frame).not.toContain('collection.http');
   });
 });

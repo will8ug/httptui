@@ -28,6 +28,7 @@ describe('ENTER_SAVE reducer', () => {
     const result = reducer(state, { type: 'ENTER_SAVE' });
 
     expect(result.saveInput).toBe('MyAPI.http');
+    expect(result.saveCursor).toBe('MyAPI.http'.length);
   });
 
   it('keeps .http extension unchanged for .http files', () => {
@@ -65,7 +66,7 @@ describe('ENTER_SAVE reducer', () => {
 });
 
 describe('UPDATE_SAVE_INPUT reducer', () => {
-  it('updates saveInput and clears saveError', () => {
+  it('updates saveInput, saveCursor, and clears saveError', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
@@ -73,10 +74,42 @@ describe('UPDATE_SAVE_INPUT reducer', () => {
       saveError: 'some error',
     };
 
-    const result = reducer(state, { type: 'UPDATE_SAVE_INPUT', value: '/custom/path.http' });
+    const result = reducer(state, { type: 'UPDATE_SAVE_INPUT', value: '/custom/path.http', cursor: 17 });
 
     expect(result.saveInput).toBe('/custom/path.http');
+    expect(result.saveCursor).toBe(17);
     expect(result.saveError).toBeNull();
+  });
+});
+
+describe('MOVE_SAVE_CURSOR reducer', () => {
+  it('sets saveCursor without modifying saveInput', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'saveLoad',
+      saveInput: '/tmp/output.http',
+      saveCursor: 5,
+    };
+
+    const result = reducer(state, { type: 'MOVE_SAVE_CURSOR', cursor: 3 });
+
+    expect(result.saveCursor).toBe(3);
+    expect(result.saveInput).toBe('/tmp/output.http');
+  });
+
+  it('does not clear saveError', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'saveLoad',
+      saveInput: '/tmp/output.http',
+      saveCursor: 5,
+      saveError: 'Permission denied',
+    };
+
+    const result = reducer(state, { type: 'MOVE_SAVE_CURSOR', cursor: 0 });
+
+    expect(result.saveCursor).toBe(0);
+    expect(result.saveError).toBe('Permission denied');
   });
 });
 

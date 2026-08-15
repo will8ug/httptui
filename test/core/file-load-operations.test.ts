@@ -158,17 +158,50 @@ describe('RELOAD_FILE preserves pristine file variables for later (none) switch'
 });
 
 describe('ENTER_FILE_LOAD reducer', () => {
-  it('clears previous input and error when entering file-load mode', () => {
+  it('clears previous input, error, and cursor when entering file-load mode', () => {
     const state: AppState = {
       ...createInitialState(),
       fileLoadInput: 'stale path',
+      fileLoadCursor: 5,
       fileLoadError: 'stale error',
     };
 
     const result = reducer(state, { type: 'ENTER_FILE_LOAD' });
 
     expect(result.fileLoadInput).toBe('');
+    expect(result.fileLoadCursor).toBe(0);
     expect(result.fileLoadError).toBeNull();
+  });
+});
+
+describe('UPDATE_FILE_LOAD_INPUT reducer', () => {
+  it('updates fileLoadInput and fileLoadCursor', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoadInput: 'old',
+    };
+
+    const result = reducer(state, { type: 'UPDATE_FILE_LOAD_INPUT', value: 'api.http', cursor: 4 });
+
+    expect(result.fileLoadInput).toBe('api.http');
+    expect(result.fileLoadCursor).toBe(4);
+  });
+});
+
+describe('MOVE_FILE_LOAD_CURSOR reducer', () => {
+  it('sets fileLoadCursor without modifying fileLoadInput', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoadInput: 'api.http',
+      fileLoadCursor: 2,
+    };
+
+    const result = reducer(state, { type: 'MOVE_FILE_LOAD_CURSOR', cursor: 5 });
+
+    expect(result.fileLoadCursor).toBe(5);
+    expect(result.fileLoadInput).toBe('api.http');
   });
 });
 

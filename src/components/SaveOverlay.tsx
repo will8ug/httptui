@@ -6,9 +6,10 @@ import { CENTERED_OVERLAY_MARGIN, DEFAULT_TERMINAL_COLUMNS } from '../utils/layo
 interface SaveOverlayProps {
   value: string;
   error: string | null;
+  cursor: number;
 }
 
-export function SaveOverlay({ value, error }: SaveOverlayProps): React.ReactElement {
+export function SaveOverlay({ value, error, cursor }: SaveOverlayProps): React.ReactElement {
   const { stdout } = useStdout();
   const width = Math.min(72, Math.max(48, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - CENTERED_OVERLAY_MARGIN));
 
@@ -28,8 +29,11 @@ export function SaveOverlay({ value, error }: SaveOverlayProps): React.ReactElem
         <Text>{' '}</Text>
         <Box>
           <Text color="gray">File: </Text>
-          <Text color="white">{value}</Text>
-          <Text color="white" bold>_</Text>
+          <Text color="white">
+            <Text>{value.slice(0, cursor)}</Text>
+            <Text inverse>{value[cursor] ?? ' '}</Text>
+            <Text>{value.slice(cursor + 1)}</Text>
+          </Text>
         </Box>
         {error ? (
           <Box>
