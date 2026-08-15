@@ -106,7 +106,7 @@ export type EditTarget = 'body' | 'headers' | 'url';
 
 export const EDIT_TAB_ORDER: readonly EditTarget[] = ['url', 'headers', 'body'];
 
-export type PendingDiscardAction = 'reload' | 'fileLoad' | 'quit';
+export type PendingDiscardAction = 'reload' | 'fileLoad' | 'quit' | 'editorHandoff';
 
 export type EditOp =
   | 'insert'

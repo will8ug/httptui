@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 
 import React, { useEffect, useReducer } from 'react';
@@ -17,6 +17,7 @@ import { ResponseView } from './components/ResponseView';
 import { StatusBar } from './components/StatusBar';
 import { EnvSelectOverlay } from './components/EnvSelectOverlay';
 import { deleteBackward, deleteForward, insertText, moveLeft, moveLineEnd, moveLineStart, moveRight } from './core/editor';
+import { runEditorHandoff } from './core/editor-launcher';
 import { executeRequest, isErrorInfo, toErrorInfo } from './core/executor';
 import type { CertConfig } from './core/executor';
 import { formatResponseBody } from './core/formatter';
@@ -67,7 +68,7 @@ function getBodyVisualStart(state: AppState, columns: number): number[] | null {
 }
 
 export function App(props: AppProps): React.ReactElement {
-  const { exit } = useApp();
+  const { exit, suspendTerminal } = useApp();
   const { stdout } = useStdout();
   const [state, dispatch] = useReducer(reducer, props, createInitialState);
 
@@ -137,6 +138,41 @@ export function App(props: AppProps): React.ReactElement {
       dispatch({ type: 'RECEIVE_RESPONSE', response: result });
     } catch (error) {
       dispatch({ type: 'REQUEST_ERROR', error: toErrorInfo(error) });
+    }
+  };
+
+  const performEditorHandoff = async (): Promise<void> => {
+    let mtimeMs: number;
+    try {
+      mtimeMs = statSync(state.filePath).mtimeMs;
+    } catch (error) {
+      dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
+      return;
+    }
+
+    try {
+      await runEditorHandoff({ filePath: state.filePath, suspend: suspendTerminal });
+    } catch (error) {
+      dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
+      return;
+    }
+
+    try {
+      if (statSync(state.filePath).mtimeMs === mtimeMs) {
+        return;
+      }
+
+      const content = readFileSync(state.filePath, 'utf8');
+      const parseResult = parseAnyFormat(state.filePath, content);
+
+      if (parseResult.requests.length === 0) {
+        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: `No requests found in ${basename(state.filePath)}` });
+        return;
+      }
+
+      dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
+    } catch (error) {
+      dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
     }
   };
 
@@ -522,6 +558,9 @@ export function App(props: AppProps): React.ReactElement {
           case 'quit':
             exit();
             break;
+          case 'editorHandoff':
+            void performEditorHandoff();
+            break;
         }
         return;
       }
@@ -662,6 +701,27 @@ export function App(props: AppProps): React.ReactElement {
       }
 
       dispatch({ type: 'ENTER_IN_PLACE_SAVE_CONFIRM' });
+      return;
+    }
+
+    if (key.ctrl && input === 'g') {
+      try {
+        const content = readFileSync(state.filePath, 'utf8');
+        if (detectFormat(state.filePath, content) !== 'http') {
+          dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'External editor is only available for .http files' });
+          return;
+        }
+      } catch (error) {
+        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: toErrorInfo(error).message });
+        return;
+      }
+
+      if (hasUnsavedChanges(state.requests)) {
+        dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'editorHandoff' });
+        return;
+      }
+
+      void performEditorHandoff();
       return;
     }
 

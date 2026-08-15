@@ -54,6 +54,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'Ctrl+S', label: '', description: 'Commit edit or save file', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Ctrl+A', label: '', description: 'Jump to start of line', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Ctrl+E', label: '', description: 'Jump to end of line', showInBar: false, showInHelp: true, group: 'edit' },
+  { key: 'Ctrl+G', label: '', description: 'Open source file in $EDITOR', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Shift+Tab', label: '', description: 'Switch editor tab', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Escape', label: '', description: 'Close current overlay', showInBar: false, showInHelp: true, group: 'general' },
 ] as const;

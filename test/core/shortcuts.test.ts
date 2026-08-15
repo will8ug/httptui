@@ -179,3 +179,26 @@ describe('SHORTCUTS registry — edit group', () => {
     expect(barKeys).not.toContain('Shift+Tab');
   });
 });
+
+describe('SHORTCUTS registry — editor-handoff entry', () => {
+  it('contains the `Ctrl+G` entry (open source file in $EDITOR)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'Ctrl+G');
+    expect(entry).toBeDefined();
+    expect(entry?.label).toBe('');
+    expect(entry?.description).toBe('Open source file in $EDITOR');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('edit');
+  });
+
+  it('does not appear in the status bar', () => {
+    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
+    expect(barKeys).not.toContain('Ctrl+G');
+  });
+
+  it('appears in the help overlay Edit group with its description', () => {
+    const helpEntries = SHORTCUTS.filter((s) => s.showInHelp && s.group === 'edit');
+    const entry = helpEntries.find((s) => s.key === 'Ctrl+G');
+    expect(entry?.description).toBe('Open source file in $EDITOR');
+  });
+});

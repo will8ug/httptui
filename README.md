@@ -143,6 +143,9 @@ httptui api.http -E Staging
 | `Ctrl+S` | Commit edit or save to source file |
 | `Ctrl+A` | Jump to start of line              |
 | `Ctrl+E` | Jump to end of line                |
+| `Ctrl+G` | Open source file in `$EDITOR`       |
+
+The external editor (`Ctrl+G`) must block until closed — terminal editors like vim/nano do this by default; GUI editors typically need a wait flag (e.g. `code --wait`).
 
 ## Documentation
 
