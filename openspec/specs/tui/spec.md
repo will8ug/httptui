@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buffer application with split-panel layout and keyboard navigation. This spec provides an overview of the layout, panels, and application lifecycle. Detailed behavior for shortcuts, navigation, search, fullscreen, wrap mode, and request details is specified in their respective specs.
+Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buffer application with split-panel layout and keyboard navigation. This spec provides an overview of the layout, panels, and application lifecycle. Detailed behavior for shortcuts, navigation, search, fullscreen, wrap mode, request details, the request list, file load, and file reload is specified in their respective specs.
 
 ## Layout
 
@@ -30,7 +30,7 @@ Interactive terminal UI built with Ink (React for CLI). Fullscreen alternate-buf
 
 ### Panel Overview
 
-**Request List (left):** Shows all parsed requests from the file. Each entry: `METHOD /path` (truncated to fit width). Selected request highlighted with `▸`, and scroll vertically/horizontally when content exceeds panel bounds.
+**Request List (left):** Shows all parsed requests from the file, with the selected request highlighted. See the **request-list** spec for resolved-path display and scrolling behavior.
 
 **Response (right):** Shows response for the last sent request. Status line with color-coded status code, optional headers (verbose mode), and body (formatted JSON or raw text). Scroll vertically/horizontally when content exceeds panel bounds. See **text-wrap** spec for wrap mode behavior. See **response-search** spec for search behavior.
 
@@ -51,7 +51,7 @@ When `maximizedPanel` is not `null`, the `Layout` component renders only the max
 - **Loading**: Request in flight (show spinner in response panel)
 - **Success**: Response received, displaying it
 - **Error**: Network/connection error (show error message in response panel)
-- **File-load**: File-load overlay open, keystrokes routed to text input
+- **File-load**: File-load overlay open, keystrokes routed to text input. See the **file-load** spec.
 
 ### Focus States
 Focus cycling via `Tab` is defined in the **navigation** spec.
@@ -78,82 +78,24 @@ Defined in the centralized `SHORTCUTS` registry (`src/core/shortcuts.ts`). See *
 
 ## File Reload
 
-The `R` key triggers file reload. The reload handler reads the file at `state.filePath` using `readFileSync`, parses it with `parseHttpFile`, and dispatches a `RELOAD_FILE` action with the result. If the file read or parse fails, the handler dispatches a `RELOAD_ERROR` action that sets a transient error message in the status bar.
-
-- Selection preservation: if the currently selected request name still exists in the reloaded file, keep it selected; otherwise reset `selectedIndex` to 0
-- Reload clears `response`, `requestError`, and `responseScrollOffset`
-- The status bar displays a temporary "Reloaded" confirmation (green, bold) that disappears after 2 seconds
+The `R` key reloads the current file. See the **file-reload** spec for reload semantics, selection preservation, response-state clearing, and reload errors.
 
 ## File Load
 
-The `o` key enters `fileLoad` mode, showing a centered pop-up overlay with a title, text input, optional error message, and hint. All keystrokes are routed to the text input.
-
-- **Enter**: resolves path relative to `process.cwd()`, checks file existence, reads and parses the file. On success, dispatches `LOAD_FILE` action; on failure, sets `fileLoadError` and keeps overlay open with input preserved.
-- **Escape**: dispatches `CANCEL_FILE_LOAD`, closes overlay, returns to normal mode without changing file state.
-- Load confirmation: status bar displays a temporary `"Loaded: {basename}"` (green, bold) that disappears after 2 seconds.
+The `o` key opens the file-load overlay. See the **file-load** spec for entry, input handling, confirmation, cancellation, and error behavior.
 
 ## Requirements
 
-### Requirement: Request list shows resolved request paths
+### Requirement: TUI renders a split-panel layout in the alternate screen buffer
 
-The request-list panel SHALL resolve file, system, and environment variables against the current variable map before extracting the display path for each request. The displayed entry SHALL be `METHOD <path>` where `<path>` is the pathname (plus search string, if any) of the resolved URL. Resolution SHALL use the same merged variable map (`fileVariables` merged with the active environment's variables) used by the request-details panel and the send-request path, so that the list, the details panel, and the send path display a consistent URL.
+The application SHALL render in a fullscreen alternate screen buffer with two horizontally split panels — the request list at 30% of the terminal width (minimum 25 characters) and the response panel filling the remaining width — and a status bar across the bottom row. Per-panel display and scrolling behavior is specified in each panel's capability spec.
 
-#### Scenario: File variable resolved in request list
+#### Scenario: Two-panel split with status bar
 
-- **WHEN** a `.http` file declares `@baseUrl = https://api.example.com` and contains `GET {{baseUrl}}/posts`
-- **THEN** the request-list entry SHALL display `GET /posts` (the pathname of the resolved URL), not `GET {{baseUrl}}/posts`
+- **WHEN** the application starts with a loaded file
+- **THEN** the request list SHALL occupy 30% of the terminal width (minimum 25 characters), the response panel SHALL fill the remaining width, and the status bar SHALL render across the bottom row
 
-#### Scenario: Nested file variable resolved in request list
+#### Scenario: Alternate screen buffer
 
-- **WHEN** a `.http` file declares `@hostname = api.example.com` and `@baseUrl = https://{{hostname}}` and contains `GET {{baseUrl}}/posts`
-- **THEN** the request-list entry SHALL display `GET /posts`, demonstrating that nested file variables are resolved before display
-
-#### Scenario: Request list reacts to environment switch
-
-- **WHEN** a `.http` file declares `@baseUrl = https://api.local` and an environment file loaded via `--env` or the `E` switcher defines `baseUrl = https://api.dev.com`
-- **THEN** the request-list entry SHALL display the pathname of `https://api.dev.com/...` while that environment is active, and SHALL update to display the pathname of `https://api.local/...` when the user reverts to `(none)` via the environment switcher, without reloading the file
-
-#### Scenario: Request list reacts to file reload
-
-- **WHEN** the user presses `R` to reload the file and the reloaded file changes a variable definition (e.g. `@baseUrl` from `https://a.com` to `https://b.com`)
-- **THEN** the request-list entries SHALL display pathnames resolved against the new variable values
-
-#### Scenario: Unresolved variable preserves current display behavior
-
-- **WHEN** a request URL contains `{{unknownVar}}` and no file or environment variable defines `unknownVar`
-- **THEN** `resolveVariables` SHALL leave `{{unknownVar}}` in the URL, `new URL()` SHALL fail to parse it, and the request-list entry SHALL display `METHOD {{unknownVar}}/...` (the raw URL fallback), matching the behavior prior to this change
-
-#### Scenario: Unresolved system variable preserves current display behavior
-
-- **WHEN** a request URL contains `{{$processEnv DEFINITELY_NOT_SET}}` and that environment variable is unset
-- **THEN** the placeholder SHALL be left in the URL, and the request-list entry SHALL display the raw URL string, matching the behavior prior to this change
-
-#### Scenario: Request list horizontal scroll width matches rendered text
-
-- **WHEN** the request list contains requests whose resolved path is longer or shorter than the raw URL, and the user presses `0`, `$`, `←`, or `→`
-- **THEN** the horizontal scroll bounds SHALL be computed against the resolved path lengths, so the scrollable range matches what is rendered in the panel
-
-#### Scenario: Request list resolution matches send path for dotenv
-
-- **WHEN** a request URL contains `{{$dotenv API_HOST}}` and a `.env` file exists in the same directory as the loaded `.http` file
-- **THEN** the request-list display SHALL resolve `{{$dotenv API_HOST}}` using the `.env` file in the loaded file's directory first (then CWD fallback), identical to the resolution used when the request is sent, so the displayed path matches the sent URL
-
-### Requirement: File reload error display
-When a file reload fails (file read or parse error), the system SHALL dispatch a `RELOAD_ERROR` action that sets a transient error message in the status bar. The system SHALL NOT clear the current response, request error state, or search state when a reload error occurs. The transient error message SHALL auto-clear after approximately 2 seconds.
-
-#### Scenario: File read failure during reload
-- **WHEN** the user triggers a file reload and the file at `state.filePath` cannot be read
-- **THEN** a transient error message SHALL be displayed in the status bar
-- **AND** the current response SHALL be preserved
-- **AND** all search state SHALL be preserved
-
-#### Scenario: Parse failure during reload
-- **WHEN** the user triggers a file reload and the file content cannot be parsed
-- **THEN** a transient error message SHALL be displayed in the status bar
-- **AND** the current response SHALL be preserved
-- **AND** all search state SHALL be preserved
-
-#### Scenario: Reload failure after discard confirm
-- **WHEN** the user confirms a discard action that triggers a reload and the reload fails
-- **THEN** a transient error message SHALL be displayed in the status bar
-- **AND** the unsaved-changes flag SHALL remain set
+- **WHEN** the application starts
+- **THEN** the TUI SHALL render in the alternate screen buffer, restoring the previous terminal contents on exit
