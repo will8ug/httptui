@@ -11,7 +11,7 @@ Main specs (`openspec/specs/`) describe **system capabilities and observable beh
 - **Tooling and test infrastructure are self-documenting** in the repo (config files, TypeScript types, existing test files). Do not duplicate them into specs.
 - **Before adding a scenario, check for an existing home.** If another capability spec already mandates the behavior, do not restate it — cross-reference instead. Duplicated behavior across specs means every change needs two spec updates.
 
-Precedent: the `testing` spec was deleted for being purely process-shaped (`1af0b01`), the `eslint-config` spec was removed as self-documenting tooling (`8fad1a7`), and `component-tests` was distributed into capability specs (`response-view`, `status-bar`, `request-details`) by the `distribute-component-tests-spec` change.
+Precedent: the `testing` spec was deleted for being purely process-shaped (`1af0b01`), the `eslint-config` spec was removed as self-documenting tooling (`8fad1a7`), `component-tests` was distributed into capability specs (`response-view`, `status-bar`, `request-details`) by the `distribute-component-tests-spec` change, and `tui`'s behavioral requirements and prose (`## File Load`, `## File Reload`) were distributed into new capability specs (`request-list`, `file-reload`), leaving `tui` as an interface map that keeps the composite-layout requirement (`af101c4`).
 
 ## Comments
 
