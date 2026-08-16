@@ -138,12 +138,12 @@ httptui api.http -E Staging
 
 | Key | Action                             |
 |-----|------------------------------------|
-| `e` | Edit request URL, headers, or body |
+| `e` | Edit a request in-session          |
 | `Shift+Tab` | Switch editor tab |
 | `Ctrl+S` | Commit edit or save to source file |
 | `Ctrl+A` | Jump to start of line              |
 | `Ctrl+E` | Jump to end of line                |
-| `Ctrl+G` | Open source file in `$EDITOR`       |
+| `Ctrl+G` | Edit requests in external editor `$EDITOR`  |
 
 ## Documentation
 

@@ -109,7 +109,7 @@ describe('SHORTCUTS registry — edit-request entry', () => {
     const entry = SHORTCUTS.find((s) => s.key === 'e');
     expect(entry).toBeDefined();
     expect(entry?.label).toBe('');
-    expect(entry?.description).toBe('Edit request');
+    expect(entry?.description).toBe('Edit requests in-session');
     expect(entry?.showInBar).toBe(false);
     expect(entry?.showInHelp).toBe(true);
     expect(entry?.group).toBe('edit');
@@ -181,11 +181,11 @@ describe('SHORTCUTS registry — edit group', () => {
 });
 
 describe('SHORTCUTS registry — editor-handoff entry', () => {
-  it('contains the `Ctrl+G` entry (open source file in $EDITOR)', () => {
+  it('contains the `Ctrl+G` entry (edit requests externally)', () => {
     const entry = SHORTCUTS.find((s) => s.key === 'Ctrl+G');
     expect(entry).toBeDefined();
     expect(entry?.label).toBe('');
-    expect(entry?.description).toBe('Open source file in $EDITOR');
+    expect(entry?.description).toBe('Edit requests externally');
     expect(entry?.showInBar).toBe(false);
     expect(entry?.showInHelp).toBe(true);
     expect(entry?.group).toBe('edit');
@@ -199,6 +199,6 @@ describe('SHORTCUTS registry — editor-handoff entry', () => {
   it('appears in the help overlay Edit group with its description', () => {
     const helpEntries = SHORTCUTS.filter((s) => s.showInHelp && s.group === 'edit');
     const entry = helpEntries.find((s) => s.key === 'Ctrl+G');
-    expect(entry?.description).toBe('Open source file in $EDITOR');
+    expect(entry?.description).toBe('Edit requests externally');
   });
 });

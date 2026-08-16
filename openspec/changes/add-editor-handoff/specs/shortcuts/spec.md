@@ -2,7 +2,7 @@
 
 ### Requirement: External editor handoff shortcut in registry
 
-The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an entry for the external editor handoff command with the following properties: `key: 'Ctrl+G'`, `label: ''` (empty, consistent with the other `edit`-group entries), `description: 'Open source file in $EDITOR'`, `showInBar: false`, `showInHelp: true`, and `group: 'edit'`.
+The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an entry for the external editor handoff command with the following properties: `key: 'Ctrl+G'`, `label: ''` (empty, consistent with the other `edit`-group entries), `description: 'Edit requests externally'`, `showInBar: false`, `showInHelp: true`, and `group: 'edit'`.
 
 #### Scenario: Registry contains the external editor entry
 

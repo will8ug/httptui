@@ -211,11 +211,11 @@ The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an entry for the 
 - **THEN** the `S` entry SHALL appear with key `S` in yellow (padded to 8 characters) and description `Save as .http file` in white, within the Request group
 
 ### Requirement: Edit request shortcut in registry
-The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an entry for the request-edit command with the following properties: `key: 'e'`, `label: ''` (empty, consistent with help-only entries like `o`, `R`, and `S`), `description: 'Edit request URL or body'`, `showInBar: false`, `showInHelp: true`, and `group: 'edit'`.
+The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an entry for the request-edit command with the following properties: `key: 'e'`, `label: ''` (empty, consistent with help-only entries like `o`, `R`, and `S`), `description: 'Edit requests in-session'`, `showInBar: false`, `showInHelp: true`, and `group: 'edit'`.
 
 #### Scenario: Registry contains e entry
 - **WHEN** the `SHORTCUTS` array is inspected
-- **THEN** it SHALL contain an entry with `key` equal to `'e'`, `description` equal to `'Edit request URL or body'`, `showInBar` equal to `false`, `showInHelp` equal to `true`, and `group` equal to `'edit'`
+- **THEN** it SHALL contain an entry with `key` equal to `'e'`, `description` equal to `'Edit requests in-session'`, `showInBar` equal to `false`, `showInHelp` equal to `true`, and `group` equal to `'edit'`
 
 #### Scenario: Edit shortcut not in status bar
 - **WHEN** the StatusBar component renders
@@ -223,7 +223,7 @@ The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an entry for the 
 
 #### Scenario: Edit shortcut in help overlay
 - **WHEN** the help overlay is visible
-- **THEN** the `e` entry SHALL appear with key `e` in yellow (padded to 8 characters) and description `Edit request URL or body` in white, within the Edit group
+- **THEN** the `e` entry SHALL appear with key `e` in yellow (padded to 8 characters) and description `Edit requests in-session` in white, within the Edit group
 
 ### Requirement: Edit shortcut group in registry
 The `SHORTCUTS` array in `src/core/shortcuts.ts` SHALL include an `edit` group with four entries: `e` (edit request), `Ctrl+S` (save and close editor), `Ctrl+A` (jump to start of line), and `Ctrl+E` (jump to end of line). Each entry SHALL have `showInBar: false`, `showInHelp: true`, and `group: 'edit'`. The `ShortcutGroup` union and `SHORTCUT_GROUP_LABELS` SHALL include `edit` with the label `'Edit'`.
