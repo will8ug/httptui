@@ -145,8 +145,6 @@ httptui api.http -E Staging
 | `Ctrl+E` | Jump to end of line                |
 | `Ctrl+G` | Open source file in `$EDITOR`       |
 
-The external editor (`Ctrl+G`) must block until closed — terminal editors like vim/nano do this by default; GUI editors typically need a wait flag (e.g. `code --wait`).
-
 ## Documentation
 
 - [.http File Format](docs/file-format.md) — Request syntax, headers, and variables.
@@ -154,6 +152,7 @@ The external editor (`Ctrl+G`) must block until closed — terminal editors like
 - [Configuration](docs/configuration.md) — Global and project-level config files.
 - [Environments](docs/environments.md) — Environment files and the runtime switcher.
 - [Client Certificates](docs/certificates.md) — mTLS configuration.
+- [Editing](docs/editing.md) — Edit requests in-session or in your `$EDITOR`.
 - [Saving as .http](docs/saving.md) — Export requests from any file format.
 - [TLS Troubleshooting](docs/tls.md) — Common certificate issues and fixes.
 
