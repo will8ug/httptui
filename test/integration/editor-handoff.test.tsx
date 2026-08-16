@@ -406,7 +406,7 @@ describe('editor-handoff integration', () => {
 
       const frame = lastFrame() ?? '';
       expect(frame).toContain('Unsaved Changes');
-      expect(frame).toContain('opening the source file');
+      expect(frame).toContain('opening external editor');
       expect(existsSync(marker)).toBe(false);
       await expectEditorNotLaunched(marker);
     });

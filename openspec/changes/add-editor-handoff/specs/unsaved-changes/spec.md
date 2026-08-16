@@ -107,7 +107,7 @@ The confirmation prompt SHALL render through the existing overlay slot using the
 #### Scenario: Prompt describes a pending external editor handoff
 
 - **WHEN** the confirmation prompt is displayed for an intercepted external editor handoff
-- **THEN** the prompt SHALL indicate that unsaved changes exist and that confirming will open the source file in an external editor
+- **THEN** the prompt SHALL indicate that unsaved changes exist and that confirming will open an external editor
 
 #### Scenario: Prompt shows the available keys
 

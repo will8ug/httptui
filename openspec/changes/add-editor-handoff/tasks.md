@@ -2,7 +2,7 @@
 
 - [x] 1.1 In `src/cli.tsx`, pass the `alternateScreen` render option to `render()` so Ink owns the alternate screen buffer.
 - [x] 1.2 Remove the manual `\u001B[?1049h` write, the `restoreScreen` helper, the `alternateScreenActive` flag, and the `.finally(restoreScreen)` handler now superseded by Ink.
-- [ ] 1.3 Verify by hand that launching and quitting (`q` and `Ctrl+C`) still restores the previous terminal contents, and that startup failures — missing file, unparseable file, no requests found — still print to the normal screen rather than being swallowed by the alternate buffer.
+- [x] 1.3 Verify by hand that launching and quitting (`q` and `Ctrl+C`) still restores the previous terminal contents, and that startup failures — missing file, unparseable file, no requests found — still print to the normal screen rather than being swallowed by the alternate buffer.
 
 ## 2. Fourth intercepted action
 
@@ -58,5 +58,5 @@
 ## 9. Verification
 
 - [x] 9.1 Run lint, typecheck, and the full test suite; confirm no pre-existing failures were introduced.
-- [ ] 9.2 Exercise the feature by hand in a real terminal with a terminal editor: confirm the editor takes over cleanly, the interface repaints fully on return with no residue, and keyboard input resumes.
+- [x] 9.2 Exercise the feature by hand in a real terminal with a terminal editor: confirm the editor takes over cleanly, the interface repaints fully on return with no residue, and keyboard input resumes.
 - [x] 9.3 Run `openspec validate add-editor-handoff --strict`.

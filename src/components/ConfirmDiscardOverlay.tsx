@@ -21,7 +21,7 @@ export function ConfirmDiscardOverlay({ pendingAction }: ConfirmDiscardOverlayPr
       case 'quit':
         return 'quitting';
       case 'editorHandoff':
-        return 'opening the source file in an external editor';
+        return 'opening external editor';
     }
   })();
 

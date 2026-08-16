@@ -12,7 +12,7 @@ const actionVariations: Array<{ action: PendingDiscardAction; description: strin
   { action: 'reload', description: 'reloading the file' },
   { action: 'fileLoad', description: 'opening a different file' },
   { action: 'quit', description: 'quitting' },
-  { action: 'editorHandoff', description: 'opening the source file in an external editor' },
+  { action: 'editorHandoff', description: 'opening external editor' },
 ];
 
 // The overlay caps at 72 columns, so a long description wraps onto a second
