@@ -67,3 +67,4 @@
 - [x] 10.2 Extend the editor-launcher unit tests: a value with arguments launches with the arguments preceding the file path, and a multi-token command that does not exist still rejects as a launch failure.
 - [x] 10.3 State in `docs/editing.md` that the editor value may include arguments such as `code --wait`.
 - [x] 10.4 Re-run the full suite, typecheck, and `openspec validate add-editor-handoff --strict`.
+- [x] 10.5 Add a wait-flag reference for common GUI editors (VS Code, Cursor, Sublime Text, JetBrains, macOS `open`) and the whitespace-path limitation to `docs/editing.md`.

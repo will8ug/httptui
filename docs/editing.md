@@ -26,6 +26,18 @@ The editor command is resolved from the environment in this order:
 
 The external editor must block until closed — terminal editors like vim/nano do this by default; GUI editors typically need a wait flag. The value may include arguments, so `$EDITOR="code --wait"` works. httptui suspends its UI while the editor runs, and when the editor exits it compares the file's modification time: if the file changed, httptui re-reads and reloads it automatically.
 
+Common GUI editors and their wait flags:
+
+| Editor | Value |
+|---|---|
+| VS Code | `code --wait` |
+| Cursor | `cursor --wait` |
+| Sublime Text | `subl --wait` |
+| JetBrains IDEs | `idea --wait`, `pycharm --wait`, … |
+| macOS default text editor | `open -W -t` |
+
+The value is split on whitespace, so an editor path containing spaces cannot be used directly. Refer to the editor through a launcher or symlink without spaces — JetBrains Toolbox's "Create command-line launcher…" exists for exactly this.
+
 Only `.http` and `.rest` files can be handed off to an external editor; other formats show a notice instead. If you have unsaved in-session edits, you are prompted to confirm discarding them before the handoff.
 
 ## Related
