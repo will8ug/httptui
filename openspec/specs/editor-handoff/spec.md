@@ -1,8 +1,10 @@
+# Spec: Editor Handoff
+
 ## Purpose
 
 Handing the terminal to the user's external editor so the whole source file can be edited — including content that lies outside any single request, such as file variables, comments, request names, and the set of requests itself — and reloading the file when the editor exits.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Open the source file in an external editor with Ctrl+G
 
