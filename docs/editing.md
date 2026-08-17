@@ -24,7 +24,7 @@ The editor command is resolved from the environment in this order:
 2. `$EDITOR`
 3. `vi` (or `notepad` on Windows)
 
-The external editor must block until closed — terminal editors like vim/nano do this by default; GUI editors typically need a wait flag (e.g. `code --wait`). httptui suspends its UI while the editor runs, and when the editor exits it compares the file's modification time: if the file changed, httptui re-reads and reloads it automatically.
+The external editor must block until closed — terminal editors like vim/nano do this by default; GUI editors typically need a wait flag. The value may include arguments, so `$EDITOR="code --wait"` works. httptui suspends its UI while the editor runs, and when the editor exits it compares the file's modification time: if the file changed, httptui re-reads and reloads it automatically.
 
 Only `.http` and `.rest` files can be handed off to an external editor; other formats show a notice instead. If you have unsaved in-session edits, you are prompted to confirm discarding them before the handoff.
 

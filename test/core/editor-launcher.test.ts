@@ -1,8 +1,12 @@
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { SuspendTerminal } from 'ink';
 
 import {
   launchEditor,
+  parseEditorCommand,
   resolveEditorCommand,
   runEditorHandoff,
 } from '../../src/core/editor-launcher';
@@ -25,9 +29,47 @@ describe('resolveEditorCommand — precedence', () => {
   });
 });
 
+describe('parseEditorCommand — whitespace splitting', () => {
+  it('splits a value with arguments into tokens', () => {
+    expect(parseEditorCommand('code --wait')).toEqual(['code', '--wait']);
+  });
+
+  it('returns a bare command as a single token', () => {
+    expect(parseEditorCommand('vim')).toEqual(['vim']);
+  });
+
+  it('collapses surrounding and repeated whitespace', () => {
+    expect(parseEditorCommand('  code \t --wait  ')).toEqual(['code', '--wait']);
+  });
+});
+
 describe('launchEditor — launch failure vs exit status', () => {
   it('rejects when the command does not exist', async () => {
     await expect(launchEditor('httptui-nonexistent-editor-xyz', 'api.http')).rejects.toThrow();
+  });
+
+  it('rejects when a value with arguments names a missing executable', async () => {
+    await expect(
+      launchEditor('httptui-nonexistent-editor-xyz --wait', 'api.http'),
+    ).rejects.toThrow();
+  });
+
+  it('launches editor arguments ahead of the file path', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'httptui-editor-launcher-'));
+    try {
+      const dumpPath = join(dir, 'argv.txt');
+      const scriptPath = join(dir, 'fake-editor.sh');
+      writeFileSync(
+        scriptPath,
+        `#!/bin/sh\nprintf '%s\\n' "$@" > '${dumpPath}'\n`,
+        { mode: 0o755 },
+      );
+      chmodSync(scriptPath, 0o755);
+      await launchEditor(`${scriptPath} --wait`, 'api.http');
+      expect(readFileSync(dumpPath, 'utf8')).toBe('--wait\napi.http\n');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('resolves when the command runs and exits non-zero', async () => {

@@ -53,7 +53,7 @@ When the loaded source is not an http-format file — that is, `detectFormat` re
 
 ### Requirement: Editor command resolution
 
-The system SHALL resolve the editor command from the `VISUAL` environment variable, falling back to the `EDITOR` environment variable, falling back to a platform default editor when neither is set. The resolved command SHALL be launched with the source file path as its argument.
+The system SHALL resolve the editor command from the `VISUAL` environment variable, falling back to the `EDITOR` environment variable, falling back to a platform default editor when neither is set. The resolved value SHALL be split on whitespace into an executable and its arguments, and the executable SHALL be launched with those arguments followed by the source file path. An editor configured with a wait flag — for example `EDITOR="code --wait"` — SHALL therefore receive the flag, because GUI editors only block until closed when given one.
 
 #### Scenario: VISUAL takes precedence over EDITOR
 
@@ -64,6 +64,11 @@ The system SHALL resolve the editor command from the `VISUAL` environment variab
 
 - **WHEN** `VISUAL` is unset, `EDITOR` is set, and the user begins a handoff
 - **THEN** the command named by `EDITOR` SHALL be launched
+
+#### Scenario: An editor value with arguments is split
+
+- **WHEN** `EDITOR` is set to `code --wait` and the user begins a handoff
+- **THEN** the `code` executable SHALL be launched with `--wait` and the source file path as its arguments, in that order
 
 #### Scenario: A default editor is used when neither variable is set
 

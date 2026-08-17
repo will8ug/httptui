@@ -60,3 +60,10 @@
 - [x] 9.1 Run lint, typecheck, and the full test suite; confirm no pre-existing failures were introduced.
 - [x] 9.2 Exercise the feature by hand in a real terminal with a terminal editor: confirm the editor takes over cleanly, the interface repaints fully on return with no residue, and keyboard input resumes.
 - [x] 9.3 Run `openspec validate add-editor-handoff --strict`.
+
+## 10. Editor command with arguments
+
+- [x] 10.1 In `src/core/editor-launcher.ts`, split the resolved editor value on whitespace and launch the first token as the executable with the remaining tokens as arguments ahead of the file path, without a shell (see design Decision 3).
+- [x] 10.2 Extend the editor-launcher unit tests: a value with arguments launches with the arguments preceding the file path, and a multi-token command that does not exist still rejects as a launch failure.
+- [x] 10.3 State in `docs/editing.md` that the editor value may include arguments such as `code --wait`.
+- [x] 10.4 Re-run the full suite, typecheck, and `openspec validate add-editor-handoff --strict`.

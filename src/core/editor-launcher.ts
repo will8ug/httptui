@@ -19,12 +19,17 @@ export function resolveEditorCommand(env: NodeJS.ProcessEnv = process.env): stri
   return process.platform === 'win32' ? 'notepad' : 'vi';
 }
 
+export function parseEditorCommand(command: string): string[] {
+  return command.trim().split(/\s+/).filter(Boolean);
+}
+
 export function launchEditor(command: string, filePath: string): Promise<void> {
   // Deliberately asynchronous: synchronous child-process calls keep the
   // platform's console input read active after the parent releases stdin,
   // racing terminal editors like vim on Windows. Do not "simplify" to
   // spawnSync.
-  const child = spawn(command, [filePath], { stdio: 'inherit' });
+  const [executable = '', ...args] = parseEditorCommand(command);
+  const child = spawn(executable, [...args, filePath], { stdio: 'inherit' });
   return new Promise((resolve, reject) => {
     // Only a launch failure rejects; the exit code is ignored on purpose.
     // Terminal editors disagree on what non-zero means (vim's :cq exits
