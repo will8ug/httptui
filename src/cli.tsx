@@ -45,22 +45,6 @@ if (parseResult.requests.length === 0) {
   exitWithError(`No requests found in ${filePath}`);
 }
 
-let alternateScreenActive = false;
-
-const restoreScreen = (): void => {
-  if (!alternateScreenActive || !process.stdout.isTTY) {
-    return;
-  }
-
-  process.stdout.write('\u001B[?1049l');
-  alternateScreenActive = false;
-};
-
-if (process.stdout.isTTY) {
-  process.stdout.write('\u001B[?1049h');
-  alternateScreenActive = true;
-}
-
 if (insecure) {
   process.stderr.write('\x1b[33m⚠ TLS certificate verification disabled (--insecure)\x1b[0m\n');
 }
@@ -131,6 +115,7 @@ const app = render(
     availableEnvironments={availableEnvironments}
     executorConfig={{ insecure, certificates: httptuiConfig?.certificates }}
   />,
+  { alternateScreen: true },
 );
 
-void app.waitUntilExit().finally(restoreScreen);
+void app.waitUntilExit();

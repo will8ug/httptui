@@ -138,11 +138,12 @@ httptui api.http -E Staging
 
 | Key | Action                             |
 |-----|------------------------------------|
-| `e` | Edit request URL, headers, or body |
+| `e` | Edit a request in-session          |
 | `Shift+Tab` | Switch editor tab |
 | `Ctrl+S` | Commit edit or save to source file |
 | `Ctrl+A` | Jump to start of line              |
 | `Ctrl+E` | Jump to end of line                |
+| `Ctrl+G` | Edit requests in external editor `$EDITOR`  |
 
 ## Documentation
 
@@ -151,6 +152,7 @@ httptui api.http -E Staging
 - [Configuration](docs/configuration.md) — Global and project-level config files.
 - [Environments](docs/environments.md) — Environment files and the runtime switcher.
 - [Client Certificates](docs/certificates.md) — mTLS configuration.
+- [Editing](docs/editing.md) — Edit requests in-session or in your `$EDITOR`.
 - [Saving as .http](docs/saving.md) — Export requests from any file format.
 - [TLS Troubleshooting](docs/tls.md) — Common certificate issues and fixes.
 

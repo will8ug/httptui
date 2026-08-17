@@ -20,6 +20,8 @@ export function ConfirmDiscardOverlay({ pendingAction }: ConfirmDiscardOverlayPr
         return 'opening a different file';
       case 'quit':
         return 'quitting';
+      case 'editorHandoff':
+        return 'opening external editor';
     }
   })();
 
@@ -38,11 +40,11 @@ export function ConfirmDiscardOverlay({ pendingAction }: ConfirmDiscardOverlayPr
         </Text>
         <Text>{' '}</Text>
         <Text>There are unsaved changes.</Text>
-        <Box>
-          <Text>Confirm to proceed with </Text>
+        <Text>
+          {'Confirm to proceed with '}
           <Text bold>{actionText}</Text>
-          <Text>.</Text>
-        </Box>
+          {'.'}
+        </Text>
         <Text>{' '}</Text>
         <Text color="gray">y to proceed, n or Esc to cancel</Text>
       </Box>
