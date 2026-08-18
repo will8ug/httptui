@@ -6,10 +6,14 @@ export type EditorLauncher = (command: string, filePath: string) => Promise<void
 export interface RunEditorHandoffOptions {
   filePath: string;
   suspend: SuspendTerminal;
+  editor?: string;
   launch?: EditorLauncher;
 }
 
-export function resolveEditorCommand(env: NodeJS.ProcessEnv = process.env): string {
+export function resolveEditorCommand(env: NodeJS.ProcessEnv = process.env, configEditor?: string): string {
+  if (configEditor !== undefined && configEditor.trim() !== '') {
+    return configEditor;
+  }
   if (env.VISUAL) {
     return env.VISUAL;
   }
@@ -43,8 +47,8 @@ export function launchEditor(command: string, filePath: string): Promise<void> {
 }
 
 export async function runEditorHandoff(options: RunEditorHandoffOptions): Promise<void> {
-  const { filePath, suspend, launch = launchEditor } = options;
-  const command = resolveEditorCommand();
+  const { filePath, suspend, editor, launch = launchEditor } = options;
+  const command = resolveEditorCommand(process.env, editor);
   await suspend(async () => {
     await launch(command, filePath);
   });

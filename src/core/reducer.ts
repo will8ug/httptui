@@ -442,6 +442,7 @@ export function reducer(state: AppState, action: Action): AppState {
         transientError: null,
         ...(action.executorConfig && {
           certificates: action.executorConfig.certificates,
+          editor: action.executorConfig.editor,
         }),
       };
     }
@@ -910,6 +911,7 @@ export function createInitialState(props: AppProps): AppState {
     lastSearchQuery: '',
     maximizedPanel: null,
     certificates: props.executorConfig.certificates,
+    editor: props.executorConfig.editor,
     editTarget: 'url',
     editBuffers: { body: { text: '', cursor: 0 }, headers: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
     editScrollOffset: 0,

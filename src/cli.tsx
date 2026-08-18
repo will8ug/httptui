@@ -113,7 +113,7 @@ const app = render(
     environmentVariables={environmentVariables}
     activeEnvName={activeEnvName}
     availableEnvironments={availableEnvironments}
-    executorConfig={{ insecure, certificates: httptuiConfig?.certificates }}
+    executorConfig={{ insecure, certificates: httptuiConfig?.certificates, editor: httptuiConfig?.editor }}
   />,
   { alternateScreen: true },
 );

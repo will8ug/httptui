@@ -28,6 +28,20 @@ Project config values override global config values for all top-level keys. For 
 - **Global config**: Relative paths resolve against the global config directory (`~/.config/httptui/`).
 - **Project config**: Relative paths resolve against the directory containing the `.httptui.json` file.
 
+## Editor Command
+
+Both config files accept an optional top-level `editor` field naming the external editor for the `Ctrl+G` handoff. The value is a command line, not a file path: `"editor": "code --wait"` works, and paths containing spaces are not representable. A leading `~` expands to your home directory; relative values resolve against the working directory at launch, not against the config directory.
+
+An empty or whitespace-only value is ignored silently. Any other type prints an error to stderr naming the `editor` field and is ignored; the rest of the config still loads.
+
+```json
+{
+  "editor": "code --wait"
+}
+```
+
+The editor resolves in this order: the `editor` field, then `$VISUAL`, then `$EDITOR`, then `vi` (or `notepad` on Windows). See [Editing](editing.md).
+
 ## Related
 
 - [Environments](environments.md) — Register and switch named environments.
