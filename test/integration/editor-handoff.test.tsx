@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup } from 'ink-testing-library';
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path';
 
 import { parseAnyFormat } from '../../src/core/format-detector';
 import { parseHttpFile } from '../../src/core/parser';
-import type { ParseResult } from '../../src/core/types';
+import type { ExecutorConfig, ParseResult } from '../../src/core/types';
 import {
   CTRL_G,
   CTRL_S,
@@ -49,6 +49,12 @@ const MODIFIED_HTTP = [
   '',
 ].join('\n');
 
+const LOADED_HTTP = [
+  '### Loaded request',
+  'GET https://example.com/loaded-endpoint',
+  '',
+].join('\n');
+
 const originalVisual = process.env.VISUAL;
 const originalEditor = process.env.EDITOR;
 
@@ -79,10 +85,6 @@ function restoreEditorEnv(): void {
   }
 }
 
-function markerPath(): string {
-  return join(tempDir, 'launched.marker');
-}
-
 function writeScript(name: string, body: string): string {
   const scriptPath = join(tempDir, name);
   writeFileSync(scriptPath, `#!/bin/sh\n${body}`, { mode: 0o755 });
@@ -90,12 +92,14 @@ function writeScript(name: string, body: string): string {
   return scriptPath;
 }
 
+function writeMarkerEditor(name: string, body = '', exitCode = 0): { scriptPath: string; marker: string } {
+  const marker = join(tempDir, `${name}.marker`);
+  const scriptPath = writeScript(`${name}.sh`, `${body}\nprintf '1' > '${marker}'\nexit ${String(exitCode)}\n`);
+  return { scriptPath, marker };
+}
+
 function useFakeEditor(body: string, exitCode = 0): string {
-  const marker = markerPath();
-  const scriptPath = writeScript(
-    'fake-editor.sh',
-    `${body}\nprintf '1' > '${marker}'\nexit ${String(exitCode)}\n`,
-  );
+  const { scriptPath, marker } = writeMarkerEditor('fake-editor', body, exitCode);
   process.env.VISUAL = scriptPath;
   delete process.env.EDITOR;
   return marker;
@@ -111,18 +115,24 @@ function writeSource(name: string, content: string): string {
   return filePath;
 }
 
-function renderParsed(filePath: string, parsed: ParseResult) {
+function renderParsed(filePath: string, parsed: ParseResult, executorConfig?: ExecutorConfig) {
   return renderApp({
     filePath,
     requests: parsed.requests,
     variables: parsed.variables,
     fileVariables: parsed.variables,
+    ...(executorConfig && { executorConfig }),
   });
 }
 
 function renderHttp(content: string = INITIAL_HTTP) {
   const filePath = writeSource('api.http', content);
   return { filePath, ...renderParsed(filePath, parseHttpFile(content)) };
+}
+
+function renderHttpWithEditor(editor: string) {
+  const filePath = writeSource('api.http', INITIAL_HTTP);
+  return renderParsed(filePath, parseHttpFile(INITIAL_HTTP), { insecure: false, editor });
 }
 
 async function commitDirtyEdit(stdin: { write: (data: string) => void }): Promise<void> {
@@ -223,6 +233,62 @@ describe('editor-handoff integration', () => {
       expect(frame).not.toContain(REFUSAL_MESSAGE);
       expect(frame).not.toContain('Unsaved Changes');
       expect(existsSync(marker)).toBe(true);
+    });
+  });
+
+  describe('configured editor', () => {
+    const originalHttpTuiConfig = process.env.HTTP_TUI_CONFIG;
+
+    afterEach(() => {
+      if (originalHttpTuiConfig === undefined) {
+        delete process.env.HTTP_TUI_CONFIG;
+      } else {
+        process.env.HTTP_TUI_CONFIG = originalHttpTuiConfig;
+      }
+    });
+
+    it('launches the config editor in preference to VISUAL and EDITOR', async () => {
+      const visualMarker = useFakeEditor('');
+      const envEditor = writeMarkerEditor('env-editor');
+      process.env.EDITOR = envEditor.scriptPath;
+      const configEditor = writeMarkerEditor('config-editor');
+      const { stdin, lastFrame } = renderHttpWithEditor(configEditor.scriptPath);
+      await delay(KEY_DELAY_MS);
+
+      await press(stdin, CTRL_G);
+      await waitForMarker(configEditor.marker);
+
+      expect(lastFrame() ?? '').not.toContain(REFUSAL_MESSAGE);
+      await expectEditorNotLaunched(visualMarker);
+      await expectEditorNotLaunched(envEditor.marker);
+    });
+
+    it('launches the project config editor over the global config editor', async () => {
+      const globalEditor = writeMarkerEditor('global-editor');
+      const projectEditor = writeMarkerEditor('project-editor');
+      const globalConfigDir = join(tempDir, 'global-config');
+      mkdirSync(globalConfigDir);
+      writeFileSync(join(globalConfigDir, 'config.json'), JSON.stringify({ editor: globalEditor.scriptPath }), 'utf8');
+      writeFileSync(join(tempDir, '.httptui.json'), JSON.stringify({ editor: projectEditor.scriptPath }), 'utf8');
+      process.env.HTTP_TUI_CONFIG = globalConfigDir;
+      delete process.env.VISUAL;
+      delete process.env.EDITOR;
+
+      const { stdin, lastFrame } = renderHttp();
+      await delay(KEY_DELAY_MS);
+
+      const loadedPath = writeSource('loaded.http', LOADED_HTTP);
+      await press(stdin, 'o');
+      stdin.write(loadedPath);
+      await delay(KEY_DELAY_MS);
+      await press(stdin, ENTER);
+      const loadedFrame = await waitForFrameContaining(lastFrame, '/loaded-endpoint');
+      expect(loadedFrame).toContain('/loaded-endpoint');
+
+      await press(stdin, CTRL_G);
+      await waitForMarker(projectEditor.marker);
+
+      await expectEditorNotLaunched(globalEditor.marker);
     });
   });
 

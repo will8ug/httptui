@@ -151,7 +151,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     try {
-      await runEditorHandoff({ filePath: state.filePath, suspend: suspendTerminal });
+      await runEditorHandoff({ filePath: state.filePath, suspend: suspendTerminal, editor: state.editor });
     } catch (error) {
       dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
       return;
@@ -218,6 +218,7 @@ export function App(props: AppProps): React.ReactElement {
           const newExecutorConfig = {
             ...props.executorConfig,
             certificates: newConfig?.certificates,
+            editor: newConfig?.editor,
           };
 
           dispatch({

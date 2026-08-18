@@ -4,13 +4,15 @@ import path from 'node:path';
 
 import type { CertEntry, EnvironmentConfig, HttptuiConfig } from './types';
 
+// Expands only a bare leading `~`. Shell-style `~user` is not expanded:
+// `~alice/x` becomes `$HOME/alice/x`, not alice's home directory.
+function expandLeadingTilde(value: string): string {
+  return value.startsWith('~') ? path.join(os.homedir(), value.slice(1)) : value;
+}
+
 export function getConfigDir(): string {
   if (process.env.HTTP_TUI_CONFIG) {
-    const raw = process.env.HTTP_TUI_CONFIG;
-    if (raw.startsWith('~')) {
-      return path.join(os.homedir(), raw.slice(1));
-    }
-    return raw;
+    return expandLeadingTilde(process.env.HTTP_TUI_CONFIG);
   }
 
   if (process.env.XDG_CONFIG_HOME) {
@@ -142,6 +144,15 @@ function loadConfigFile(configPath: string): HttptuiConfig | null {
     }
   }
 
+  const rawEditor = obj.editor;
+  if (rawEditor !== undefined && rawEditor !== null) {
+    if (typeof rawEditor !== 'string') {
+      process.stderr.write('Error: "editor" must be a string in config.json\n');
+    } else if (rawEditor.trim() !== '') {
+      config.editor = expandLeadingTilde(rawEditor);
+    }
+  }
+
   return config;
 }
 
@@ -175,11 +186,7 @@ export function loadConfig(projectDir?: string): HttptuiConfig | null {
 }
 
 export function resolveCertPath(inputPath: string, baseDir: string): string {
-  let resolved = inputPath;
-
-  if (resolved.startsWith('~')) {
-    resolved = path.join(os.homedir(), resolved.slice(1));
-  }
+  const resolved = expandLeadingTilde(inputPath);
 
   if (path.isAbsolute(resolved)) {
     return resolved;

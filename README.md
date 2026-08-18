@@ -143,7 +143,7 @@ httptui api.http -E Staging
 | `Ctrl+S` | Commit edit or save to source file |
 | `Ctrl+A` | Jump to start of line              |
 | `Ctrl+E` | Jump to end of line                |
-| `Ctrl+G` | Edit requests in external editor `$EDITOR`  |
+| `Ctrl+G` | Edit requests in external editor (`$EDITOR` or config `editor`) |
 
 ## Documentation
 

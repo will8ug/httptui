@@ -18,11 +18,12 @@ Edits are kept in memory until you save. See [Saving](saving.md) to write them b
 
 Press `Ctrl+G` to open the loaded source file in your preferred editor. This is useful for larger edits — reformatting a body, bulk find-and-replace, or editing many requests at once — that are easier outside the single-line overlay.
 
-The editor command is resolved from the environment in this order:
+The editor command is resolved in this order:
 
-1. `$VISUAL`
-2. `$EDITOR`
-3. `vi` (or `notepad` on Windows)
+1. The `editor` field in config (global `config.json` or project `.httptui.json`) — see [Configuration](configuration.md)
+2. `$VISUAL`
+3. `$EDITOR`
+4. `vi` (or `notepad` on Windows)
 
 The external editor must block until closed — terminal editors like vim/nano do this by default; GUI editors typically need a wait flag. The value may include arguments, so `$EDITOR="code --wait"` works. httptui suspends its UI while the editor runs, and when the editor exits it compares the file's modification time: if the file changed, httptui re-reads and reloads it automatically.
 

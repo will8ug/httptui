@@ -27,6 +27,24 @@ describe('resolveEditorCommand — precedence', () => {
   it('falls back to the platform default when neither variable is set', () => {
     expect(resolveEditorCommand({})).toBe(process.platform === 'win32' ? 'notepad' : 'vi');
   });
+
+  it('prefers the config editor over VISUAL and EDITOR', () => {
+    expect(resolveEditorCommand({ VISUAL: 'vim', EDITOR: 'nano' }, 'code --wait')).toBe(
+      'code --wait',
+    );
+  });
+
+  it('treats a whitespace-only config editor as unset and falls back to VISUAL', () => {
+    expect(resolveEditorCommand({ VISUAL: 'vim' }, '   ')).toBe('vim');
+  });
+
+  it('treats an empty config editor as unset and falls back to VISUAL', () => {
+    expect(resolveEditorCommand({ VISUAL: 'vim' }, '')).toBe('vim');
+  });
+
+  it('trims surrounding whitespace from a non-empty config editor', () => {
+    expect(resolveEditorCommand({ VISUAL: 'vim' }, '  code --wait  ')).toBe('code --wait');
+  });
 });
 
 describe('parseEditorCommand — whitespace splitting', () => {
@@ -100,5 +118,22 @@ describe('runEditorHandoff — launcher substitution', () => {
 
     expect(suspendRan).toBe(true);
     expect(launched).toEqual({ command: resolveEditorCommand(), filePath: 'api.http' });
+  });
+
+  it('runs the injected launcher with the editor option as the command', async () => {
+    let launched: { command: string; filePath: string } | undefined;
+
+    await runEditorHandoff({
+      filePath: 'api.http',
+      editor: 'my-ed --flag',
+      suspend: (async (run: () => Promise<void>) => {
+        await run();
+      }) as unknown as SuspendTerminal,
+      launch: async (command, filePath) => {
+        launched = { command, filePath };
+      },
+    });
+
+    expect(launched).toEqual({ command: 'my-ed --flag', filePath: 'api.http' });
   });
 });

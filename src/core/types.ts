@@ -81,11 +81,13 @@ export interface EnvOption {
 export interface HttptuiConfig {
   certificates?: Record<string, CertEntry>;
   environments?: EnvironmentConfig[];
+  editor?: string;
 }
 
 export interface ExecutorConfig {
   insecure: boolean;
   certificates?: Record<string, CertEntry>;
+  editor?: string;
 }
 
 export type FocusedPanel = 'requests' | 'details' | 'response';
@@ -168,6 +170,7 @@ export interface AppState {
   editEscapeArmedAt: number | null;
   pendingDiscardAction: PendingDiscardAction | null;
   certificates?: Record<string, CertEntry>;
+  editor?: string;
 }
 
 export interface AppProps {

@@ -369,6 +369,68 @@ describe('loadConfig', () => {
       },
     });
   });
+
+  it('loads editor string with arguments as the active editor command', () => {
+    mockConfigFile({ editor: 'code --wait' });
+
+    expect(loadConfig()).toEqual({ editor: 'code --wait' });
+  });
+
+  it('expands leading tilde in editor to the home directory preserving arguments', () => {
+    mockConfigFile({ editor: '~/bin/my-editor --wait' });
+
+    expect(loadConfig()?.editor).toBe(path.join(os.homedir(), 'bin/my-editor --wait'));
+  });
+
+  it('treats empty editor value as unset silently while other fields load', () => {
+    mockConfigFile({
+      editor: '',
+      certificates: { 'api.example.com': { cert: '/cert', key: '/key' } },
+    });
+
+    expect(loadConfig()).toEqual({
+      certificates: { 'api.example.com': { cert: '/cert', key: '/key' } },
+    });
+    expect(vi.mocked(process.stderr.write)).not.toHaveBeenCalled();
+  });
+
+  it('treats whitespace-only editor value as unset silently while other fields load', () => {
+    mockConfigFile({
+      editor: '   ',
+      certificates: { 'api.example.com': { cert: '/cert', key: '/key' } },
+    });
+
+    expect(loadConfig()).toEqual({
+      certificates: { 'api.example.com': { cert: '/cert', key: '/key' } },
+    });
+    expect(vi.mocked(process.stderr.write)).not.toHaveBeenCalled();
+  });
+
+  it('emits error and treats non-string editor as unset while certificates still load', () => {
+    mockConfigFile({
+      editor: 3,
+      certificates: { 'api.example.com': { cert: '/cert', key: '/key' } },
+    });
+
+    expect(loadConfig()).toEqual({
+      certificates: { 'api.example.com': { cert: '/cert', key: '/key' } },
+    });
+    expect(vi.mocked(process.stderr.write)).toHaveBeenCalledWith(
+      expect.stringContaining('Error: "editor" must be a string in config.json'),
+    );
+  });
+
+  it('prefers project editor over global editor', () => {
+    mockMergeConfigs({ editor: 'vim' }, { editor: 'code --wait' });
+
+    expect(loadConfig('/project/api')).toEqual({ editor: 'code --wait' });
+  });
+
+  it('retains global editor when project config omits the field', () => {
+    mockMergeConfigs({ editor: 'vim' }, {});
+
+    expect(loadConfig('/project/api')).toEqual({ editor: 'vim' });
+  });
 });
 
 describe('resolveCertPath', () => {
