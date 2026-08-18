@@ -7,7 +7,7 @@ httptui loads configuration from two sources: a global config file and an option
 - **macOS/Linux**: `~/.config/httptui/config.json`
 - **Windows**: `%APPDATA%\httptui\config.json`
 
-Paths starting with `~` expand to your home directory. Relative paths resolve against the global config directory.
+Paths starting with `~` expand to your home directory. Shell-style `~user` expansion is not supported: `~alice/cert.pem` resolves to `alice/cert.pem` inside your own home directory, not to alice's home directory. Relative paths resolve against the global config directory.
 
 You can override the global config location using the `HTTP_TUI_CONFIG` environment variable:
 
