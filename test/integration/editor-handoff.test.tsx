@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path';
 
 import { parseAnyFormat } from '../../src/core/format-detector';
 import { parseHttpFile } from '../../src/core/parser';
-import type { ParseResult } from '../../src/core/types';
+import type { ExecutorConfig, ParseResult } from '../../src/core/types';
 import {
   CTRL_G,
   CTRL_S,
@@ -85,10 +85,6 @@ function restoreEditorEnv(): void {
   }
 }
 
-function markerPath(): string {
-  return join(tempDir, 'launched.marker');
-}
-
 function writeScript(name: string, body: string): string {
   const scriptPath = join(tempDir, name);
   writeFileSync(scriptPath, `#!/bin/sh\n${body}`, { mode: 0o755 });
@@ -96,21 +92,17 @@ function writeScript(name: string, body: string): string {
   return scriptPath;
 }
 
+function writeMarkerEditor(name: string, body = '', exitCode = 0): { scriptPath: string; marker: string } {
+  const marker = join(tempDir, `${name}.marker`);
+  const scriptPath = writeScript(`${name}.sh`, `${body}\nprintf '1' > '${marker}'\nexit ${String(exitCode)}\n`);
+  return { scriptPath, marker };
+}
+
 function useFakeEditor(body: string, exitCode = 0): string {
-  const marker = markerPath();
-  const scriptPath = writeScript(
-    'fake-editor.sh',
-    `${body}\nprintf '1' > '${marker}'\nexit ${String(exitCode)}\n`,
-  );
+  const { scriptPath, marker } = writeMarkerEditor('fake-editor', body, exitCode);
   process.env.VISUAL = scriptPath;
   delete process.env.EDITOR;
   return marker;
-}
-
-function writeMarkerEditor(name: string): { scriptPath: string; marker: string } {
-  const marker = join(tempDir, `${name}.marker`);
-  const scriptPath = writeScript(`${name}.sh`, `printf '1' > '${marker}'\nexit 0\n`);
-  return { scriptPath, marker };
 }
 
 function mutateTo(content: string): string {
@@ -123,12 +115,13 @@ function writeSource(name: string, content: string): string {
   return filePath;
 }
 
-function renderParsed(filePath: string, parsed: ParseResult) {
+function renderParsed(filePath: string, parsed: ParseResult, executorConfig?: ExecutorConfig) {
   return renderApp({
     filePath,
     requests: parsed.requests,
     variables: parsed.variables,
     fileVariables: parsed.variables,
+    ...(executorConfig && { executorConfig }),
   });
 }
 
@@ -139,14 +132,7 @@ function renderHttp(content: string = INITIAL_HTTP) {
 
 function renderHttpWithEditor(editor: string) {
   const filePath = writeSource('api.http', INITIAL_HTTP);
-  const parsed = parseHttpFile(INITIAL_HTTP);
-  return renderApp({
-    filePath,
-    requests: parsed.requests,
-    variables: parsed.variables,
-    fileVariables: parsed.variables,
-    executorConfig: { insecure: false, editor },
-  });
+  return renderParsed(filePath, parseHttpFile(INITIAL_HTTP), { insecure: false, editor });
 }
 
 async function commitDirtyEdit(stdin: { write: (data: string) => void }): Promise<void> {

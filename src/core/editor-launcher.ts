@@ -12,7 +12,7 @@ export interface RunEditorHandoffOptions {
 
 export function resolveEditorCommand(env: NodeJS.ProcessEnv = process.env, configEditor?: string): string {
   if (configEditor !== undefined && configEditor.trim() !== '') {
-    return configEditor;
+    return configEditor.trim();
   }
   if (env.VISUAL) {
     return env.VISUAL;

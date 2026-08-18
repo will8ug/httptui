@@ -41,6 +41,10 @@ describe('resolveEditorCommand — precedence', () => {
   it('treats an empty config editor as unset and falls back to VISUAL', () => {
     expect(resolveEditorCommand({ VISUAL: 'vim' }, '')).toBe('vim');
   });
+
+  it('trims surrounding whitespace from a non-empty config editor', () => {
+    expect(resolveEditorCommand({ VISUAL: 'vim' }, '  code --wait  ')).toBe('code --wait');
+  });
 });
 
 describe('parseEditorCommand — whitespace splitting', () => {
