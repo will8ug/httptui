@@ -6,6 +6,24 @@
   "bin": {
     "httptui": "./dist/cli.js"
   },
+  "main": "./dist/cli.js",
+  "exports": {
+    ".": {
+      "import": "./dist/cli.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/will8ug/httptui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/will8ug/httptui/issues"
+  },
+  "homepage": "https://github.com/will8ug/httptui",
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
