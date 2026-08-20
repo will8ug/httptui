@@ -39,6 +39,8 @@ Common GUI editors and their wait flags:
 
 The value is split on whitespace, so an editor path containing spaces cannot be used directly. Refer to the editor through a launcher or symlink without spaces — JetBrains Toolbox's "Create command-line launcher…" exists for exactly this.
 
+**Windows:** point the editor at an `.exe`, not a `.cmd`/`.bat` launcher. Commands like `code` resolve to batch shims (`code.cmd`) on Windows, and Node.js refuses to spawn batch files directly ([CVE-2024-27980](https://nodejs.org/en/blog/vulnerability/april-2024-security-releases-2)) — the handoff fails with `spawn EINVAL`. Use the executable instead, e.g. `$env:EDITOR = "code.exe --wait"`.
+
 Only `.http` and `.rest` files can be handed off to an external editor; other formats show a notice instead. If you have unsaved in-session edits, you are prompted to confirm discarding them before the handoff.
 
 ## Related
