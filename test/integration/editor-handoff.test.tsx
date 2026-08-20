@@ -193,7 +193,7 @@ describe('editor-handoff integration', () => {
   describe('format gate', () => {
     it('refuses a Postman source with a transient message and does not launch', async () => {
       const marker = useFakeEditor('exit 0');
-      const content = readFileSync(resolve(__dirname, '../fixtures/postman-basic.json'), 'utf8');
+      const content = readFileSync(resolve(__dirname, '../fixtures/postman/postman-basic.json'), 'utf8');
       const filePath = writeSource('collection.json', content);
       const { stdin, lastFrame } = renderParsed(filePath, parseAnyFormat(filePath, content));
       await delay(KEY_DELAY_MS);
@@ -208,7 +208,7 @@ describe('editor-handoff integration', () => {
 
     it('refuses an OpenAPI source with a transient message and does not launch', async () => {
       const marker = useFakeEditor('exit 0');
-      const content = readFileSync(resolve(__dirname, '../fixtures/openapi-basic.yaml'), 'utf8');
+      const content = readFileSync(resolve(__dirname, '../fixtures/openapi/openapi-basic.yaml'), 'utf8');
       const filePath = writeSource('openapi.yaml', content);
       const { stdin, lastFrame } = renderParsed(filePath, parseAnyFormat(filePath, content));
       await delay(KEY_DELAY_MS);
@@ -534,7 +534,7 @@ describe('editor-handoff integration', () => {
 
     it('never reaches the prompt for a format-refused source that is dirty', async () => {
       const marker = useFakeEditor('');
-      const content = readFileSync(resolve(__dirname, '../fixtures/postman-basic.json'), 'utf8');
+      const content = readFileSync(resolve(__dirname, '../fixtures/postman/postman-basic.json'), 'utf8');
       const filePath = writeSource('collection.json', content);
       const { stdin, lastFrame } = renderParsed(filePath, parseAnyFormat(filePath, content));
       await delay(KEY_DELAY_MS);

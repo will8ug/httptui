@@ -10,7 +10,7 @@ function readFixture(name: string): string {
 
 describe('detectFormat', () => {
   it('returns postman for a collection with info.schema containing "postman"', () => {
-    const content = readFixture('postman-basic.json');
+    const content = readFixture('postman/postman-basic.json');
     expect(detectFormat('collection.json', content)).toBe('postman');
   });
 
@@ -20,7 +20,7 @@ describe('detectFormat', () => {
   });
 
   it('returns http for non-JSON file extension', () => {
-    const content = readFixture('dummy.http');
+    const content = readFixture('http/dummy.http');
     expect(detectFormat('dummy.http', content)).toBe('http');
   });
 
@@ -63,7 +63,7 @@ describe('detectFormat', () => {
   });
 
   it('does not misclassify a Postman collection as OpenAPI', () => {
-    const content = readFixture('postman-basic.json');
+    const content = readFixture('postman/postman-basic.json');
     expect(detectFormat('collection.json', content)).toBe('postman');
   });
 

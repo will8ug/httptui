@@ -6,7 +6,7 @@ import { assertDefinedToNarrowType } from '../helpers/assertions.js';
 import { parsePostmanCollection } from '../../src/core/postman-parser';
 
 function readFixture(name: string): string {
-  return readFileSync(resolve(__dirname, '..', 'fixtures', name), 'utf8');
+  return readFileSync(resolve(__dirname, '..', 'fixtures', 'postman', name), 'utf8');
 }
 
 describe('parsePostmanCollection', () => {

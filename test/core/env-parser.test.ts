@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { parseEnvironmentFile } from '../../src/core/env-parser';
 
 function readFixture(name: string): string {
-  return readFileSync(resolve(__dirname, '..', 'fixtures', name), 'utf8');
+  return readFileSync(resolve(__dirname, '..', 'fixtures', 'postman', name), 'utf8');
 }
 
 describe('parseEnvironmentFile', () => {

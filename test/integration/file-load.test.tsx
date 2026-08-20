@@ -301,7 +301,7 @@ describe('file-load tab completion', () => {
 });
 
 describe('file-load regression — env revert shows file variables', () => {
-  const fixturePath = resolve(__dirname, '../fixtures/load-revert-fixture.http');
+  const fixturePath = resolve(__dirname, '../fixtures/http/load-revert-fixture.http');
 
   const initialRequests: ParsedRequest[] = [
     {

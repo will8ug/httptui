@@ -7,7 +7,7 @@ import { assertDefinedToNarrowType } from '../helpers/assertions.js';
 import { parseOpenApiSpec, logger } from '../../src/core/openapi-parser';
 
 function readFixture(name: string): string {
-  return readFileSync(resolve(__dirname, '..', 'fixtures', name), 'utf8');
+  return readFileSync(resolve(__dirname, '..', 'fixtures', 'openapi', name), 'utf8');
 }
 
 let warnSpy: MockInstance<typeof logger.warn>;
