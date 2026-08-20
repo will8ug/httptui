@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 
 import React, { useEffect, useReducer } from 'react';
@@ -37,6 +37,8 @@ import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, 
 import { EDIT_CANCEL_WINDOW_MS, TRANSIENT_CLEAR_MS } from './utils/timing';
 import { hasUnsavedChanges, resolveRequestDetails } from './utils/request';
 import { getResponseTotalLines } from './utils/scroll';
+import { completePath } from './utils/path-completion';
+import type { PathEntry } from './utils/path-completion';
 
 function findMatchIndices(response: ResponseData, rawMode: boolean, query: string): number[] {
   const formattedBody = formatResponseBody(response.body, rawMode);
@@ -232,6 +234,28 @@ export function App(props: AppProps): React.ReactElement {
           dispatch({ type: 'SET_FILE_LOAD_ERROR', error: toErrorInfo(error).message });
         }
 
+        return;
+      }
+
+      if (key.tab) {
+        const listDir = (dir: string): PathEntry[] => {
+          try {
+            return readdirSync(resolve(dir), { withFileTypes: true }).map((entry) => ({
+              name: entry.name,
+              isDirectory: entry.isDirectory(),
+            }));
+          } catch {
+            return [];
+          }
+        };
+
+        const completed = completePath({ text: state.fileLoadInput, cursor: state.fileLoadCursor }, listDir);
+
+        if (completed.text !== state.fileLoadInput) {
+          dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: completed.text, cursor: completed.cursor });
+        }
+
+        dispatch({ type: 'SET_FILE_LOAD_COMPLETIONS', completions: completed.candidates });
         return;
       }
 
@@ -904,7 +928,7 @@ return (
       }
       overlay={
         state.showHelp ? <HelpOverlay visible={state.showHelp} /> :
-        state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} cursor={state.fileLoadCursor} error={state.fileLoadError} /> :
+        state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} cursor={state.fileLoadCursor} error={state.fileLoadError} completions={state.fileLoadCompletions} /> :
         state.mode === 'saveLoad' ? <SaveOverlay value={state.saveInput} cursor={state.saveCursor} error={state.saveError} /> :
         state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} scrollOffset={state.envSelectScrollOffset} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
         state.mode === 'edit' ? <EditOverlay title="Edit Request" tabs={EDIT_TAB_ORDER} activeTab={state.editTarget} buffer={state.editBuffers[state.editTarget].text} cursor={state.editBuffers[state.editTarget].cursor} scrollOffset={state.editScrollOffset} horizontalOffset={state.editHorizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
