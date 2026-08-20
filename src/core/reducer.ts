@@ -394,6 +394,7 @@ export function reducer(state: AppState, action: Action): AppState {
         fileLoadInput: '',
         fileLoadCursor: 0,
         fileLoadError: null,
+        fileLoadCompletions: null,
       };
 
     case 'UPDATE_FILE_LOAD_INPUT':
@@ -401,18 +402,26 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         fileLoadInput: action.value,
         fileLoadCursor: action.cursor,
+        fileLoadCompletions: null,
       };
 
     case 'MOVE_FILE_LOAD_CURSOR':
       return {
         ...state,
         fileLoadCursor: action.cursor,
+        fileLoadCompletions: null,
       };
 
     case 'SET_FILE_LOAD_ERROR':
       return {
         ...state,
         fileLoadError: action.error,
+      };
+
+    case 'SET_FILE_LOAD_COMPLETIONS':
+      return {
+        ...state,
+        fileLoadCompletions: action.completions,
       };
 
     case 'LOAD_FILE': {
@@ -438,6 +447,7 @@ export function reducer(state: AppState, action: Action): AppState {
         fileLoadInput: '',
         fileLoadCursor: 0,
         fileLoadError: null,
+        fileLoadCompletions: null,
         transientMessage: `Loaded: ${action.filePath.split('/').pop() ?? ''}`,
         transientError: null,
         ...(action.executorConfig && {
@@ -454,6 +464,7 @@ export function reducer(state: AppState, action: Action): AppState {
         fileLoadInput: '',
         fileLoadCursor: 0,
         fileLoadError: null,
+        fileLoadCompletions: null,
       };
 
     case 'ENTER_SAVE': {
@@ -899,6 +910,7 @@ export function createInitialState(props: AppProps): AppState {
     fileLoadInput: '',
     fileLoadCursor: 0,
     fileLoadError: null,
+    fileLoadCompletions: null,
     saveInput: '',
     saveCursor: 0,
     saveError: null,

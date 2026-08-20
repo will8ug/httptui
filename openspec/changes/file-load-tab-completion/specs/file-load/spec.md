@@ -55,5 +55,5 @@ When exactly one entry matches, the partial name SHALL be replaced by the full e
 - **THEN** the input SHALL become `admin/.env`
 
 #### Scenario: Completion uses only the text before the cursor
-- **WHEN** the working directory contains `users.http` and no other entry starting with `us`, the input is `usersX` with the cursor after `us`, and the user presses `Tab`
+- **WHEN** the working directory contains `users.http` and `users-staging.http`, the input is `usersX` with the cursor after `us`, and the user presses `Tab`
 - **THEN** the input SHALL become `usersersX` with the cursor after the inserted `users`

@@ -146,6 +146,7 @@ export interface AppState {
   fileLoadInput: string;
   fileLoadCursor: number;
   fileLoadError: string | null;
+  fileLoadCompletions: string[] | null;
   saveInput: string;
   saveCursor: number;
   saveError: string | null;
@@ -204,6 +205,7 @@ export type Action =
   | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string; cursor: number }
   | { type: 'MOVE_FILE_LOAD_CURSOR'; cursor: number }
   | { type: 'SET_FILE_LOAD_ERROR'; error: string }
+  | { type: 'SET_FILE_LOAD_COMPLETIONS'; completions: string[] | null }
   | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string; executorConfig?: ExecutorConfig }
   | { type: 'CANCEL_FILE_LOAD' }
   | { type: 'TOGGLE_WRAP' }
