@@ -16,6 +16,7 @@ GET https://api.example.com/users
 Headers follow the request line. A blank line separates headers from the request body.
 
 ```http
+### Post users
 POST https://api.example.com/users
 Content-Type: application/json
 
