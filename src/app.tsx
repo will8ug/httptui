@@ -474,6 +474,7 @@ export function App(props: AppProps): React.ReactElement {
 
     if (state.mode === 'edit') {
       if (key.escape) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
         if (!selectedRequest) {
           dispatch({ type: 'CANCEL_EDIT' });
           return;
