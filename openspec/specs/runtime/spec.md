@@ -15,11 +15,11 @@ The project SHALL declare Node.js 24 as its minimum supported runtime version. T
 - **THEN** the `engines.node` field SHALL equal `">=24"` (or an equivalent range that excludes all versions below 24.0.0)
 
 #### Scenario: Installing on Node 22 produces an npm engines warning
-- **WHEN** a user runs `npm install -g httptui` on a Node.js 22.x runtime
+- **WHEN** a user runs `npm install -g @will8ug/httptui` on a Node.js 22.x runtime
 - **THEN** npm SHALL emit an `EBADENGINE` warning indicating the installed Node version does not satisfy the declared engines requirement
 
 #### Scenario: Installing on Node 24 or newer succeeds without engines warnings
-- **WHEN** a user runs `npm install -g httptui` on Node.js 24.0.0 or any newer release
+- **WHEN** a user runs `npm install -g @will8ug/httptui` on Node.js 24.0.0 or any newer release
 - **THEN** npm SHALL NOT emit an `EBADENGINE` warning for httptui's declared engines
 
 ### Requirement: Build target matches minimum runtime

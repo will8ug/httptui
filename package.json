@@ -1,5 +1,5 @@
 {
-  "name": "httptui",
+  "name": "@will8ug/httptui",
   "version": "0.7.0",
   "description": "Interactive TUI for sending HTTP requests from .http files",
   "type": "module",

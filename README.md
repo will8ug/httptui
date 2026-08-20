@@ -39,14 +39,16 @@ npm install
 npm run build
 npm link
 
-# npm unlink httptui
+# Uninstall from anywhere
+# npm unlink @will8ug/httptui
+# Or under current project folder:
+# npm unlink
 ```
 
 Or
 
 ```bash
-# NOT supported yet
-npm install -g httptui
+npm install -g @will8ug/httptui
 ```
 
 ## Usage
