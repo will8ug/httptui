@@ -108,7 +108,7 @@ Every quoted argument (URL, `-H` values, `--data-raw` body, `--form-string` valu
 - **THEN** the command SHALL contain `-H 'X-Note: it'\''s fine'`
 
 ### Requirement: Clipboard delivery via native tools
-The system SHALL copy the command to the system clipboard by invoking the platform's native clipboard tool: `pbcopy` on macOS (with UTF-8 locale so multi-byte characters survive), PowerShell `Set-Clipboard` on Windows (reading the text from stdin encoded as UTF-8 base64 to avoid console-codepage corruption; `clip.exe` SHALL NOT be used because it decodes stdin using the console codepage), and on Linux `wl-copy` when a Wayland display is present, otherwise `xclip -selection clipboard`, otherwise `xsel --clipboard --input` when an X11 display is present. The command SHALL be delivered with no trailing newline appended. No escape-sequence-based clipboard mechanism SHALL be used — native tools only.
+The system SHALL copy the command to the system clipboard by invoking the platform's native clipboard tool: `pbcopy` on macOS (with UTF-8 locale so multi-byte characters survive), PowerShell `Set-Clipboard` on Windows (reading the text passed as a UTF-8 base64 argument, decoded inside the PowerShell command, to avoid console-codepage corruption; `clip.exe` SHALL NOT be used because it decodes stdin using the console codepage), and on Linux `wl-copy` when a Wayland display is present, otherwise `xclip -selection clipboard`, otherwise `xsel --clipboard --input` when an X11 display is present. The command SHALL be delivered with no trailing newline appended. No escape-sequence-based clipboard mechanism SHALL be used — native tools only.
 
 #### Scenario: macOS uses pbcopy with UTF-8 locale
 - **WHEN** the command is copied on macOS

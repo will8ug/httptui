@@ -62,7 +62,7 @@ An inline async `copySelectedAsCurl()` in `app.tsx` (no reducer action — nothi
 - [PowerShell startup latency (~0.5–2s) on Windows copy] → Acceptable for a keystroke-triggered action; the transient message appears after resolution regardless. Alternative (`clip.exe`) corrupts non-ASCII and was rejected.
 - [Executor and serializer Content-Type logic drift] → Shared predicate helper (Decision 3); both call sites tested against the same scenario table.
 - [`--data-raw` with embedded newlines pasted into non-bash shells breaks] → Documented bash-only scope; single-line-continuation-free output already maximizes paste robustness within that scope.
-- [Large bodies produce very long single-line commands] → No size cap in v1; clipboards handle megabytes. Revisit only if a real complaint appears (OSC 52's ~48KB limit would matter only if OSC 52 is ever added).
+- [Large bodies produce very long single-line commands] → No size cap in v1; native clipboards handle megabytes on macOS/Linux, but the Windows base64-argument transport is bounded by the ~32,767-character CreateProcess command-line limit (base64 inflates text ~4/3, so commands past roughly 24 KB of source text fail, surfacing as the generic PowerShell-not-runnable error). Revisit only if a real complaint appears (OSC 52's ~48KB limit would matter only if OSC 52 is ever added).
 
 ## Migration Plan
 
