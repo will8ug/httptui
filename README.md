@@ -20,6 +20,7 @@
 - **Environment Management**: Load environment files, register named environments, switch at runtime (`E`).
 - **mTLS & Client Certificates**: Per-host client certificates (PEM/PFX) with wildcard matching.
 - **Export as .http**: Save requests to `.http` format with variables preserved (`S`).
+- **Copy as curl**: Copy the selected request as a curl command to the clipboard (`y`).
 
 ![httptui shortcuts](assets/httptui-shortcuts.png)
 
@@ -117,6 +118,7 @@ httptui api.http -E Staging
 | `o` | Open a different .http file |
 | `E` | Switch environment |
 | `S` | Save as .http file |
+| `y` | Copy request as curl |
 
 ### Display
 

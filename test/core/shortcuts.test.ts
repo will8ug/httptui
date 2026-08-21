@@ -202,3 +202,26 @@ describe('SHORTCUTS registry — editor-handoff entry', () => {
     expect(entry?.description).toBe('Edit requests externally');
   });
 });
+
+describe('SHORTCUTS registry — copy-as-curl entry', () => {
+  it('contains the `y` entry (copy request as curl)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 'y');
+    expect(entry).toBeDefined();
+    expect(entry?.label).toBe('');
+    expect(entry?.description).toBe('Copy request as curl');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('request');
+  });
+
+  it('does not appear in the status bar', () => {
+    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
+    expect(barKeys).not.toContain('y');
+  });
+
+  it('appears in the help overlay Request group with its description', () => {
+    const helpEntries = SHORTCUTS.filter((s) => s.showInHelp && s.group === 'request');
+    const entry = helpEntries.find((s) => s.key === 'y');
+    expect(entry?.description).toBe('Copy request as curl');
+  });
+});

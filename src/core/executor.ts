@@ -1,5 +1,6 @@
 import { Agent, FormData, request } from 'undici';
 
+import { shouldAddJsonContentType } from './headers';
 import type { ExecutorConfig, ErrorInfo, ResolvedRequest, ResponseData } from './types';
 
 const STATUS_TEXTS: Record<number, string> = {
@@ -17,15 +18,6 @@ const STATUS_TEXTS: Record<number, string> = {
   502: 'Bad Gateway',
   503: 'Service Unavailable',
 };
-
-function looksLikeJson(body: string): boolean {
-  const trimmedBody = body.trimStart();
-  return trimmedBody.startsWith('{') || trimmedBody.startsWith('[');
-}
-
-function hasContentTypeHeader(headers: Record<string, string>): boolean {
-  return Object.keys(headers).some((headerName) => headerName.toLowerCase() === 'content-type');
-}
 
 function removeContentTypeHeader(headers: Record<string, string>): void {
   const contentTypeKey = Object.keys(headers).find((k) => k.toLowerCase() === 'content-type');
@@ -121,11 +113,7 @@ export async function executeRequest(
   } else {
     body = resolvedRequest.body;
 
-    if (
-      body !== undefined &&
-      !hasContentTypeHeader(headers) &&
-      looksLikeJson(body)
-    ) {
+    if (body !== undefined && shouldAddJsonContentType(body, headers)) {
       headers['Content-Type'] = 'application/json';
     }
   }
