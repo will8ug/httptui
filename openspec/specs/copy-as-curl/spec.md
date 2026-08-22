@@ -4,7 +4,7 @@
 
 Copy the currently selected request as a runnable, single-line `curl` command to the system clipboard, reflecting the fully resolved request — including variable substitutions, the executor's implicit Content-Type defaulting, and TLS options — so the pasted command reproduces what httptui would send.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Serialize resolved request as curl command
 The system SHALL provide a pure serialization of the currently selected request into a single-line `curl` command. The serialized request SHALL be the fully resolved request: all `{{variable}}` placeholders SHALL be substituted using the same variable-resolution path used when sending the request, with the same base directory for dotenv lookups. Values sourced from environment variables or dotenv SHALL appear resolved in the output — the copied command is intended to be runnable, and secret exposure on the clipboard is accepted behavior. The command SHALL start with `curl ` followed by the method flag, the quoted URL, one `-H` argument per header, the body arguments, and the TLS options, in that order, separated by single spaces.
