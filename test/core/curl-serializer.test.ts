@@ -181,6 +181,20 @@ describe('toCurlCommand', () => {
       expect(toCurlCommand(request, noTls)).not.toMatch(/multipart/i);
     });
 
+    it('omits any Content-Type header when form-data fields are present, not only multipart', () => {
+      const request = createResolvedRequest({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: undefined,
+        formdataFields: [{ key: 'username', value: 'alice', type: 'text' }],
+      });
+
+      const command = toCurlCommand(request, noTls);
+
+      expect(command).not.toMatch(/content-type/i);
+      expect(command).toContain(`--form-string 'username=alice'`);
+    });
+
     it('treats an empty formdataFields array as no form-data, falling back to the body path', () => {
       const request = createResolvedRequest({
         method: 'POST',
@@ -219,7 +233,7 @@ describe('toCurlCommand', () => {
       expect(toCurlCommand(request, { insecure: true })).toBe(`curl 'https://example.com/api' -k`);
     });
 
-    it('appends PEM certificate paths as --cert and --key', () => {
+    it('appends PEM certificate paths as quoted --cert and --key arguments', () => {
       const request = createResolvedRequest();
 
       expect(
@@ -227,10 +241,10 @@ describe('toCurlCommand', () => {
           insecure: false,
           certificate: { cert: '/certs/client.pem', key: '/certs/client.key' },
         }),
-      ).toBe(`curl 'https://example.com/api' --cert /certs/client.pem --key /certs/client.key`);
+      ).toBe(`curl 'https://example.com/api' --cert '/certs/client.pem' --key '/certs/client.key'`);
     });
 
-    it('appends PFX certificate path and passphrase as --cert and --pass', () => {
+    it('appends PFX certificate path and passphrase as quoted --cert and --pass arguments', () => {
       const request = createResolvedRequest();
 
       expect(
@@ -238,7 +252,31 @@ describe('toCurlCommand', () => {
           insecure: false,
           certificate: { pfx: '/certs/client.pfx', passphrase: 's3cret' },
         }),
-      ).toBe(`curl 'https://example.com/api' --cert /certs/client.pfx --pass s3cret`);
+      ).toBe(`curl 'https://example.com/api' --cert '/certs/client.pfx' --pass 's3cret'`);
+    });
+
+    it('quotes a certificate path containing a space', () => {
+      const request = createResolvedRequest();
+
+      expect(
+        toCurlCommand(request, {
+          insecure: false,
+          certificate: { cert: '/certs/my certs/client.pem', key: '/certs/my certs/client.key' },
+        }),
+      ).toBe(
+        `curl 'https://example.com/api' --cert '/certs/my certs/client.pem' --key '/certs/my certs/client.key'`,
+      );
+    });
+
+    it('escapes an embedded single quote in the certificate passphrase', () => {
+      const request = createResolvedRequest();
+
+      expect(
+        toCurlCommand(request, {
+          insecure: false,
+          certificate: { pfx: '/certs/client.pfx', passphrase: `p@a$s'word` },
+        }),
+      ).toBe(`curl 'https://example.com/api' --cert '/certs/client.pfx' --pass 'p@a$s'\\''word'`);
     });
 
     it('emits --cacert after the cert flags when a ca file is present', () => {
@@ -254,7 +292,7 @@ describe('toCurlCommand', () => {
           },
         }),
       ).toBe(
-        `curl 'https://example.com/api' --cert /certs/client.pem --key /certs/client.key --cacert /certs/ca.pem`,
+        `curl 'https://example.com/api' --cert '/certs/client.pem' --key '/certs/client.key' --cacert '/certs/ca.pem'`,
       );
     });
 
@@ -266,7 +304,7 @@ describe('toCurlCommand', () => {
           insecure: true,
           certificate: { cert: '/certs/client.pem', key: '/certs/client.key' },
         }),
-      ).toBe(`curl 'https://example.com/api' -k --cert /certs/client.pem --key /certs/client.key`);
+      ).toBe(`curl 'https://example.com/api' -k --cert '/certs/client.pem' --key '/certs/client.key'`);
     });
 
     it('emits no TLS, timeout, or redirect flags when none are configured', () => {

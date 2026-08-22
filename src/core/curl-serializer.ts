@@ -10,8 +10,8 @@ function quoteBashArgument(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
-function isMultipartContentType(name: string, value: string): boolean {
-  return name.toLowerCase() === 'content-type' && value.toLowerCase().startsWith('multipart/form-data');
+function isContentTypeHeader(name: string): boolean {
+  return name.toLowerCase() === 'content-type';
 }
 
 /**
@@ -34,7 +34,7 @@ export function toCurlCommand(resolvedRequest: ResolvedRequest, options: CurlCom
   const hasFormdataFields = formdataFields.length > 0;
 
   for (const [name, value] of Object.entries(resolvedRequest.headers)) {
-    if (hasFormdataFields && isMultipartContentType(name, value)) {
+    if (hasFormdataFields && isContentTypeHeader(name)) {
       continue;
     }
     args.push('-H', quoteBashArgument(`${name}: ${value}`));
@@ -58,11 +58,11 @@ export function toCurlCommand(resolvedRequest: ResolvedRequest, options: CurlCom
 
   const certificate = options.certificate;
   if (certificate) {
-    if (certificate.cert !== undefined) args.push('--cert', certificate.cert);
-    if (certificate.key !== undefined) args.push('--key', certificate.key);
-    if (certificate.pfx !== undefined) args.push('--cert', certificate.pfx);
-    if (certificate.passphrase !== undefined) args.push('--pass', certificate.passphrase);
-    if (certificate.ca !== undefined) args.push('--cacert', certificate.ca);
+    if (certificate.cert !== undefined) args.push('--cert', quoteBashArgument(certificate.cert));
+    if (certificate.key !== undefined) args.push('--key', quoteBashArgument(certificate.key));
+    if (certificate.pfx !== undefined) args.push('--cert', quoteBashArgument(certificate.pfx));
+    if (certificate.passphrase !== undefined) args.push('--pass', quoteBashArgument(certificate.passphrase));
+    if (certificate.ca !== undefined) args.push('--cacert', quoteBashArgument(certificate.ca));
   }
 
   return args.join(' ');

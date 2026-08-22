@@ -74,15 +74,20 @@ The serializer SHALL apply the same implicit `Content-Type` rule as the request 
 - **THEN** the command SHALL NOT contain any Content-Type header
 
 ### Requirement: Form-data body serialization
-When the resolved request carries form-data fields, the serializer SHALL emit one `--form-string 'key=value'` argument per field, in field order, and SHALL omit any `multipart/form-data` `Content-Type` header (curl generates its own boundary, mirroring the executor's removal of the informational Content-Type before send). `--form-string` SHALL be used so that values beginning with `@` or `<` are sent literally rather than read as files.
+When the resolved request carries form-data fields, the serializer SHALL emit one `--form-string 'key=value'` argument per field, in field order, and SHALL omit any `Content-Type` header regardless of its value, mirroring the executor's unconditional removal of the header before send (curl generates its own multipart boundary, exactly as undici does). `--form-string` SHALL be used so that values beginning with `@` or `<` are sent literally rather than read as files.
 
 #### Scenario: Text form-data fields serialize as form-string flags
 - **WHEN** the resolved request has form-data fields `username=alice` and `note=@mention`
 - **THEN** the command SHALL contain `--form-string 'username=alice' --form-string 'note=@mention'`
 - **AND** the command SHALL NOT contain a `multipart/form-data` Content-Type header
 
+#### Scenario: Non-multipart Content-Type is also omitted with form-data fields
+- **WHEN** the resolved request has form-data fields and a `Content-Type: application/json` header
+- **THEN** the command SHALL NOT contain any Content-Type header
+- **AND** the `--form-string` arguments SHALL still be emitted
+
 ### Requirement: TLS option mapping
-When insecure mode is active (the `--insecure`/`-k` CLI flag), the serializer SHALL append the `-k` flag to the command. When a client certificate matches the resolved request's host, the serializer SHALL append the certificate's file paths: PEM entries as `--cert <cert> --key <key>`, PFX entries as `--cert <pfx> --pass <passphrase>`, and a `ca` file when present as `--cacert <ca>`. When neither applies, no TLS flags SHALL be emitted. No `--max-time` or `-L` flag SHALL be emitted: the executor's 30-second timeout is client policy rather than part of the request, and neither curl nor the executor follows redirects.
+When insecure mode is active (the `--insecure`/`-k` CLI flag), the serializer SHALL append the `-k` flag to the command. When a client certificate matches the resolved request's host, the serializer SHALL append the certificate's file paths as quoted arguments: PEM entries as `--cert '<cert>' --key '<key>'`, PFX entries as `--cert '<pfx>' --pass '<passphrase>'`, and a `ca` file when present as `--cacert '<ca>'`. When neither applies, no TLS flags SHALL be emitted. No `--max-time` or `-L` flag SHALL be emitted: the executor's 30-second timeout is client policy rather than part of the request, and neither curl nor the executor follows redirects.
 
 #### Scenario: Insecure mode adds -k
 - **WHEN** httptui was started with `--insecure` and the user copies any request
@@ -90,22 +95,26 @@ When insecure mode is active (the `--insecure`/`-k` CLI flag), the serializer SH
 
 #### Scenario: Matched PEM client certificate adds cert and key flags
 - **WHEN** the resolved URL's host matches a PEM certificate entry with `cert: /certs/client.pem` and `key: /certs/client.key`
-- **THEN** the command SHALL contain `--cert /certs/client.pem --key /certs/client.key`
+- **THEN** the command SHALL contain `--cert '/certs/client.pem' --key '/certs/client.key'`
 
 #### Scenario: Matched PFX certificate adds cert and pass flags
 - **WHEN** the resolved URL's host matches a PFX entry with `pfx: /certs/client.pfx` and passphrase `s3cret`
-- **THEN** the command SHALL contain `--cert /certs/client.pfx --pass s3cret`
+- **THEN** the command SHALL contain `--cert '/certs/client.pfx' --pass 's3cret'`
 
 #### Scenario: No TLS options when none configured
 - **WHEN** insecure mode is off and no certificate matches the host
 - **THEN** the command SHALL NOT contain `-k`, `--cert`, `--key`, `--pass`, or `--cacert`
 
 ### Requirement: Bash single-quote escaping
-Every quoted argument (URL, `-H` values, `--data-raw` body, `--form-string` values) SHALL be wrapped in single quotes, and any embedded single quote SHALL be escaped as `'\''`. No platform-specific quoting variants SHALL be produced; the output targets POSIX shells, and Windows users paste it into bash-compatible environments (WSL, Git Bash) at their discretion.
+Every argument (URL, `-H` values, `--data-raw` body, `--form-string` values, certificate paths, and the certificate passphrase) SHALL be wrapped in single quotes, and any embedded single quote SHALL be escaped as `'\''`. No platform-specific quoting variants SHALL be produced; the output targets POSIX shells, and Windows users paste it into bash-compatible environments (WSL, Git Bash) at their discretion.
 
 #### Scenario: Embedded single quote is escaped
 - **WHEN** the resolved request has header `X-Note: it's fine`
 - **THEN** the command SHALL contain `-H 'X-Note: it'\''s fine'`
+
+#### Scenario: Certificate passphrase with shell metacharacters is quoted
+- **WHEN** the matched certificate has passphrase `p@a$s'word`
+- **THEN** the command SHALL contain `--pass 'p@a$s'\''word'`
 
 ### Requirement: Clipboard delivery via native tools
 The system SHALL copy the command to the system clipboard by invoking the platform's native clipboard tool: `pbcopy` on macOS (with UTF-8 locale so multi-byte characters survive), PowerShell `Set-Clipboard` on Windows (reading the text passed as a UTF-8 base64 argument, decoded inside the PowerShell command, to avoid console-codepage corruption; `clip.exe` SHALL NOT be used because it decodes stdin using the console codepage), and on Linux `wl-copy` when a Wayland display is present, otherwise `xclip -selection clipboard`, otherwise `xsel --clipboard --input` when an X11 display is present. The command SHALL be delivered with no trailing newline appended. No escape-sequence-based clipboard mechanism SHALL be used — native tools only.
