@@ -24,7 +24,7 @@ import { formatResponseBody } from './core/formatter';
 import { headersToText } from './core/headers';
 import { computeVerticalMaxOffset, createInitialState, reducer } from './core/reducer';
 import { computeResponseLayout } from './core/response-layout';
-import type { AppProps, AppState, ResponseData } from './core/types';
+import type { AppProps, AppState, CertEntry, ResponseData } from './core/types';
 import { EDIT_TAB_ORDER } from './core/types';
 import { serializeHttpFile } from './core/http-serializer';
 import { buildInPlaceContent } from './core/in-place-save';
@@ -32,6 +32,8 @@ import { detectFormat, parseAnyFormat } from './core/format-detector';
 import { parseEnvironmentFile } from './core/env-parser';
 import { resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
+import { copyToClipboard } from './core/clipboard';
+import { toCurlCommand } from './core/curl-serializer';
 import { loadConfig } from './core/config';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getEditorContentWidth, getEditorVisibleHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
 import { EDIT_CANCEL_WINDOW_MS, TRANSIENT_CLEAR_MS } from './utils/timing';
@@ -175,6 +177,29 @@ export function App(props: AppProps): React.ReactElement {
       dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
     } catch (error) {
       dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
+    }
+  };
+
+  const copySelectedAsCurl = async (): Promise<void> => {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
+    if (!selectedRequest) {
+      return;
+    }
+
+    try {
+      const resolvedRequest = resolveVariables(selectedRequest, state.variables, dirname(state.filePath));
+
+      let certificate: CertEntry | undefined;
+      if (state.certificates) {
+        certificate = matchCertificate(resolvedRequest.url, state.certificates);
+      }
+
+      const command = toCurlCommand(resolvedRequest, { insecure: state.insecure, certificate });
+
+      await copyToClipboard(command, props.clipboardRunner === undefined ? undefined : { runner: props.clipboardRunner });
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'Copied as curl' });
+    } catch (error) {
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: error instanceof Error ? error.message : 'Could not copy to clipboard' });
     }
   };
 
@@ -753,6 +778,11 @@ export function App(props: AppProps): React.ReactElement {
 
     if (input === 'S') {
       dispatch({ type: 'ENTER_SAVE' });
+      return;
+    }
+
+    if (input === 'y') {
+      void copySelectedAsCurl();
       return;
     }
 

@@ -1,3 +1,5 @@
+import type { ClipboardRunner } from './clipboard';
+
 export type HttpMethod =
   | 'GET'
   | 'POST'
@@ -183,6 +185,7 @@ export interface AppProps {
   activeEnvName: string | null;
   availableEnvironments: EnvOption[];
   executorConfig: ExecutorConfig;
+  clipboardRunner?: ClipboardRunner;
 }
 
 export type Action =
