@@ -14,9 +14,9 @@
 ## 3. State: transient warning + append action
 
 - [ ] 3.1 Add `transientWarning: string | null` to `AppState` (init `null`), and actions `SET_TRANSIENT_WARNING`, `SET_TRANSIENT_ERROR`, and `APPEND_REQUEST` to the `Action` union in `src/core/types.ts`
-- [ ] 3.2 Implement reducer cases in `src/core/reducer.ts`: the two setters enforce three-way exclusivity (setting any transient clears the other two); extend `CLEAR_TRANSIENT_MESSAGE` to clear all three channels; `APPEND_REQUEST` appends, selects the new last index, clamps `requestScrollOffset`, resets horizontal/details offsets, clears search state — mirroring `SELECT_REQUEST` and leaving `response` untouched
+- [ ] 3.2 Implement reducer cases in `src/core/reducer.ts`: the two setters enforce three-way exclusivity (setting any transient clears the other two); extend `CLEAR_TRANSIENT_MESSAGE` to clear all three channels; `APPEND_REQUEST` appends, selects the new last index, clamps `requestScrollOffset`, resets horizontal/details offsets, clears search state — mirroring `SELECT_REQUEST` and leaving `response` untouched — and replaces the parser's `lineNumber: 0` placeholder with `max(existing lineNumbers) + 1` so `RequestList` composite React keys stay unique across repeated pastes
 - [ ] 3.3 Extend the transient auto-clear effect in `src/app.tsx` so a warning clears on the same ~2s text-change-reset window as messages and errors
-- [ ] 3.4 Unit-test the reducer cases in `test/core/reducer.test.ts` (or sibling): exclusivity matrix (warning vs message vs error), warning auto-clear behavior, append mechanics (placement, selection, scroll clamping, search-state reset, response preserved, `isDirty` set)
+- [ ] 3.4 Unit-test the reducer cases in `test/core/reducer.test.ts` (or sibling): exclusivity matrix (warning vs message vs error), warning auto-clear behavior, append mechanics (placement, selection, scroll clamping, search-state reset, response preserved, `isDirty` set), and `lineNumber` uniqueness — two identical `APPEND_REQUEST`s yield distinct lineNumbers (never `0`)
 
 ## 4. Status bar warning surface
 
@@ -27,7 +27,7 @@
 
 - [ ] 5.1 Add `clipboardReadRunner?: ClipboardReadRunner` to `AppProps` and a `pasteFromClipboard()` handler in `app.tsx` beside `copySelectedAsCurl()`: read → `parseCurlCommand` → dispatch `APPEND_REQUEST` + `SET_TRANSIENT_WARNING` (`Pasted request — some curl options were skipped`) or `SET_TRANSIENT_MESSAGE` (`Pasted request`) or `SET_TRANSIENT_ERROR` (refusal reason / clipboard remedy)
 - [ ] 5.2 Bind `p` in the normal-mode branch of `useInput` (beside `y`; no guard needed for other modes per existing structure) and register `{ key: 'p', group: 'request', showInBar: false, showInHelp: true }` in `SHORTCUTS`
-- [ ] 5.3 Integration-test in `test/integration/paste-as-curl.test.tsx` mirroring `copy-as-curl.test.tsx`'s injected-runner pattern: clean paste appends + selects + green message; warn-skip paste appends + yellow warning; each refusal leaves the list unchanged with red error; `p` inert in edit mode and with help open
+- [ ] 5.3 Integration-test in `test/integration/paste-as-curl.test.tsx` mirroring `copy-as-curl.test.tsx`'s injected-runner pattern: clean paste appends + selects + green message; warn-skip paste appends + yellow warning; each refusal leaves the list unchanged with red error; `p` inert in edit mode and with help open; pasting the same command twice renders both rows (no duplicate React keys)
 - [ ] 5.4 Add `p` to the README keyboard-shortcuts table
 
 ## 6. Persistence of pasted requests

@@ -130,6 +130,10 @@ A pasted request SHALL be appended after the last request in the request list, t
 - **WHEN** the clipboard contains `curl 'https://api.example.com'`
 - **THEN** the pasted request's name SHALL be `GET /`
 
+#### Scenario: Repeated paste of the same command
+- **WHEN** the same valid curl command is pasted twice
+- **THEN** the request list SHALL contain two appended requests, each independently renderable and selectable
+
 #### Scenario: Pasted request persists through save
 - **WHEN** a request is pasted and the user saves via the save-as flow
 - **THEN** the saved `.http` file SHALL contain the pasted request
