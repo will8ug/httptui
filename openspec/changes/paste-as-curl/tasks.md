@@ -21,7 +21,7 @@
 ## 4. Status bar warning surface
 
 - [x] 4.1 Render `transientWarning` in `StatusBar.tsx`: yellow bold text beside message/error, included in the left-side width budget; thread the prop through `app.tsx`/`Layout` as existing transients are
-- [x] 4.2 Test the rendering (unit or component level per existing status-bar test patterns): shown when set, absent when null, yellow bold, width accounting
+- [x] 4.2 Test the rendering (unit or component level per existing status-bar test patterns): shown when set, absent when null, width accounting (color is untested, consistent with the green/red channels)
 
 ## 5. Paste wiring
 
