@@ -376,18 +376,14 @@ export function parseCurlCommand(text: string): ParseCurlResult {
   }
 
   const rawUrl = urls[0];
+  // WHATWG URL accepts `localhost:3000` as protocol `localhost:` — only `://`
+  // means the token already has a scheme (curl's scheme-less → http://).
+  const requestUrl = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(rawUrl) ? rawUrl : `http://${rawUrl}`;
   let parsedUrl: URL;
-  let requestUrl: string;
   try {
-    parsedUrl = new URL(rawUrl);
-    requestUrl = rawUrl;
+    parsedUrl = new URL(requestUrl);
   } catch {
-    try {
-      requestUrl = `http://${rawUrl}`;
-      parsedUrl = new URL(requestUrl);
-    } catch {
-      return { ok: false, error: `Could not parse URL: ${rawUrl}` };
-    }
+    return { ok: false, error: `Could not parse URL: ${rawUrl}` };
   }
 
   if (formFlagSeen && dataFlagSeen) {

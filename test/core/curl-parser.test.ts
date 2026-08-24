@@ -590,6 +590,20 @@ describe('parseCurlCommand', () => {
       expect(request.url).toBe('http://api.example.com/users');
       expect(request.name).toBe('GET /users');
     });
+
+    it('prepends http:// to a scheme-less localhost:port URL', () => {
+      const { request } = parseOk(`curl 'localhost:3000/users'`);
+
+      expect(request.url).toBe('http://localhost:3000/users');
+      expect(request.name).toBe('GET /users');
+    });
+
+    it('prepends http:// to a scheme-less hostname:port URL', () => {
+      const { request } = parseOk(`curl 'example.com:8080'`);
+
+      expect(request.url).toBe('http://example.com:8080');
+      expect(request.name).toBe('GET /');
+    });
   });
 
   describe('clean paste', () => {
