@@ -109,6 +109,27 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     }
 
+    case 'APPEND_REQUEST': {
+      // Pasted requests carry lineNumber 0 as a "no file origin" placeholder; rewrite it
+      // to max(existing) + 1 solely so RequestList's `${lineNumber}-${method}-${url}`
+      // React keys stay unique across repeated pastes — never a file position.
+      const maxLineNumber = state.requests.reduce((max, req) => Math.max(max, req.lineNumber), 0);
+      const appended = { ...action.request, lineNumber: maxLineNumber + 1 };
+      const nextIndex = state.requests.length;
+      const visibleCount = getRequestVisibleHeight(DEFAULT_TERMINAL_ROWS);
+
+      return {
+        ...state,
+        requests: [...state.requests, appended],
+        selectedIndex: nextIndex,
+        requestScrollOffset: clampScrollOffsetToCursor(nextIndex, state.requestScrollOffset, visibleCount),
+        requestHorizontalOffset: 0,
+        detailsScrollOffset: 0,
+        detailsHorizontalOffset: 0,
+        ...CLEAR_SEARCH_STATE,
+      };
+    }
+
     case 'SEND_REQUEST':
       return {
         ...state,
@@ -378,6 +399,7 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         transientMessage: null,
         transientError: null,
+        transientWarning: null,
       };
 
     case 'SET_TRANSIENT_MESSAGE':
@@ -385,6 +407,23 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         transientMessage: action.message,
         transientError: null,
+        transientWarning: null,
+      };
+
+    case 'SET_TRANSIENT_WARNING':
+      return {
+        ...state,
+        transientMessage: null,
+        transientError: null,
+        transientWarning: action.warning,
+      };
+
+    case 'SET_TRANSIENT_ERROR':
+      return {
+        ...state,
+        transientMessage: null,
+        transientError: action.error,
+        transientWarning: null,
       };
 
     case 'ENTER_FILE_LOAD':
@@ -906,6 +945,7 @@ export function createInitialState(props: AppProps): AppState {
     insecure: props.executorConfig.insecure,
     transientMessage: null,
     transientError: null,
+    transientWarning: null,
     mode: 'normal',
     fileLoadInput: '',
     fileLoadCursor: 0,

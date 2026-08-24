@@ -1,4 +1,4 @@
-import type { ClipboardRunner } from './clipboard';
+import type { ClipboardReadRunner, ClipboardRunner } from './clipboard';
 
 export type HttpMethod =
   | 'GET'
@@ -144,6 +144,7 @@ export interface AppState {
   detailsHorizontalOffset: number;
   transientMessage: string | null;
   transientError: string | null;
+  transientWarning: string | null;
   mode: AppMode;
   fileLoadInput: string;
   fileLoadCursor: number;
@@ -186,10 +187,12 @@ export interface AppProps {
   availableEnvironments: EnvOption[];
   executorConfig: ExecutorConfig;
   clipboardRunner?: ClipboardRunner;
+  clipboardReadRunner?: ClipboardReadRunner;
 }
 
 export type Action =
   | { type: 'SELECT_REQUEST'; index: number; rows?: number }
+  | { type: 'APPEND_REQUEST'; request: ParsedRequest }
   | { type: 'MOVE_SELECTION'; direction: 'up' | 'down'; rows?: number }
   | { type: 'SEND_REQUEST' }
   | { type: 'RECEIVE_RESPONSE'; response: ResponseData }
@@ -203,6 +206,8 @@ export type Action =
   | { type: 'CLOSE_HELP' }
   | { type: 'RELOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[] }
   | { type: 'SET_TRANSIENT_MESSAGE'; message: string }
+  | { type: 'SET_TRANSIENT_WARNING'; warning: string }
+  | { type: 'SET_TRANSIENT_ERROR'; error: string }
   | { type: 'CLEAR_TRANSIENT_MESSAGE' }
   | { type: 'ENTER_FILE_LOAD' }
   | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string; cursor: number }

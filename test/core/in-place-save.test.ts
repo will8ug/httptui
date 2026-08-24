@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildInPlaceContent } from '../../src/core/in-place-save';
 import { parseHttpFile } from '../../src/core/parser';
+import { createRequest } from '../helpers/requests';
 
 describe('buildInPlaceContent', () => {
   it('returns the raw content unchanged when no request is marked', () => {
@@ -403,5 +404,239 @@ describe('buildInPlaceContent', () => {
     if (!result.ok) return;
     expect(result.content).toContain('Accept: text/html');
     expect(result.content).toContain('X-Custom: plain value');
+  });
+
+  it('appends a pasted request as a new block after existing content', () => {
+    const raw = '### Get Users\nGET https://api.example.com/users\n';
+    const pasted = createRequest({
+      name: 'POST /login',
+      method: 'POST',
+      url: 'https://api.example.com/login',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"user":"alice"}',
+      lineNumber: 0,
+      isDirty: true,
+    });
+    const requests = [...parseHttpFile(raw).requests, pasted];
+
+    const result = buildInPlaceContent(raw, requests);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.editedCount).toBe(1);
+    expect(result.content).toBe(
+      '### Get Users\nGET https://api.example.com/users\n\n### POST /login\nPOST https://api.example.com/login\nContent-Type: application/json\n\n{"user":"alice"}\n',
+    );
+    expect(result.content.startsWith(raw)).toBe(true);
+
+    const reparsed = parseHttpFile(result.content);
+    expect(reparsed.requests).toHaveLength(2);
+    expect(reparsed.requests[1]).toMatchObject({
+      method: 'POST',
+      url: 'https://api.example.com/login',
+      body: '{"user":"alice"}',
+    });
+  });
+
+  it('appends multiple pasted requests as blank-line-separated blocks', () => {
+    const raw = '### Get Users\nGET https://api.example.com/users\n';
+    const pastedPosts = [
+      createRequest({
+        name: 'POST /login',
+        method: 'POST',
+        url: 'https://api.example.com/login',
+        body: 'a=1',
+        lineNumber: 0,
+        isDirty: true,
+      }),
+      createRequest({
+        name: 'DELETE /login',
+        method: 'DELETE',
+        url: 'https://api.example.com/login',
+        lineNumber: 0,
+        isDirty: true,
+      }),
+    ];
+    const requests = [...parseHttpFile(raw).requests, ...pastedPosts];
+
+    const result = buildInPlaceContent(raw, requests);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.editedCount).toBe(2);
+    expect(result.content).toBe(
+      '### Get Users\nGET https://api.example.com/users\n\n### POST /login\nPOST https://api.example.com/login\n\na=1\n\n### DELETE /login\nDELETE https://api.example.com/login\n',
+    );
+  });
+
+  it('rewrites an edited block and appends a pasted request in one pass', () => {
+    const raw = [
+      '### First',
+      'GET https://api.example.com/a',
+      '',
+      '### Second',
+      'GET https://api.example.com/b',
+      '',
+    ].join('\n');
+    const [first, second] = parseHttpFile(raw).requests;
+    const pasted = createRequest({
+      name: 'PUT /c',
+      method: 'PUT',
+      url: 'https://api.example.com/c',
+      lineNumber: 0,
+      isDirty: true,
+    });
+
+    const result = buildInPlaceContent(raw, [
+      { ...first, isDirty: true, body: 'edited-body' },
+      second,
+      pasted,
+    ]);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.editedCount).toBe(2);
+    expect(result.content).toBe(
+      '### First\nGET https://api.example.com/a\n\nedited-body\n\n### Second\nGET https://api.example.com/b\n\n### PUT /c\nPUT https://api.example.com/c\n',
+    );
+  });
+
+  it('keeps CRLF line endings when appending to a CRLF file', () => {
+    const raw = '### Get Users\r\nGET https://api.example.com/users\r\n';
+    const pasted = createRequest({
+      name: 'POST /login',
+      method: 'POST',
+      url: 'https://api.example.com/login',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"user":"alice"}',
+      lineNumber: 0,
+      isDirty: true,
+    });
+    const requests = [...parseHttpFile(raw).requests, pasted];
+
+    const result = buildInPlaceContent(raw, requests);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.content).toBe(
+      '### Get Users\r\nGET https://api.example.com/users\r\n\r\n### POST /login\r\nPOST https://api.example.com/login\r\nContent-Type: application/json\r\n\r\n{"user":"alice"}\r\n',
+    );
+    expect(result.content.startsWith(raw)).toBe(true);
+    expect(result.content).not.toMatch(/[^\r]\n/);
+  });
+
+  it('inserts the blank-line separation when the source lacks a trailing newline', () => {
+    const raw = '### Get Users\nGET https://api.example.com/users';
+    const pasted = createRequest({
+      name: 'POST /login',
+      method: 'POST',
+      url: 'https://api.example.com/login',
+      lineNumber: 0,
+      isDirty: true,
+    });
+    const requests = [...parseHttpFile(raw).requests, pasted];
+
+    const result = buildInPlaceContent(raw, requests);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.content).toBe(
+      '### Get Users\nGET https://api.example.com/users\n\n### POST /login\nPOST https://api.example.com/login\n',
+    );
+  });
+
+  it('absorbs trailing blank lines into a single blank line before the appended block', () => {
+    const raw = '### Get Users\nGET https://api.example.com/users\n\n\n';
+    const pasted = createRequest({
+      name: 'POST /login',
+      method: 'POST',
+      url: 'https://api.example.com/login',
+      lineNumber: 0,
+      isDirty: true,
+    });
+    const requests = [...parseHttpFile(raw).requests, pasted];
+
+    const result = buildInPlaceContent(raw, requests);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.content).toBe(
+      '### Get Users\nGET https://api.example.com/users\n\n### POST /login\nPOST https://api.example.com/login\n',
+    );
+  });
+
+  it('appends to an empty file without a leading blank line', () => {
+    const pasted = createRequest({
+      name: 'POST /login',
+      method: 'POST',
+      url: 'https://api.example.com/login',
+      lineNumber: 0,
+      isDirty: true,
+    });
+
+    const result = buildInPlaceContent('', [pasted]);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.content).toBe('### POST /login\nPOST https://api.example.com/login\n');
+  });
+
+  it('appends a pasted form-data request with the omission comment', () => {
+    const raw = '### Get Users\nGET https://api.example.com/users\n';
+    const pasted = createRequest({
+      name: 'POST /upload',
+      method: 'POST',
+      url: 'https://api.example.com/upload',
+      headers: { 'Content-Type': 'multipart/form-data; boundary=x' },
+      body: undefined,
+      formdataFields: [{ key: 'username', value: 'alice', type: 'text' }],
+      lineNumber: 0,
+      isDirty: true,
+    });
+    const requests = [...parseHttpFile(raw).requests, pasted];
+
+    const result = buildInPlaceContent(raw, requests);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.content).toContain(
+      '\n\n### POST /upload\nPOST https://api.example.com/upload\n\n# form-data body omitted (1 text fields: username)\n',
+    );
+    expect(result.content).not.toContain('multipart/form-data');
+  });
+
+  it('ignores a surplus request that is not dirty', () => {
+    const raw = '### Get Users\nGET https://api.example.com/users\n';
+    const surplus = createRequest({
+      name: 'POST /login',
+      method: 'POST',
+      url: 'https://api.example.com/login',
+      lineNumber: 0,
+      isDirty: false,
+    });
+    const requests = [...parseHttpFile(raw).requests, surplus];
+
+    const result = buildInPlaceContent(raw, requests);
+
+    expect(result).toEqual({ ok: true, content: raw, editedCount: 0 });
+  });
+
+  it('refuses when an appended body contains a separator line', () => {
+    const raw = '### Get Users\nGET https://api.example.com/users\n';
+    const pasted = createRequest({
+      name: 'POST /login',
+      method: 'POST',
+      url: 'https://api.example.com/login',
+      body: '### oops',
+      lineNumber: 0,
+      isDirty: true,
+    });
+    const requests = [...parseHttpFile(raw).requests, pasted];
+
+    const result = buildInPlaceContent(raw, requests);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toContain('###');
   });
 });

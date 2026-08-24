@@ -85,10 +85,30 @@ function spliceRegions(lines: string[], regions: Region[]): void {
   }
 }
 
+function separatorViolation(request: ParsedRequest): string | undefined {
+  if (request.body !== undefined && bodyContainsSeparator(request.body)) {
+    return 'Cannot save: an edited body contains a "###" separator line';
+  }
+  if (headersContainSeparator(request.headers)) {
+    return 'Cannot save: an edited header contains a "###" separator line';
+  }
+  return undefined;
+}
+
+// Mirrors serializeHttpFile's join (one blank line between blocks, trailing
+// newline); existing trailing blank lines are absorbed into that separator.
+function appendBlocks(content: string, appended: ParsedRequest[], eol: '\n' | '\r\n'): string {
+  const base = content.replace(/(?:\r?\n)+$/, '');
+  const blocks = appended.map((request) => serializeRequestBlock(request)).join('\n\n');
+  const suffix = base === '' ? `${blocks}\n` : `\n\n${blocks}\n`;
+  return base + (eol === '\r\n' ? suffix.replace(/\n/g, '\r\n') : suffix);
+}
+
 /**
- * Rewrite only the blocks of requests whose `isDirty` marker is set, keeping every
- * other line byte-identical. Refuses on structural source changes and on edited
- * bodies or headers containing a request separator. Pure: no I/O.
+ * Rewrite only the dirty blocks, keeping every other line byte-identical.
+ * Requests beyond the file's parsed count are appended as new blocks after the
+ * existing content; a count deficit refuses (disk changed). Refuses on a body or
+ * header containing a "###" separator line. Pure: no I/O.
  */
 export function buildInPlaceContent(rawContent: string, currentRequests: ParsedRequest[]): InPlaceSaveResult {
   const lines = rawContent.split('\n');
@@ -97,13 +117,14 @@ export function buildInPlaceContent(rawContent: string, currentRequests: ParsedR
   // the stored lineNumber values are stale.
   const original = parseHttpFile(rawContent);
 
-  if (original.requests.length !== currentRequests.length) {
+  if (currentRequests.length < original.requests.length) {
     return { ok: false, error: 'Source file changed on disk; press R to reload before saving' };
   }
 
-  const editedIndexes = findEditedIndexes(currentRequests);
+  const appended = currentRequests.slice(original.requests.length).filter((request) => request.isDirty);
+  const editedIndexes = findEditedIndexes(currentRequests.slice(0, original.requests.length));
 
-  if (editedIndexes.length === 0) {
+  if (editedIndexes.length === 0 && appended.length === 0) {
     return { ok: true, content: rawContent, editedCount: 0 };
   }
 
@@ -111,11 +132,9 @@ export function buildInPlaceContent(rawContent: string, currentRequests: ParsedR
 
   const regions: Region[] = [];
   for (const i of editedIndexes) {
-    if (currentRequests[i].body !== undefined && bodyContainsSeparator(currentRequests[i].body)) {
-      return { ok: false, error: 'Cannot save: an edited body contains a "###" separator line' };
-    }
-    if (headersContainSeparator(currentRequests[i].headers)) {
-      return { ok: false, error: 'Cannot save: an edited header contains a "###" separator line' };
+    const violation = separatorViolation(currentRequests[i]);
+    if (violation) {
+      return { ok: false, error: violation };
     }
 
     const requestLineIndex = original.requests[i].lineNumber - 1;
@@ -127,7 +146,16 @@ export function buildInPlaceContent(rawContent: string, currentRequests: ParsedR
     });
   }
 
+  for (const request of appended) {
+    const violation = separatorViolation(request);
+    if (violation) {
+      return { ok: false, error: violation };
+    }
+  }
+
   spliceRegions(lines, regions);
 
-  return { ok: true, content: lines.join('\n'), editedCount: editedIndexes.length };
+  const content = appended.length > 0 ? appendBlocks(lines.join('\n'), appended, eol) : lines.join('\n');
+
+  return { ok: true, content, editedCount: editedIndexes.length + appended.length };
 }
