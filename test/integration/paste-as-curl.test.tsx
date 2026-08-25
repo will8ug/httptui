@@ -142,7 +142,7 @@ describe('paste-as-curl integration', () => {
 
     expect(calls).toHaveLength(0);
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('Paste curl command as request');
+    expect(frame).toContain('Paste curl to request list');
     expect(frame).not.toContain('Pasted request');
   });
 

@@ -119,7 +119,7 @@ httptui api.http -E Staging
 | `E` | Switch environment |
 | `S` | Save as .http file |
 | `y` | Copy request as curl |
-| `p` | Paste curl command as request |
+| `p` | Paste curl to request list |
 
 ### Display
 

@@ -79,7 +79,7 @@ Name derivation: `new URL(url).pathname || '/'`, name = `` `${method} ${path}` `
 
 ### D9: Wiring follows the copy-as-curl handler shape
 
-`app.tsx` gains a `pasteFromClipboard()` async handler next to `copySelectedAsCurl()`: read → parse → on success dispatch `APPEND_REQUEST` plus `SET_TRANSIENT_(WARNING|MESSAGE)`, on refusal dispatch `SET_TRANSIENT_ERROR`. The `p` key binds in the normal-mode branch beside `y`; mode-guarded branches already return earlier, and the help overlay guard at the top of `useInput` covers `p` for free. `SHORTCUTS` gains `{ key: 'p', group: 'request', showInBar: false, showInHelp: true, description: 'Paste curl command as request' }`; the help overlay and README table pick it up from the registry.
+`app.tsx` gains a `pasteFromClipboard()` async handler next to `copySelectedAsCurl()`: read → parse → on success dispatch `APPEND_REQUEST` plus `SET_TRANSIENT_(WARNING|MESSAGE)`, on refusal dispatch `SET_TRANSIENT_ERROR`. The `p` key binds in the normal-mode branch beside `y`; mode-guarded branches already return earlier, and the help overlay guard at the top of `useInput` covers `p` for free. `SHORTCUTS` gains `{ key: 'p', group: 'request', showInBar: false, showInHelp: true, description: 'Paste curl to request list' }`; the help overlay and README table pick it up from the registry.
 
 ## Risks / Trade-offs
 
