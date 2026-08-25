@@ -127,13 +127,13 @@ The four edge-jump entries SHALL be rendered in the help overlay alongside the o
 
 ### Requirement: Help overlay renders shortcut groups in two columns
 
-The HelpOverlay component SHALL render shortcut groups in a two-column layout. The left column SHALL contain the "General", "Navigation", and "Search" groups (in that order). The right column SHALL contain the "Request", "Display", and "Edit" groups (in that order).
+The HelpOverlay component SHALL render shortcut groups in a two-column layout. The left column SHALL contain the "General", "Navigation", and "Display" groups (in that order). The right column SHALL contain the "Request", "Search", and "Edit" groups (in that order).
 
 #### Scenario: Two-column layout renders with correct group placement
 
 - **WHEN** the help overlay is visible
-- **THEN** the left column displays the "General" group header followed by its shortcuts, then the "Navigation" group header followed by its shortcuts, then the "Search" group header followed by its shortcuts
-- **AND** the right column displays the "Request" group header followed by its shortcuts, then the "Display" group header followed by its shortcuts, then the "Edit" group header followed by its shortcuts
+- **THEN** the left column displays the "General" group header followed by its shortcuts, then the "Navigation" group header followed by its shortcuts, then the "Display" group header followed by its shortcuts
+- **AND** the right column displays the "Request" group header followed by its shortcuts, then the "Search" group header followed by its shortcuts, then the "Edit" group header followed by its shortcuts
 
 #### Scenario: Columns render side-by-side reducing overall height
 
@@ -148,8 +148,8 @@ A `HELP_COLUMN_GROUPS` constant SHALL be exported from `src/core/shortcuts.ts` d
 
 - **WHEN** a developer imports `HELP_COLUMN_GROUPS` from `src/core/shortcuts.ts`
 - **THEN** it SHALL be a readonly array with exactly 2 elements
-- **AND** the first element SHALL be `['general', 'navigation', 'search']`
-- **AND** the second element SHALL be `['request', 'display', 'edit']`
+- **AND** the first element SHALL be `['general', 'navigation', 'display']`
+- **AND** the second element SHALL be `['request', 'search', 'edit']`
 
 ### Requirement: Help overlay width accommodates two columns
 

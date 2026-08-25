@@ -53,7 +53,7 @@ describe('HelpOverlay', () => {
       const { lastFrame } = render(<HelpOverlay visible={true} />);
 
       const frame = lastFrame() ?? '';
-      expect(frame).toContain('Commit edit or save file');
+      expect(frame).toContain('Commit edit or save in place');
     });
 
     it('renders the Ctrl+A shortcut description', () => {

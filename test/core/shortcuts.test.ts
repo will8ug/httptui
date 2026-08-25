@@ -127,7 +127,7 @@ describe('SHORTCUTS registry — edit group', () => {
     expect(entries).toHaveLength(1);
     const [entry] = entries;
     expect(entry.label).toBe('');
-    expect(entry.description).toBe('Commit edit or save file');
+    expect(entry.description).toBe('Commit edit or save in place');
     expect(entry.showInBar).toBe(false);
     expect(entry.showInHelp).toBe(true);
     expect(entry.group).toBe('edit');
@@ -166,8 +166,8 @@ describe('SHORTCUTS registry — edit group', () => {
   });
 
   it('arranges help groups in two columns', () => {
-    expect(HELP_COLUMN_GROUPS[0]).toEqual(['general', 'navigation', 'search']);
-    expect(HELP_COLUMN_GROUPS[1]).toEqual(['request', 'display', 'edit']);
+    expect(HELP_COLUMN_GROUPS[0]).toEqual(['general', 'navigation', 'display']);
+    expect(HELP_COLUMN_GROUPS[1]).toEqual(['request', 'search', 'edit']);
   });
 
   it('none of the edit shortcuts appear in the status bar', () => {

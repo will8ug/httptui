@@ -10,8 +10,8 @@ export const SHORTCUT_GROUP_LABELS: Record<ShortcutGroup, string> = {
 };
 
 export const HELP_COLUMN_GROUPS: readonly ShortcutGroup[][] = [
-  ['general', 'navigation', 'search'],
-  ['request', 'display', 'edit'],
+  ['general', 'navigation', 'display'],
+  ['request', 'search', 'edit'],
 ];
 
 export interface Shortcut {
@@ -53,7 +53,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'o', label: '', description: 'Open a different file', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'e', label: '', description: 'Edit requests in-session', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'f', label: '', description: 'Toggle fullscreen', showInBar: false, showInHelp: true, group: 'display' },
-  { key: 'Ctrl+S', label: '', description: 'Commit edit or save file', showInBar: false, showInHelp: true, group: 'edit' },
+  { key: 'Ctrl+S', label: '', description: 'Commit edit or save in place', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Ctrl+A', label: '', description: 'Jump to start of line', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Ctrl+E', label: '', description: 'Jump to end of line', showInBar: false, showInHelp: true, group: 'edit' },
   { key: 'Shift+Tab', label: '', description: 'Switch editor tab', showInBar: false, showInHelp: true, group: 'edit' },
