@@ -117,7 +117,7 @@ describe('copyToClipboard — darwin', () => {
 });
 
 describe('copyToClipboard — win32', () => {
-  it('spawns powershell -NoProfile -Command with base64-decoded UTF-8 piped to Set-Clipboard, using no stdin', async () => {
+  it('spawns powershell -NoProfile -Command with base64-decoded multi-byte UTF-8 piped to Set-Clipboard, using no stdin', async () => {
     const text = `curl 'https://api.example.com/送信' --data-raw '{"名前":"Alice"}'`;
     const { calls, runner } = recordingRunner();
 
@@ -316,7 +316,7 @@ describe('readFromClipboard — darwin', () => {
 });
 
 describe('readFromClipboard — win32', () => {
-  it('spawns powershell -NoProfile -Command with UTF-8 output encoding and Get-Clipboard -Raw, returning stdout', async () => {
+  it('spawns powershell -NoProfile -Command with UTF-8 output encoding and Get-Clipboard -Raw, returning multi-byte stdout', async () => {
     const output = `curl 'https://api.example.com/送信' --data-raw '{"名前":"Alice"}'`;
     const { calls, runner } = recordingReadRunner(new Map([['powershell', output]]));
 
