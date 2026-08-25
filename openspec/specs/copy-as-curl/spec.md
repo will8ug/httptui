@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Copy the currently selected request as a runnable, single-line `curl` command to the system clipboard, reflecting the fully resolved request — including variable substitutions, the executor's implicit Content-Type defaulting, and TLS options — so the pasted command reproduces what httptui would send.
+Copy the currently selected request as a runnable, single-line `curl` command to the system clipboard, reflecting the fully resolved request — including variable substitutions and TLS options — so the pasted command reproduces what httptui would send.
 
 ## Requirements
 
@@ -59,11 +59,11 @@ When the resolved request has a `body` and no form-data fields, the serializer S
 - **THEN** the command SHALL NOT contain `--data-raw` or `--form-string`
 
 ### Requirement: Content-Type mirrors executor defaulting
-The serializer SHALL apply the same implicit `Content-Type` rule as the request executor: when the resolved request has a body that is not form-data, has no `Content-Type` header (case-insensitive), and the body's first non-whitespace character is `{` or `[`, the serializer SHALL emit an additional `-H 'Content-Type: application/json'` after the request's own headers. When a `Content-Type` header is already present, the serializer SHALL NOT add one.
+The serializer SHALL apply the same `Content-Type` rule as the request executor: it SHALL NOT synthesize a `Content-Type` header for the body. The serializer SHALL emit the request's own `Content-Type` header when one is present, and SHALL NOT add one when absent, regardless of the body content.
 
 #### Scenario: JSON-looking body without Content-Type gains the header
 - **WHEN** the resolved request has body `{"name":"Alice"}` and no `Content-Type` header
-- **THEN** the command SHALL contain `-H 'Content-Type: application/json'`
+- **THEN** the command SHALL NOT contain a Content-Type header
 
 #### Scenario: Explicit Content-Type is not duplicated
 - **WHEN** the resolved request has body `<xml/>` and header `Content-Type: application/xml`
@@ -71,7 +71,7 @@ The serializer SHALL apply the same implicit `Content-Type` rule as the request 
 
 #### Scenario: Non-JSON body without Content-Type gains nothing
 - **WHEN** the resolved request has body `plain text` and no `Content-Type` header
-- **THEN** the command SHALL NOT contain any Content-Type header
+- **THEN** the command SHALL NOT contain a Content-Type header
 
 ### Requirement: Form-data body serialization
 When the resolved request carries form-data fields, the serializer SHALL emit one `--form-string 'key=value'` argument per field, in field order, and SHALL omit any `Content-Type` header regardless of its value, mirroring the executor's unconditional removal of the header before send (curl generates its own multipart boundary, exactly as undici does). `--form-string` SHALL be used so that values beginning with `@` or `<` are sent literally rather than read as files.
