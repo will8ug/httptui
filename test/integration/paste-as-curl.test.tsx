@@ -1,12 +1,10 @@
-import React from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render } from 'ink-testing-library';
+import { cleanup } from 'ink-testing-library';
 
-import { App } from '../../src/app';
 import { ClipboardError } from '../../src/core/clipboard';
 import type { ClipboardReadRunner } from '../../src/core/clipboard';
-import type { AppProps, ParsedRequest } from '../../src/core/types';
-import { KEY_DELAY_MS, delay, press, selectedLine } from '../helpers/integration';
+import { KEY_DELAY_MS, delay, press, renderApp, selectedLine } from '../helpers/integration';
+import { createRequest } from '../helpers/requests';
 
 afterEach(() => {
   cleanup();
@@ -23,34 +21,12 @@ function recordingClipboard(calls: string[], text: string): ClipboardReadRunner 
   };
 }
 
-const initialRequest: ParsedRequest = {
-  name: 'list users',
-  method: 'GET',
-  url: 'https://api.example.com/users',
-  headers: {},
-  body: undefined,
-  lineNumber: 1,
-  isDirty: false,
-};
-
-function renderPasteApp(overrides: Partial<AppProps> = {}) {
-  const props: AppProps = {
-    filePath: 'test.http',
-    requests: [initialRequest],
-    variables: [],
-    environmentVariables: [],
-    fileVariables: [],
-    activeEnvName: null,
-    availableEnvironments: [],
-    executorConfig: { insecure: false },
-    ...overrides,
-  };
-  return render(<App {...props} />);
-}
+const initialRequest = createRequest({ name: 'list users' });
 
 describe('paste-as-curl integration', () => {
   it('p in normal mode appends the clipboard command as a request, selects it, and shows the success message', async () => {
-    const { stdin, lastFrame } = renderPasteApp({
+    const { stdin, lastFrame } = renderApp({
+      requests: [initialRequest],
       clipboardReadRunner: clipboardContaining("curl 'https://api.example.com/pinged'"),
     });
     await delay(KEY_DELAY_MS);
@@ -65,7 +41,8 @@ describe('paste-as-curl integration', () => {
   });
 
   it('p with unsupported curl flags still appends the request and shows the skipped-options warning', async () => {
-    const { stdin, lastFrame } = renderPasteApp({
+    const { stdin, lastFrame } = renderApp({
+      requests: [initialRequest],
       clipboardReadRunner: clipboardContaining(
         "curl --location -X POST 'https://api.example.com/warned' -H 'X-Api-Key: k' -v --compressed",
       ),
@@ -82,7 +59,8 @@ describe('paste-as-curl integration', () => {
   });
 
   it('p with non-curl clipboard text refuses with an error and leaves the request list unchanged', async () => {
-    const { stdin, lastFrame } = renderPasteApp({
+    const { stdin, lastFrame } = renderApp({
+      requests: [initialRequest],
       clipboardReadRunner: clipboardContaining('SELECT * FROM users;'),
     });
     await delay(KEY_DELAY_MS);
@@ -96,7 +74,8 @@ describe('paste-as-curl integration', () => {
   });
 
   it('p with chained commands refuses with a multiple-commands error and leaves the request list unchanged', async () => {
-    const { stdin, lastFrame } = renderPasteApp({
+    const { stdin, lastFrame } = renderApp({
+      requests: [initialRequest],
       clipboardReadRunner: clipboardContaining(
         "curl 'https://a.example.com' && curl 'https://b.example.com'",
       ),
@@ -112,7 +91,8 @@ describe('paste-as-curl integration', () => {
   });
 
   it('p when the clipboard cannot be read shows the read error and leaves the request list unchanged', async () => {
-    const { stdin, lastFrame } = renderPasteApp({
+    const { stdin, lastFrame } = renderApp({
+      requests: [initialRequest],
       clipboardReadRunner: async () => {
         throw new ClipboardError(
           'Could not read clipboard: no clipboard tool found. Install xclip, xsel, or wl-clipboard (provides wl-paste).',
@@ -131,7 +111,8 @@ describe('paste-as-curl integration', () => {
 
   it('p in edit mode types into the edit buffer and does not read the clipboard', async () => {
     const calls: string[] = [];
-    const { stdin, lastFrame } = renderPasteApp({
+    const { stdin, lastFrame } = renderApp({
+      requests: [initialRequest],
       clipboardReadRunner: recordingClipboard(calls, "curl 'https://api.example.com/pinged'"),
     });
     await delay(KEY_DELAY_MS);
@@ -149,7 +130,8 @@ describe('paste-as-curl integration', () => {
 
   it('p while the help overlay is open keeps the overlay and does not read the clipboard', async () => {
     const calls: string[] = [];
-    const { stdin, lastFrame } = renderPasteApp({
+    const { stdin, lastFrame } = renderApp({
+      requests: [initialRequest],
       clipboardReadRunner: recordingClipboard(calls, "curl 'https://api.example.com/pinged'"),
     });
     await delay(KEY_DELAY_MS);
@@ -165,7 +147,8 @@ describe('paste-as-curl integration', () => {
   });
 
   it('pasting the same command twice renders two appended rows', async () => {
-    const { stdin, lastFrame } = renderPasteApp({
+    const { stdin, lastFrame } = renderApp({
+      requests: [initialRequest],
       clipboardReadRunner: clipboardContaining("curl 'https://api.example.com/pinged'"),
     });
     await delay(KEY_DELAY_MS);
