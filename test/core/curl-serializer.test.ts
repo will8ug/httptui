@@ -68,7 +68,7 @@ describe('toCurlCommand', () => {
       const request = createResolvedRequest({ method: 'POST', body });
 
       expect(toCurlCommand(request, noTls)).toBe(
-        `curl -X POST 'https://example.com/api' -H 'Content-Type: application/json' --data-raw '${body}'`,
+        `curl -X POST 'https://example.com/api' --data-raw '${body}'`,
       );
     });
 
@@ -91,8 +91,8 @@ describe('toCurlCommand', () => {
     });
   });
 
-  describe('Content-Type defaulting', () => {
-    it('adds -H Content-Type: application/json after the request headers for a JSON-looking body', () => {
+  describe('Content-Type emission', () => {
+    it('adds no Content-Type for a JSON-looking body without one', () => {
       const request = createResolvedRequest({
         method: 'POST',
         headers: { Authorization: 'Bearer token' },
@@ -100,20 +100,8 @@ describe('toCurlCommand', () => {
       });
 
       expect(toCurlCommand(request, noTls)).toBe(
-        `curl -X POST 'https://example.com/api' -H 'Authorization: Bearer token' -H 'Content-Type: application/json' --data-raw '{"name":"Alice"}'`,
+        `curl -X POST 'https://example.com/api' -H 'Authorization: Bearer token' --data-raw '{"name":"Alice"}'`,
       );
-    });
-
-    it('treats leading whitespace before { as JSON', () => {
-      const request = createResolvedRequest({ method: 'POST', body: '  {"name":"Alice"}' });
-
-      expect(toCurlCommand(request, noTls)).toContain(`-H 'Content-Type: application/json'`);
-    });
-
-    it('treats a body starting with [ as JSON', () => {
-      const request = createResolvedRequest({ method: 'POST', body: '[1,2]' });
-
-      expect(toCurlCommand(request, noTls)).toContain(`-H 'Content-Type: application/json'`);
     });
 
     it('does not duplicate an explicit Content-Type header', () => {
@@ -203,7 +191,7 @@ describe('toCurlCommand', () => {
       });
 
       expect(toCurlCommand(request, noTls)).toBe(
-        `curl -X POST 'https://example.com/api' -H 'Content-Type: application/json' --data-raw '{"name":"Alice"}'`,
+        `curl -X POST 'https://example.com/api' --data-raw '{"name":"Alice"}'`,
       );
     });
   });
@@ -221,7 +209,7 @@ describe('toCurlCommand', () => {
       const request = createResolvedRequest({ method: 'POST', body: `{"msg":"it's"}` });
 
       expect(toCurlCommand(request, noTls)).toBe(
-        `curl -X POST 'https://example.com/api' -H 'Content-Type: application/json' --data-raw '{"msg":"it'\\''s"}'`,
+        `curl -X POST 'https://example.com/api' --data-raw '{"msg":"it'\\''s"}'`,
       );
     });
   });

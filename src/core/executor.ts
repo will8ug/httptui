@@ -1,6 +1,5 @@
 import { Agent, FormData, request } from 'undici';
 
-import { shouldAddJsonContentType } from './headers';
 import type { ExecutorConfig, ErrorInfo, ResolvedRequest, ResponseData } from './types';
 
 const STATUS_TEXTS: Record<number, string> = {
@@ -112,10 +111,6 @@ export async function executeRequest(
     removeContentTypeHeader(headers);
   } else {
     body = resolvedRequest.body;
-
-    if (body !== undefined && shouldAddJsonContentType(body, headers)) {
-      headers['Content-Type'] = 'application/json';
-    }
   }
 
   const startTime = performance.now();

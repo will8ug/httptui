@@ -1,4 +1,3 @@
-import { shouldAddJsonContentType } from './headers';
 import type { CertEntry, ResolvedRequest } from './types';
 
 export interface CurlCommandOptions {
@@ -45,10 +44,6 @@ export function toCurlCommand(resolvedRequest: ResolvedRequest, options: CurlCom
       args.push('--form-string', quoteBashArgument(`${field.key}=${field.value}`));
     }
   } else if (resolvedRequest.body !== undefined) {
-    if (shouldAddJsonContentType(resolvedRequest.body, resolvedRequest.headers)) {
-      args.push('-H', quoteBashArgument('Content-Type: application/json'));
-    }
-
     args.push('--data-raw', quoteBashArgument(resolvedRequest.body));
   }
 

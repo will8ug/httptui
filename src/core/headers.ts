@@ -17,15 +17,6 @@ export function headersEqual(a: Record<string, string>, b: Record<string, string
   return keys.every((key) => Object.prototype.hasOwnProperty.call(b, key) && b[key] === a[key]);
 }
 
-export function shouldAddJsonContentType(body: string, headers: Record<string, string>): boolean {
-  if (Object.keys(headers).some((headerName) => headerName.toLowerCase() === 'content-type')) {
-    return false;
-  }
-
-  const trimmedBody = body.trimStart();
-  return trimmedBody.startsWith('{') || trimmedBody.startsWith('[');
-}
-
 export function parseHeadersText(text: string): ParseHeadersResult {
   const headers: Record<string, string> = {};
   const headerNames = new Map<string, string>();

@@ -90,7 +90,7 @@ describe('executeRequest', () => {
     );
   });
 
-  it('auto-sets Content-Type for JSON POST bodies', async () => {
+  it('sends no Content-Type for a JSON-looking body without one', async () => {
     requestMock.mockResolvedValue(createMockResponse());
 
     await executeRequest(
@@ -105,9 +105,25 @@ describe('executeRequest', () => {
       expect.objectContaining({
         method: 'POST',
         body: '  {"name":"test"}',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {},
+      }),
+    );
+  });
+
+  it('sends no Content-Type for a non-JSON body without one', async () => {
+    requestMock.mockResolvedValue(createMockResponse());
+
+    await executeRequest(
+      createResolvedRequest({
+        method: 'POST',
+        body: 'plain text',
+      }),
+    );
+
+    expect(requestMock).toHaveBeenCalledWith(
+      'https://example.com/api',
+      expect.objectContaining({
+        headers: {},
       }),
     );
   });
