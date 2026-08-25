@@ -7,8 +7,15 @@ export type ClipboardRunner = (
   env?: NodeJS.ProcessEnv,
 ) => Promise<void>;
 
+export type ClipboardReadRunner = (
+  command: string,
+  args: string[],
+  env?: NodeJS.ProcessEnv,
+) => Promise<string>;
+
 export interface ClipboardOptions {
   runner?: ClipboardRunner;
+  readRunner?: ClipboardReadRunner;
   platform?: NodeJS.Platform;
   env?: NodeJS.ProcessEnv;
 }
@@ -63,6 +70,48 @@ export function spawnClipboardTool(
     // child's exit status, not that write error, decides the outcome.
     child.stdin.on('error', () => {});
     child.stdin.end(input);
+  });
+}
+
+export function spawnClipboardReadTool(
+  command: string,
+  args: string[],
+  env?: NodeJS.ProcessEnv,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = env === undefined ? spawn(command, args) : spawn(command, args, { env });
+    let settled = false;
+    let failure: Error | undefined;
+    let exitCode: number | null = null;
+    let stdout = '';
+    const settle = (): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (failure !== undefined) {
+        reject(failure);
+      } else if (exitCode === 0) {
+        resolve(stdout);
+      } else {
+        reject(new Error(`${command} exited with status ${exitCode === null ? 'unknown' : exitCode}`));
+      }
+    };
+    child.on('error', (error) => {
+      failure = error;
+      settle();
+    });
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk: string) => {
+      stdout += chunk;
+    });
+    child.on('close', (code) => {
+      exitCode = code;
+      settle();
+    });
+    // Read tools ignore stdin; close it so the pipe cannot outlive the child.
+    child.stdin.on('error', () => {});
+    child.stdin.end();
   });
 }
 
@@ -136,4 +185,76 @@ export async function copyToClipboard(text: string, options: ClipboardOptions = 
     }
   }
   throw new ClipboardError(clipboardFailureMessage(platform));
+}
+
+interface ClipboardReadCandidate {
+  command: string;
+  args: string[];
+  env?: NodeJS.ProcessEnv;
+}
+
+function clipboardReadCandidates(platform: NodeJS.Platform, env: NodeJS.ProcessEnv): ClipboardReadCandidate[] {
+  switch (platform) {
+    case 'darwin':
+      return [
+        {
+          command: 'pbpaste',
+          args: [],
+          // pbpaste decodes according to the caller's locale; pinning the
+          // CTYPE to UTF-8 keeps multi-byte characters intact.
+          env: { ...env, LC_CTYPE: 'UTF-8' },
+        },
+      ];
+    case 'win32':
+      return [
+        {
+          command: 'powershell',
+          args: [
+            '-NoProfile',
+            '-Command',
+            // PowerShell recodes its output through the console codepage;
+            // pinning the output encoding to UTF-8 keeps multi-byte
+            // characters intact (the read-side counterpart of the write
+            // side's base64 transport).
+            '[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; Get-Clipboard -Raw',
+          ],
+        },
+      ];
+    case 'linux': {
+      const candidates: ClipboardReadCandidate[] = [];
+      if (env.WAYLAND_DISPLAY) {
+        candidates.push({ command: 'wl-paste', args: [] });
+      }
+      candidates.push({ command: 'xclip', args: ['-selection', 'clipboard', '-o'] });
+      candidates.push({ command: 'xsel', args: ['--clipboard', '--output'] });
+      return candidates;
+    }
+    default:
+      return [];
+  }
+}
+
+function clipboardReadFailureMessage(platform: NodeJS.Platform): string {
+  switch (platform) {
+    case 'darwin':
+      return 'Could not read clipboard: pbpaste could not be run. pbpaste ships with macOS; verify /usr/bin/pbpaste exists.';
+    case 'win32':
+      return 'Could not read clipboard: PowerShell could not be run. Verify PowerShell is installed and on PATH.';
+    case 'linux':
+      return 'Could not read clipboard: no clipboard tool found. Install xclip, xsel, or wl-clipboard (provides wl-paste).';
+    default:
+      return `Could not read clipboard: ${platform} has no supported clipboard tool.`;
+  }
+}
+
+export async function readFromClipboard(options: ClipboardOptions = {}): Promise<string> {
+  const { readRunner = spawnClipboardReadTool, platform = process.platform, env = process.env } = options;
+  for (const candidate of clipboardReadCandidates(platform, env)) {
+    try {
+      return await readRunner(candidate.command, candidate.args, candidate.env);
+    } catch {
+      // Both spawn errors (ENOENT) and non-zero exits mean "try the next tool".
+    }
+  }
+  throw new ClipboardError(clipboardReadFailureMessage(platform));
 }

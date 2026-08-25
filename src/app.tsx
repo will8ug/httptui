@@ -32,8 +32,9 @@ import { detectFormat, parseAnyFormat } from './core/format-detector';
 import { parseEnvironmentFile } from './core/env-parser';
 import { resolveVariables } from './core/variables';
 import { matchCertificate, loadCertFiles } from './core/certificates';
-import { copyToClipboard } from './core/clipboard';
+import { copyToClipboard, readFromClipboard } from './core/clipboard';
 import { toCurlCommand } from './core/curl-serializer';
+import { parseCurlCommand } from './core/curl-parser';
 import { loadConfig } from './core/config';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getEditorContentWidth, getEditorVisibleHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight, getResponseContentWidth } from './utils/layout';
 import { EDIT_CANCEL_WINDOW_MS, TRANSIENT_CLEAR_MS } from './utils/timing';
@@ -99,12 +100,12 @@ export function App(props: AppProps): React.ReactElement {
   const effectiveDetailMaxContent = state.maximizedPanel === 'details' ? fullscreenVisibleHeight : detailPanelMaxContent;
 
   useEffect(() => {
-    if (state.transientMessage === null && state.transientError === null) {
+    if (state.transientMessage === null && state.transientError === null && state.transientWarning === null) {
       return;
     }
     const timer = setTimeout(() => { dispatch({ type: 'CLEAR_TRANSIENT_MESSAGE' }); }, TRANSIENT_CLEAR_MS);
     return () => { clearTimeout(timer); };
-  }, [state.transientMessage, state.transientError]);
+  }, [state.transientMessage, state.transientError, state.transientWarning]);
 
   const sendSelectedRequest = async (): Promise<void> => {
     if (state.isLoading) {
@@ -200,6 +201,29 @@ export function App(props: AppProps): React.ReactElement {
       dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'Copied as curl' });
     } catch (error) {
       dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: error instanceof Error ? error.message : 'Could not copy to clipboard' });
+    }
+  };
+
+  const pasteFromClipboard = async (): Promise<void> => {
+    let text: string;
+    try {
+      text = await readFromClipboard({ readRunner: props.clipboardReadRunner });
+    } catch (error) {
+      dispatch({ type: 'SET_TRANSIENT_ERROR', error: error instanceof Error ? error.message : 'Could not read clipboard' });
+      return;
+    }
+
+    const result = parseCurlCommand(text);
+    if (!result.ok) {
+      dispatch({ type: 'SET_TRANSIENT_ERROR', error: result.error });
+      return;
+    }
+
+    dispatch({ type: 'APPEND_REQUEST', request: result.request });
+    if (result.skipped) {
+      dispatch({ type: 'SET_TRANSIENT_WARNING', warning: 'Pasted request — some curl options were skipped' });
+    } else {
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'Pasted request' });
     }
   };
 
@@ -786,6 +810,11 @@ export function App(props: AppProps): React.ReactElement {
       return;
     }
 
+    if (input === 'p') {
+      void pasteFromClipboard();
+      return;
+    }
+
     if (input === 'e') {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
       if (!selectedRequest) {
@@ -941,6 +970,7 @@ return (
           insecure={state.insecure}
           transientMessage={state.transientMessage}
           transientError={state.transientError}
+          transientWarning={state.transientWarning}
           focusedPanel={state.focusedPanel}
           detailsScrollOffset={state.detailsScrollOffset}
           detailsTotalLines={detailsTotalLines}

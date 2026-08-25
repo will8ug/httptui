@@ -46,6 +46,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'E', label: 'Env', description: 'Switch environment', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'S', label: '', description: 'Save as .http file', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'y', label: '', description: 'Copy request as curl', showInBar: false, showInHelp: true, group: 'request' },
+  { key: 'p', label: '', description: 'Paste curl to request list', showInBar: false, showInHelp: true, group: 'request' },
   { key: '/', label: '', description: 'Search response body', showInBar: false, showInHelp: true, group: 'search' },
   { key: 'n', label: '', description: 'Go to next search match', showInBar: false, showInHelp: true, group: 'search' },
   { key: 'N', label: '', description: 'Go to previous search match', showInBar: false, showInHelp: true, group: 'search' },

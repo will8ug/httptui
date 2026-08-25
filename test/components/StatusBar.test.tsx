@@ -10,6 +10,7 @@ const baseProps = {
   insecure: false,
   transientMessage: null as string | null,
   transientError: null as string | null,
+  transientWarning: null as string | null,
   focusedPanel: 'requests' as const,
   detailsScrollOffset: 0,
   detailsTotalLines: 10,
@@ -140,5 +141,33 @@ describe('transient error message', () => {
     const { lastFrame } = render(<StatusBar {...baseProps} transientError={null} />);
     const frame = lastFrame() ?? '';
     expect(frame).not.toContain('Reload failed');
+  });
+});
+
+describe('transient warning message', () => {
+  it('renders transient warning text when set', () => {
+    const { lastFrame } = render(
+      <StatusBar {...baseProps} transientWarning="Pasted request — some curl options were skipped" />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('Pasted request — some curl options were skipped');
+  });
+
+  it('does not render transient warning when null', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} transientWarning={null} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('Pasted request');
+  });
+
+  it('counts the warning width against the shortcut bar budget', () => {
+    const withWarning = render(
+      <StatusBar {...baseProps} transientWarning="Pasted request — some curl options were skipped" />,
+    );
+    const truncatedFrame = withWarning.lastFrame() ?? '';
+    expect(truncatedFrame).toContain('[Enter] Send');
+    expect(truncatedFrame).not.toContain('[v] Verbose');
+
+    const withoutWarning = render(<StatusBar {...baseProps} transientWarning={null} />);
+    expect(withoutWarning.lastFrame() ?? '').toContain('[v] Verbose');
   });
 });

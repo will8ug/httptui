@@ -57,6 +57,8 @@ export function renderApp(overrides: Partial<AppProps> = {}) {
       activeEnvName={props.activeEnvName}
       availableEnvironments={props.availableEnvironments}
       executorConfig={props.executorConfig}
+      clipboardRunner={props.clipboardRunner}
+      clipboardReadRunner={props.clipboardReadRunner}
     />,
   );
 }

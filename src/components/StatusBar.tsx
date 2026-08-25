@@ -15,6 +15,7 @@ interface StatusBarProps {
   insecure: boolean;
   transientMessage: string | null;
   transientError: string | null;
+  transientWarning: string | null;
   focusedPanel: FocusedPanel;
   detailsScrollOffset: number;
   detailsTotalLines: number;
@@ -49,6 +50,13 @@ function getStatusText(props: StatusBarProps): string {
   }
 }
 
+const LABEL_SUFFIX = '  ';
+const INSECURE_LABEL = 'INSECURE';
+
+function labelWidth(text: string | null): number {
+  return text ? text.length + LABEL_SUFFIX.length : 0;
+}
+
 export function StatusBar({
   filePath,
   requestCount,
@@ -56,6 +64,7 @@ export function StatusBar({
   insecure,
   transientMessage,
   transientError,
+  transientWarning,
   focusedPanel,
   detailsScrollOffset,
   detailsTotalLines,
@@ -76,6 +85,7 @@ export function StatusBar({
     insecure,
     transientMessage,
     transientError,
+    transientWarning,
     focusedPanel,
     detailsScrollOffset,
     detailsTotalLines,
@@ -85,19 +95,28 @@ export function StatusBar({
     envName,
     isDirty,
   });
-  const reloadLabelWidth = (transientMessage ? transientMessage.length + 2 : 0) + (transientError ? transientError.length + 2 : 0);
-  const envNameLabelWidth = envName ? envName.length + 2 : 0;
-  const insecureLabelWidth = insecure ? 10 : 0;
-  const availableLeftWidth = Math.max(0, columns - rightText.length - reloadLabelWidth - envNameLabelWidth - insecureLabelWidth - 1);
+  const reloadLabelWidth =
+    labelWidth(transientMessage) + labelWidth(transientError) + labelWidth(transientWarning);
+  const envNameLabelWidth = labelWidth(envName);
+  const insecureLabelWidth = labelWidth(insecure ? INSECURE_LABEL : null);
+  const availableLeftWidth = Math.max(
+    0,
+    columns - rightText.length - reloadLabelWidth - envNameLabelWidth - insecureLabelWidth - 1,
+  );
 
   return (
     <Box width="100%" justifyContent="space-between">
       <Text color="gray">{truncateText(leftText, availableLeftWidth)}</Text>
       <Box>
-        {transientMessage ? <Text key="reload-message" color="green" bold>{transientMessage}  </Text> : null}
-        {transientError ? <Text key="error-message" color="red" bold>{transientError}  </Text> : null}
-        {envName ? <Text key="env-name" color="magenta" bold>{envName}  </Text> : null}
-        {insecure ? <Text key="insecure" color="yellow" bold>INSECURE  </Text> : null}
+        {transientMessage ? (
+          <Text key="reload-message" color="green" bold>{transientMessage + LABEL_SUFFIX}</Text>
+        ) : null}
+        {transientError ? <Text key="error-message" color="red" bold>{transientError + LABEL_SUFFIX}</Text> : null}
+        {transientWarning ? (
+          <Text key="warning-message" color="yellow" bold>{transientWarning + LABEL_SUFFIX}</Text>
+        ) : null}
+        {envName ? <Text key="env-name" color="magenta" bold>{envName + LABEL_SUFFIX}</Text> : null}
+        {insecure ? <Text key="insecure" color="yellow" bold>{INSECURE_LABEL + LABEL_SUFFIX}</Text> : null}
         <Text key="status-text" color="gray">{rightText}</Text>
       </Box>
     </Box>
