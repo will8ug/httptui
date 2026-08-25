@@ -1,8 +1,10 @@
+# Spec: Paste as curl
+
 ## Purpose
 
 Import a curl command copied to the system clipboard as a new request appended to the request list, warning about — but not blocked by — curl capabilities httptui cannot represent.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Read clipboard via native tools
 The system SHALL read the clipboard by invoking the platform's native clipboard tool: `pbpaste` on macOS (with UTF-8 locale so multi-byte characters survive), PowerShell `Get-Clipboard` on Windows (with output encoding forced to UTF-8 and `-Raw` so multi-line content survives), and on Linux `wl-paste` when a Wayland display is present, otherwise `xclip -selection clipboard -o`, otherwise `xsel --clipboard --output` when an X11 display is present. When no native clipboard tool can be run, the system SHALL display a transient error naming the remedy — which tool to install for the detected platform — and SHALL NOT paste anything.
