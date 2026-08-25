@@ -117,7 +117,7 @@ httptui api.http -E Staging
 | `R` | Reload file from disk |
 | `o` | Open a different .http file |
 | `E` | Switch environment |
-| `S` | Save as .http file |
+| `S` | Export to a new .http file |
 | `y` | Copy request as curl |
 | `p` | Paste curl to request list |
 
