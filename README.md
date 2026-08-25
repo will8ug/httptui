@@ -16,11 +16,11 @@
 
 - **Multi-Format Support**: Parse `.http`, `.rest`, Postman collections, and OpenAPI specs (JSON/YAML).
 - **Keyboard-Driven TUI**: Vim keys, split-panel layout, details panel (`d`), fullscreen (`f`), help overlay (`?`).
-- **In-Session Editing**: Edit request URLs, headers, and bodies live in the TUI (`e`).
+- **Request Editing**: Edit requests live in the TUI (`e`), or hand off to your editor of choice (`Ctrl+G`).
 - **Environment Management**: Load environment files, register named environments, switch at runtime (`E`).
 - **mTLS & Client Certificates**: Per-host client certificates (PEM/PFX) with wildcard matching.
 - **Export as .http**: Save requests to `.http` format with variables preserved (`S`).
-- **Copy as curl**: Copy the selected request as a curl command to the clipboard (`y`).
+- **curl Integration**: Copy the selected request as a curl command (`y`), or paste a curl command as a new request (`p`).
 
 ![httptui shortcuts](assets/httptui-shortcuts.png)
 
