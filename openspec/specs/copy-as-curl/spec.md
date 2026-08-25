@@ -61,7 +61,7 @@ When the resolved request has a `body` and no form-data fields, the serializer S
 ### Requirement: Content-Type mirrors executor defaulting
 The serializer SHALL apply the same `Content-Type` rule as the request executor: it SHALL NOT synthesize a `Content-Type` header for the body. The serializer SHALL emit the request's own `Content-Type` header when one is present, and SHALL NOT add one when absent, regardless of the body content.
 
-#### Scenario: JSON-looking body without Content-Type gains the header
+#### Scenario: JSON-looking body without Content-Type gains nothing
 - **WHEN** the resolved request has body `{"name":"Alice"}` and no `Content-Type` header
 - **THEN** the command SHALL NOT contain a Content-Type header
 
