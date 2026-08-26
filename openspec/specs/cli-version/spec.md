@@ -1,8 +1,10 @@
+# Spec: CLI Version
+
 ## Purpose
 
 Lets users print the installed httptui version from the command line, so installs can be identified in bug reports and shell scripts without inspecting package files.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Version flag recognition
 The CLI SHALL recognize `-v` and `--version` as boolean flags in the command-line arguments. When either flag is present, the system SHALL print the released version string to stdout and exit with code 0, without launching the TUI and without requiring a file argument.
