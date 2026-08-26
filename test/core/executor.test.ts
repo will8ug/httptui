@@ -90,6 +90,32 @@ describe('executeRequest', () => {
     );
   });
 
+  it('completes a slow response without an internal deadline signal', async () => {
+    requestMock.mockImplementation(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 300);
+      });
+      return createMockResponse({ statusCode: 200, body: 'slow response' });
+    });
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
+      throw new Error('Expected successful response');
+    }
+
+    expect(result.statusCode).toBe(200);
+    expect(result.body).toBe('slow response');
+
+    expect(requestMock).toHaveBeenCalledWith(
+      'https://example.com/api',
+      expect.objectContaining({
+        signal: undefined,
+      }),
+    );
+  });
+
   it('sends no Content-Type for a JSON-looking body without one', async () => {
     requestMock.mockResolvedValue(createMockResponse());
 
@@ -206,6 +232,33 @@ describe('executeRequest', () => {
       message: 'connect ECONNREFUSED 127.0.0.1:3000',
       code: 'ECONNREFUSED',
     });
+  });
+
+  it('returns ErrorInfo when the external abort signal fires mid-flight', async () => {
+    const controller = new AbortController();
+    requestMock.mockImplementation(
+      (_url: string, options: { signal?: AbortSignal }) =>
+        new Promise((resolve, reject) => {
+          const timer = setTimeout(() => resolve(createMockResponse()), 2000);
+          options.signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            reject(new DOMException('This operation was aborted', 'AbortError'));
+          });
+        }),
+    );
+
+    setTimeout(() => controller.abort(), 50);
+
+    const result = await executeRequest(
+      createResolvedRequest(),
+      undefined,
+      undefined,
+      controller.signal,
+    );
+
+    expect(isErrorInfo(result)).toBe(true);
+    if (!isErrorInfo(result)) throw new Error('Expected error result');
+    expect(result.message).toContain('aborted');
   });
 
   it('appends TLS hint for UNABLE_TO_VERIFY_LEAF_SIGNATURE errors', async () => {

@@ -160,6 +160,15 @@ export function reducer(state: AppState, action: Action): AppState {
         ...CLEAR_SEARCH_STATE,
       };
 
+    case 'REQUEST_CANCEL':
+      return {
+        ...state,
+        isLoading: false,
+        transientMessage: null,
+        transientError: null,
+        transientWarning: action.warning,
+      };
+
     case 'RELOAD_ERROR':
       return {
         ...state,

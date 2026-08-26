@@ -87,6 +87,7 @@ export async function executeRequest(
   resolvedRequest: ResolvedRequest,
   config?: ExecutorConfig,
   certConfig?: CertConfig,
+  signal?: AbortSignal,
 ): Promise<ResponseData | ErrorInfo> {
   try {
     new URL(resolvedRequest.url);
@@ -139,7 +140,7 @@ export async function executeRequest(
       method: resolvedRequest.method,
       headers,
       body,
-      signal: AbortSignal.timeout(30000),
+      signal,
       dispatcher,
     });
 

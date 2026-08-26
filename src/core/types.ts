@@ -197,6 +197,7 @@ export type Action =
   | { type: 'SEND_REQUEST' }
   | { type: 'RECEIVE_RESPONSE'; response: ResponseData }
   | { type: 'REQUEST_ERROR'; error: ErrorInfo }
+  | { type: 'REQUEST_CANCEL'; warning: string }
   | { type: 'RELOAD_ERROR'; error: ErrorInfo }
   | { type: 'SWITCH_PANEL' }
   | { type: 'TOGGLE_VERBOSE' }

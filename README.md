@@ -92,7 +92,7 @@ httptui api.http -E Staging
 | Key | Action |
 |-----|--------|
 | `?` | Toggle help overlay |
-| `Escape` | Close current overlay / Exit fullscreen |
+| `Escape` | Close current overlay / Cancel in-flight request / Exit fullscreen |
 | `q` | Quit application |
 
 ### Navigation
