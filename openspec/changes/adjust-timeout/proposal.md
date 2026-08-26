@@ -27,5 +27,5 @@ Testing slow APIs fails today: every request is killed by a hardcoded 30-second 
 - `src/app.tsx` — own an `AbortController` per in-flight request, add the Esc-cancel branch to `useInput`, guard against the settle race (response arriving after cancel).
 - `src/core/reducer.ts` — new `REQUEST_CANCEL` action (clear `isLoading`, set transient warning, leave response/error state untouched).
 - `src/components/ResponseView.tsx` — loading-state hint.
-- `HelpOverlay` and `README.md` — document the Esc behavior.
+- `README.md` — document the Esc behavior in the existing `Escape` shortcuts row (the help overlay's terse wording is left unchanged).
 - No dependency changes; no breaking changes to file formats or CLI flags.

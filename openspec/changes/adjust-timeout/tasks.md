@@ -16,7 +16,7 @@
 
 - [ ] 3.1 Update `ResponseView` loading-state tests to expect the `(Esc to cancel)` hint alongside the `Sending request` spinner
 - [ ] 3.2 Render the dimmed `(Esc to cancel)` hint in `src/components/ResponseView.tsx` loading branch
-- [ ] 3.3 Rephrase the existing Escape descriptions in `src/core/shortcuts.ts` (help overlay source) and the README General shortcuts row to include canceling an in-flight request, in priority order (close overlay / cancel request / exit fullscreen)
+- [ ] 3.3 Update the README's existing `Escape` row in the General shortcuts table to `Close current overlay / Cancel in-flight request / Exit fullscreen`; leave the help overlay's `Escape` entry in `src/core/shortcuts.ts` unchanged (its terse wording is intentional)
 
 ## 4. Verification
 
