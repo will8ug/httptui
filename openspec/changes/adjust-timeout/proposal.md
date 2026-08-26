@@ -6,7 +6,7 @@ Testing slow APIs fails today: every request is killed by a hardcoded 30-second 
 
 - Remove the hardcoded 30-second overall timeout from the executor. Slow-but-alive servers now complete; unresponsive connections still fail via undici's built-in inactivity timeouts (300s headers/body, 10s connect).
 - `Esc` in normal mode cancels an in-flight request. The user becomes the timeout, mirroring curl's model (no default max-time; `Ctrl+C` is your timeout).
-- Cancellation is reported as a transient warning in the status bar (reusing the existing transient-warning mechanism), never as a red error panel. The previously displayed response stays visible.
+- Cancellation is reported as a transient warning in the status bar (reusing the existing transient-warning mechanism), never as a red error panel. While the request is in flight the panel shows the loading indicator; after cancellation it returns to its pre-send content — the previously displayed response, or the empty-state prompt if none.
 - The loading indicator gains an `(Esc to cancel)` hint.
 - A response that arrives after cancellation is discarded rather than rendered.
 

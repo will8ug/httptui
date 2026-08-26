@@ -40,8 +40,8 @@ The Escape branch calls `controller.abort()` and dispatches `{ type: 'REQUEST_CA
 In `sendSelectedRequest`, after `await executeRequest(...)` resolves or throws, check `controller.signal.aborted` before dispatching: if aborted, return without dispatching `RECEIVE_RESPONSE`/`REQUEST_ERROR`. The abort rejection itself flows into the existing `catch` — the guard there is the same signal check, dispatching nothing (the warning already fired at cancel time).
 *Why:* a response landing milliseconds after Escape would otherwise overwrite the canceled state with content the user explicitly abandoned.
 
-### Decision 6: Loading hint in `ResponseView`, help and README rows
-The loading branch renders the existing spinner plus a dimmed `(Esc to cancel)` hint line. Help overlay and README gain an Escape-while-loading row alongside the existing request shortcuts.
+### Decision 6: Loading hint in `ResponseView`; rephrased Escape docs
+The loading branch renders the existing spinner plus a dimmed `(Esc to cancel)` hint line. The existing Escape entries — the `SHORTCUTS` entry in `src/core/shortcuts.ts` and the README's General shortcuts row — are rephrased to include canceling an in-flight request rather than gaining a separate row: Escape is one key with context-dependent meaning, and both surfaces already summarize it as a slash-list. Wording follows the priority order (close overlay → cancel request → exit fullscreen); the help-overlay entry's missing fullscreen mention is corrected in the same edit.
 
 ## Risks / Trade-offs
 
