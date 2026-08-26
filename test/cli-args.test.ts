@@ -134,4 +134,28 @@ describe('parseArgs', () => {
 
     expect(result).toEqual({ filePath: 'api.http', insecure: false, envPath: undefined, envName: undefined, version: true });
   });
+
+  it('parses -v after file path', () => {
+    const result = parseArgs(['node', 'cli.js', 'api.http', '-v']);
+
+    expect(result).toEqual({ filePath: 'api.http', insecure: false, envPath: undefined, envName: undefined, version: true });
+  });
+
+  it('parses --version after file path', () => {
+    const result = parseArgs(['node', 'cli.js', 'api.http', '--version']);
+
+    expect(result).toEqual({ filePath: 'api.http', insecure: false, envPath: undefined, envName: undefined, version: true });
+  });
+
+  it('parses --env with --version as value as undefined', () => {
+    const result = parseArgs(['node', 'cli.js', '--env', '--version', 'api.http']);
+
+    expect(result).toEqual({ filePath: 'api.http', insecure: false, envPath: undefined, envName: undefined, version: true });
+  });
+
+  it('parses combined --env and --version flags', () => {
+    const result = parseArgs(['node', 'cli.js', '--env', 'dev.json', '--version', 'api.http']);
+
+    expect(result).toEqual({ filePath: 'api.http', insecure: false, envPath: 'dev.json', envName: undefined, version: true });
+  });
 });
