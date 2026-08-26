@@ -12,13 +12,19 @@ import { parseEnvironmentFile } from './core/env-parser';
 import { aggregateEnvironments } from './core/env-aggregator';
 import { mergeVariables } from './core/variables';
 import type { FileVariable, ParseResult } from './core/types';
+import { version as releasedVersion } from './version';
 
 function exitWithError(message: string): never {
   console.error(message);
   process.exit(1);
 }
 
-const { filePath, insecure, envPath, envName } = parseArgs(process.argv);
+const { filePath, insecure, envPath, envName, version } = parseArgs(process.argv);
+
+if (version) {
+  process.stdout.write(`${releasedVersion}\n`);
+  process.exit(0);
+}
 
 if (!filePath) {
   exitWithError('Usage: httptui <file.http>');
