@@ -1,4 +1,4 @@
-const BOOLEAN_FLAGS = new Set(['--insecure', '-k']);
+const INSECURE_FLAGS = new Set(['--insecure', '-k']);
 const ENV_FILE_FLAGS = new Set(['--env', '-e']);
 const ENV_NAME_FLAGS = new Set(['--env-name', '-E']);
 const VERSION_FLAGS = new Set(['--version', '-v']);
@@ -11,7 +11,7 @@ export function parseArgs(argv: string[]): {
   version: boolean;
 } {
   const args = argv.slice(2);
-  const insecure = args.some((arg) => BOOLEAN_FLAGS.has(arg));
+  const insecure = args.some((arg) => INSECURE_FLAGS.has(arg));
   const version = args.some((arg) => VERSION_FLAGS.has(arg));
 
   let envPath: string | undefined;
@@ -21,7 +21,7 @@ export function parseArgs(argv: string[]): {
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
 
-    if (BOOLEAN_FLAGS.has(arg) || VERSION_FLAGS.has(arg)) {
+    if (INSECURE_FLAGS.has(arg) || VERSION_FLAGS.has(arg)) {
       continue;
     }
 
