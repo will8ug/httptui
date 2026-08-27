@@ -22,6 +22,8 @@ function loadingState() {
     responseHorizontalOffset: 3,
     requestScrollOffset: 2,
     requestHorizontalOffset: 4,
+    detailsScrollOffset: 5,
+    detailsHorizontalOffset: 6,
     searchQuery: 'hello',
     searchMatches: [1, 3],
     currentMatchIndex: 1,
@@ -86,8 +88,8 @@ describe('REQUEST_CANCEL reducer', () => {
     expect(result.responseHorizontalOffset).toBe(3);
     expect(result.requestScrollOffset).toBe(2);
     expect(result.requestHorizontalOffset).toBe(4);
-    expect(result.detailsScrollOffset).toBe(0);
-    expect(result.detailsHorizontalOffset).toBe(0);
+    expect(result.detailsScrollOffset).toBe(5);
+    expect(result.detailsHorizontalOffset).toBe(6);
   });
 
   it('leaves search state untouched', () => {
