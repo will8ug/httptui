@@ -166,14 +166,14 @@ export function App(props: AppProps): React.ReactElement {
     try {
       mtimeMs = statSync(state.filePath).mtimeMs;
     } catch (error) {
-      dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
+      dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
       return;
     }
 
     try {
       await runEditorHandoff({ filePath: state.filePath, suspend: suspendTerminal, editor: state.editor });
     } catch (error) {
-      dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
+      dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
       return;
     }
 
@@ -192,7 +192,7 @@ export function App(props: AppProps): React.ReactElement {
 
       dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
     } catch (error) {
-      dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
+      dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
     }
   };
 
@@ -215,7 +215,7 @@ export function App(props: AppProps): React.ReactElement {
       await copyToClipboard(command, props.clipboardRunner === undefined ? undefined : { runner: props.clipboardRunner });
       dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'Copied as curl' });
     } catch (error) {
-      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: error instanceof Error ? error.message : 'Could not copy to clipboard' });
+      dispatch({ type: 'SET_TRANSIENT_ERROR', error: error instanceof Error ? error.message : 'Could not copy to clipboard' });
     }
   };
 
@@ -639,7 +639,7 @@ export function App(props: AppProps): React.ReactElement {
               const parseResult = parseAnyFormat(state.filePath, content);
               dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
             } catch (error) {
-              dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
+              dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
             }
             break;
           case 'fileLoad':
@@ -880,7 +880,7 @@ export function App(props: AppProps): React.ReactElement {
         const parseResult = parseAnyFormat(state.filePath, content);
         dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
       } catch (error) {
-        dispatch({ type: 'RELOAD_ERROR', error: toErrorInfo(error) });
+        dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
       }
 
       return;

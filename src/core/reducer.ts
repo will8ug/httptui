@@ -169,13 +169,6 @@ export function reducer(state: AppState, action: Action): AppState {
         transientWarning: action.warning,
       };
 
-    case 'RELOAD_ERROR':
-      return {
-        ...state,
-        transientMessage: null,
-        transientError: action.error.message,
-      };
-
     case 'SWITCH_PANEL': {
       const nextPanel = (() => {
         switch (state.focusedPanel) {

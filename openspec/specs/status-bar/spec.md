@@ -62,11 +62,15 @@ The status bar SHALL display a transient error message in red bold while one is 
 - **THEN** the status bar SHALL contain no transient error message
 
 #### Scenario: Transient error and success are mutually exclusive
-- **WHEN** a `RELOAD_ERROR` is dispatched while a transient success message is showing
+- **WHEN** a transient error message is set while a transient success message is showing
 - **THEN** the success message SHALL be cleared and the error message SHALL be shown
 
+#### Scenario: Transient error clears showing warning
+- **WHEN** a transient error message is set while a transient warning is showing
+- **THEN** the warning SHALL be cleared and the error message SHALL be shown
+
 #### Scenario: Transient success clears error
-- **WHEN** a `SET_TRANSIENT_MESSAGE` is dispatched with a non-null message while a transient error is showing
+- **WHEN** a transient success message is set while a transient error message is showing
 - **THEN** the error message SHALL be cleared and the success message SHALL be shown
 
 ### Requirement: Transient warning message
@@ -85,7 +89,7 @@ The status bar SHALL display a transient warning message in yellow bold while on
 - **THEN** the success message SHALL be cleared and the warning SHALL be shown
 
 #### Scenario: Setting a success message clears a showing warning
-- **WHEN** a `SET_TRANSIENT_MESSAGE` is dispatched with a non-null message while a transient warning is showing
+- **WHEN** a transient success message is set while a transient warning is showing
 - **THEN** the warning SHALL be cleared and the success message SHALL be shown
 
 #### Scenario: Transient warning auto-clears
