@@ -7,11 +7,12 @@ Rendering behavior of the response panel: content states (loading, error, empty,
 ## Requirements
 
 ### Requirement: Loading state display
-While a request is in flight, the `ResponseView` component SHALL render a spinner whose static label text is `Sending request` in place of response content.
+While a request is in flight, the `ResponseView` component SHALL render a spinner whose static label text is `Sending request` in place of response content, accompanied by a hint that the request can be canceled with `Escape`.
 
 #### Scenario: Loading state renders the spinner
 - **WHEN** `ResponseView` is rendered with `isLoading: true`, `response: null`, and `error: null`
 - **THEN** the frame SHALL contain the `Sending request` spinner label
+- **AND** the frame SHALL contain an `(Esc to cancel)` hint
 
 ### Requirement: Error state display
 When a request fails, the `ResponseView` component SHALL render the error message. When `error.code` is set, the error code SHALL be rendered alongside the message.

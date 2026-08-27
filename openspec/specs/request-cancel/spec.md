@@ -1,8 +1,10 @@
+# Spec: Request Cancel
+
 ## Purpose
 
 Lets the user abort an in-flight HTTP request from the keyboard instead of waiting for it to finish or fail, making the user — not a hardcoded deadline — the timeout.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Cancel in-flight request with Escape
 In normal mode, when a request is in flight, pressing `Escape` SHALL abort the request and clear the loading state. The cancellation SHALL be reported as a transient warning in the status bar using the existing transient-message mechanism, and SHALL NOT be rendered as a request error. The response panel SHALL return to whatever it displayed before the request was sent: the previously displayed response, if any, SHALL remain in place unchanged.
