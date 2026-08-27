@@ -30,10 +30,11 @@ const baseProps = {
 };
 
 describe('content states', () => {
-  it('renders the Sending request spinner label when loading', () => {
+  it('renders the Sending request spinner label and cancel hint when loading', () => {
     const { lastFrame } = render(<ResponseView {...baseProps} isLoading={true} />);
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Sending request');
+    expect(frame).toContain('(Esc to cancel)');
   });
 
   it('renders the error message and code', () => {

@@ -121,7 +121,12 @@ export function ResponseView({
   let content: React.ReactNode;
 
   if (isLoading) {
-    content = <Spinner label="Sending request" />;
+    content = (
+      <Box flexDirection="column">
+        <Spinner label="Sending request" />
+        <Text color="gray">(Esc to cancel)</Text>
+      </Box>
+    );
   } else if (error) {
     const label = error.code ? `${error.message} (${error.code})` : error.message;
     content = <Text color="red">{label}</Text>;

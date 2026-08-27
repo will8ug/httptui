@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 
-import React, { useEffect, useReducer } from 'react';
+import React, { useEffect, useReducer, useRef } from 'react';
 import { useApp, useInput, useStdout } from 'ink';
 
 import { FileLoadOverlay } from './components/FileLoadOverlay';
@@ -76,6 +76,7 @@ export function App(props: AppProps): React.ReactElement {
   const { exit, suspendTerminal } = useApp();
   const { stdout } = useStdout();
   const [state, dispatch] = useReducer(reducer, props, createInitialState);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const rows = stdout.rows || DEFAULT_TERMINAL_ROWS;
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
@@ -121,6 +122,9 @@ export function App(props: AppProps): React.ReactElement {
 
     dispatch({ type: 'SEND_REQUEST' });
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const resolvedRequest = resolveVariables(request, state.variables, dirname(state.filePath));
 
@@ -133,7 +137,11 @@ export function App(props: AppProps): React.ReactElement {
         }
       }
 
-      const result = await executeRequest(resolvedRequest, props.executorConfig, certConfig);
+      const result = await executeRequest(resolvedRequest, props.executorConfig, certConfig, controller.signal);
+
+      if (controller.signal.aborted) {
+        return;
+      }
 
       if (isErrorInfo(result)) {
         dispatch({ type: 'REQUEST_ERROR', error: result });
@@ -142,7 +150,14 @@ export function App(props: AppProps): React.ReactElement {
 
       dispatch({ type: 'RECEIVE_RESPONSE', response: result });
     } catch (error) {
+      if (controller.signal.aborted) {
+        return;
+      }
       dispatch({ type: 'REQUEST_ERROR', error: toErrorInfo(error) });
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
     }
   };
 
@@ -678,6 +693,12 @@ export function App(props: AppProps): React.ReactElement {
         dispatch({ type: 'CANCEL_IN_PLACE_SAVE' });
       }
 
+      return;
+    }
+
+    if (key.escape && state.isLoading) {
+      abortControllerRef.current?.abort();
+      dispatch({ type: 'REQUEST_CANCEL', warning: 'Request canceled' });
       return;
     }
 
