@@ -15,12 +15,13 @@ afterEach(() => {
 interface RunnerCall {
   command: string;
   args: string[];
-  input: string;
+  input: string | undefined;
 }
 
 function recordingRunner(calls: RunnerCall[]): ClipboardRunner {
-  return async (command, args, input) => {
-    calls.push({ command, args, input });
+  return async (command, args, tool) => {
+    calls.push({ command, args, input: tool.input });
+    return '';
   };
 }
 

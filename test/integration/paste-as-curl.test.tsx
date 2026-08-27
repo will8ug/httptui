@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup } from 'ink-testing-library';
 
 import { ClipboardError } from '../../src/core/clipboard';
-import type { ClipboardReadRunner } from '../../src/core/clipboard';
+import type { ClipboardRunner } from '../../src/core/clipboard';
 import { KEY_DELAY_MS, delay, press, renderApp, selectedLine } from '../helpers/integration';
 import { createRequest } from '../helpers/requests';
 
@@ -10,11 +10,11 @@ afterEach(() => {
   cleanup();
 });
 
-function clipboardContaining(text: string): ClipboardReadRunner {
+function clipboardContaining(text: string): ClipboardRunner {
   return async () => text;
 }
 
-function recordingClipboard(calls: string[], text: string): ClipboardReadRunner {
+function recordingClipboard(calls: string[], text: string): ClipboardRunner {
   return async () => {
     calls.push(text);
     return text;

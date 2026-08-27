@@ -7,16 +7,14 @@ import {
   ClipboardError,
   copyToClipboard,
   readFromClipboard,
-  spawnClipboardReadTool,
   spawnClipboardTool,
-  type ClipboardReadRunner,
   type ClipboardRunner,
 } from '../../src/core/clipboard';
 
 interface RecordedCall {
   command: string;
   args: string[];
-  input: string;
+  input: string | undefined;
   env: NodeJS.ProcessEnv | undefined;
 }
 
@@ -25,32 +23,12 @@ function enoent(command: string): Error {
 }
 
 function recordingRunner(
+  outputs: ReadonlyMap<string, string> = new Map(),
   failures: ReadonlyMap<string, Error> = new Map(),
 ): { calls: RecordedCall[]; runner: ClipboardRunner } {
   const calls: RecordedCall[] = [];
-  const runner: ClipboardRunner = async (command, args, input, env) => {
-    calls.push({ command, args, input, env });
-    const failure = failures.get(command);
-    if (failure !== undefined) {
-      throw failure;
-    }
-  };
-  return { calls, runner };
-}
-
-interface RecordedReadCall {
-  command: string;
-  args: string[];
-  env: NodeJS.ProcessEnv | undefined;
-}
-
-function recordingReadRunner(
-  outputs: ReadonlyMap<string, string> = new Map(),
-  failures: ReadonlyMap<string, Error> = new Map(),
-): { calls: RecordedReadCall[]; runner: ClipboardReadRunner } {
-  const calls: RecordedReadCall[] = [];
-  const runner: ClipboardReadRunner = async (command, args, env) => {
-    calls.push({ command, args, env });
+  const runner: ClipboardRunner = async (command, args, tool) => {
+    calls.push({ command, args, input: tool.input, env: tool.env });
     const failure = failures.get(command);
     if (failure !== undefined) {
       throw failure;
@@ -104,7 +82,7 @@ describe('copyToClipboard — darwin', () => {
   });
 
   it('throws a ClipboardError naming pbcopy when it cannot be spawned', async () => {
-    const { runner } = recordingRunner(new Map([['pbcopy', enoent('pbcopy')]]));
+    const { runner } = recordingRunner(undefined, new Map([['pbcopy', enoent('pbcopy')]]));
 
     const error = asClipboardError(
       await captureError(copyToClipboard('curl', { runner, platform: 'darwin', env: {} })),
@@ -127,7 +105,7 @@ describe('copyToClipboard — win32', () => {
     const call = calls[0];
     expect(call?.command).toBe('powershell');
     expect(call?.args.slice(0, 2)).toEqual(['-NoProfile', '-Command']);
-    expect(call?.input).toBe('');
+    expect(call?.input).toBeUndefined();
 
     const script = call?.args[2] ?? '';
     expect(script).toMatch(
@@ -138,7 +116,7 @@ describe('copyToClipboard — win32', () => {
   });
 
   it('throws a ClipboardError naming PowerShell when it cannot be spawned', async () => {
-    const { runner } = recordingRunner(new Map([['powershell', enoent('powershell')]]));
+    const { runner } = recordingRunner(undefined, new Map([['powershell', enoent('powershell')]]));
 
     const error = asClipboardError(
       await captureError(copyToClipboard('curl', { runner, platform: 'win32', env: {} })),
@@ -172,7 +150,7 @@ describe('copyToClipboard — linux', () => {
   });
 
   it('falls through an xclip spawn failure to xsel --clipboard --input with the text on stdin', async () => {
-    const { calls, runner } = recordingRunner(new Map([['xclip', enoent('xclip')]]));
+    const { calls, runner } = recordingRunner(undefined, new Map([['xclip', enoent('xclip')]]));
 
     await expect(copyToClipboard('curl', { runner, platform: 'linux', env: {} })).resolves.toBeUndefined();
 
@@ -183,6 +161,7 @@ describe('copyToClipboard — linux', () => {
 
   it('treats a non-zero exit as failure and succeeds via the next tool', async () => {
     const { calls, runner } = recordingRunner(
+      undefined,
       new Map([['wl-copy', new Error('wl-copy exited with status 1')]]),
     );
 
@@ -195,6 +174,7 @@ describe('copyToClipboard — linux', () => {
 
   it('throws a ClipboardError naming installable tools when every candidate fails', async () => {
     const { calls, runner } = recordingRunner(
+      undefined,
       new Map([
         ['wl-copy', enoent('wl-copy')],
         ['xclip', enoent('xclip')],
@@ -234,7 +214,7 @@ describe('copyToClipboard — unsupported platform', () => {
 
 describe('spawnClipboardTool — real child process', () => {
   it('rejects when the tool cannot be spawned', async () => {
-    await expect(spawnClipboardTool('httptui-nonexistent-tool-xyz', [], 'text')).rejects.toThrow();
+    await expect(spawnClipboardTool('httptui-nonexistent-tool-xyz', [])).rejects.toThrow();
   });
 
   it('writes stdin verbatim and resolves when the tool exits 0', async () => {
@@ -249,7 +229,7 @@ describe('spawnClipboardTool — real child process', () => {
         '});',
       ].join(' ');
 
-      await spawnClipboardTool(process.execPath, ['-e', script], 'line one\nline two');
+      await spawnClipboardTool(process.execPath, ['-e', script], { input: 'line one\nline two' });
 
       expect(readFileSync(dumpPath, 'utf8')).toBe('line one\nline two');
     } finally {
@@ -257,8 +237,15 @@ describe('spawnClipboardTool — real child process', () => {
     }
   });
 
+  it('captures stdout verbatim, multi-byte characters and trailing newline included', async () => {
+    const output = `curl 'https://api.example.com/送信'\n`;
+    const script = `process.stdout.write(${JSON.stringify(output)});`;
+
+    await expect(spawnClipboardTool(process.execPath, ['-e', script])).resolves.toBe(output);
+  });
+
   it('rejects when the tool exits non-zero', async () => {
-    await expect(spawnClipboardTool(process.execPath, ['-e', 'process.exit(3)'], '')).rejects.toThrow(
+    await expect(spawnClipboardTool(process.execPath, ['-e', 'process.exit(3)'])).rejects.toThrow(
       /status 3/,
     );
   });
@@ -267,10 +254,10 @@ describe('spawnClipboardTool — real child process', () => {
 describe('readFromClipboard — darwin', () => {
   it('spawns pbpaste with LC_CTYPE=UTF-8 merged into the environment and returns its stdout', async () => {
     const output = `curl 'https://api.example.com'\n`;
-    const { calls, runner } = recordingReadRunner(new Map([['pbpaste', output]]));
+    const { calls, runner } = recordingRunner(new Map([['pbpaste', output]]));
 
     const text = await readFromClipboard({
-      readRunner: runner,
+      runner,
       platform: 'darwin',
       env: { PATH: '/usr/bin:/bin', HOME: '/home/u' },
     });
@@ -286,28 +273,28 @@ describe('readFromClipboard — darwin', () => {
   });
 
   it('returns stdout verbatim, keeping the trailing newline', async () => {
-    const { runner } = recordingReadRunner(
+    const { runner } = recordingRunner(
       new Map([['pbpaste', `curl 'https://api.example.com' --data-raw '{\n  "name": "Alice"\n}'\n`]]),
     );
 
-    await expect(readFromClipboard({ readRunner: runner, platform: 'darwin', env: {} })).resolves.toBe(
+    await expect(readFromClipboard({ runner, platform: 'darwin', env: {} })).resolves.toBe(
       `curl 'https://api.example.com' --data-raw '{\n  "name": "Alice"\n}'\n`,
     );
   });
 
   it('resolves an empty string for an empty clipboard instead of treating it as failure', async () => {
-    const { calls, runner } = recordingReadRunner();
+    const { calls, runner } = recordingRunner();
 
-    await expect(readFromClipboard({ readRunner: runner, platform: 'darwin', env: {} })).resolves.toBe('');
+    await expect(readFromClipboard({ runner, platform: 'darwin', env: {} })).resolves.toBe('');
 
     expect(calls).toHaveLength(1);
   });
 
   it('throws a ClipboardError naming pbpaste when it cannot be spawned', async () => {
-    const { runner } = recordingReadRunner(new Map(), new Map([['pbpaste', enoent('pbpaste')]]));
+    const { runner } = recordingRunner(new Map(), new Map([['pbpaste', enoent('pbpaste')]]));
 
     const error = asClipboardError(
-      await captureError(readFromClipboard({ readRunner: runner, platform: 'darwin', env: {} })),
+      await captureError(readFromClipboard({ runner, platform: 'darwin', env: {} })),
     );
 
     expect(error.name).toBe('ClipboardError');
@@ -318,9 +305,9 @@ describe('readFromClipboard — darwin', () => {
 describe('readFromClipboard — win32', () => {
   it('spawns powershell -NoProfile -Command with UTF-8 output encoding and Get-Clipboard -Raw, returning multi-byte stdout', async () => {
     const output = `curl 'https://api.example.com/送信' --data-raw '{"名前":"Alice"}'`;
-    const { calls, runner } = recordingReadRunner(new Map([['powershell', output]]));
+    const { calls, runner } = recordingRunner(new Map([['powershell', output]]));
 
-    const text = await readFromClipboard({ readRunner: runner, platform: 'win32', env: {} });
+    const text = await readFromClipboard({ runner, platform: 'win32', env: {} });
 
     expect(calls).toEqual([
       {
@@ -337,10 +324,10 @@ describe('readFromClipboard — win32', () => {
   });
 
   it('throws a ClipboardError naming PowerShell when it cannot be spawned', async () => {
-    const { runner } = recordingReadRunner(new Map(), new Map([['powershell', enoent('powershell')]]));
+    const { runner } = recordingRunner(new Map(), new Map([['powershell', enoent('powershell')]]));
 
     const error = asClipboardError(
-      await captureError(readFromClipboard({ readRunner: runner, platform: 'win32', env: {} })),
+      await captureError(readFromClipboard({ runner, platform: 'win32', env: {} })),
     );
 
     expect(error.message).toMatch(/PowerShell/);
@@ -349,10 +336,10 @@ describe('readFromClipboard — win32', () => {
 
 describe('readFromClipboard — linux', () => {
   it('prefers wl-paste when WAYLAND_DISPLAY is set and stops after it succeeds', async () => {
-    const { calls, runner } = recordingReadRunner(new Map([['wl-paste', 'curl wl\n']]));
+    const { calls, runner } = recordingRunner(new Map([['wl-paste', 'curl wl\n']]));
 
     const text = await readFromClipboard({
-      readRunner: runner,
+      runner,
       platform: 'linux',
       env: { WAYLAND_DISPLAY: 'wayland-0' },
     });
@@ -362,9 +349,9 @@ describe('readFromClipboard — linux', () => {
   });
 
   it('skips wl-paste when WAYLAND_DISPLAY is unset and spawns xclip -selection clipboard -o', async () => {
-    const { calls, runner } = recordingReadRunner(new Map([['xclip', 'curl x11\n']]));
+    const { calls, runner } = recordingRunner(new Map([['xclip', 'curl x11\n']]));
 
-    const text = await readFromClipboard({ readRunner: runner, platform: 'linux', env: {} });
+    const text = await readFromClipboard({ runner, platform: 'linux', env: {} });
 
     expect(calls).toEqual([
       { command: 'xclip', args: ['-selection', 'clipboard', '-o'], env: undefined },
@@ -373,12 +360,12 @@ describe('readFromClipboard — linux', () => {
   });
 
   it('falls through an xclip spawn failure to xsel --clipboard --output and returns its stdout', async () => {
-    const { calls, runner } = recordingReadRunner(
+    const { calls, runner } = recordingRunner(
       new Map([['xsel', 'curl xsel\n']]),
       new Map([['xclip', enoent('xclip')]]),
     );
 
-    await expect(readFromClipboard({ readRunner: runner, platform: 'linux', env: {} })).resolves.toBe(
+    await expect(readFromClipboard({ runner, platform: 'linux', env: {} })).resolves.toBe(
       'curl xsel\n',
     );
 
@@ -387,20 +374,20 @@ describe('readFromClipboard — linux', () => {
   });
 
   it('treats a non-zero exit as failure and succeeds via the next tool', async () => {
-    const { calls, runner } = recordingReadRunner(
+    const { calls, runner } = recordingRunner(
       new Map(),
       new Map([['wl-paste', new Error('wl-paste exited with status 1')]]),
     );
 
     await expect(
-      readFromClipboard({ readRunner: runner, platform: 'linux', env: { WAYLAND_DISPLAY: 'wayland-0' } }),
+      readFromClipboard({ runner, platform: 'linux', env: { WAYLAND_DISPLAY: 'wayland-0' } }),
     ).resolves.toBe('');
 
     expect(calls.map((call) => call.command)).toEqual(['wl-paste', 'xclip']);
   });
 
   it('throws a ClipboardError naming installable tools when every candidate fails', async () => {
-    const { calls, runner } = recordingReadRunner(
+    const { calls, runner } = recordingRunner(
       new Map(),
       new Map([
         ['wl-paste', enoent('wl-paste')],
@@ -412,7 +399,7 @@ describe('readFromClipboard — linux', () => {
     const error = asClipboardError(
       await captureError(
         readFromClipboard({
-          readRunner: runner,
+          runner,
           platform: 'linux',
           env: { WAYLAND_DISPLAY: 'wayland-0' },
         }),
@@ -428,32 +415,13 @@ describe('readFromClipboard — linux', () => {
 
 describe('readFromClipboard — unsupported platform', () => {
   it('throws a ClipboardError without spawning anything', async () => {
-    const { calls, runner } = recordingReadRunner();
+    const { calls, runner } = recordingRunner();
 
     const error = asClipboardError(
-      await captureError(readFromClipboard({ readRunner: runner, platform: 'freebsd', env: {} })),
+      await captureError(readFromClipboard({ runner, platform: 'freebsd', env: {} })),
     );
 
     expect(calls).toEqual([]);
     expect(error.message).toMatch(/freebsd/);
-  });
-});
-
-describe('spawnClipboardReadTool — real child process', () => {
-  it('rejects when the tool cannot be spawned', async () => {
-    await expect(spawnClipboardReadTool('httptui-nonexistent-tool-xyz', [])).rejects.toThrow();
-  });
-
-  it('captures stdout verbatim, multi-byte characters and trailing newline included', async () => {
-    const output = `curl 'https://api.example.com/送信'\n`;
-    const script = `process.stdout.write(${JSON.stringify(output)});`;
-
-    await expect(spawnClipboardReadTool(process.execPath, ['-e', script])).resolves.toBe(output);
-  });
-
-  it('rejects when the tool exits non-zero', async () => {
-    await expect(spawnClipboardReadTool(process.execPath, ['-e', 'process.exit(3)'])).rejects.toThrow(
-      /status 3/,
-    );
   });
 });

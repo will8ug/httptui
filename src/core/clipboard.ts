@@ -1,21 +1,18 @@
 import { spawn } from 'node:child_process';
 
+export interface ClipboardToolInput {
+  input?: string;
+  env?: NodeJS.ProcessEnv;
+}
+
 export type ClipboardRunner = (
   command: string,
   args: string[],
-  input: string,
-  env?: NodeJS.ProcessEnv,
-) => Promise<void>;
-
-export type ClipboardReadRunner = (
-  command: string,
-  args: string[],
-  env?: NodeJS.ProcessEnv,
+  tool: ClipboardToolInput,
 ) => Promise<string>;
 
 interface ClipboardOptions {
   runner?: ClipboardRunner;
-  readRunner?: ClipboardReadRunner;
   platform?: NodeJS.Platform;
   env?: NodeJS.ProcessEnv;
 }
@@ -27,59 +24,18 @@ export class ClipboardError extends Error {
   }
 }
 
-interface ClipboardCandidate {
+interface ClipboardCandidate extends ClipboardToolInput {
   command: string;
   args: string[];
-  input: string;
-  env?: NodeJS.ProcessEnv;
 }
 
 export function spawnClipboardTool(
   command: string,
   args: string[],
-  input: string,
-  env?: NodeJS.ProcessEnv,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { env });
-    let settled = false;
-    let failure: Error | undefined;
-    let exitCode: number | null = null;
-    const settle = (): void => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      if (failure !== undefined) {
-        reject(failure);
-      } else if (exitCode === 0) {
-        resolve();
-      } else {
-        reject(new Error(`${command} exited with status ${exitCode === null ? 'unknown' : exitCode}`));
-      }
-    };
-    child.on('error', (error) => {
-      failure = error;
-      settle();
-    });
-    child.on('close', (code) => {
-      exitCode = code;
-      settle();
-    });
-    // A tool exiting before draining stdin raises EPIPE on our end; the
-    // child's exit status, not that write error, decides the outcome.
-    child.stdin.on('error', () => {});
-    child.stdin.end(input);
-  });
-}
-
-export function spawnClipboardReadTool(
-  command: string,
-  args: string[],
-  env?: NodeJS.ProcessEnv,
+  tool: ClipboardToolInput = {},
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { env });
+    const child = spawn(command, args, { env: tool.env });
     let settled = false;
     let failure: Error | undefined;
     let exitCode: number | null = null;
@@ -109,9 +65,11 @@ export function spawnClipboardReadTool(
       exitCode = code;
       settle();
     });
-    // Read tools ignore stdin; close it so the pipe cannot outlive the child.
+    // A tool exiting before draining stdin raises EPIPE on our end; the
+    // child's exit status, not that write error, decides the outcome. Closing
+    // stdin also keeps the pipe from outliving tools that never read it.
     child.stdin.on('error', () => {});
-    child.stdin.end();
+    child.stdin.end(tool.input);
   });
 }
 
@@ -144,7 +102,6 @@ function clipboardCandidates(
         {
           command: 'powershell',
           args: ['-NoProfile', '-Command', powerShellCopyCommand(text)],
-          input: '',
         },
       ];
     case 'linux': {
@@ -178,7 +135,7 @@ export async function copyToClipboard(text: string, options: ClipboardOptions = 
   const { runner = spawnClipboardTool, platform = process.platform, env = process.env } = options;
   for (const candidate of clipboardCandidates(text, platform, env)) {
     try {
-      await runner(candidate.command, candidate.args, candidate.input, candidate.env);
+      await runner(candidate.command, candidate.args, candidate);
       return;
     } catch {
       // Both spawn errors (ENOENT) and non-zero exits mean "try the next tool".
@@ -187,13 +144,7 @@ export async function copyToClipboard(text: string, options: ClipboardOptions = 
   throw new ClipboardError(clipboardFailureMessage(platform));
 }
 
-interface ClipboardReadCandidate {
-  command: string;
-  args: string[];
-  env?: NodeJS.ProcessEnv;
-}
-
-function clipboardReadCandidates(platform: NodeJS.Platform, env: NodeJS.ProcessEnv): ClipboardReadCandidate[] {
+function clipboardReadCandidates(platform: NodeJS.Platform, env: NodeJS.ProcessEnv): ClipboardCandidate[] {
   switch (platform) {
     case 'darwin':
       return [
@@ -221,7 +172,7 @@ function clipboardReadCandidates(platform: NodeJS.Platform, env: NodeJS.ProcessE
         },
       ];
     case 'linux': {
-      const candidates: ClipboardReadCandidate[] = [];
+      const candidates: ClipboardCandidate[] = [];
       if (env.WAYLAND_DISPLAY) {
         candidates.push({ command: 'wl-paste', args: [] });
       }
@@ -248,10 +199,10 @@ function clipboardReadFailureMessage(platform: NodeJS.Platform): string {
 }
 
 export async function readFromClipboard(options: ClipboardOptions = {}): Promise<string> {
-  const { readRunner = spawnClipboardReadTool, platform = process.platform, env = process.env } = options;
+  const { runner = spawnClipboardTool, platform = process.platform, env = process.env } = options;
   for (const candidate of clipboardReadCandidates(platform, env)) {
     try {
-      return await readRunner(candidate.command, candidate.args, candidate.env);
+      return await runner(candidate.command, candidate.args, candidate);
     } catch {
       // Both spawn errors (ENOENT) and non-zero exits mean "try the next tool".
     }

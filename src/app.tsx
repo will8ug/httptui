@@ -222,7 +222,7 @@ export function App(props: AppProps): React.ReactElement {
   const pasteFromClipboard = async (): Promise<void> => {
     let text: string;
     try {
-      text = await readFromClipboard({ readRunner: props.clipboardReadRunner });
+      text = await readFromClipboard({ runner: props.clipboardReadRunner });
     } catch (error) {
       dispatch({ type: 'SET_TRANSIENT_ERROR', error: error instanceof Error ? error.message : 'Could not read clipboard' });
       return;
