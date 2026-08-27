@@ -13,7 +13,7 @@ export type ClipboardReadRunner = (
   env?: NodeJS.ProcessEnv,
 ) => Promise<string>;
 
-export interface ClipboardOptions {
+interface ClipboardOptions {
   runner?: ClipboardRunner;
   readRunner?: ClipboardReadRunner;
   platform?: NodeJS.Platform;
@@ -41,7 +41,7 @@ export function spawnClipboardTool(
   env?: NodeJS.ProcessEnv,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = env === undefined ? spawn(command, args) : spawn(command, args, { env });
+    const child = spawn(command, args, { env });
     let settled = false;
     let failure: Error | undefined;
     let exitCode: number | null = null;
@@ -79,7 +79,7 @@ export function spawnClipboardReadTool(
   env?: NodeJS.ProcessEnv,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = env === undefined ? spawn(command, args) : spawn(command, args, { env });
+    const child = spawn(command, args, { env });
     let settled = false;
     let failure: Error | undefined;
     let exitCode: number | null = null;
