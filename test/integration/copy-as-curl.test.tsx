@@ -79,7 +79,7 @@ describe('copy-as-curl integration', () => {
     expect(lastFrame() ?? '').toContain('https://{{baseUrl}}/usersy');
   });
 
-  it('y with an exhausted clipboard chain shows the failure message instead of success', async () => {
+  it('y with an exhausted clipboard chain shows a transient error instead of success', async () => {
     const { stdin, lastFrame } = renderCopyApp({
       clipboardRunner: async () => {
         throw new ClipboardError(
