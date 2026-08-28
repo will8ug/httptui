@@ -1,8 +1,10 @@
+# Spec: CLI Help
+
 ## Purpose
 
 Lets users discover httptui's command-line options without leaving the terminal, printing usage information on demand and pointing no-file usage errors at the help flag.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Help flag recognition
 The CLI SHALL recognize `-h` and `--help` as boolean flags in the command-line arguments. When either flag is present, the system SHALL print the help text to stdout and exit with code 0, without launching the TUI and without requiring a file argument.
