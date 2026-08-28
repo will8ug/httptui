@@ -67,6 +67,7 @@ You can also open a different `.http` file from within the running TUI by pressi
 
 | Flag | Description |
 |------|-------------|
+| `--help`, `-h` | Show this help message and exit |
 | `--insecure`, `-k` | Skip TLS certificate verification |
 | `--env`, `-e` | Load an environment file (Postman or simplified format) |
 | `--env-name`, `-E` | Select an environment by name from the config file |

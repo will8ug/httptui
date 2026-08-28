@@ -12,6 +12,7 @@ import { parseEnvironmentFile } from './core/env-parser';
 import { aggregateEnvironments } from './core/env-aggregator';
 import { mergeVariables } from './core/variables';
 import type { FileVariable, ParseResult } from './core/types';
+import { HELP_TEXT } from './help';
 import { version as releasedVersion } from './version';
 
 function exitWithError(message: string): never {
@@ -19,7 +20,12 @@ function exitWithError(message: string): never {
   process.exit(1);
 }
 
-const { filePath, insecure, envPath, envName, version } = parseArgs(process.argv);
+const { filePath, insecure, envPath, envName, version, help } = parseArgs(process.argv);
+
+if (help) {
+  process.stdout.write(`${HELP_TEXT}\n`);
+  process.exit(0);
+}
 
 if (version) {
   process.stdout.write(`${releasedVersion}\n`);
@@ -27,7 +33,7 @@ if (version) {
 }
 
 if (!filePath) {
-  exitWithError('Usage: httptui <file.http>');
+  exitWithError("Usage: httptui <file>\nTry 'httptui --help' for more information.");
 }
 
 if (!existsSync(filePath)) {
