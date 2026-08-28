@@ -7,7 +7,7 @@ Lets users print the installed httptui version from the command line, so install
 ## Requirements
 
 ### Requirement: Version flag recognition
-The CLI SHALL recognize `-v` and `--version` as boolean flags in the command-line arguments. When either flag is present, the system SHALL print the released version string to stdout and exit with code 0, without launching the TUI and without requiring a file argument.
+The CLI SHALL recognize `-v` and `--version` as boolean flags in the command-line arguments. When either flag is present and no help flag (`-h`/`--help`) is also present, the system SHALL print the released version string to stdout and exit with code 0, without launching the TUI and without requiring a file argument. When both a version flag and a help flag are present, the help behavior specified by the `cli-help` capability SHALL take precedence.
 
 #### Scenario: Long flag without a file
 - **WHEN** the CLI is invoked with `httptui --version` and no file argument
