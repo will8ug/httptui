@@ -88,14 +88,53 @@ Implement tasks from an OpenSpec change.
    - Remaining tasks overview
    - Dynamic instruction from CLI
 
-6. **Implement tasks (loop until done or blocked)**
+6. **Implement tasks (with parallel dispatch for independent tasks)**
 
-   For each pending task:
+   **Analyze task dependencies first:**
+   - Read all pending tasks and identify dependencies between them
+   - Tasks are **independent** if they modify different files/modules and don't depend on each other's output
+   - Tasks are **dependent** if one requires the other's result, or they modify the same files
+
+   **If 2+ independent tasks exist → dispatch to subagents in parallel:**
+   ```
+   task(
+     category="unspecified-high",  // or "unspecified-low" for simpler tasks
+     load_skills=[],
+     run_in_background=true,
+     description="Implement task: <task description>",
+     prompt="Implement this specific task from the OpenSpec change:
+
+   **Change:** <change-name>
+   **Task:** <full task description>
+   **Context files:** <list relevant context files>
+
+   **Requirements:**
+   - Make minimal, focused code changes for this task only
+   - Follow existing code patterns and conventions
+   - Mark task complete in tasks file: `- [ ]` → `- [x]`
+   - Return: Summary of changes made and any issues encountered
+
+   **Do NOT:**
+   - Modify files outside this task's scope
+   - Change other tasks in the list
+   - Refactor unrelated code"
+   )
+   ```
+
+   Dispatch all independent tasks simultaneously, then wait for completion notifications.
+
+   **For dependent tasks or single tasks → implement directly:**
    - Show which task is being worked on
    - Make the code changes required
    - Keep changes minimal and focused
    - Mark task complete in the tasks file: `- [ ]` → `- [x]`
    - Continue to next task
+
+   **After subagent completion:**
+   - Collect results via `background_output(task_id="...")`
+   - Verify each task was marked complete
+   - Check for conflicts between parallel changes
+   - Report any issues that need attention
 
    **Pause if:**
    - Task is unclear → ask for clarification
@@ -103,6 +142,7 @@ Implement tasks from an OpenSpec change.
    - A task needs work beyond what the spec and tasks describe, or you are tempted to drop, narrow, defer, or accept exceptions to specified behavior to make it fit → surface the added scope and ask; do not absorb it silently
    - Error or blocker encountered → report and wait for guidance
    - User interrupts
+   - Subagent reports failure → review and decide next steps
 
 7. **On completion or pause, show status**
 
@@ -174,6 +214,8 @@ What would you like to do?
 - When a task needs work beyond what the spec describes, surface the added scope and pause - never silently narrow, defer, or simplify away specified behavior
 - Only mark a task `- [x]` when its specified behavior is fully implemented, not when it is partially done or deferred
 - Use contextFiles from CLI output, don't assume specific file names
+- **Parallel dispatch**: When 2+ tasks are independent (different files, no dependencies), dispatch to subagents simultaneously for faster execution
+- **Verify subagent work**: After subagents complete, verify tasks were marked complete and check for conflicts
 - Do not use context or operation guidance as proof that a task is complete
 - Apply relevant project context; report conflicts with controlling workflow inputs
 - Consider every guidance entry; explain any inapplicable or conflicting advice
