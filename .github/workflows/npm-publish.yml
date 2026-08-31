@@ -1,0 +1,64 @@
+name: npm-publish
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24.x'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js version
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: npm install, typecheck, build, and test
+        run: |
+          npm install
+          npm run typecheck
+          npm run typecheck:test
+          npm run build
+          npm test
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing (OIDC) + provenance
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js version
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org
+
+      - name: Build
+        run: |
+          npm install
+          npm run build
+
+      - name: Check version not already published
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "@will8ug/httptui@$VERSION" --loglevel=error >/dev/null 2>&1; then
+            echo "::error::@will8ug/httptui@$VERSION already published — bump version in package.json and re-run"
+            exit 1
+          fi
+
+      - name: Publish
+        run: npm publish --access public --provenance
