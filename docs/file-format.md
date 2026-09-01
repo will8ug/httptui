@@ -1,6 +1,6 @@
 # .http File Format
 
-httptui supports a subset of the standard `.http` format used by VS Code REST Client.
+httptui supports a subset of the standard `.http` format used by [VS Code REST Client plugin](https://github.com/Huachao/vscode-restclient).
 
 ## Request Separation
 
