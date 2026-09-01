@@ -4,7 +4,7 @@ import tls from 'node:tls';
 
 import { render } from 'ink';
 
-import { App } from './app';
+import { App } from './app/App';
 import { parseArgs } from './args';
 import { loadConfig, resolveCertPath } from './core/config';
 import { parseAnyFormat } from './core/format-detector';
