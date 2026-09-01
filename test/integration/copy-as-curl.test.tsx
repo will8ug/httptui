@@ -2,7 +2,7 @@ import React from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render } from 'ink-testing-library';
 
-import { App } from '../../src/app';
+import { App } from '../../src/app/App';
 import { ClipboardError } from '../../src/core/clipboard';
 import type { ClipboardRunner } from '../../src/core/clipboard';
 import type { AppProps, ParsedRequest } from '../../src/core/types';

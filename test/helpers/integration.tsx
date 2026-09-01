@@ -1,7 +1,7 @@
 import React from 'react';
 import { render } from 'ink-testing-library';
 
-import { App } from '../../src/app';
+import { App } from '../../src/app/App';
 import type { AppProps, ParsedRequest } from '../../src/core/types';
 
 export const KEY_DELAY_MS = 50;

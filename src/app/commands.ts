@@ -4,16 +4,16 @@ import { basename, dirname } from 'node:path';
 import type { Dispatch } from 'react';
 import type { SuspendTerminal } from 'ink';
 
-import { runEditorHandoff } from './core/editor-launcher';
-import { executeRequest, isErrorInfo, toErrorInfo } from './core/executor';
-import type { CertConfig } from './core/executor';
-import { matchCertificate, loadCertFiles } from './core/certificates';
-import { copyToClipboard, readFromClipboard, type ClipboardRunner } from './core/clipboard';
-import { toCurlCommand } from './core/curl-serializer';
-import { parseCurlCommand } from './core/curl-parser';
-import { parseAnyFormat } from './core/format-detector';
-import { resolveVariables } from './core/variables';
-import type { Action, AppState, CertEntry, ExecutorConfig, FileVariable, ParsedRequest } from './core/types';
+import { runEditorHandoff } from '../core/editor-launcher';
+import { executeRequest, isErrorInfo, toErrorInfo } from '../core/executor';
+import type { CertConfig } from '../core/executor';
+import { matchCertificate, loadCertFiles } from '../core/certificates';
+import { copyToClipboard, readFromClipboard, type ClipboardRunner } from '../core/clipboard';
+import { toCurlCommand } from '../core/curl-serializer';
+import { parseCurlCommand } from '../core/curl-parser';
+import { parseAnyFormat } from '../core/format-detector';
+import { resolveVariables } from '../core/variables';
+import type { Action, AppState, CertEntry, ExecutorConfig, FileVariable, ParsedRequest } from '../core/types';
 
 export async function sendSelectedRequest({ state, executorConfig, abortControllerRef, dispatch }: {
   state: AppState;
