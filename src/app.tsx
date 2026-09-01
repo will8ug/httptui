@@ -18,9 +18,10 @@ import { EnvSelectOverlay } from './components/EnvSelectOverlay';
 import { createInitialState, reducer } from './core/reducer';
 import type { AppProps } from './core/types';
 import { EDIT_TAB_ORDER } from './core/types';
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getDetailPanelHeight, getEditorContentWidth, getEditorVisibleHeight, getFullscreenContentWidth, getFullscreenRequestContentWidth, getFullscreenVisibleHeight } from './utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS } from './utils/layout';
+import { computeLayoutMetrics } from './utils/layout-metrics';
 import { TRANSIENT_CLEAR_MS } from './utils/timing';
-import { hasUnsavedChanges, resolveRequestDetails } from './utils/request';
+import { hasUnsavedChanges } from './utils/request';
 import { getResponseTotalLines } from './utils/scroll';
 import { handleConfirmDiscardInput, handleConfirmInPlaceSaveInput, handleEditInput, handleEnvSelectInput, handleFileLoadInput, handleHelpInput, handleNormalInput, handleSaveInput, handleSearchInput } from './input-handlers';
 
@@ -33,24 +34,17 @@ export function App(props: AppProps): React.ReactElement {
   const rows = stdout.rows || DEFAULT_TERMINAL_ROWS;
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
   const selectedRequest = state.requests[state.selectedIndex];
-  const detailPanelMaxContent = 10;
-  let detailPanelHeight = 0;
-  let detailsTotalLines = 0;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
-  if (state.showRequestDetails && selectedRequest) {
-    const resolved = resolveRequestDetails(selectedRequest, state.variables);
-    detailsTotalLines = resolved.totalContentLines;
-    detailPanelHeight = getDetailPanelHeight(detailsTotalLines, detailPanelMaxContent);
-  }
-  const responseAvailableHeight = rows - 1 - detailPanelHeight;
-  const fullscreenAvailableHeight = rows - 1;
-  const fullscreenContentWidth = getFullscreenContentWidth(columns);
-  const fullscreenRequestContentWidth = getFullscreenRequestContentWidth(columns);
-  const fullscreenVisibleHeight = getFullscreenVisibleHeight(fullscreenAvailableHeight);
-  const editorContentWidth = getEditorContentWidth(columns);
-  const editorVisibleHeight = getEditorVisibleHeight(rows);
-  const effectiveResponseHeight = state.maximizedPanel === 'response' ? fullscreenAvailableHeight : responseAvailableHeight;
-  const effectiveDetailMaxContent = state.maximizedPanel === 'details' ? fullscreenVisibleHeight : detailPanelMaxContent;
+  const {
+    detailsTotalLines,
+    responseAvailableHeight,
+    fullscreenContentWidth,
+    fullscreenRequestContentWidth,
+    fullscreenVisibleHeight,
+    editorContentWidth,
+    editorVisibleHeight,
+    effectiveResponseHeight,
+    effectiveDetailMaxContent,
+  } = computeLayoutMetrics(state, selectedRequest, rows, columns);
 
   useEffect(() => {
     if (state.transientMessage === null && state.transientError === null && state.transientWarning === null) {
@@ -198,7 +192,7 @@ return (
         <RequestDetailsView
           request={selectedRequest}
           variables={state.variables}
-          maxHeight={state.maximizedPanel === 'details' ? effectiveDetailMaxContent : detailPanelMaxContent}
+          maxHeight={effectiveDetailMaxContent}
           focused={state.focusedPanel === 'details' || state.maximizedPanel === 'details'}
           scrollOffset={state.detailsScrollOffset}
           horizontalOffset={state.detailsHorizontalOffset}
