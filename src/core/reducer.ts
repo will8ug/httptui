@@ -606,7 +606,9 @@ function reduceConfirmInPlaceSave(state: AppState, action: ConfirmInPlaceSaveAct
   }
 }
 
-export function reducer(state: AppState, action: Action): AppState {
+type NavigationAction = Extract<Action, { type: 'SELECT_REQUEST' | 'MOVE_SELECTION' | 'APPEND_REQUEST' | 'SWITCH_PANEL' | 'SCROLL' | 'SCROLL_HORIZONTAL' | 'JUMP_VERTICAL' | 'JUMP_HORIZONTAL' }>;
+
+function reduceNavigation(state: AppState, action: NavigationAction): AppState {
   switch (action.type) {
     case 'SELECT_REQUEST':
       return {
@@ -635,43 +637,6 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     }
 
-    case 'SEND_REQUEST':
-      return {
-        ...state,
-        isLoading: true,
-        requestError: null,
-        responseScrollOffset: 0,
-        responseHorizontalOffset: 0,
-        ...CLEAR_SEARCH_STATE,
-      };
-
-    case 'RECEIVE_RESPONSE':
-      return {
-        ...state,
-        response: action.response,
-        requestError: null,
-        isLoading: false,
-        responseScrollOffset: 0,
-        ...CLEAR_SEARCH_STATE,
-      };
-
-    case 'REQUEST_ERROR':
-      return {
-        ...state,
-        response: null,
-        requestError: action.error,
-        isLoading: false,
-        responseScrollOffset: 0,
-        ...CLEAR_SEARCH_STATE,
-      };
-
-    case 'REQUEST_CANCEL':
-      return {
-        ...state,
-        isLoading: false,
-        ...setTransient({ warning: action.warning }),
-      };
-
     case 'SWITCH_PANEL': {
       const nextPanel = (() => {
         switch (state.focusedPanel) {
@@ -688,24 +653,6 @@ export function reducer(state: AppState, action: Action): AppState {
         focusedPanel: nextPanel,
       };
     }
-
-    case 'TOGGLE_VERBOSE':
-      return {
-        ...state,
-        verbose: !state.verbose,
-      };
-
-    case 'TOGGLE_HELP':
-      return {
-        ...state,
-        showHelp: !state.showHelp,
-      };
-
-    case 'CLOSE_HELP':
-      return {
-        ...state,
-        showHelp: false,
-      };
 
     case 'SCROLL': {
       const delta = action.direction === 'up' ? -1 : 1;
@@ -770,21 +717,6 @@ export function reducer(state: AppState, action: Action): AppState {
         requestHorizontalOffset: Math.min(Math.max(0, state.requestHorizontalOffset + horizontalDelta), maxOffset),
       };
     }
-
-    case 'TOGGLE_WRAP':
-      return {
-        ...state,
-        wrapMode: state.wrapMode === 'nowrap' ? 'wrap' : 'nowrap',
-        responseScrollOffset: 0,
-        responseHorizontalOffset: 0,
-      };
-
-    case 'TOGGLE_RAW':
-      return {
-        ...state,
-        rawMode: !state.rawMode,
-        ...CLEAR_SEARCH_STATE,
-      };
 
     case 'JUMP_VERTICAL': {
       if (state.focusedPanel === 'requests') {
@@ -862,19 +794,49 @@ export function reducer(state: AppState, action: Action): AppState {
 
       return state;
     }
+  }
+}
 
-    case 'TOGGLE_REQUEST_DETAILS': {
-      const hiding = state.showRequestDetails;
+type RequestLifecycleAction = Extract<Action, { type: 'SEND_REQUEST' | 'RECEIVE_RESPONSE' | 'REQUEST_ERROR' | 'REQUEST_CANCEL' | 'RELOAD_FILE' }>;
+
+function reduceRequestLifecycle(state: AppState, action: RequestLifecycleAction): AppState {
+  switch (action.type) {
+    case 'SEND_REQUEST':
       return {
         ...state,
-        showRequestDetails: !state.showRequestDetails,
-        ...(hiding && {
-          detailsScrollOffset: 0,
-          detailsHorizontalOffset: 0,
-          ...(state.focusedPanel === 'details' && { focusedPanel: 'response' as const }),
-        }),
+        isLoading: true,
+        requestError: null,
+        responseScrollOffset: 0,
+        responseHorizontalOffset: 0,
+        ...CLEAR_SEARCH_STATE,
       };
-    }
+
+    case 'RECEIVE_RESPONSE':
+      return {
+        ...state,
+        response: action.response,
+        requestError: null,
+        isLoading: false,
+        responseScrollOffset: 0,
+        ...CLEAR_SEARCH_STATE,
+      };
+
+    case 'REQUEST_ERROR':
+      return {
+        ...state,
+        response: null,
+        requestError: action.error,
+        isLoading: false,
+        responseScrollOffset: 0,
+        ...CLEAR_SEARCH_STATE,
+      };
+
+    case 'REQUEST_CANCEL':
+      return {
+        ...state,
+        isLoading: false,
+        ...setTransient({ warning: action.warning }),
+      };
 
     case 'RELOAD_FILE': {
       const currentRequestName = state.requests[state.selectedIndex]?.name;
@@ -897,7 +859,87 @@ export function reducer(state: AppState, action: Action): AppState {
         ...setTransient({ message: 'Reloaded' }),
       };
     }
+  }
+}
 
+type TogglesAction = Extract<Action, { type: 'TOGGLE_VERBOSE' | 'TOGGLE_HELP' | 'CLOSE_HELP' | 'TOGGLE_WRAP' | 'TOGGLE_RAW' | 'TOGGLE_REQUEST_DETAILS' | 'TOGGLE_FULLSCREEN' }>;
+
+function reduceToggles(state: AppState, action: TogglesAction): AppState {
+  switch (action.type) {
+    case 'TOGGLE_VERBOSE':
+      return {
+        ...state,
+        verbose: !state.verbose,
+      };
+
+    case 'TOGGLE_HELP':
+      return {
+        ...state,
+        showHelp: !state.showHelp,
+      };
+
+    case 'CLOSE_HELP':
+      return {
+        ...state,
+        showHelp: false,
+      };
+
+    case 'TOGGLE_WRAP':
+      return {
+        ...state,
+        wrapMode: state.wrapMode === 'nowrap' ? 'wrap' : 'nowrap',
+        responseScrollOffset: 0,
+        responseHorizontalOffset: 0,
+      };
+
+    case 'TOGGLE_RAW':
+      return {
+        ...state,
+        rawMode: !state.rawMode,
+        ...CLEAR_SEARCH_STATE,
+      };
+
+    case 'TOGGLE_REQUEST_DETAILS': {
+      const hiding = state.showRequestDetails;
+      return {
+        ...state,
+        showRequestDetails: !state.showRequestDetails,
+        ...(hiding && {
+          detailsScrollOffset: 0,
+          detailsHorizontalOffset: 0,
+          ...(state.focusedPanel === 'details' && { focusedPanel: 'response' as const }),
+        }),
+      };
+    }
+
+    case 'TOGGLE_FULLSCREEN': {
+      if (state.maximizedPanel === null) {
+        const panel = state.focusedPanel;
+        return {
+          ...state,
+          maximizedPanel: panel,
+          ...(panel === 'requests' ? { requestHorizontalOffset: 0 } : {}),
+          ...(panel === 'response' ? { responseHorizontalOffset: 0 } : {}),
+          ...(panel === 'details' ? { detailsHorizontalOffset: 0 } : {}),
+        };
+      }
+
+      const previousPanel = state.maximizedPanel;
+      return {
+        ...state,
+        maximizedPanel: null,
+        ...(previousPanel === 'requests' ? { requestHorizontalOffset: 0 } : {}),
+        ...(previousPanel === 'response' ? { responseHorizontalOffset: 0 } : {}),
+        ...(previousPanel === 'details' ? { detailsHorizontalOffset: 0 } : {}),
+      };
+    }
+  }
+}
+
+type TransientAction = Extract<Action, { type: 'CLEAR_TRANSIENT_MESSAGE' | 'SET_TRANSIENT_MESSAGE' | 'SET_TRANSIENT_WARNING' | 'SET_TRANSIENT_ERROR' }>;
+
+function reduceTransient(state: AppState, action: TransientAction): AppState {
+  switch (action.type) {
     case 'CLEAR_TRANSIENT_MESSAGE':
       return {
         ...state,
@@ -921,6 +963,42 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         ...setTransient({ error: action.error }),
       };
+  }
+}
+
+export function reducer(state: AppState, action: Action): AppState {
+  switch (action.type) {
+    case 'SELECT_REQUEST':
+    case 'MOVE_SELECTION':
+    case 'APPEND_REQUEST':
+    case 'SWITCH_PANEL':
+    case 'SCROLL':
+    case 'SCROLL_HORIZONTAL':
+    case 'JUMP_VERTICAL':
+    case 'JUMP_HORIZONTAL':
+      return reduceNavigation(state, action);
+
+    case 'SEND_REQUEST':
+    case 'RECEIVE_RESPONSE':
+    case 'REQUEST_ERROR':
+    case 'REQUEST_CANCEL':
+    case 'RELOAD_FILE':
+      return reduceRequestLifecycle(state, action);
+
+    case 'TOGGLE_VERBOSE':
+    case 'TOGGLE_HELP':
+    case 'CLOSE_HELP':
+    case 'TOGGLE_WRAP':
+    case 'TOGGLE_RAW':
+    case 'TOGGLE_REQUEST_DETAILS':
+    case 'TOGGLE_FULLSCREEN':
+      return reduceToggles(state, action);
+
+    case 'CLEAR_TRANSIENT_MESSAGE':
+    case 'SET_TRANSIENT_MESSAGE':
+    case 'SET_TRANSIENT_WARNING':
+    case 'SET_TRANSIENT_ERROR':
+      return reduceTransient(state, action);
 
     case 'ENTER_FILE_LOAD':
     case 'UPDATE_FILE_LOAD_INPUT':
@@ -954,28 +1032,6 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'NEXT_MATCH':
     case 'PREV_MATCH':
       return reduceSearch(state, action);
-
-    case 'TOGGLE_FULLSCREEN': {
-      if (state.maximizedPanel === null) {
-        const panel = state.focusedPanel;
-        return {
-          ...state,
-          maximizedPanel: panel,
-          ...(panel === 'requests' ? { requestHorizontalOffset: 0 } : {}),
-          ...(panel === 'response' ? { responseHorizontalOffset: 0 } : {}),
-          ...(panel === 'details' ? { detailsHorizontalOffset: 0 } : {}),
-        };
-      }
-
-      const previousPanel = state.maximizedPanel;
-      return {
-        ...state,
-        maximizedPanel: null,
-        ...(previousPanel === 'requests' ? { requestHorizontalOffset: 0 } : {}),
-        ...(previousPanel === 'response' ? { responseHorizontalOffset: 0 } : {}),
-        ...(previousPanel === 'details' ? { detailsHorizontalOffset: 0 } : {}),
-      };
-    }
 
     case 'ENTER_EDIT':
     case 'EDIT_KEY':
