@@ -32,6 +32,35 @@ export const CLEAR_SEARCH_STATE = {
   lastSearchQuery: '',
 };
 
+const EMPTY_EDIT_BUFFERS = {
+  body: { text: '', cursor: 0 },
+  headers: { text: '', cursor: 0 },
+  url: { text: '', cursor: 0 },
+};
+
+function setTransient(
+  transient: { message?: string | null; error?: string | null; warning?: string | null },
+): Pick<AppState, 'transientMessage' | 'transientError' | 'transientWarning'> {
+  return {
+    transientMessage: transient.message ?? null,
+    transientError: transient.error ?? null,
+    transientWarning: transient.warning ?? null,
+  };
+}
+
+function navigateRequests(state: AppState, nextIndex: number, rows?: number): AppState {
+  const index = clamp(nextIndex, 0, state.requests.length - 1);
+  const visibleCount = getRequestVisibleHeight(rows ?? DEFAULT_TERMINAL_ROWS);
+  return {
+    ...state,
+    selectedIndex: index,
+    requestScrollOffset: clampScrollOffsetToCursor(index, state.requestScrollOffset, visibleCount),
+    requestHorizontalOffset: 0,
+    detailsScrollOffset: 0,
+    detailsHorizontalOffset: 0,
+  };
+}
+
 export function computeVerticalMaxOffset(
   state: AppState,
   columns: number,
@@ -78,33 +107,16 @@ export function computeSearchScrollOffset(visualIndex: number, maxOffset?: numbe
 
 export function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
-    case 'SELECT_REQUEST': {
-      const nextIndex = clamp(action.index, 0, state.requests.length - 1);
-      const visibleCount = getRequestVisibleHeight(action.rows ?? DEFAULT_TERMINAL_ROWS);
-
+    case 'SELECT_REQUEST':
       return {
-        ...state,
-        selectedIndex: nextIndex,
-        requestScrollOffset: clampScrollOffsetToCursor(nextIndex, state.requestScrollOffset, visibleCount),
-        requestHorizontalOffset: 0,
-        detailsScrollOffset: 0,
-        detailsHorizontalOffset: 0,
+        ...navigateRequests(state, action.index, action.rows),
         ...CLEAR_SEARCH_STATE,
       };
-    }
 
     case 'MOVE_SELECTION': {
       const delta = action.direction === 'up' ? -1 : 1;
-      const nextIndex = clamp(state.selectedIndex + delta, 0, state.requests.length - 1);
-      const visibleCount = getRequestVisibleHeight(action.rows ?? DEFAULT_TERMINAL_ROWS);
-
       return {
-        ...state,
-        selectedIndex: nextIndex,
-        requestScrollOffset: clampScrollOffsetToCursor(nextIndex, state.requestScrollOffset, visibleCount),
-        requestHorizontalOffset: 0,
-        detailsScrollOffset: 0,
-        detailsHorizontalOffset: 0,
+        ...navigateRequests(state, state.selectedIndex + delta, action.rows),
         ...CLEAR_SEARCH_STATE,
       };
     }
@@ -115,17 +127,9 @@ export function reducer(state: AppState, action: Action): AppState {
       // React keys stay unique across repeated pastes — never a file position.
       const maxLineNumber = state.requests.reduce((max, req) => Math.max(max, req.lineNumber), 0);
       const appended = { ...action.request, lineNumber: maxLineNumber + 1 };
-      const nextIndex = state.requests.length;
-      const visibleCount = getRequestVisibleHeight(DEFAULT_TERMINAL_ROWS);
-
+      const nextState = { ...state, requests: [...state.requests, appended] };
       return {
-        ...state,
-        requests: [...state.requests, appended],
-        selectedIndex: nextIndex,
-        requestScrollOffset: clampScrollOffsetToCursor(nextIndex, state.requestScrollOffset, visibleCount),
-        requestHorizontalOffset: 0,
-        detailsScrollOffset: 0,
-        detailsHorizontalOffset: 0,
+        ...navigateRequests(nextState, nextState.requests.length - 1),
         ...CLEAR_SEARCH_STATE,
       };
     }
@@ -164,9 +168,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         isLoading: false,
-        transientMessage: null,
-        transientError: null,
-        transientWarning: action.warning,
+        ...setTransient({ warning: action.warning }),
       };
 
     case 'SWITCH_PANEL': {
@@ -391,41 +393,32 @@ export function reducer(state: AppState, action: Action): AppState {
         requestScrollOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
-        transientMessage: 'Reloaded',
-        transientError: null,
+        ...setTransient({ message: 'Reloaded' }),
       };
     }
 
     case 'CLEAR_TRANSIENT_MESSAGE':
       return {
         ...state,
-        transientMessage: null,
-        transientError: null,
-        transientWarning: null,
+        ...setTransient({}),
       };
 
     case 'SET_TRANSIENT_MESSAGE':
       return {
         ...state,
-        transientMessage: action.message,
-        transientError: null,
-        transientWarning: null,
+        ...setTransient({ message: action.message }),
       };
 
     case 'SET_TRANSIENT_WARNING':
       return {
         ...state,
-        transientMessage: null,
-        transientError: null,
-        transientWarning: action.warning,
+        ...setTransient({ warning: action.warning }),
       };
 
     case 'SET_TRANSIENT_ERROR':
       return {
         ...state,
-        transientMessage: null,
-        transientError: action.error,
-        transientWarning: null,
+        ...setTransient({ error: action.error }),
       };
 
     case 'ENTER_FILE_LOAD':
@@ -489,8 +482,7 @@ export function reducer(state: AppState, action: Action): AppState {
         fileLoadCursor: 0,
         fileLoadError: null,
         fileLoadCompletions: null,
-        transientMessage: `Loaded: ${action.filePath.split('/').pop() ?? ''}`,
-        transientError: null,
+        ...setTransient({ message: `Loaded: ${action.filePath.split('/').pop() ?? ''}` }),
         ...(action.executorConfig && {
           certificates: action.executorConfig.certificates,
           editor: action.executorConfig.editor,
@@ -548,8 +540,7 @@ export function reducer(state: AppState, action: Action): AppState {
         saveInput: '',
         saveCursor: 0,
         saveError: null,
-        transientMessage: action.message,
-        transientError: null,
+        ...setTransient({ message: action.message }),
       };
 
     case 'CANCEL_SAVE':
@@ -805,7 +796,7 @@ export function reducer(state: AppState, action: Action): AppState {
       if (action.target === 'body' && request?.formdataFields) {
         return {
           ...state,
-          transientMessage: 'form-data request body is not supported to edit for now',
+          ...setTransient({ message: 'form-data request body is not supported to edit for now' }),
         };
       }
       const buffer = state.editBuffers[action.target];
@@ -830,7 +821,7 @@ export function reducer(state: AppState, action: Action): AppState {
       if (!parsedHeaders.ok) {
         return {
           ...state,
-          transientError: `Cannot save: header line ${parsedHeaders.line} is ${parsedHeaders.error}`,
+          ...setTransient({ error: `Cannot save: header line ${parsedHeaders.line} is ${parsedHeaders.error}` }),
         };
       }
       const nextBody = state.editBuffers.body.text === '' ? undefined : state.editBuffers.body.text;
@@ -845,12 +836,11 @@ export function reducer(state: AppState, action: Action): AppState {
         requests: updatedRequests,
         mode: 'normal',
         editTarget: 'url',
-        editBuffers: { body: { text: '', cursor: 0 }, headers: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
+        editBuffers: EMPTY_EDIT_BUFFERS,
         editScrollOffset: 0,
         editHorizontalOffset: 0,
         editEscapeArmedAt: null,
-        transientMessage: changed ? 'Request updated' : null,
-        transientError: null,
+        ...setTransient({ message: changed ? 'Request updated' : null }),
       };
     }
 
@@ -859,20 +849,18 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         mode: 'normal',
         editTarget: 'url',
-        editBuffers: { body: { text: '', cursor: 0 }, headers: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
+        editBuffers: EMPTY_EDIT_BUFFERS,
         editScrollOffset: 0,
         editHorizontalOffset: 0,
         editEscapeArmedAt: null,
-        transientMessage: null,
-        transientError: null,
+        ...setTransient({}),
       };
 
     case 'ARM_EDIT_CANCEL':
       return {
         ...state,
         editEscapeArmedAt: action.now,
-        transientMessage: 'Press Esc again to discard changes',
-        transientError: null,
+        ...setTransient({ message: 'Press Esc again to discard changes' }),
       };
 
     case 'REQUEST_DISCARD_CONFIRM':
@@ -967,7 +955,7 @@ export function createInitialState(props: AppProps): AppState {
     certificates: props.executorConfig.certificates,
     editor: props.executorConfig.editor,
     editTarget: 'url',
-    editBuffers: { body: { text: '', cursor: 0 }, headers: { text: '', cursor: 0 }, url: { text: '', cursor: 0 } },
+    editBuffers: EMPTY_EDIT_BUFFERS,
     editScrollOffset: 0,
     editHorizontalOffset: 0,
     editEscapeArmedAt: null,
