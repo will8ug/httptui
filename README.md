@@ -31,6 +31,12 @@
 ## Installation
 
 ```bash
+npm install -g @will8ug/httptui
+```
+
+Or
+
+```bash
 # npm config get prefix
 # npm config set prefix "$HOME/.local"
 # npm config delete prefix
@@ -44,12 +50,6 @@ npm link
 # npm unlink @will8ug/httptui
 # Or under current project folder:
 # npm unlink
-```
-
-Or
-
-```bash
-npm install -g @will8ug/httptui
 ```
 
 ## Usage
