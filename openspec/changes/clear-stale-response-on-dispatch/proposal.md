@@ -23,5 +23,5 @@ When an in-flight request is cancelled with `Escape`, the response pane resurrec
 ## Impact
 
 - `src/core/reducers/lifecycle.ts` — the `SEND_REQUEST` case gains `response: null`.
-- Tests asserting lifecycle behavior around send/cancel (reducer- or integration-level) need updating; a new scenario covers the cancel-after-response path.
+- Tests asserting lifecycle behavior around send/cancel need updating: the integration test that pinned restore-on-cancel flips to the empty-prompt outcome, and the `REQUEST_CANCEL` unit suite is realigned with the reachable in-flight state — tests asserting preservation of dispatch-cleared fields are removed or replaced by a dispatch-then-cancel sequence test.
 - No changes to components, commands, executor, or status-bar behavior.
