@@ -10,6 +10,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
       return {
         ...state,
         isLoading: true,
+        response: null,
         requestError: null,
         responseScrollOffset: 0,
         responseHorizontalOffset: 0,

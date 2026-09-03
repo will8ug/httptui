@@ -97,7 +97,7 @@ function makeRequests() {
 }
 
 describe('request cancel', () => {
-  it('Escape during a slow in-flight request aborts it, clears loading, and restores the prior response', async () => {
+  it('Escape during a slow in-flight request aborts it, clears loading, and leaves the empty prompt', async () => {
     const { stdin, lastFrame } = renderApp({ requests: makeRequests() });
     await delay(KEY_DELAY_MS);
 
@@ -117,7 +117,8 @@ describe('request cancel', () => {
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Request canceled');
     expect(frame).not.toContain('Sending request');
-    expect(frame).toContain('first payload');
+    expect(frame).toContain('Press Enter to send a request');
+    expect(frame).not.toContain('first payload');
   });
 
   it('a response arriving after cancel is not rendered', async () => {
