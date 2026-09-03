@@ -22,11 +22,16 @@ When a request fails, the `ResponseView` component SHALL render the error messag
 - **THEN** the frame SHALL contain the error message and the code
 
 ### Requirement: Empty state prompt
-When no request has been sent yet (no response, no error, not loading), the `ResponseView` component SHALL render the prompt `Press Enter to send a request`.
+When there is no response to display — no response, no error, and no request in flight — the `ResponseView` component SHALL render the prompt `Press Enter to send a request`. A cancelled request ends in this state rather than restoring the response that preceded it. (The cancelled-request acknowledgment in the status bar is specified in the **status-bar** spec.)
 
 #### Scenario: Empty state renders the prompt
 - **WHEN** `ResponseView` is rendered with `response: null`, `error: null`, and `isLoading: false`
 - **THEN** the frame SHALL contain `Press Enter to send a request`
+
+#### Scenario: Cancelled request leaves the empty prompt
+- **WHEN** a response has been displayed, a new request is sent, and the in-flight request is cancelled with `Escape`
+- **THEN** the response pane SHALL show `Press Enter to send a request`
+- **AND** the response pane SHALL NOT show the previous response body
 
 ### Requirement: Response body formatting display
 With `rawMode` off, the response panel SHALL display the body as produced by `formatResponseBody(response.body, false)` — JSON bodies pretty-printed across multiple indented lines. With `rawMode` on, the response panel SHALL display the body in its raw, unformatted form. (Search-match computation against the same formatted/raw text is specified in the **response-search** spec.)

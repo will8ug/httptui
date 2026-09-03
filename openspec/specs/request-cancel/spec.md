@@ -6,16 +6,16 @@ Lets the user abort an in-flight HTTP request from the keyboard instead of waiti
 
 ## Requirements
 
-### Requirement: Cancel in-flight request with Escape
-In normal mode, when a request is in flight, pressing `Escape` SHALL abort the request and clear the loading state. The cancellation SHALL be reported as a transient warning in the status bar using the existing transient-message mechanism, and SHALL NOT be rendered as a request error. The response panel SHALL return to whatever it displayed before the request was sent: the previously displayed response, if any, SHALL remain in place unchanged.
+### Requirement: Cancelling an in-flight request with Escape
+In normal mode, when a request is in flight, pressing `Escape` SHALL abort the request and clear the loading state. The cancellation SHALL be reported as a transient warning in the status bar using the existing transient-message mechanism, and SHALL NOT be rendered as a request error. What the response panel displays after a cancel is specified in the **response-view** spec: the empty-state prompt, with no previous response restored.
 
 #### Scenario: Escape cancels a slow request
 - **WHEN** a request is in flight (the loading spinner is shown) and the user presses `Escape` in normal mode
 - **THEN** the request SHALL be aborted, the loading state SHALL clear, and a transient warning SHALL be displayed in the status bar
 
-#### Scenario: Prior response reappears after cancel
+#### Scenario: Cancel over a prior response leaves the empty prompt
 - **WHEN** a response was previously displayed, a new request is sent, and the user presses `Escape` while it is in flight
-- **THEN** the previously displayed response SHALL be shown again and no request error SHALL be rendered
+- **THEN** the response panel SHALL display the empty-state prompt and the previously displayed response SHALL NOT be shown
 
 #### Scenario: Cancel with no prior response shows the empty prompt
 - **WHEN** no response has been received yet and the user cancels an in-flight request
