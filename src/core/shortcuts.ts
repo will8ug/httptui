@@ -44,7 +44,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { key: 'd', label: 'Details', description: 'Toggle request details panel', showInBar: false, showInHelp: true, group: 'display' },
   { key: 'R', label: '', description: 'Reload file from disk', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'E', label: 'Env', description: 'Switch environment', showInBar: false, showInHelp: true, group: 'request' },
-  { key: 'S', label: '', description: 'Save as .http file', showInBar: false, showInHelp: true, group: 'request' },
+  { key: 'S', label: '', description: 'Save requests as .http file', showInBar: false, showInHelp: true, group: 'request' },
   { key: 's', label: '', description: 'Save response to file', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'y', label: '', description: 'Copy request as curl', showInBar: false, showInHelp: true, group: 'request' },
   { key: 'p', label: '', description: 'Paste curl to request list', showInBar: false, showInHelp: true, group: 'request' },

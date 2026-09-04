@@ -92,7 +92,7 @@ describe('SHORTCUTS registry — save-as-http entry', () => {
     const entry = SHORTCUTS.find((s) => s.key === 'S');
     expect(entry).toBeDefined();
     expect(entry?.label).toBe('');
-    expect(entry?.description).toBe('Save as .http file');
+    expect(entry?.description).toBe('Save requests as .http file');
     expect(entry?.showInBar).toBe(false);
     expect(entry?.showInHelp).toBe(true);
     expect(entry?.group).toBe('request');
