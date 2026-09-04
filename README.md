@@ -46,10 +46,9 @@ npm install
 npm run build
 npm link
 
-# Uninstall from anywhere
-# npm unlink @will8ug/httptui
-# Or under current project folder:
-# npm unlink
+# Uninstall
+# npm rm -g @will8ug/httptui
+# npm rm -g
 ```
 
 ## Usage
