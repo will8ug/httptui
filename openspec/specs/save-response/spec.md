@@ -1,8 +1,10 @@
+# Spec: Save Response
+
 ## Purpose
 
 Saving the response body currently displayed in the response panel to a file via an `s`-triggered save overlay, with a request-name-derived default path, raw-body fidelity, and conflict refusal.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Enter response save with s in normal mode
 
