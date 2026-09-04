@@ -365,6 +365,90 @@ export function handleSaveInput({ state, input, key, dispatch }: {
   }
 }
 
+export function handleResponseSaveInput({ state, input, key, dispatch }: {
+  state: AppState;
+  input: string;
+  key: Key;
+  dispatch: Dispatch<Action>;
+}): void {
+  if (!state.response) {
+    return;
+  }
+
+  if (key.escape) {
+    dispatch({ type: 'CANCEL_RESPONSE_SAVE' });
+    return;
+  }
+
+  if (key.return) {
+    const inputPath = state.responseSaveInput.trim();
+    if (!inputPath) {
+      dispatch({ type: 'SET_RESPONSE_SAVE_ERROR', error: 'Please enter a file path' });
+      return;
+    }
+
+    const baseDir = dirname(state.filePath);
+    const targetPath = resolve(baseDir, inputPath);
+
+    if (existsSync(targetPath)) {
+      dispatch({ type: 'SET_RESPONSE_SAVE_ERROR', error: `File exists: ${basename(targetPath)}` });
+      return;
+    }
+
+    try {
+      writeFileSync(targetPath, state.response.body, 'utf8');
+      dispatch({ type: 'SAVE_RESPONSE_FILE', message: `Saved response to ${basename(targetPath)}` });
+    } catch (error) {
+      dispatch({ type: 'SET_RESPONSE_SAVE_ERROR', error: toErrorInfo(error).message });
+    }
+
+    return;
+  }
+
+  const responseSaveBuffer = { text: state.responseSaveInput, cursor: state.responseSaveCursor };
+
+  if (key.home || (key.ctrl && input === 'a')) {
+    const moved = moveLineStart(responseSaveBuffer);
+    dispatch({ type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: moved.cursor });
+    return;
+  }
+
+  if (key.end || (key.ctrl && input === 'e')) {
+    const moved = moveLineEnd(responseSaveBuffer);
+    dispatch({ type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: moved.cursor });
+    return;
+  }
+
+  if (key.backspace) {
+    const moved = deleteBackward(responseSaveBuffer);
+    dispatch({ type: 'UPDATE_RESPONSE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
+    return;
+  }
+
+  if (key.delete) {
+    const moved = deleteForward(responseSaveBuffer);
+    dispatch({ type: 'UPDATE_RESPONSE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
+    return;
+  }
+
+  if (key.leftArrow) {
+    const moved = moveLeft(responseSaveBuffer);
+    dispatch({ type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: moved.cursor });
+    return;
+  }
+
+  if (key.rightArrow) {
+    const moved = moveRight(responseSaveBuffer);
+    dispatch({ type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: moved.cursor });
+    return;
+  }
+
+  if (input && !key.ctrl && !key.meta) {
+    const moved = insertText(responseSaveBuffer, input);
+    dispatch({ type: 'UPDATE_RESPONSE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
+  }
+}
+
 export function handleEditInput({ state, selectedRequest, editorVisibleHeight, editorContentWidth, input, key, dispatch }: {
   state: AppState;
   selectedRequest: ParsedRequest | undefined;
@@ -702,6 +786,15 @@ export function handleNormalInput({
 
   if (input === 'S') {
     dispatch({ type: 'ENTER_SAVE' });
+    return;
+  }
+
+  if (input === 's') {
+    if (state.response === null) {
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response to save' });
+      return;
+    }
+    dispatch({ type: 'ENTER_RESPONSE_SAVE' });
     return;
   }
 

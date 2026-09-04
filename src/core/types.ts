@@ -100,6 +100,7 @@ export type AppMode =
   | 'search'
   | 'envSelect'
   | 'saveLoad'
+  | 'responseSave'
   | 'edit'
   | 'confirmDiscard'
   | 'confirmInPlaceSave';
@@ -153,6 +154,9 @@ export interface AppState {
   saveInput: string;
   saveCursor: number;
   saveError: string | null;
+  responseSaveInput: string;
+  responseSaveCursor: number;
+  responseSaveError: string | null;
   fileVariables: FileVariable[];
   activeEnvName: string | null;
   availableEnvironments: EnvOption[];
@@ -240,6 +244,12 @@ export type Action =
   | { type: 'SAVE_FILE'; message: string; filePath: string }
   | { type: 'SET_SAVE_ERROR'; error: string }
   | { type: 'CANCEL_SAVE' }
+  | { type: 'ENTER_RESPONSE_SAVE' }
+  | { type: 'UPDATE_RESPONSE_SAVE_INPUT'; value: string; cursor: number }
+  | { type: 'MOVE_RESPONSE_SAVE_CURSOR'; cursor: number }
+  | { type: 'SET_RESPONSE_SAVE_ERROR'; error: string }
+  | { type: 'SAVE_RESPONSE_FILE'; message: string }
+  | { type: 'CANCEL_RESPONSE_SAVE' }
   | { type: 'ENTER_EDIT'; buffers: Record<EditTarget, string>; visibleHeight: number; visibleWidth: number }
   | { type: 'EDIT_KEY'; op: EditOp; insert?: string; visibleHeight: number; visibleWidth: number }
   | { type: 'SWITCH_EDIT_TAB'; target: EditTarget; visibleHeight: number; visibleWidth: number }

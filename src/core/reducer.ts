@@ -9,6 +9,7 @@ import { reduceFileLoad } from './reducers/file-load';
 import { EMPTY_EDIT_BUFFERS } from './reducers/helpers';
 import { reduceRequestLifecycle } from './reducers/lifecycle';
 import { reduceNavigation } from './reducers/navigation';
+import { reduceResponseSave } from './reducers/response-save';
 import { reduceSaveLoad } from './reducers/save-load';
 import { reduceSearch } from './reducers/search';
 import { reduceToggles } from './reducers/toggles';
@@ -104,6 +105,14 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'CANCEL_SAVE':
       return reduceSaveLoad(state, action);
 
+    case 'ENTER_RESPONSE_SAVE':
+    case 'UPDATE_RESPONSE_SAVE_INPUT':
+    case 'MOVE_RESPONSE_SAVE_CURSOR':
+    case 'SET_RESPONSE_SAVE_ERROR':
+    case 'SAVE_RESPONSE_FILE':
+    case 'CANCEL_RESPONSE_SAVE':
+      return reduceResponseSave(state, action);
+
     case 'ENTER_ENV_SELECT':
     case 'MOVE_ENV_SELECTION':
     case 'JUMP_ENV_SELECTION':
@@ -180,6 +189,9 @@ export function createInitialState(props: AppProps): AppState {
     saveInput: '',
     saveCursor: 0,
     saveError: null,
+    responseSaveInput: '',
+    responseSaveCursor: 0,
+    responseSaveError: null,
     wrapMode: 'nowrap',
     showRequestDetails: false,
     rawMode: false,
