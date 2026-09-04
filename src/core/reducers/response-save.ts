@@ -8,7 +8,9 @@ export function reduceResponseSave(state: AppState, action: ResponseSaveAction):
   switch (action.type) {
     case 'ENTER_RESPONSE_SAVE': {
       const request = state.requests[state.selectedIndex];
-      const defaultFilename = deriveResponseSaveFilename(request.name, state.response?.body ?? '');
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
+      const requestName = request?.name ?? '';
+      const defaultFilename = deriveResponseSaveFilename(requestName, state.response?.body ?? '');
       return {
         ...state,
         mode: 'responseSave',

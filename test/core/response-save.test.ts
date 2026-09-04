@@ -58,6 +58,45 @@ describe('ENTER_RESPONSE_SAVE reducer', () => {
 
     expect(result.responseSaveInput).toBe('Get Page.txt');
   });
+
+  it('falls back to .txt when there is no response body', () => {
+    const state = createInitialState({
+      requests: [createRequest({ name: 'Get Users' })],
+      response: null,
+    });
+
+    const result = reducer(state, { type: 'ENTER_RESPONSE_SAVE' });
+
+    expect(result.responseSaveInput).toBe('Get Users.txt');
+  });
+
+  it('does not crash when the request list is empty', () => {
+    const state = createInitialState({
+      requests: [],
+      response: createMockResponse({ body: '{"a":1}' }),
+    });
+
+    const result = reducer(state, { type: 'ENTER_RESPONSE_SAVE' });
+
+    expect(result.responseSaveInput).toBe('.json');
+  });
+});
+
+describe('MOVE_RESPONSE_SAVE_CURSOR reducer', () => {
+  it('moves the cursor without clearing an existing error', () => {
+    const state = createInitialState({
+      mode: 'responseSave',
+      responseSaveInput: 'Get Users.json',
+      responseSaveCursor: 5,
+      responseSaveError: 'File exists: Get Users.json',
+    });
+
+    const result = reducer(state, { type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: 3 });
+
+    expect(result.responseSaveCursor).toBe(3);
+    expect(result.responseSaveInput).toBe('Get Users.json');
+    expect(result.responseSaveError).toBe('File exists: Get Users.json');
+  });
 });
 
 describe('SAVE_RESPONSE_FILE reducer', () => {
