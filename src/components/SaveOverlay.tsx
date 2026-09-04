@@ -7,9 +7,10 @@ interface SaveOverlayProps {
   value: string;
   error: string | null;
   cursor: number;
+  title?: string;
 }
 
-export function SaveOverlay({ value, error, cursor }: SaveOverlayProps): React.ReactElement {
+export function SaveOverlay({ value, error, cursor, title = 'Save as .http' }: SaveOverlayProps): React.ReactElement {
   const { stdout } = useStdout();
   const width = Math.min(72, Math.max(48, (stdout.columns || DEFAULT_TERMINAL_COLUMNS) - CENTERED_OVERLAY_MARGIN));
 
@@ -24,7 +25,7 @@ export function SaveOverlay({ value, error, cursor }: SaveOverlayProps): React.R
         width={width}
       >
         <Text color="cyanBright" bold>
-          Save as .http
+          {title}
         </Text>
         <Text>{' '}</Text>
         <Box>

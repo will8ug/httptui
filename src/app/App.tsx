@@ -23,7 +23,7 @@ import { computeLayoutMetrics } from '../utils/layout-metrics';
 import { TRANSIENT_CLEAR_MS } from '../utils/timing';
 import { hasUnsavedChanges } from '../utils/request';
 import { getResponseTotalLines } from '../utils/scroll';
-import { handleConfirmDiscardInput, handleConfirmInPlaceSaveInput, handleEditInput, handleEnvSelectInput, handleFileLoadInput, handleHelpInput, handleNormalInput, handleSaveInput, handleSearchInput } from './input-handlers';
+import { handleConfirmDiscardInput, handleConfirmInPlaceSaveInput, handleEditInput, handleEnvSelectInput, handleFileLoadInput, handleHelpInput, handleNormalInput, handleResponseSaveInput, handleSaveInput, handleSearchInput } from './input-handlers';
 
 export function App(props: AppProps): React.ReactElement {
   const { exit, suspendTerminal } = useApp();
@@ -77,6 +77,11 @@ export function App(props: AppProps): React.ReactElement {
 
     if (state.mode === 'saveLoad') {
       handleSaveInput({ state, input, key, dispatch });
+      return;
+    }
+
+    if (state.mode === 'responseSave') {
+      handleResponseSaveInput({ state, input, key, dispatch });
       return;
     }
 
@@ -181,6 +186,7 @@ return (
         state.showHelp ? <HelpOverlay visible={state.showHelp} /> :
         state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} cursor={state.fileLoadCursor} error={state.fileLoadError} completions={state.fileLoadCompletions} /> :
         state.mode === 'saveLoad' ? <SaveOverlay value={state.saveInput} cursor={state.saveCursor} error={state.saveError} /> :
+        state.mode === 'responseSave' ? <SaveOverlay title="Save response" value={state.responseSaveInput} cursor={state.responseSaveCursor} error={state.responseSaveError} /> :
         state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} scrollOffset={state.envSelectScrollOffset} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
         state.mode === 'edit' ? <EditOverlay title="Edit Request" tabs={EDIT_TAB_ORDER} activeTab={state.editTarget} buffer={state.editBuffers[state.editTarget].text} cursor={state.editBuffers[state.editTarget].cursor} scrollOffset={state.editScrollOffset} horizontalOffset={state.editHorizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
         state.mode === 'confirmDiscard' && state.pendingDiscardAction !== null ? <ConfirmDiscardOverlay pendingAction={state.pendingDiscardAction} /> :

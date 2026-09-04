@@ -120,6 +120,7 @@ httptui api.http -E Staging
 | `o` | Open a different .http file |
 | `E` | Switch environment |
 | `S` | Export to a new .http file |
+| `s` | Save response to file |
 | `y` | Copy request as curl |
 | `p` | Paste curl to request list |
 

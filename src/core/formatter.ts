@@ -1,12 +1,20 @@
+export function isJsonBody(body: string): boolean {
+  try {
+    JSON.parse(body);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function formatResponseBody(body: string, raw: boolean): string {
   if (body.length === 0 || raw) {
     return body;
   }
 
-  try {
-    const parsed: unknown = JSON.parse(body);
-    return JSON.stringify(parsed, null, 2);
-  } catch {
+  if (!isJsonBody(body)) {
     return body;
   }
+
+  return JSON.stringify(JSON.parse(body), null, 2);
 }

@@ -203,6 +203,29 @@ describe('SHORTCUTS registry — editor-handoff entry', () => {
   });
 });
 
+describe('SHORTCUTS registry — save-response entry', () => {
+  it('contains the `s` entry (save response to file)', () => {
+    const entry = SHORTCUTS.find((s) => s.key === 's');
+    expect(entry).toBeDefined();
+    expect(entry?.label).toBe('');
+    expect(entry?.description).toBe('Save response to file');
+    expect(entry?.showInBar).toBe(false);
+    expect(entry?.showInHelp).toBe(true);
+    expect(entry?.group).toBe('request');
+  });
+
+  it('does not appear in the status bar', () => {
+    const barKeys = SHORTCUTS.filter((s) => s.showInBar).map((s) => s.key);
+    expect(barKeys).not.toContain('s');
+  });
+
+  it('appears in the help overlay Request group with its description', () => {
+    const helpEntries = SHORTCUTS.filter((s) => s.showInHelp && s.group === 'request');
+    const entry = helpEntries.find((s) => s.key === 's');
+    expect(entry?.description).toBe('Save response to file');
+  });
+});
+
 describe('SHORTCUTS registry — copy-as-curl entry', () => {
   it('contains the `y` entry (copy request as curl)', () => {
     const entry = SHORTCUTS.find((s) => s.key === 'y');
