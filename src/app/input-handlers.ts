@@ -5,6 +5,7 @@ import type { Dispatch } from 'react';
 import type { Key, SuspendTerminal } from 'ink';
 
 import { deleteBackward, deleteForward, insertText, moveLeft, moveLineEnd, moveLineStart, moveRight } from '../core/editor';
+import type { EditorBuffer } from '../core/editor';
 import { toErrorInfo } from '../core/executor';
 import { formatResponseBody } from '../core/formatter';
 import { headersToText } from '../core/headers';
@@ -52,6 +53,47 @@ function getBodyVisualStart(state: AppState, columns: number): number[] | null {
     formattedBody,
   });
   return layout.bodyVisualStart;
+}
+
+function applyLineEdit(
+  buffer: EditorBuffer,
+  input: string,
+  key: Key,
+  moveCursor: (cursor: number) => void,
+  updateInput: (value: string, cursor: number) => void,
+): boolean {
+  if (key.home || (key.ctrl && input === 'a')) {
+    moveCursor(moveLineStart(buffer).cursor);
+    return true;
+  }
+  if (key.end || (key.ctrl && input === 'e')) {
+    moveCursor(moveLineEnd(buffer).cursor);
+    return true;
+  }
+  if (key.backspace) {
+    const moved = deleteBackward(buffer);
+    updateInput(moved.text, moved.cursor);
+    return true;
+  }
+  if (key.delete) {
+    const moved = deleteForward(buffer);
+    updateInput(moved.text, moved.cursor);
+    return true;
+  }
+  if (key.leftArrow) {
+    moveCursor(moveLeft(buffer).cursor);
+    return true;
+  }
+  if (key.rightArrow) {
+    moveCursor(moveRight(buffer).cursor);
+    return true;
+  }
+  if (input && !key.ctrl && !key.meta) {
+    const moved = insertText(buffer, input);
+    updateInput(moved.text, moved.cursor);
+    return true;
+  }
+  return false;
 }
 
 export function handleHelpInput({ input, key, dispatch }: {
@@ -142,48 +184,17 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
     return;
   }
 
-  const fileLoadBuffer = { text: state.fileLoadInput, cursor: state.fileLoadCursor };
-
-  if (key.home || (key.ctrl && input === 'a')) {
-    const moved = moveLineStart(fileLoadBuffer);
-    dispatch({ type: 'MOVE_FILE_LOAD_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (key.end || (key.ctrl && input === 'e')) {
-    const moved = moveLineEnd(fileLoadBuffer);
-    dispatch({ type: 'MOVE_FILE_LOAD_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (key.backspace) {
-    const moved = deleteBackward(fileLoadBuffer);
-    dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: moved.text, cursor: moved.cursor });
-    return;
-  }
-
-  if (key.delete) {
-    const moved = deleteForward(fileLoadBuffer);
-    dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: moved.text, cursor: moved.cursor });
-    return;
-  }
-
-  if (key.leftArrow) {
-    const moved = moveLeft(fileLoadBuffer);
-    dispatch({ type: 'MOVE_FILE_LOAD_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (key.rightArrow) {
-    const moved = moveRight(fileLoadBuffer);
-    dispatch({ type: 'MOVE_FILE_LOAD_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (input && !key.ctrl && !key.meta) {
-    const moved = insertText(fileLoadBuffer, input);
-    dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: moved.text, cursor: moved.cursor });
-  }
+  applyLineEdit(
+    { text: state.fileLoadInput, cursor: state.fileLoadCursor },
+    input,
+    key,
+    (cursor) => {
+      dispatch({ type: 'MOVE_FILE_LOAD_CURSOR', cursor });
+    },
+    (value, cursor) => {
+      dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value, cursor });
+    },
+  );
 }
 
 export function handleSearchInput({ state, columns, effectiveResponseHeight, effectiveDetailMaxContent, input, key, dispatch }: {
@@ -321,48 +332,17 @@ export function handleSaveInput({ state, input, key, dispatch }: {
     return;
   }
 
-  const saveBuffer = { text: state.saveInput, cursor: state.saveCursor };
-
-  if (key.home || (key.ctrl && input === 'a')) {
-    const moved = moveLineStart(saveBuffer);
-    dispatch({ type: 'MOVE_SAVE_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (key.end || (key.ctrl && input === 'e')) {
-    const moved = moveLineEnd(saveBuffer);
-    dispatch({ type: 'MOVE_SAVE_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (key.backspace) {
-    const moved = deleteBackward(saveBuffer);
-    dispatch({ type: 'UPDATE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
-    return;
-  }
-
-  if (key.delete) {
-    const moved = deleteForward(saveBuffer);
-    dispatch({ type: 'UPDATE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
-    return;
-  }
-
-  if (key.leftArrow) {
-    const moved = moveLeft(saveBuffer);
-    dispatch({ type: 'MOVE_SAVE_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (key.rightArrow) {
-    const moved = moveRight(saveBuffer);
-    dispatch({ type: 'MOVE_SAVE_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (input && !key.ctrl && !key.meta) {
-    const moved = insertText(saveBuffer, input);
-    dispatch({ type: 'UPDATE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
-  }
+  applyLineEdit(
+    { text: state.saveInput, cursor: state.saveCursor },
+    input,
+    key,
+    (cursor) => {
+      dispatch({ type: 'MOVE_SAVE_CURSOR', cursor });
+    },
+    (value, cursor) => {
+      dispatch({ type: 'UPDATE_SAVE_INPUT', value, cursor });
+    },
+  );
 }
 
 export function handleResponseSaveInput({ state, input, key, dispatch }: {
@@ -405,48 +385,17 @@ export function handleResponseSaveInput({ state, input, key, dispatch }: {
     return;
   }
 
-  const responseSaveBuffer = { text: state.responseSaveInput, cursor: state.responseSaveCursor };
-
-  if (key.home || (key.ctrl && input === 'a')) {
-    const moved = moveLineStart(responseSaveBuffer);
-    dispatch({ type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (key.end || (key.ctrl && input === 'e')) {
-    const moved = moveLineEnd(responseSaveBuffer);
-    dispatch({ type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (key.backspace) {
-    const moved = deleteBackward(responseSaveBuffer);
-    dispatch({ type: 'UPDATE_RESPONSE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
-    return;
-  }
-
-  if (key.delete) {
-    const moved = deleteForward(responseSaveBuffer);
-    dispatch({ type: 'UPDATE_RESPONSE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
-    return;
-  }
-
-  if (key.leftArrow) {
-    const moved = moveLeft(responseSaveBuffer);
-    dispatch({ type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (key.rightArrow) {
-    const moved = moveRight(responseSaveBuffer);
-    dispatch({ type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: moved.cursor });
-    return;
-  }
-
-  if (input && !key.ctrl && !key.meta) {
-    const moved = insertText(responseSaveBuffer, input);
-    dispatch({ type: 'UPDATE_RESPONSE_SAVE_INPUT', value: moved.text, cursor: moved.cursor });
-  }
+  applyLineEdit(
+    { text: state.responseSaveInput, cursor: state.responseSaveCursor },
+    input,
+    key,
+    (cursor) => {
+      dispatch({ type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor });
+    },
+    (value, cursor) => {
+      dispatch({ type: 'UPDATE_RESPONSE_SAVE_INPUT', value, cursor });
+    },
+  );
 }
 
 export function handleEditInput({ state, selectedRequest, editorVisibleHeight, editorContentWidth, input, key, dispatch }: {
