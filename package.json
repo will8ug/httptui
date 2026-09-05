@@ -1,6 +1,6 @@
 {
   "name": "@will8ug/httptui",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Interactive TUI for sending HTTP requests from .http files",
   "type": "module",
   "bin": {
