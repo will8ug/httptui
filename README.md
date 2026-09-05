@@ -169,3 +169,7 @@ httptui api.http -E Staging
 - **Ink**: React-based framework for building interactive CLIs.
 - **React**: Component-based UI architecture.
 - **undici**: Modern, high-performance HTTP client for Node.js.
+
+## Inspiration
+
+This tool is inspired by [VSCode REST Client](https://github.com/Huachao/vscode-restclient).
