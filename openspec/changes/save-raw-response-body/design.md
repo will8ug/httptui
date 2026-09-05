@@ -43,6 +43,16 @@ Today it under-reports for CRLF bodies (computed from the normalized string). No
 
 `deriveResponseSaveFilename` continues to run `isJsonBody` on the stored body it already receives. `JSON.parse` treats CR as whitespace, so detection results are identical on `rawBody` and `body`; no code change.
 
+### D5: Empty-body responses are refused, not saved as empty files
+
+Body-less responses are real (`HEAD` returns no body by definition; `OPTIONS` commonly empty; 204/304 null bodies) and resolve to `''` through `response.body.text()` — an empty body is a value, not a missing field, so D2's required-field contract holds unconditionally (`rawBody === body === ''`, `bodyBytes = 0`).
+
+Pressing `s` SHALL refuse when there is nothing to save: the existing no-response guard (`state.response === null`, at the `s` binding site in `handleNormalInput`) extends to also cover an empty `rawBody` — both cases dispatch a transient message and never enter the overlay. The empty-body case uses a distinct message ("no response body to save") so it is distinguishable from "no response to save". The guard keys on `rawBody` because that is what the save writes.
+
+- Rejected alternative (previous position): save a faithful 0-byte file — an empty file is what the server sent. Rejected on reflection: a HEAD-style response yields a surprise empty artifact with no content value, and refusing mirrors the existing no-response guard shape the flow already established.
+
+This is observable behavior: the `save-response` delta spec modifies the enter-guard requirement accordingly.
+
 ## Risks / Trade-offs
 
 - [Test literals missing `rawBody` fail to compile] → Intentional (D2); the compiler enumerates the construction sites. Mechanical fix only.

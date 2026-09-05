@@ -8,6 +8,7 @@
 
 - `ResponseData` gains a required `rawBody: string` field: the decoded body exactly as received, before line-ending normalization. `body` remains the LF-normalized string and continues to feed all display, search, wrap, and scroll consumers (unchanged — removing normalization would regress the CRLF rendering bug the original fix closed).
 - The `s` save flow writes `rawBody` instead of `body`: the file preserves the server's original CRLF/CR line endings. No pretty-printing, no headers, no status line — unchanged.
+- `s` refuses to enter the save overlay when the displayed response's body is empty (HEAD, OPTIONS, 204/304, empty 200s): a transient message states there is no response body to save. Previously an empty-body response opened the overlay and wrote a 0-byte file.
 - `size.bodyBytes` is computed from `rawBody`, so it reports the true received size (today it under-reports for CRLF bodies; no production reader exists, so the correction is risk-free).
 - Default filename derivation (`.json` vs `.txt`) is unchanged — `JSON.parse` tolerates CRLF, so detection is identical on either field.
 - Fidelity boundary: "raw" means the UTF-8-decoded text with original line endings, not byte-for-byte (binary body preservation remains a non-goal, as in the original save-response change).
@@ -21,7 +22,7 @@ _(none)_
 ### Modified Capabilities
 
 - `executor`: The Response data structure requirement changes — `ResponseData` gains `rawBody` (body as received, pre-normalization), and `size.bodyBytes` is redefined as the byte length of `rawBody`. The existing line-ending normalization requirement for `body` is unchanged.
-- `save-response`: The Raw body fidelity requirement changes — the written file SHALL contain the body as received from the server (original CRLF/CR line endings preserved), not the normalized form.
+- `save-response`: Two requirements change — Raw body fidelity (the written file SHALL contain the body as received from the server, original CRLF/CR line endings preserved, not the normalized form), and the enter guard (`s` with an empty-body response SHALL NOT open the overlay and SHALL display a transient message instead of writing an empty file).
 
 ## Impact
 
