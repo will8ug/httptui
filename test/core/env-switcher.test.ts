@@ -325,6 +325,7 @@ describe('SWITCH_ENV reducer', () => {
         statusText: 'OK',
         headers: {},
         body: 'body',
+        rawBody: 'body',
         timing: { durationMs: 50 },
         size: { bodyBytes: 4 },
       },

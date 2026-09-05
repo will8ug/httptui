@@ -60,11 +60,20 @@ The executor SHALL normalize line endings in the captured response body to LF (`
 - **THEN** `ResponseData.body` SHALL be byte-identical to the server's body
 
 ### Requirement: Response data structure
-The executor SHALL return `ResponseData` with `statusCode`, `statusText`, `headers` (as `Record<string, string>`), `body` (normalized string), `timing.durationMs` (total request duration in milliseconds), and `size.bodyBytes` (response body size in bytes).
+The executor SHALL return `ResponseData` with `statusCode`, `statusText`, `headers` (as `Record<string, string>`), `body` (normalized string), `rawBody` (the decoded body exactly as received, before line-ending normalization), `timing.durationMs` (total request duration in milliseconds), and `size.bodyBytes` (the UTF-8 byte length of `rawBody`). When the received body contains no CR characters, `rawBody` SHALL equal `body`.
 
 #### Scenario: Response data captured from successful request
 - **WHEN** a request succeeds with status 200
 - **THEN** the executor SHALL return `ResponseData` with all fields populated, including timing and size metrics
+
+#### Scenario: Raw body preserves the server's line endings
+- **WHEN** a server responds with a body whose lines are terminated by `\r\n` (or containing lone `\r` characters)
+- **THEN** `ResponseData.rawBody` SHALL be identical to the received body, with every `\r` character intact
+- **AND** `ResponseData.body` SHALL be the LF-normalized counterpart, as required by the line-ending normalization requirement
+
+#### Scenario: Body size reflects the received body
+- **WHEN** a server responds with a CRLF-terminated body of 10 lines
+- **THEN** `size.bodyBytes` SHALL equal the UTF-8 byte length of `rawBody`, which is greater than the byte length of the normalized `body`
 
 ### Requirement: Insecure mode via ExecutorConfig
 The executor SHALL accept an optional `ExecutorConfig` parameter with an `insecure` boolean field and an optional `certificates` field of type `Record<string, CertEntry>`. When `insecure` is `true`, the executor SHALL create an undici `Agent` with `connect.rejectUnauthorized` set to `false`. The `certificates` field, when present, SHALL be used to match the request URL's host against certificate entries. When a match is found, the matched certificate's file contents SHALL be merged into the undici `Agent.connect` options.

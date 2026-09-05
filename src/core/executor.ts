@@ -153,11 +153,12 @@ export async function executeRequest(
       statusText: getStatusText(response.statusCode),
       headers: normalizeHeaders(response.headers),
       body: responseBody,
+      rawBody,
       timing: {
         durationMs: endTime - startTime,
       },
       size: {
-        bodyBytes: Buffer.byteLength(responseBody, 'utf-8'),
+        bodyBytes: Buffer.byteLength(rawBody, 'utf-8'),
       },
     };
   } catch (error) {

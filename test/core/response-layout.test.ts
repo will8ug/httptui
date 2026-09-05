@@ -1,26 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { assertDefinedToNarrowType } from '../helpers/assertions.js';
+import { createMockResponse } from '../helpers/responses.js';
 import { computeResponseLayout, formatStatusLine } from '../../src/core/response-layout.js';
-import type { ResponseData } from '../../src/core/types.js';
 
 const CONTENT_WIDTH = 49;
 
-function makeResponse(overrides: Partial<ResponseData> = {}): ResponseData {
-  return {
-    statusCode: 200,
-    statusText: 'OK',
-    headers: {},
-    body: '',
-    timing: { durationMs: 42 },
-    size: { bodyBytes: 0 },
-    ...overrides,
-  };
-}
-
 describe('formatStatusLine', () => {
   it('returns three segments: gray prefix, status-colored code, gray duration', () => {
-    const response = makeResponse({ statusCode: 404, statusText: 'Not Found', timing: { durationMs: 123 } });
+    const response = createMockResponse({ statusCode: 404, statusText: 'Not Found', timing: { durationMs: 123 } });
     const segments = formatStatusLine(response);
 
     expect(segments).toHaveLength(3);
@@ -33,7 +21,7 @@ describe('formatStatusLine', () => {
 
 describe('computeResponseLayout — nowrap mode', () => {
   it('bodyStartVisualIndex === 2 for no-verbose + short body; bodyVisualStart starts at 2', () => {
-    const response = makeResponse({ body: 'line1\nline2\nline3' });
+    const response = createMockResponse({ body: 'line1\nline2\nline3' });
     const layout = computeResponseLayout({
       response,
       verbose: false,
@@ -49,7 +37,7 @@ describe('computeResponseLayout — nowrap mode', () => {
   });
 
   it('bodyStartVisualIndex === 2 + N headers when verbose is on', () => {
-    const response = makeResponse({
+    const response = createMockResponse({
       headers: { 'content-type': 'application/json', 'x-custom': 'value', 'x-another': 'v' },
       body: 'a\nb',
     });
@@ -68,7 +56,7 @@ describe('computeResponseLayout — nowrap mode', () => {
   });
 
   it('does not count headers when verbose is off', () => {
-    const response = makeResponse({ headers: { 'content-type': 'application/json' }, body: 'x' });
+    const response = createMockResponse({ headers: { 'content-type': 'application/json' }, body: 'x' });
     const layout = computeResponseLayout({
       response,
       verbose: false,
@@ -84,7 +72,7 @@ describe('computeResponseLayout — nowrap mode', () => {
 
 describe('computeResponseLayout — wrap mode, nothing overflows', () => {
   it('matches the nowrap shape when status/headers/body all fit', () => {
-    const response = makeResponse({ headers: { a: 'b' }, body: 'x\ny' });
+    const response = createMockResponse({ headers: { a: 'b' }, body: 'x\ny' });
     const nowrap = computeResponseLayout({
       response,
       verbose: true,
@@ -110,7 +98,7 @@ describe('computeResponseLayout — wrap mode, nothing overflows', () => {
 
 describe('computeResponseLayout — wrap mode, status line overflows', () => {
   it('bodyStartVisualIndex reflects the wrapped status line count', () => {
-    const response = makeResponse({
+    const response = createMockResponse({
       statusText: 'Non-Authoritative Information With Extra Long Text To Force Wrapping',
       body: 'x',
     });
@@ -132,7 +120,7 @@ describe('computeResponseLayout — wrap mode, status line overflows', () => {
 
 describe('computeResponseLayout — wrap mode, verbose header overflows', () => {
   it('expands the header section into multiple visual lines', () => {
-    const response = makeResponse({
+    const response = createMockResponse({
       headers: {
         'x-trace-id': 'this-is-a-deliberately-long-header-value-that-definitely-exceeds-content-width-to-force-wrap',
         short: 'v',
@@ -162,7 +150,7 @@ describe('computeResponseLayout — wrap mode, body line overflows', () => {
   it('later body lines shift by the wrapped visual-line count of earlier lines', () => {
     const longLine = 'abcdefghijklmnopqrstuvwxyz '.repeat(5).trim();
     const body = `${longLine}\nsecond\nthird`;
-    const response = makeResponse({ body });
+    const response = createMockResponse({ body });
     const layout = computeResponseLayout({
       response,
       verbose: false,
@@ -180,7 +168,7 @@ describe('computeResponseLayout — wrap mode, body line overflows', () => {
 
 describe('computeResponseLayout — public shape', () => {
   it('exposes sections, totalVisualLines, bodyStartVisualIndex, bodyVisualStart', () => {
-    const response = makeResponse({ body: 'hi' });
+    const response = createMockResponse({ body: 'hi' });
     const layout = computeResponseLayout({
       response,
       verbose: false,
@@ -198,7 +186,7 @@ describe('computeResponseLayout — public shape', () => {
   });
 
   it('includes header sections between status and separator when verbose', () => {
-    const response = makeResponse({ headers: { a: 'b', c: 'd' }, body: 'hi' });
+    const response = createMockResponse({ headers: { a: 'b', c: 'd' }, body: 'hi' });
     const layout = computeResponseLayout({
       response,
       verbose: true,
@@ -215,7 +203,7 @@ describe('computeResponseLayout — public shape', () => {
 
 describe('computeResponseLayout — tab expansion', () => {
   it('expands tab characters in raw-mode body to spaces', () => {
-    const response = makeResponse({ body: '\t\t<element/>' });
+    const response = createMockResponse({ body: '\t\t<element/>' });
     const layout = computeResponseLayout({
       response,
       verbose: false,
