@@ -72,6 +72,7 @@ describe('executeRequest', () => {
       statusText: 'OK',
       headers: { 'content-type': 'application/json' },
       body: '{"ok":true}',
+      rawBody: '{"ok":true}',
       timing: {
         durationMs: expect.any(Number),
       },
@@ -334,6 +335,7 @@ describe('executeRequest', () => {
       statusText: 'No Content',
       headers: {},
       body: '',
+      rawBody: '',
       timing: { durationMs: 1 },
       size: { bodyBytes: 0 },
     };
@@ -396,7 +398,7 @@ describe('executeRequest', () => {
 
     expect(result.body).toBe('line1\nline2\nline3');
     expect(result.body).not.toContain('\r');
-    expect(result.size.bodyBytes).toBe(Buffer.byteLength('line1\nline2\nline3', 'utf-8'));
+    expect(result.size.bodyBytes).toBe(Buffer.byteLength('line1\r\nline2\r\nline3', 'utf-8'));
   });
 
   it('normalizes lone CR in response body', async () => {
@@ -424,7 +426,7 @@ describe('executeRequest', () => {
     }
 
     expect(result.body).toBe('a\nb\nc\nd\ne');
-    expect(result.size.bodyBytes).toBe(Buffer.byteLength('a\nb\nc\nd\ne', 'utf-8'));
+    expect(result.size.bodyBytes).toBe(Buffer.byteLength('a\r\nb\rc\nd\r\ne', 'utf-8'));
   });
 
   it('leaves LF-only body byte-identical', async () => {
@@ -455,7 +457,7 @@ describe('executeRequest', () => {
     expect(result.size.bodyBytes).toBe(0);
   });
 
-  it('reports bodyBytes based on normalized body', async () => {
+  it('reports bodyBytes based on the raw body', async () => {
     requestMock.mockResolvedValue(createMockResponse({ body: 'a\r\nb' }));
 
     const result = await executeRequest(createResolvedRequest());
@@ -466,6 +468,52 @@ describe('executeRequest', () => {
     }
 
     expect(result.body).toBe('a\nb');
-    expect(result.size.bodyBytes).toBe(3);
+    expect(result.rawBody).toBe('a\r\nb');
+    expect(result.size.bodyBytes).toBe(4);
+  });
+
+  it('preserves CRLF, lone CR, and mixed line endings verbatim in rawBody', async () => {
+    requestMock.mockResolvedValue(createMockResponse({ body: 'crlf\r\nlone\rmixed\r\nlf\nend' }));
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
+      throw new Error('Expected successful response');
+    }
+
+    expect(result.rawBody).toBe('crlf\r\nlone\rmixed\r\nlf\nend');
+    expect(result.body).toBe('crlf\nlone\nmixed\nlf\nend');
+  });
+
+  it('computes bodyBytes from rawBody, exceeding the normalized body by one byte per CRLF', async () => {
+    requestMock.mockResolvedValue(createMockResponse({ body: 'one\r\ntwo\r\nthree' }));
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
+      throw new Error('Expected successful response');
+    }
+
+    expect(result.size.bodyBytes).toBe(Buffer.byteLength(result.rawBody, 'utf-8'));
+    expect(result.size.bodyBytes).toBeGreaterThan(Buffer.byteLength(result.body, 'utf-8'));
+    expect(result.size.bodyBytes - Buffer.byteLength(result.body, 'utf-8')).toBe(2);
+  });
+
+  it('returns rawBody equal to body for an LF-only body', async () => {
+    requestMock.mockResolvedValue(createMockResponse({ body: 'line1\nline2\n' }));
+
+    const result = await executeRequest(createResolvedRequest());
+
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
+      throw new Error('Expected successful response');
+    }
+
+    expect(result.rawBody).toBe('line1\nline2\n');
+    expect(result.rawBody).toBe(result.body);
+    expect(result.size.bodyBytes).toBe(Buffer.byteLength(result.rawBody, 'utf-8'));
+    expect(result.size.bodyBytes).toBe(Buffer.byteLength(result.body, 'utf-8'));
   });
 });

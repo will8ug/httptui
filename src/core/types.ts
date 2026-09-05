@@ -49,6 +49,7 @@ export interface ResponseData {
   statusText: string;
   headers: Record<string, string>;
   body: string;
+  rawBody: string;
   timing: {
     durationMs: number;
   };

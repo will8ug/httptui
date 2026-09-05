@@ -376,7 +376,7 @@ export function handleResponseSaveInput({ state, input, key, dispatch }: {
     }
 
     try {
-      writeFileSync(targetPath, state.response.body, 'utf8');
+      writeFileSync(targetPath, state.response.rawBody, 'utf8');
       dispatch({ type: 'SAVE_RESPONSE_FILE', message: `Saved response to ${basename(targetPath)}` });
     } catch (error) {
       dispatch({ type: 'SET_RESPONSE_SAVE_ERROR', error: toErrorInfo(error).message });
@@ -741,6 +741,10 @@ export function handleNormalInput({
   if (input === 's') {
     if (state.response === null) {
       dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response to save' });
+      return;
+    }
+    if (state.response.rawBody === '') {
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response body to save' });
       return;
     }
     dispatch({ type: 'ENTER_RESPONSE_SAVE' });

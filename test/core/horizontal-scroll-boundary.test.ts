@@ -97,6 +97,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
       statusText: 'OK',
       headers: {} as Record<string, string>,
       body: 'x'.repeat(200),
+      rawBody: 'x'.repeat(200),
       timing: { durationMs: 150 },
       size: { bodyBytes: 200 },
     };
@@ -150,6 +151,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         statusText: 'OK',
         headers: {} as Record<string, string>,
         body: 'hi',
+        rawBody: 'hi',
         timing: { durationMs: 10 },
         size: { bodyBytes: 2 },
       };

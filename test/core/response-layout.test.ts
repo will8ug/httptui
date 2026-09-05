@@ -7,14 +7,16 @@ import type { ResponseData } from '../../src/core/types.js';
 const CONTENT_WIDTH = 49;
 
 function makeResponse(overrides: Partial<ResponseData> = {}): ResponseData {
+  const body = overrides.body ?? '';
   return {
     statusCode: 200,
     statusText: 'OK',
     headers: {},
-    body: '',
     timing: { durationMs: 42 },
     size: { bodyBytes: 0 },
     ...overrides,
+    body,
+    rawBody: overrides.rawBody ?? body,
   };
 }
 

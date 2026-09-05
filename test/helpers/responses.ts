@@ -1,14 +1,16 @@
 import type { ResponseData } from '../../src/core/types';
 
 export function createMockResponse(overrides: Partial<ResponseData> = {}): ResponseData {
+  const body = overrides.body ?? '';
   return {
     statusCode: 200,
     statusText: 'OK',
     headers: {},
-    body: '',
     timing: { durationMs: 100 },
     size: { bodyBytes: 0 },
     ...overrides,
+    body,
+    rawBody: overrides.rawBody ?? body,
   };
 }
 
