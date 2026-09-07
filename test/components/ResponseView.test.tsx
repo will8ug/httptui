@@ -254,6 +254,74 @@ describe('wide-character content width', () => {
       expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
     }
   });
+
+  it('scrolls nowrap mixed CJK content by display cells', () => {
+    // 4 cells of CJK then 30 ASCII letters; a code-unit slice at offset 4 would land on 'c'
+    const body = `日本${'abcdefghijklmnopqrstuvwxyzabcd'}`;
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={createMockResponse({ body })}
+        contentWidthOverride={20}
+        horizontalOffset={4}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('abcdefghijklmnopqrst');
+    expect(frame).not.toContain('cdefghijklmnopqrs…');
+  });
+
+  it('shows content at the far nowrap scroll position instead of a blank line', () => {
+    // 50 CJK chars = 100 cells; maxScrollOffset = 100 - 20 = 80 cells.
+    // A code-unit slice(80) on a 50-unit string returns '' and renders a blank line.
+    const response = createMockResponse({ body: '汉'.repeat(50) });
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        contentWidthOverride={20}
+        horizontalOffset={80}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+    const bodyLine = lines.find((line) => line.includes('汉'));
+    assertDefinedToNarrowType(bodyLine);
+    expect((bodyLine.match(/汉/g) ?? []).length).toBe(10);
+    expect(stringWidth(bodyLine)).toBeLessThanOrEqual(panelWidth);
+  });
+
+  it('budgets a nowrap search-marked CJK line one cell narrower for the marker glyph', () => {
+    // contentWidth=21 -> plain body lines hold 10 CJK chars + ellipsis (21 cells); the
+    // marker consumes 1 cell, so the marked line is budgeted to 20 -> 9 chars + ellipsis
+    const response = createMockResponse({ body: `${'汉'.repeat(50)}\n${'汉'.repeat(50)}` });
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        contentWidthOverride={21}
+        searchMatches={[0]}
+        currentMatchIndex={0}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+
+    const markedLine = lines.find((line) => line.includes('►'));
+    assertDefinedToNarrowType(markedLine);
+    expect((markedLine.match(/汉/g) ?? []).length).toBe(9);
+    expect(markedLine).toContain('…');
+
+    const plainBodyLine = lines.find((line) => line.includes('汉') && !line.includes('►'));
+    assertDefinedToNarrowType(plainBodyLine);
+    expect((plainBodyLine.match(/汉/g) ?? []).length).toBe(10);
+
+    for (const line of lines) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
+    }
+  });
 });
 
 describe('search markers', () => {

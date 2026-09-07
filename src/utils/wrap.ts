@@ -1,4 +1,4 @@
-import { cellWidth, sliceByCells } from './text';
+import { cellWidth, firstGraphemeCluster, sliceByCells } from './text';
 
 export type ColorSegment = {
   text: string;
@@ -23,6 +23,15 @@ export function wrapLine(line: string, maxWidth: number): string[] {
 
   while (cellWidth(remaining) > maxWidth) {
     const prefix = sliceByCells(remaining, maxWidth);
+
+    // sliceByCells returns '' when the first cluster alone exceeds maxWidth — emit it whole or this loop never advances.
+    if (prefix === '') {
+      const cluster = firstGraphemeCluster(remaining);
+      lines.push(cluster);
+      remaining = remaining.slice(cluster.length);
+      continue;
+    }
+
     const lastSpace = prefix.lastIndexOf(' ');
 
     if (lastSpace > 0) {

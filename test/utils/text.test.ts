@@ -4,6 +4,7 @@ import {
   cellWidth,
   clampSegmentsToWidth,
   expandTabs,
+  firstGraphemeCluster,
   shiftText,
   sliceByCells,
   sliceFromCells,
@@ -174,6 +175,18 @@ describe('sliceFromCells', () => {
 
   it('returns empty string when the text has fewer cells than the offset', () => {
     expect(sliceFromCells('日本語', 10, 2)).toBe('');
+  });
+});
+
+describe('firstGraphemeCluster', () => {
+  it('returns the first grapheme cluster of the text', () => {
+    expect(firstGraphemeCluster('日本語')).toBe('日');
+    expect(firstGraphemeCluster('a👨‍👩‍👧‍👦b')).toBe('a');
+    expect(firstGraphemeCluster('e\u0301x')).toBe('e\u0301');
+  });
+
+  it('returns an empty string for empty input', () => {
+    expect(firstGraphemeCluster('')).toBe('');
   });
 });
 

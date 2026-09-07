@@ -6,9 +6,14 @@ export function cellWidth(text: string): number {
   return stringWidth(text);
 }
 
+const segmenter = new Intl.Segmenter();
+
 function graphemeClusters(text: string): string[] {
-  const segmenter = new Intl.Segmenter();
   return Array.from(segmenter.segment(text), (part) => part.segment);
+}
+
+export function firstGraphemeCluster(text: string): string {
+  return graphemeClusters(text)[0] ?? '';
 }
 
 export function sliceByCells(text: string, maxCells: number): string {

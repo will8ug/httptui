@@ -61,6 +61,12 @@ describe('wrapLine', () => {
   it('keeps a straddling wide char whole, moving it to the next line', () => {
     expect(wrapLine('a日本語', 4)).toEqual(['a日', '本語']);
   });
+
+  it('emits a cluster wider than maxWidth whole instead of hanging', () => {
+    expect(wrapLine('日', 1)).toEqual(['日']);
+    expect(wrapLine('a日b', 1)).toEqual(['a', '日', 'b']);
+    expect(wrapLine('👨‍👩‍👧‍👦x', 1)).toEqual(['👨‍👩‍👧‍👦', 'x']);
+  });
 });
 
 describe('wrapColorizedSegments', () => {

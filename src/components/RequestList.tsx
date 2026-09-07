@@ -6,7 +6,7 @@ import { resolveVariables } from '../core/variables';
 import { getMethodColor } from '../utils/colors';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getRequestContentWidth, getRequestVisibleHeight } from '../utils/layout';
 import { getRequestTarget } from '../utils/request';
-import { truncateText } from '../utils/text';
+import { shiftText, truncateText } from '../utils/text';
 
 interface RequestListProps {
   requests: ParsedRequest[];
@@ -58,8 +58,7 @@ export function RequestList({
 
         if (horizontalOffset > 0) {
           const fullLine = `${prefix}${methodLabel}${target}`;
-          const shiftedLine = fullLine.slice(horizontalOffset);
-          const displayLine = shiftedLine === '' ? ' ' : truncateText(shiftedLine, contentWidth);
+          const displayLine = shiftText(fullLine, horizontalOffset, contentWidth);
 
           return (
             <Text key={`${request.lineNumber}-${request.method}-${request.url}`} bold={isSelected}>
