@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../../src/utils/scroll';
+import { getDetailsTotalLines, getMaxResponseLineWidth, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../../src/utils/scroll';
 import { getResponseContentWidth } from '../../src/utils/layout';
+import { createMockResponse } from '../helpers/responses';
 
 describe('scroll utilities', () => {
   describe('getMaxScrollOffset', () => {
@@ -111,6 +112,26 @@ describe('scroll utilities', () => {
 
     it('RESPONSE_PANEL_VERTICAL_CHROME equals 3', () => {
       expect(RESPONSE_PANEL_VERTICAL_CHROME).toBe(3);
+    });
+  });
+
+  describe('getMaxResponseLineWidth', () => {
+    it('measures wide characters in cells when computing the longest line', () => {
+      const cjkBodyLine = '日本語'.repeat(4);
+      const response = createMockResponse({ body: cjkBodyLine });
+
+      expect(getMaxResponseLineWidth({ response, verbose: false, rawMode: false })).toBe(24);
+    });
+
+    it('counts a CJK body line over a shorter ASCII body line', () => {
+      const cjkBodyLine = '日本語'.repeat(4);
+      const response = createMockResponse({ body: `${cjkBodyLine}\nabc` });
+
+      expect(getMaxResponseLineWidth({ response, verbose: false, rawMode: false })).toBe(24);
+    });
+
+    it('returns 0 when there is no response', () => {
+      expect(getMaxResponseLineWidth({ response: null, verbose: false, rawMode: false })).toBe(0);
     });
   });
 });

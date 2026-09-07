@@ -4,6 +4,7 @@ import { formatResponseBody } from '../core/formatter';
 import { resolveVariables } from '../core/variables';
 import { getRequestTarget } from './request';
 import { getResponseContentWidth } from './layout';
+import { cellWidth } from './text';
 import type { FileVariable, ParsedRequest, ResponseData } from '../core/types';
 
 export const RESPONSE_PANEL_VERTICAL_CHROME = 3;
@@ -60,7 +61,7 @@ export function getMaxRequestLineWidth(options: {
   return Math.max(
     ...requests.map((r) => {
       const resolved = resolveVariables(r, variables, baseDir);
-      return 2 + 7 + getRequestTarget(resolved.url).length;
+      return 2 + 7 + cellWidth(getRequestTarget(resolved.url));
     }),
   );
 }
@@ -89,7 +90,7 @@ export function getMaxResponseLineWidth(options: {
   const formattedBody = formatResponseBody(res.body, rawMode);
   lines.push(...formattedBody.split('\n'));
 
-  return Math.max(0, ...lines.map((l) => l.length));
+  return Math.max(0, ...lines.map((l) => cellWidth(l)));
 }
 
 export function getMaxDetailsLineWidth(options: {
@@ -114,5 +115,5 @@ export function getMaxDetailsLineWidth(options: {
     lines.push(...resolved.body.split('\n'));
   }
 
-  return Math.max(0, ...lines.map((l) => l.length));
+  return Math.max(0, ...lines.map((l) => cellWidth(l)));
 }
