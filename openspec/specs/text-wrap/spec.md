@@ -45,12 +45,18 @@ The system SHALL define a `TOGGLE_WRAP` action type in the `Action` discriminate
 - **THEN** it SHALL include `{ type: 'TOGGLE_WRAP' }` as a member
 
 ### Requirement: Wrap mode rendering in response panel
-When `wrapMode` is `'wrap'`, the response panel SHALL wrap long lines at the panel boundary instead of truncating them. Lines that exceed `contentWidth` SHALL continue on the next visual line, broken at word boundaries when possible, or at character boundaries for strings longer than `contentWidth` with no spaces. The status line SHALL preserve its structured color segments (gray `HTTP/1.1 ` prefix, status-code color on the code and status text, gray duration suffix) across wrap boundaries — the first wrapped visual line SHALL retain the gray `HTTP/1.1 ` prefix color when the segment falls on it, matching the non-wrapped rendering.
+When `wrapMode` is `'wrap'`, the response panel SHALL wrap long lines at the panel boundary instead of truncating them. Lines whose display-cell width exceeds `contentWidth` SHALL continue on the next visual line, broken at word boundaries when possible, or at grapheme-cluster boundaries for strings longer than `contentWidth` with no spaces (display-cell measurement and grapheme-safe boundaries are specified in the **display-width** spec). The status line SHALL preserve its structured color segments (gray `HTTP/1.1 ` prefix, status-code color on the code and status text, gray duration suffix) across wrap boundaries — the first wrapped visual line SHALL retain the gray `HTTP/1.1 ` prefix color when the segment falls on it, matching the non-wrapped rendering.
 
 #### Scenario: Long line wraps in wrap mode
-- **WHEN** `wrapMode` is `'wrap'` and a response line exceeds `contentWidth`
-- **THEN** the line SHALL be split into multiple visual lines at `contentWidth` character boundaries, preferring word boundaries
+- **WHEN** `wrapMode` is `'wrap'` and a response line's display-cell width exceeds `contentWidth`
+- **THEN** the line SHALL be split into multiple visual lines at `contentWidth` display-cell boundaries, preferring word boundaries
+- **AND** each visual line SHALL occupy at most `contentWidth` display cells
 - **AND** the visual lines SHALL be included in the scrollable content array for vertical scrolling
+
+#### Scenario: Multilingual line wraps within the panel budget
+- **WHEN** `wrapMode` is `'wrap'` and a response line composed of CJK or other wide characters exceeds `contentWidth` cells
+- **THEN** the wrapped visual lines SHALL each stay within `contentWidth` display cells
+- **AND** no wide character or grapheme cluster SHALL be split across two visual lines
 
 #### Scenario: Short line unchanged in wrap mode
 - **WHEN** `wrapMode` is `'wrap'` and a response line fits within `contentWidth`

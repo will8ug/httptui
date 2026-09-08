@@ -1,8 +1,10 @@
+# Spec: Display Width
+
 ## Purpose
 
 Terminal display-cell semantics for all text measurement and slicing in the TUI: widths are counted in terminal display cells (not string code units), boundaries never split wide characters or grapheme clusters, and rendered lines never exceed their panel's content width.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Display-cell width measurement
 All text width budgeting — wrapping, truncation, horizontal shifting, tab expansion, and longest-line measurement for scroll clamps — SHALL measure text width in terminal display cells. Wide characters (e.g. CJK ideographs) SHALL count as 2 cells, and grapheme clusters formed with non-spacing combining marks or zero-width joiners (e.g. accented letters, emoji sequences, flags) SHALL count as the rendered width of the whole cluster rather than the sum of their parts. Clusters formed with Indic *spacing* combining marks are measured per the **Indic spacing-mark width** requirement.
