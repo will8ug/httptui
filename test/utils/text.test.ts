@@ -123,6 +123,26 @@ describe('cellWidth', () => {
   });
 });
 
+describe('cellWidth — Indic spacing marks (known limitation)', () => {
+  // Tamil/Indic syllables combine a consonant with Mc *spacing* combining marks
+  // ('கா' = U+0B95 KA + U+0BBE AA sign). string-width measures these additively
+  // (base + each spacing mark), so 'கா' = 2 cells. That matches terminals which
+  // advance the cursor per code point (Apple Terminal, xterm, GNOME/VTE, iTerm2)
+  // and overcounts on grapheme-clustering terminals (kitty, WezTerm, alacritty,
+  // foot) that render the syllable in 1 cell. We keep the additive model on
+  // purpose: it is correct on per-code-point terminals and never undercounts,
+  // and undercounting would overflow the panel and corrupt the chrome. Do not
+  // "fix" these to 1 without per-terminal detection — see the display-width spec.
+  it('measures a Tamil consonant+matra cluster additively', () => {
+    expect(cellWidth('கா')).toBe(2);
+    expect(cellWidth('தமிழ்')).toBe(4);
+  });
+
+  it('slices Tamil conservatively under the additive model', () => {
+    expect(sliceByCells('தமிழ்', 2)).toBe('த');
+  });
+});
+
 describe('sliceByCells', () => {
   it('returns the longest CJK prefix within the budget', () => {
     expect(sliceByCells('日本語', 6)).toBe('日本語');

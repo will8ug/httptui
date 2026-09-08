@@ -24,4 +24,8 @@
 
 - [x] 5.1 Update any existing tests that assert unit-based widths/offsets on non-ASCII fixtures to cell-based expectations; do not modify ASCII assertions
 - [x] 5.2 Run `npm run typecheck`, `npm run lint`, `npm test` and verify all pass
-- [ ] 5.3 Manual verification in the TUI: load a response with a long single-line multilingual JSON body; toggle `w` (wrap) and confirm borders/status bar stay in place; scroll `h`/`l` and jump `$`/`0` in nowrap and confirm slicing lands on whole characters; search `/` a CJK substring and confirm marked lines stay within bounds
+- [x] 5.3 Manual verification in the TUI: load a response with a long single-line multilingual JSON body; toggle `w` (wrap) and confirm borders/status bar stay in place; scroll `h`/`l` and jump `$`/`0` in nowrap and confirm slicing lands on whole characters; search `/` a CJK substring and confirm marked lines stay within bounds — confirmed by the user on Apple Terminal (CJK renders correctly; Tamil diagnosed as a terminal shaping limitation, not a width-budgeting defect — see group 6)
+
+## 6. Indic width limitation (Option A — documented, no code change)
+
+- [x] 6.1 Keep `string-width`'s additive measurement for Indic spacing marks (no base-width switch, no per-terminal detection) per design Decision 8; re-target the Tamil tests in `test/utils/text.test.ts` to pin the actual behavior (`cellWidth('கா') === 2`) as a characterization guard, and document the limitation in the `display-width` spec, `design.md`, and `proposal.md`

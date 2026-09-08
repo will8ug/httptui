@@ -21,6 +21,7 @@ Per AGENTS.md design-goal consistency: the pseudocode below is authoritative for
 - Fixing ambiguous-width policy (e.g. `…`, `⚠`) beyond what `string-width`'s defaults give; defaults are accepted as the single source of truth.
 - Rewriting the editor's (`EditOverlay`/`edit.ts`) visual-column model beyond what it inherits from the shared utilities.
 - Changing wrap/scroll state semantics, key bindings, or panel layout constants (`RESPONSE_PANEL_CHROME` etc. are already correct integers).
+- Correcting Indic/complex-script width per terminal, or compensating for terminals that lack complex-text shaping. Width accounting follows `string-width` uniformly, so on grapheme-clustering terminals (kitty, WezTerm, alacritty, foot) Indic syllables wrap earlier than the panel width, and on non-shaping terminals (Apple Terminal) Indic matras render detached from their consonant. Both are terminal limitations, not width-budgeting defects (see Decision 8).
 
 ## Decisions
 
@@ -117,6 +118,14 @@ renderVisualLine(segments, transform, key):
 
 Alternative considered: clamping inside `computeResponseLayout` — rejected; the marker adjustment is a render-time concern (search state), and the clamp guards the render boundary specifically.
 
+### Decision 8: Indic spacing marks keep `string-width`'s additive measurement
+
+A Tamil/Indic syllable (consonant + `Mc` spacing mark, e.g. `கா`) has no single correct cell width. The `ucs-detect` project's per-terminal cursor-advance measurements split terminals into two camps: per-code-point terminals (Apple Terminal, xterm, GNOME/VTE, iTerm2, Ghostty-by-default) advance **2** cells, while grapheme-clustering terminals (kitty, WezTerm, alacritty, foot, contour) render the syllable in **1**. `string-width` returns 2 (base code point + trailing spacing marks), matching the per-code-point camp; it already returns the right value for Devanagari conjuncts like `क्ष` because the virama is `Mn` (width 0) — only `Mc` spacing matras are summed.
+
+We keep `string-width`'s value unchanged. The deciding asymmetry: overcounting only wraps Indic text early (cosmetic; never overflows), whereas switching to the 1-cell base-width model (Rust `unicode-width`'s `Grapheme_Extend → 0` rule, kitty's documented algorithm) would undercount on the large per-code-point camp — lines would overflow the panel and corrupt the chrome, the exact bug this change fixes. The reported terminal (Apple Terminal) is in the per-code-point camp, so `string-width` is already correct there; the visible Tamil defect on Apple Terminal is its lack of complex-text shaping (matras render detached from the consonant), which no width function can correct.
+
+Alternatives considered: (a) base-width measurement via `Intl.Segmenter` + `Grapheme_Extend` — fixes grapheme-clustering terminals, corrupts per-code-point ones; (b) `TERM`/`TERM_PROGRAM` detection to choose a model per terminal — strictly safe but a new detection subsystem with real gaps (alacritty sets no `TERM_PROGRAM`; tmux/ssh lose it); (c) runtime DEC private mode 2027 (DECRQM) query — the principled emerging standard, but an async stdin query that collides with Ink's raw-mode input parser and is unreliable through tmux; (d) `ucs-detect`/`wcstwidth` per-terminal correction tables — Python-only, ~3.6 MB, no JS port. All rejected as disproportionate for this app; (b) and (c) remain viable future upgrades if Indic support becomes a priority.
+
 ## Risks / Trade-offs
 
 - [Ambiguous-width glyphs (`…`, `⚠`, `►`) render wide on some East-Asian-locale terminals while `string-width` counts them narrow] → Accepted: identical to Ink's own internal accounting, so the app and Ink disagree nowhere; full per-terminal width tables are explicitly out of scope.
@@ -124,6 +133,7 @@ Alternative considered: clamping inside `computeResponseLayout` — rejected; th
 - [Existing tests asserting unit-based offsets/widths on non-ASCII fixtures will fail] → Desired: those assertions encode the bug. Update them to cell-based expectations; ASCII-only assertions must pass unchanged (regression guard for the "ASCII identical" goal).
 - [Wrapped visual-line counts for CJK bodies grow (lines budgeted at half their previous unit count)] → Visible-height math consumes the *count* of returned lines, so scrolling stays consistent; only more visual lines exist, which is the correct rendering.
 - [`truncateSegments` color-flattening loses per-segment colors on nowrap truncation] → Pre-existing behavior, unchanged by this change; noted here so implementers don't "fix" it opportunistically.
+- [Indic spacing-mark clusters (`Mc`) overcount on grapheme-clustering terminals (kitty/WezTerm/alacritty/foot), so Indic text wraps before filling the panel] → Accepted (Decision 8): cosmetic only; the additive measurement never undercounts, so it cannot overflow or corrupt the chrome. Documented as a known limitation in the `display-width` spec and pinned by a characterization test.
 
 ## Migration Plan
 
