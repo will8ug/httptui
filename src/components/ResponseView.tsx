@@ -7,7 +7,7 @@ import { computeResponseLayout } from '../core/response-layout';
 import type { ErrorInfo, ResponseData, WrapMode } from '../core/types';
 import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
 import { RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
-import { truncateText } from '../utils/text';
+import { clampSegmentsToWidth, shiftText, truncateText } from '../utils/text';
 import type { ColorSegment } from '../utils/wrap';
 
 interface ResponseViewProps {
@@ -31,8 +31,8 @@ interface ResponseViewProps {
 
 type LineTransform =
   | { kind: 'pass' }
-  | { kind: 'truncate'; maxWidth: number }
-  | { kind: 'shift'; offset: number; maxWidth: number };
+  | { kind: 'truncate' }
+  | { kind: 'shift'; offset: number };
 
 function flattenSegmentText(segments: ColorSegment[]): string {
   let text = '';
@@ -40,15 +40,6 @@ function flattenSegmentText(segments: ColorSegment[]): string {
     text += segment.text;
   }
   return text;
-}
-
-function shiftAndTruncate(segments: ColorSegment[], offset: number, maxWidth: number): string {
-  const flat = flattenSegmentText(segments);
-  if (offset <= 0) {
-    return flat;
-  }
-  const shifted = flat.slice(offset);
-  return shifted === '' ? ' ' : truncateText(shifted, maxWidth);
 }
 
 function truncateSegments(segments: ColorSegment[], maxWidth: number): ColorSegment[] {
@@ -64,15 +55,22 @@ function renderVisualLine(
   segments: ColorSegment[],
   transform: LineTransform,
   key: string,
+  widthBudget: number,
 ): React.ReactElement {
   if (transform.kind === 'shift') {
-    const displayText = shiftAndTruncate(segments, transform.offset, transform.maxWidth);
+    const displayText = shiftText(flattenSegmentText(segments), transform.offset, widthBudget);
     return <Text key={key}>{displayText}</Text>;
   }
 
-  const finalSegments = transform.kind === 'truncate'
-    ? truncateSegments(segments, transform.maxWidth)
-    : segments;
+  let finalSegments: ColorSegment[];
+
+  if (transform.kind === 'truncate') {
+    finalSegments = truncateSegments(segments, widthBudget);
+  } else {
+    finalSegments = segments;
+  }
+
+  finalSegments = clampSegmentsToWidth(finalSegments, widthBudget);
 
   if (finalSegments.length === 0) {
     return <Text key={key}>{' '}</Text>;
@@ -147,15 +145,18 @@ export function ResponseView({
       wrapMode === 'wrap'
         ? { kind: 'pass' }
         : horizontalOffset > 0
-          ? { kind: 'shift', offset: horizontalOffset, maxWidth: contentWidth }
-          : { kind: 'truncate', maxWidth: contentWidth };
+          ? { kind: 'shift', offset: horizontalOffset }
+          : { kind: 'truncate' };
+
+    const matchVisualIndices = new Set(searchMatches.map((i) => layout.bodyVisualStart[i]));
 
     const responseLines: React.ReactElement[] = [];
     let visualIndex = 0;
     for (const section of layout.sections) {
       for (let i = 0; i < section.visualLines.length; i += 1) {
         const key = `vl-${visualIndex}`;
-        responseLines.push(renderVisualLine(section.visualLines[i], transform, key));
+        const widthBudget = matchVisualIndices.has(visualIndex) ? contentWidth - 1 : contentWidth;
+        responseLines.push(renderVisualLine(section.visualLines[i], transform, key, widthBudget));
         visualIndex += 1;
       }
     }
@@ -163,7 +164,6 @@ export function ResponseView({
     const currentMatchVisualIndex = searchMatches.length > 0
       ? layout.bodyVisualStart[searchMatches[currentMatchIndex]]
       : -1;
-    const matchVisualIndices = new Set(searchMatches.map((i) => layout.bodyVisualStart[i]));
 
     const sliced = responseLines.slice(scrollOffset, scrollOffset + visibleHeight);
     content = sliced.map((line, sliceIndex) => {

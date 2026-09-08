@@ -35,6 +35,38 @@ describe('wrapLine', () => {
   it('handles multiple consecutive spaces', () => {
     expect(wrapLine('a  b  c', 4)).toEqual(['a  ', 'b  c']);
   });
+
+  it('wraps CJK by display cells', () => {
+    expect(wrapLine('日本語日本語', 4)).toEqual(['日本', '語日', '本語']);
+  });
+
+  it('budgets cells with round-down when a wide char would straddle the boundary', () => {
+    expect(wrapLine('日本語', 3)).toEqual(['日', '本', '語']);
+  });
+
+  it('breaks long spaceless CJK at grapheme boundaries', () => {
+    expect(wrapLine(`a${'日'.repeat(10)}`, 5)).toEqual([
+      'a日日',
+      '日日',
+      '日日',
+      '日日',
+      '日日',
+    ]);
+  });
+
+  it('prefers word boundaries over hard cell breaks in mixed text', () => {
+    expect(wrapLine('abc 日本語 def', 7)).toEqual(['abc ', '日本語 ', 'def']);
+  });
+
+  it('keeps a straddling wide char whole, moving it to the next line', () => {
+    expect(wrapLine('a日本語', 4)).toEqual(['a日', '本語']);
+  });
+
+  it('emits a cluster wider than maxWidth whole instead of hanging', () => {
+    expect(wrapLine('日', 1)).toEqual(['日']);
+    expect(wrapLine('a日b', 1)).toEqual(['a', '日', 'b']);
+    expect(wrapLine('👨‍👩‍👧‍👦x', 1)).toEqual(['👨‍👩‍👧‍👦', 'x']);
+  });
 });
 
 describe('wrapColorizedSegments', () => {
@@ -91,5 +123,43 @@ describe('wrapColorizedSegments', () => {
 
   it('returns empty array for maxWidth <= 0', () => {
     expect(wrapColorizedSegments([{ text: 'hello', color: 'green' }], 0)).toEqual([]);
+  });
+
+  it('splits colorized CJK at cell boundaries, preserving colors per line', () => {
+    const segments = [
+      { text: '日本語テスト', color: 'red' },
+      { text: 'です', color: 'blue' },
+    ];
+
+    expect(wrapColorizedSegments(segments, 6)).toEqual([
+      [{ text: '日本語', color: 'red' }],
+      [{ text: 'テスト', color: 'red' }],
+      [{ text: 'です', color: 'blue' }],
+    ]);
+  });
+
+  it('never splits an emoji ZWJ cluster across visual lines', () => {
+    const segments = [{ text: 'a👨‍👩‍👧‍👦b', color: 'green' }];
+
+    expect(wrapColorizedSegments(segments, 3)).toEqual([
+      [{ text: 'a👨‍👩‍👧‍👦', color: 'green' }],
+      [{ text: 'b', color: 'green' }],
+    ]);
+  });
+
+  it('never splits a grapheme cluster mid-segment', () => {
+    const segments = [
+      { text: '日本語', color: 'green' },
+      { text: '👨‍👩‍👧‍👦', color: 'cyan' },
+      { text: 'テスト', color: 'red' },
+    ];
+    const clusters = (text: string): string[] =>
+      Array.from(new Intl.Segmenter().segment(text), (part) => part.segment);
+
+    const result = wrapColorizedSegments(segments, 3);
+
+    const emittedClusters = result.flat().flatMap((segment) => clusters(segment.text));
+
+    expect(emittedClusters).toEqual(clusters('日本語👨‍👩‍👧‍👦テスト'));
   });
 });

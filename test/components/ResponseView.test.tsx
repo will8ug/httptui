@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render } from 'ink-testing-library';
+import stringWidth from 'string-width';
 
 import { ResponseView } from '../../src/components/ResponseView';
+import { assertDefinedToNarrowType } from '../helpers/assertions';
 import { createMockResponse, longResponse, compactJsonResponse } from '../helpers/responses';
 
 afterEach(() => {
@@ -169,6 +171,156 @@ describe('scroll and overflow', () => {
     expect(frame).not.toContain('…');
     // Title shows [wrap] indicator
     expect(frame).toContain('[wrap]');
+  });
+});
+
+describe('wide-character content width', () => {
+  it('keeps the panel border intact for wrapped CJK lines', () => {
+    // 50 CJK chars = 100 cells; contentWidthOverride=20 wraps each body line to 10 chars (20 cells)
+    const response = createMockResponse({ body: '汉'.repeat(50) });
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        wrapMode={'wrap' as const}
+        contentWidthOverride={20}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+
+    for (const line of lines) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
+    }
+
+    const bodyLines = lines.filter((line) => line.includes('汉'));
+    expect(bodyLines.length).toBeGreaterThan(0);
+    for (const line of bodyLines) {
+      expect(line.startsWith('│')).toBe(true);
+      expect(line.endsWith('│')).toBe(true);
+    }
+  });
+
+  it('truncates a wide-character body line with an ellipsis and keeps the border intact', () => {
+    const response = createMockResponse({ body: '汉'.repeat(50) });
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        contentWidthOverride={20}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+    const bodyLine = lines.find((line) => line.includes('汉'));
+    assertDefinedToNarrowType(bodyLine);
+    expect(bodyLine).toContain('…');
+    expect(bodyLine.startsWith('│')).toBe(true);
+    expect(bodyLine.endsWith('│')).toBe(true);
+    expect(stringWidth(bodyLine)).toBeLessThanOrEqual(panelWidth);
+  });
+
+  it('budgets a search-marked CJK line one cell narrower for the marker glyph', () => {
+    // contentWidth=20 -> plain body lines hold 10 CJK chars (20 cells); the marker
+    // consumes 1 cell, so marked lines are clamped to contentWidth-1 = 9 chars (18 cells)
+    const response = createMockResponse({ body: '汉'.repeat(50) });
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        wrapMode={'wrap' as const}
+        contentWidthOverride={20}
+        searchMatches={[0]}
+        currentMatchIndex={0}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+
+    expect(frame).toContain('►');
+
+    const markedLine = lines.find((line) => line.includes('►'));
+    assertDefinedToNarrowType(markedLine);
+    expect((markedLine.match(/汉/g) ?? []).length).toBe(9);
+
+    const plainBodyLine = lines.find((line) => line.includes('汉') && !line.includes('►'));
+    assertDefinedToNarrowType(plainBodyLine);
+    expect((plainBodyLine.match(/汉/g) ?? []).length).toBe(10);
+
+    for (const line of lines) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
+    }
+  });
+
+  it('scrolls nowrap mixed CJK content by display cells', () => {
+    // 4 cells of CJK then 30 ASCII letters; a code-unit slice at offset 4 would land on 'c'
+    const body = `日本${'abcdefghijklmnopqrstuvwxyzabcd'}`;
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={createMockResponse({ body })}
+        contentWidthOverride={20}
+        horizontalOffset={4}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('abcdefghijklmnopqrst');
+    expect(frame).not.toContain('cdefghijklmnopqrs…');
+  });
+
+  it('shows content at the far nowrap scroll position instead of a blank line', () => {
+    // 50 CJK chars = 100 cells; maxScrollOffset = 100 - 20 = 80 cells.
+    // A code-unit slice(80) on a 50-unit string returns '' and renders a blank line.
+    const response = createMockResponse({ body: '汉'.repeat(50) });
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        contentWidthOverride={20}
+        horizontalOffset={80}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+    const bodyLine = lines.find((line) => line.includes('汉'));
+    assertDefinedToNarrowType(bodyLine);
+    expect((bodyLine.match(/汉/g) ?? []).length).toBe(10);
+    expect(stringWidth(bodyLine)).toBeLessThanOrEqual(panelWidth);
+  });
+
+  it('budgets a nowrap search-marked CJK line one cell narrower for the marker glyph', () => {
+    // contentWidth=21 -> plain body lines hold 10 CJK chars + ellipsis (21 cells); the
+    // marker consumes 1 cell, so the marked line is budgeted to 20 -> 9 chars + ellipsis
+    const response = createMockResponse({ body: `${'汉'.repeat(50)}\n${'汉'.repeat(50)}` });
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        contentWidthOverride={21}
+        searchMatches={[0]}
+        currentMatchIndex={0}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+
+    const markedLine = lines.find((line) => line.includes('►'));
+    assertDefinedToNarrowType(markedLine);
+    expect((markedLine.match(/汉/g) ?? []).length).toBe(9);
+    expect(markedLine).toContain('…');
+
+    const plainBodyLine = lines.find((line) => line.includes('汉') && !line.includes('►'));
+    assertDefinedToNarrowType(plainBodyLine);
+    expect((plainBodyLine.match(/汉/g) ?? []).length).toBe(10);
+
+    for (const line of lines) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
+    }
   });
 });
 

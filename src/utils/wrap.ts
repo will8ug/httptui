@@ -1,3 +1,5 @@
+import { cellWidth, firstGraphemeCluster, sliceByCells } from './text';
+
 export type ColorSegment = {
   text: string;
   color: string;
@@ -12,28 +14,37 @@ export function wrapLine(line: string, maxWidth: number): string[] {
     return [' '];
   }
 
-  if (line.length <= maxWidth) {
+  if (cellWidth(line) <= maxWidth) {
     return [line];
   }
 
   const lines: string[] = [];
   let remaining = line;
 
-  while (remaining.length > maxWidth) {
-    const lastSpace = remaining.lastIndexOf(' ', maxWidth - 1);
+  while (cellWidth(remaining) > maxWidth) {
+    const prefix = sliceByCells(remaining, maxWidth);
 
-    if (lastSpace > 0) {
-      const breakAt = lastSpace + 1;
-      lines.push(remaining.slice(0, breakAt));
-      remaining = remaining.slice(breakAt);
+    // sliceByCells returns '' when the first cluster alone exceeds maxWidth — emit it whole or this loop never advances.
+    if (prefix === '') {
+      const cluster = firstGraphemeCluster(remaining);
+      lines.push(cluster);
+      remaining = remaining.slice(cluster.length);
       continue;
     }
 
-    lines.push(remaining.slice(0, maxWidth));
-    remaining = remaining.slice(maxWidth);
+    const lastSpace = prefix.lastIndexOf(' ');
+
+    if (lastSpace > 0) {
+      lines.push(remaining.slice(0, lastSpace + 1));
+      remaining = remaining.slice(lastSpace + 1);
+      continue;
+    }
+
+    lines.push(prefix);
+    remaining = remaining.slice(prefix.length);
   }
 
-  if (remaining.length > 0) {
+  if (remaining !== '') {
     lines.push(remaining);
   }
 
