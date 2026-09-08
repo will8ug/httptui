@@ -215,7 +215,7 @@ describe('wide-character content width', () => {
     const lines = frame.split('\n');
     const panelWidth = stringWidth(lines[0]);
     const bodyLine = lines.find((line) => line.includes('汉'));
-    assertDefinedToNarrowType(bodyLine);
+    assertDefinedToNarrowType(bodyLine, 'Expected a CJK body line to be defined');
     expect(bodyLine).toContain('…');
     expect(bodyLine.startsWith('│')).toBe(true);
     expect(bodyLine.endsWith('│')).toBe(true);
@@ -243,11 +243,11 @@ describe('wide-character content width', () => {
     expect(frame).toContain('►');
 
     const markedLine = lines.find((line) => line.includes('►'));
-    assertDefinedToNarrowType(markedLine);
+    assertDefinedToNarrowType(markedLine, 'Expected a search-marked body line to be defined');
     expect((markedLine.match(/汉/g) ?? []).length).toBe(9);
 
     const plainBodyLine = lines.find((line) => line.includes('汉') && !line.includes('►'));
-    assertDefinedToNarrowType(plainBodyLine);
+    assertDefinedToNarrowType(plainBodyLine, 'Expected a plain body line to be defined');
     expect((plainBodyLine.match(/汉/g) ?? []).length).toBe(10);
 
     for (const line of lines) {
@@ -287,7 +287,7 @@ describe('wide-character content width', () => {
     const lines = frame.split('\n');
     const panelWidth = stringWidth(lines[0]);
     const bodyLine = lines.find((line) => line.includes('汉'));
-    assertDefinedToNarrowType(bodyLine);
+    assertDefinedToNarrowType(bodyLine, 'Expected a CJK body line to be defined');
     expect((bodyLine.match(/汉/g) ?? []).length).toBe(10);
     expect(stringWidth(bodyLine)).toBeLessThanOrEqual(panelWidth);
   });
@@ -310,12 +310,12 @@ describe('wide-character content width', () => {
     const panelWidth = stringWidth(lines[0]);
 
     const markedLine = lines.find((line) => line.includes('►'));
-    assertDefinedToNarrowType(markedLine);
+    assertDefinedToNarrowType(markedLine, 'Expected a search-marked body line to be defined');
     expect((markedLine.match(/汉/g) ?? []).length).toBe(9);
     expect(markedLine).toContain('…');
 
     const plainBodyLine = lines.find((line) => line.includes('汉') && !line.includes('►'));
-    assertDefinedToNarrowType(plainBodyLine);
+    assertDefinedToNarrowType(plainBodyLine, 'Expected a plain body line to be defined');
     expect((plainBodyLine.match(/汉/g) ?? []).length).toBe(10);
 
     for (const line of lines) {
