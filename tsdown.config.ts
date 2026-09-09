@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from 'tsdown';
 
 export default defineConfig({
   entry: ['src/cli.tsx'],
@@ -7,8 +7,5 @@ export default defineConfig({
   outDir: 'dist',
   clean: true,
   sourcemap: true,
-  banner: {
-    js: '#!/usr/bin/env node',
-  },
-  external: ['react', 'ink', '@inkjs/ui', 'undici', 'yaml'],
+  fixedExtension: false,
 });

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import tls from 'node:tls';
