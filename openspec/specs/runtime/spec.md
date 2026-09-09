@@ -22,13 +22,9 @@ The project SHALL declare Node.js 24 as its minimum supported runtime version. T
 - **WHEN** a user runs `npm install -g @will8ug/httptui` on Node.js 24.0.0 or any newer release
 - **THEN** npm SHALL NOT emit an `EBADENGINE` warning for httptui's declared engines
 
-### Requirement: Build target matches minimum runtime
+### Requirement: Build output matches minimum runtime
 
-The build tool SHALL emit JavaScript compatible with the declared minimum Node.js version. The `target` field in `tsup.config.ts` SHALL be set to `node24` so emitted code may use syntax and APIs available in Node 24+.
-
-#### Scenario: tsup target aligns with engines floor
-- **WHEN** `tsup.config.ts` is read
-- **THEN** the `target` option SHALL equal `"node24"`
+The build tool SHALL emit JavaScript compatible with the declared minimum Node.js version, so that emitted code may use syntax and APIs available in Node 24+.
 
 #### Scenario: Build produces output runnable on Node 24
 - **WHEN** `npm run build` completes successfully on a Node 24+ developer environment
