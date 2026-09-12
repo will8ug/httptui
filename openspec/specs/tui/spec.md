@@ -72,7 +72,7 @@ Defined in the centralized `SHORTCUTS` registry (`src/core/shortcuts.ts`). See *
 
 ## Exit
 
-- `q` key: clean exit, restore terminal
+- `q` key: clean exit, restore terminal — except while search results are displayed, when it dismisses them instead; see the **response-search** spec for dismissal semantics
 - `Ctrl+C`: clean exit, restore terminal
 - Unhandled error: exit with error message (outside alternate buffer)
 

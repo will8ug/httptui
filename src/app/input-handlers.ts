@@ -630,6 +630,11 @@ export function handleNormalInput({
   }
 
   if (input === 'q') {
+    if (state.searchMatches.length > 0 || state.lastSearchQuery) {
+      dispatch({ type: 'CANCEL_SEARCH' });
+      return;
+    }
+
     if (hasUnsavedChanges(state.requests)) {
       dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'quit' });
     } else {
