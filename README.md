@@ -93,8 +93,8 @@ httptui api.http -E Staging
 | Key | Action |
 |-----|--------|
 | `?` | Toggle help overlay |
-| `Escape` | Close current overlay / Cancel in-flight request / Exit fullscreen |
-| `q` | Quit application |
+| `Escape` | Close current overlay / Cancel in-flight request / Exit fullscreen / Dismiss search results |
+| `q` | Dismiss search results when shown, otherwise quit application |
 
 ### Navigation
 
@@ -140,6 +140,8 @@ httptui api.http -E Staging
 | `/` | Search response body |
 | `n` | Go to next match |
 | `N` | Go to previous match |
+| `Escape` | Dismiss search results |
+| `q` | Dismiss search results when shown, otherwise quit |
 
 ### Edit
 

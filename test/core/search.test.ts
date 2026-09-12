@@ -319,7 +319,7 @@ describe('Search state clearing reducer cases', () => {
   });
 });
 
-describe('Escape dismisses active search results in normal mode', () => {
+describe('Dismissing active search results in normal mode', () => {
   it('CANCEL_SEARCH clears search state when in normal mode with active matches', () => {
     const state = stateWithActiveSearch();
     expect(state.mode).toBe('normal');
