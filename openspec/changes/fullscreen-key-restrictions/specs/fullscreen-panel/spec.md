@@ -5,7 +5,7 @@ While a panel is maximized, normal-mode key handling SHALL honor only the keys l
 
 Permitted regardless of which panel is maximized:
 - Navigation keys (`j`/`k`/arrow keys, `h`/`l`, `g`, `G`, `0`, `$`) acting on the maximized panel, as specified by the **navigation** spec
-- `f` to toggle fullscreen off, and `Escape` with its existing priority (cancel an in-flight request first, otherwise exit fullscreen), as specified by the **navigation** spec
+- `f` to toggle fullscreen off, and `Escape` with its priority (cancel an in-flight request first, then clear active search results while the response panel is maximized, otherwise exit fullscreen), as specified by the **navigation** spec
 - `?` to open the help overlay over fullscreen
 - `Ctrl+C` to exit the application, preserving the terminal convention that the interrupt key always terminates
 - `q` to dismiss displayed search results, as specified by the **response-search** spec (the quit fallback is restricted — see the requirement below)
@@ -100,6 +100,23 @@ When any panel is maximized (`requests`, `details`, or `response`), pressing `d`
 - **THEN** pressing `d` SHALL show the details panel
 
 ## MODIFIED Requirements
+
+### Requirement: Escape exits fullscreen
+In normal mode, when `maximizedPanel` is not `null` and the user presses `Escape`, the system SHALL dispatch `TOGGLE_FULLSCREEN` to exit fullscreen — except while the response panel is maximized and search state is active, where the first `Escape` SHALL clear the search state and leave the panel maximized, and only a subsequent `Escape` SHALL exit fullscreen. This check SHALL occur after the help overlay, file load, search mode, and in-flight cancel handlers. Clearing active search results takes priority over exiting fullscreen while the response panel is maximized; exiting fullscreen takes priority while any other panel is maximized.
+
+#### Scenario: Escape exits fullscreen
+- **WHEN** `maximizedPanel` is `'response'`, no search state is active, and the user presses `Escape` in normal mode
+- **THEN** a `TOGGLE_FULLSCREEN` action SHALL be dispatched and `maximizedPanel` SHALL become `null`
+
+#### Scenario: Escape does not enter fullscreen
+- **WHEN** `maximizedPanel` is `null` and the user presses `Escape` in normal mode with no active search results
+- **THEN** no `TOGGLE_FULLSCREEN` action SHALL be dispatched
+
+#### Scenario: Escape priority over search result clearing
+- **WHEN** `maximizedPanel` is `'response'` and there are active search results, and the user presses `Escape`
+- **THEN** no `TOGGLE_FULLSCREEN` action SHALL be dispatched; the search state SHALL be cleared and the response panel SHALL remain maximized (a subsequent `Escape` exits fullscreen)
+- **WHEN** `maximizedPanel` is `'requests'` and there are active search results, and the user presses `Escape`
+- **THEN** a `TOGGLE_FULLSCREEN` action SHALL be dispatched (exiting fullscreen takes priority; the search results remain active and can be cleared by `Escape` after exiting fullscreen)
 
 ### Requirement: Fullscreen state preserved across overlays and mode changes
 When a panel is maximized and the user opens the help overlay (`?`) or enters search mode from a maximized response panel (`/`), the `maximizedPanel` state SHALL be preserved. When the overlay is dismissed or the mode returns to normal, the fullscreen view SHALL be restored. The file-load overlay can no longer be opened while a panel is maximized (`o` is restricted — see the action-keys requirement above); entering file load from normal mode and later maximizing a panel is unaffected.

@@ -18,6 +18,7 @@ Create `test/integration/fullscreen-keys.test.tsx` covering the delta specs (use
 - [ ] 3.4 Display toggles: `w` toggles wrap in maximized response (title reflects it); `v`/`r`/`w` in maximized requests/details change nothing (verify post-exit render unchanged).
 - [ ] 3.5 Search keys: `/` in maximized requests/details stays in normal mode (no search bar); `/` in maximized response enters search; `n`/`N` in maximized non-response panels with active results do not move the match index.
 - [ ] 3.6 `d` no-op in all fullscreen: `d` in maximized requests with details hidden keeps details hidden after exiting fullscreen; `d` in maximized details keeps the panel visible.
+- [ ] 3.7 Escape priority in maximized response: with active results, the first `Escape` clears the search bar and stays fullscreen; a second `Escape` exits fullscreen; with a no-match query state (`lastSearchQuery` set, zero matches) the first `Escape` also clears and stays. In maximized requests with active results, `Escape` exits fullscreen directly and the search bar persists in the split view.
 
 ## 4. Verification and docs
 

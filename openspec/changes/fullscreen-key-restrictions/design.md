@@ -43,6 +43,10 @@ handleFullscreenInput(input, key, state, ...deps):
     abortControllerRef.current?.abort()
     dispatch REQUEST_CANCEL with warning 'Request canceled'
     return
+  if key.escape and state.maximizedPanel === 'response'
+     and (state.searchMatches.length > 0 or state.lastSearchQuery):
+    dispatch CANCEL_SEARCH               # dismiss search, stay fullscreen
+    return
   if key.escape:
     dispatch TOGGLE_FULLSCREEN          # exit fullscreen
     return
@@ -94,7 +98,7 @@ handleFullscreenInput(input, key, state, ...deps):
 ```
 
 Notes:
-- Escape ordering preserves the spec'd priority: cancel in-flight first (stays fullscreen), then exit fullscreen. Clearing search results via Escape is unreachable in fullscreen (exiting fullscreen returns first), matching the existing fullscreen-panel spec.
+- Escape ordering follows the navigation spec's priority chain: cancel in-flight first (stays fullscreen), then — only while the response panel is maximized — clear active search state (stays fullscreen; the search bar is visible there), then exit fullscreen. Non-response fullscreen skips the dismissal rung deliberately: the search bar is invisible there, so the first Escape must have a visible effect (exiting fullscreen); stale search state remains and clears after exit.
 - `q` dismissal keeps the exact normal-mode condition (`searchMatches.length > 0 || lastSearchQuery`) and works regardless of which panel is maximized, per the response-search spec. The quit fallback (`hasUnsavedChanges` → `REQUEST_DISCARD_CONFIRM`, else `exit()`) is simply not reachable in fullscreen.
 - `n`/`N` reuse the same `computeVerticalMaxOffset` / `getBodyVisualStart` computations as the normal ladder; factor or duplicate minimally per surrounding style, but the dispatched values must be identical.
 - Navigation dispatches route on `maximizedPanel` (not `focusedPanel`). The two are equal whenever a panel is maximized — `Tab` is gated and nothing else changes focus while maximized — but routing on the rendered panel is the direct expression of intent.
@@ -118,6 +122,7 @@ No changes to mode dispatch in `App.tsx`. `?` opens the help overlay (its handle
 ## Risks / Trade-offs
 
 - [Muscle-memory friction: `Enter` no longer sends from a maximized request list] → Mitigation: `Escape`/`f` then `Enter` is a two-keystroke path, and sending from fullscreen never showed the response anyway (the feedback loop was already broken). README documents the qualifier.
+- [Users who learned the old Escape order in maximized response (exit fullscreen, then clear results) now get the reverse] → Mitigation: both orders take two presses to achieve both effects; the on-screen search bar hint `(Esc to dismiss)` now matches the first press's actual behavior, making the new order self-explanatory.
 - [Users press disabled keys and the app feels dead] → Mitigation: `?` remains live specifically as the discovery path; no-ops are consistent with existing fullscreen no-ops.
 - [`q`-dismissal in a non-response fullscreen is an invisible state change] → Accepted deliberately: the response-search spec's invariant ("dismissal regardless of maximized panel") predates this change, the reachable states are contrived (moving the selection clears search state first), and splitting `q`'s dismissal by panel would complicate the rule for negligible benefit.
 - [Duplicate `n`/`N` computation between handlers drifts] → Mitigation: extract the match-target computation into a small shared helper next to the existing search helpers rather than copying the arithmetic.

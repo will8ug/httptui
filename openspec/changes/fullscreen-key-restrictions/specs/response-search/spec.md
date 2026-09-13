@@ -1,5 +1,28 @@
 ## MODIFIED Requirements
 
+### Requirement: Dismiss search results with Escape
+In normal mode, when search results are active (non-empty `searchMatches` or non-empty `lastSearchQuery`), pressing Escape SHALL clear all search state and remove the search bar and match indicators. If no search results are active, Escape SHALL have no effect.
+
+While the response panel is maximized, this dismissal SHALL take priority over exiting fullscreen: `Escape` clears the search state, removes the search bar and match indicators, and the panel remains maximized; a subsequent `Escape` exits fullscreen (see the **fullscreen-panel** spec). While a panel other than the response panel is maximized, `Escape` exits fullscreen first and the search state remains active until cleared after exiting.
+
+#### Scenario: Escape dismisses active matches
+- **WHEN** the app is in normal mode with active search matches
+- **THEN** pressing Escape SHALL clear all search state (`searchQuery`, `searchMatches`, `currentMatchIndex`, `lastSearchQuery`)
+- **AND** the search bar and match indicators SHALL no longer be displayed
+
+#### Scenario: Escape dismisses no-match search bar
+- **WHEN** the app is in normal mode with `lastSearchQuery` set but `searchMatches` empty (no matches found)
+- **THEN** pressing Escape SHALL clear all search state
+
+#### Scenario: Escape with no search state is a no-op
+- **WHEN** the app is in normal mode with no active search state
+- **THEN** pressing Escape SHALL have no effect
+
+#### Scenario: Escape dismisses results in a maximized response panel before exiting fullscreen
+- **WHEN** the response panel is maximized and search results are active, and the user presses `Escape`
+- **THEN** the search state SHALL be cleared and the response panel SHALL remain maximized
+- **AND** a subsequent `Escape` SHALL exit fullscreen
+
 ### Requirement: Enter search mode with `/` key
 The system SHALL enter search mode when the user presses `/` in normal mode. Search mode SHALL only be enterable when the response panel has a response (i.e., `state.response` is not null). While a panel other than the response panel is maximized, `/` SHALL be a no-op (see the **fullscreen-panel** spec). Upon entering search mode, the focused panel SHALL be set to `response` and the search query SHALL be initialized to an empty string.
 
@@ -50,7 +73,7 @@ Dismissal SHALL be indistinguishable from dismissing with Escape: the same state
 
 This requirement governs `q` only while search results are displayed in normal mode. While the user is still typing a query, `q` remains an ordinary query character, as specified by the search-input requirements in this spec.
 
-Fullscreen and in-flight requests SHALL be unaffected by `q`. Where Escape gives exiting fullscreen priority over clearing search results (see the **fullscreen-panel** spec), `q` clears search results regardless of whether a panel is maximized, and leaves the maximized panel maximized. The quit fallback is the only part of `q`'s behavior that fullscreen restricts.
+Fullscreen and in-flight requests SHALL be unaffected by `q`. While the response panel is maximized, `Escape` and `q` both clear search results without leaving fullscreen (see the **fullscreen-panel** spec for Escape's priority); `q` clears search results regardless of which panel is maximized, and leaves the maximized panel maximized. The quit fallback is the only part of `q`'s behavior that fullscreen restricts.
 
 #### Scenario: The quit key dismisses active matches
 
