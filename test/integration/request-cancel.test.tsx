@@ -171,15 +171,16 @@ describe('request cancel', () => {
     await delay(KEY_DELAY_MS);
 
     await press(stdin, TAB);
+    await press(stdin, ENTER);
+    await delay(KEY_DELAY_MS * 2);
+    expect(lastFrame() ?? '').toContain('Sending request');
+
     await press(stdin, 'f');
     await delay(KEY_DELAY_MS);
     const fullscreenFrame = lastFrame() ?? '';
     expect(fullscreenFrame).toContain('Response');
     expect(fullscreenFrame).not.toContain('Requests');
-
-    await press(stdin, ENTER);
-    await delay(KEY_DELAY_MS * 2);
-    expect(lastFrame() ?? '').toContain('Sending request');
+    expect(fullscreenFrame).toContain('Sending request');
 
     await press(stdin, ESC);
     await delay(KEY_DELAY_MS * 2);

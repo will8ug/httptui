@@ -89,10 +89,10 @@ handleFullscreenInput(input, key, state, ...deps):
     if input === 'N' and state.searchMatches.length > 0:
       dispatch PREV_MATCH  (same computation as normal mode)
       return
-    if input === 'q':
-      if state.searchMatches.length > 0 or state.lastSearchQuery:
-        dispatch CANCEL_SEARCH               # dismissal; never quits here
-      return                                 # else: no-op — never exit(), never REQUEST_DISCARD_CONFIRM
+
+  # Search dismissal — any maximized panel (per the response-search spec invariant)
+  if input === 'q' and (state.searchMatches.length > 0 or state.lastSearchQuery):
+    dispatch CANCEL_SEARCH                     # never exit(), never REQUEST_DISCARD_CONFIRM in fullscreen
 
   # Everything else: silent no-op
 ```

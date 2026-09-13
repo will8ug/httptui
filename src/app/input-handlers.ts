@@ -55,6 +55,26 @@ function getBodyVisualStart(state: AppState, columns: number): number[] | null {
   return layout.bodyVisualStart;
 }
 
+function buildMatchNavigationAction(
+  state: AppState,
+  columns: number,
+  effectiveResponseHeight: number,
+  effectiveDetailMaxContent: number,
+  direction: 'next' | 'prev',
+): Extract<Action, { type: 'NEXT_MATCH' | 'PREV_MATCH' }> {
+  const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
+  const bodyVisualStart = getBodyVisualStart(state, columns);
+  const matchCount = state.searchMatches.length;
+  const targetIndex = direction === 'next'
+    ? (state.currentMatchIndex + 1) % matchCount
+    : (state.currentMatchIndex - 1 + matchCount) % matchCount;
+  const targetRawIndex = state.searchMatches[targetIndex];
+  const targetVisualIndex = bodyVisualStart ? bodyVisualStart[targetRawIndex] : targetRawIndex;
+  return direction === 'next'
+    ? { type: 'NEXT_MATCH', targetVisualIndex, maxOffset }
+    : { type: 'PREV_MATCH', targetVisualIndex, maxOffset };
+}
+
 function applyLineEdit(
   buffer: EditorBuffer,
   input: string,
@@ -571,6 +591,139 @@ export function handleConfirmInPlaceSaveInput({ state, input, key, dispatch }: {
   }
 }
 
+function handleFullscreenInput({
+  state,
+  columns,
+  rows,
+  effectiveResponseHeight,
+  effectiveDetailMaxContent,
+  exit,
+  abortControllerRef,
+  input,
+  key,
+  dispatch,
+}: {
+  state: AppState;
+  columns: number;
+  rows: number;
+  effectiveResponseHeight: number;
+  effectiveDetailMaxContent: number;
+  exit: () => void;
+  abortControllerRef: { current: AbortController | null };
+  input: string;
+  key: Key;
+  dispatch: Dispatch<Action>;
+}): void {
+  if (key.escape && state.isLoading) {
+    abortControllerRef.current?.abort();
+    dispatch({ type: 'REQUEST_CANCEL', warning: 'Request canceled' });
+    return;
+  }
+
+  if (key.escape && state.maximizedPanel === 'response' && (state.searchMatches.length > 0 || state.lastSearchQuery)) {
+    dispatch({ type: 'CANCEL_SEARCH' });
+    return;
+  }
+
+  if (key.escape) {
+    dispatch({ type: 'TOGGLE_FULLSCREEN' });
+    return;
+  }
+
+  if (key.ctrl && input === 'c') {
+    exit();
+    return;
+  }
+
+  if (input === 'f') {
+    dispatch({ type: 'TOGGLE_FULLSCREEN' });
+    return;
+  }
+
+  if (input === '?') {
+    dispatch({ type: 'TOGGLE_HELP' });
+    return;
+  }
+
+  if (input === 'g') {
+    dispatch({ type: 'JUMP_VERTICAL', direction: 'start', rows });
+    return;
+  }
+
+  if (input === 'G') {
+    const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
+    dispatch({ type: 'JUMP_VERTICAL', direction: 'end', maxOffset, rows });
+    return;
+  }
+
+  if (input === '0') {
+    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'start', columns });
+    return;
+  }
+
+  if (input === '$') {
+    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+    return;
+  }
+
+  const isUp = input === 'k' || key.upArrow;
+  const isDown = input === 'j' || key.downArrow;
+  const isLeft = input === 'h' || key.leftArrow;
+  const isRight = input === 'l' || key.rightArrow;
+
+  if (isLeft || isRight) {
+    dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right', columns });
+    return;
+  }
+
+  if (isUp || isDown) {
+    if (state.maximizedPanel === 'requests') {
+      dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down', rows });
+      return;
+    }
+
+    const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
+    dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
+    return;
+  }
+
+  if (state.maximizedPanel === 'response') {
+    if (input === 'v') {
+      dispatch({ type: 'TOGGLE_VERBOSE' });
+      return;
+    }
+
+    if (input === 'w') {
+      dispatch({ type: 'TOGGLE_WRAP' });
+      return;
+    }
+
+    if (input === 'r') {
+      dispatch({ type: 'TOGGLE_RAW' });
+      return;
+    }
+
+    if (input === '/') {
+      dispatch({ type: 'ENTER_SEARCH' });
+      return;
+    }
+
+    if (input === 'n' && state.searchMatches.length > 0) {
+      dispatch(buildMatchNavigationAction(state, columns, effectiveResponseHeight, effectiveDetailMaxContent, 'next'));
+      return;
+    }
+
+    if (input === 'N' && state.searchMatches.length > 0) {
+      dispatch(buildMatchNavigationAction(state, columns, effectiveResponseHeight, effectiveDetailMaxContent, 'prev'));
+      return;
+    }
+  }
+
+  if (input === 'q' && (state.searchMatches.length > 0 || state.lastSearchQuery)) {
+    dispatch({ type: 'CANCEL_SEARCH' });
+  }
+}
+
 export function handleNormalInput({
   state,
   selectedRequest,
@@ -608,14 +761,25 @@ export function handleNormalInput({
   key: Key;
   dispatch: Dispatch<Action>;
 }): void {
-  if (key.escape && state.isLoading) {
-    abortControllerRef.current?.abort();
-    dispatch({ type: 'REQUEST_CANCEL', warning: 'Request canceled' });
+  if (state.maximizedPanel !== null) {
+    handleFullscreenInput({
+      state,
+      columns,
+      rows,
+      effectiveResponseHeight,
+      effectiveDetailMaxContent,
+      exit,
+      abortControllerRef,
+      input,
+      key,
+      dispatch,
+    });
     return;
   }
 
-  if (key.escape && state.maximizedPanel !== null) {
-    dispatch({ type: 'TOGGLE_FULLSCREEN' });
+  if (key.escape && state.isLoading) {
+    abortControllerRef.current?.abort();
+    dispatch({ type: 'REQUEST_CANCEL', warning: 'Request canceled' });
     return;
   }
 
@@ -648,7 +812,7 @@ export function handleNormalInput({
     return;
   }
 
-  if (key.tab && state.maximizedPanel === null) {
+  if (key.tab) {
     dispatch({ type: 'SWITCH_PANEL' });
     return;
   }
@@ -668,7 +832,7 @@ export function handleNormalInput({
     return;
   }
 
-  if (input === 'd' && state.maximizedPanel !== 'details') {
+  if (input === 'd') {
     dispatch({ type: 'TOGGLE_REQUEST_DETAILS' });
     return;
   }
@@ -788,22 +952,12 @@ export function handleNormalInput({
   }
 
   if (input === 'n' && state.searchMatches.length > 0) {
-    const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
-    const bodyVisualStart = getBodyVisualStart(state, columns);
-    const nextIndex = (state.currentMatchIndex + 1) % state.searchMatches.length;
-    const targetRawIndex = state.searchMatches[nextIndex];
-    const targetVisualIndex = bodyVisualStart ? bodyVisualStart[targetRawIndex] : targetRawIndex;
-    dispatch({ type: 'NEXT_MATCH', targetVisualIndex, maxOffset });
+    dispatch(buildMatchNavigationAction(state, columns, effectiveResponseHeight, effectiveDetailMaxContent, 'next'));
     return;
   }
 
   if (input === 'N' && state.searchMatches.length > 0) {
-    const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
-    const bodyVisualStart = getBodyVisualStart(state, columns);
-    const prevIndex = (state.currentMatchIndex - 1 + state.searchMatches.length) % state.searchMatches.length;
-    const targetRawIndex = state.searchMatches[prevIndex];
-    const targetVisualIndex = bodyVisualStart ? bodyVisualStart[targetRawIndex] : targetRawIndex;
-    dispatch({ type: 'PREV_MATCH', targetVisualIndex, maxOffset });
+    dispatch(buildMatchNavigationAction(state, columns, effectiveResponseHeight, effectiveDetailMaxContent, 'prev'));
     return;
   }
 
