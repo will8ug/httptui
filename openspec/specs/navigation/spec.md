@@ -32,7 +32,7 @@ The system SHALL define a `SCROLL_HORIZONTAL` action type with `direction: 'left
 - **WHEN** the user presses `←` or `h` and the focused panel is `response`
 - **THEN** the response panel's horizontal offset SHALL decrease by 2, clamped to a minimum of `0`
 
-#### Scenario: Scroll right stops when content right edge is within panel
+#### Scenario: Scroll right stops at the panel's rendered width
 - **WHEN** the horizontal offset equals the upper bound for the panel's current layout (split or fullscreen)
 - **AND** the user presses `→` or `l`
 - **THEN** the horizontal offset SHALL NOT increase further; it SHALL be clamped at the offset where the longest displayed line's last character reaches the right edge of the panel's content area at its current layout
@@ -49,19 +49,19 @@ The system SHALL define a `SCROLL_HORIZONTAL` action type with `direction: 'left
 - **WHEN** the details panel is maximized and the user scrolls right to the bound
 - **THEN** scrolling SHALL stop exactly when the longest displayed details line's last character meets the right edge of the maximized panel's content area — the bound SHALL use the fullscreen content width, not the narrower split-layout width
 
-#### Scenario: Max line width for request panel
+#### Scenario: Bound uses the request lines as displayed
 - **WHEN** the requests panel's upper bound is computed
 - **THEN** the longest line SHALL be measured across the request lines as displayed in the list (the padded method label and target path) over all requests, in display cells
 
-#### Scenario: Max line width for response panel
+#### Scenario: Bound uses the response lines as displayed
 - **WHEN** the response panel's upper bound is computed
 - **THEN** the longest line SHALL be measured across the status line, the header lines (when verbose mode is on), and the body lines as formatted for display, in display cells
 
-#### Scenario: Max line width for response panel uses formatted body in non-raw mode
+#### Scenario: Bound uses formatted body in non-raw mode
 - **WHEN** `rawMode` is `false` and a compact single-line JSON body is expanded into multiple shorter indented lines for display
 - **THEN** the bound SHALL be derived from the expanded display lines, so that at the bound every displayed line remains fully visible
 
-#### Scenario: Max line width for response panel uses raw body in raw mode
+#### Scenario: Bound uses raw body in raw mode
 - **WHEN** `rawMode` is `true`
 - **THEN** the body SHALL be displayed unformatted, so the bound SHALL be derived from the raw body lines as-is
 
@@ -69,7 +69,7 @@ The system SHALL define a `SCROLL_HORIZONTAL` action type with `direction: 'left
 - **WHEN** the panel has no content (no requests, or no response)
 - **THEN** the horizontal offset SHALL be clamped to `0`
 
-#### Scenario: Default columns value
+#### Scenario: Default width when none provided
 - **WHEN** `columns` is not provided in the `SCROLL_HORIZONTAL` action
 - **THEN** the bound SHALL be computed as if the terminal were 80 columns wide in the current layout (split or fullscreen)
 
@@ -206,7 +206,7 @@ No other state fields SHALL be modified by `JUMP_HORIZONTAL`.
 - **WHEN** `focusedPanel` is `response`, `wrapMode` is `'wrap'`, and either `JUMP_HORIZONTAL { direction: 'start' }` or `JUMP_HORIZONTAL { direction: 'end' }` is dispatched
 - **THEN** the reducer SHALL return state unchanged
 
-#### Scenario: Default columns value
+#### Scenario: Default width when none provided
 - **WHEN** `JUMP_HORIZONTAL { direction: 'end' }` is dispatched without a `columns` field
 - **THEN** the bound SHALL be computed as if the terminal were 80 columns wide in the current layout (split or fullscreen)
 
