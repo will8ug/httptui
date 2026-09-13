@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { createInitialState } from '../helpers/state';
-import { makeRequests } from '../helpers/requests';
-import { longResponse, compactJsonResponse } from '../helpers/responses';
+import { createRequest, makeRequests } from '../helpers/requests';
+import { longResponse, compactJsonResponse, createMockResponse } from '../helpers/responses';
 import { reducer, clamp } from '../../src/core/reducer';
 import { getMaxRequestLineWidth, getMaxResponseLineWidth, getMaxDetailsLineWidth } from '../../src/utils/scroll';
 import type { Action, AppState, ParsedRequest, ResponseData } from '../../src/core/types';
-import { getRequestContentWidth, getResponseContentWidth } from '../../src/utils/layout';
+import { getPanelContentWidth, getRequestContentWidth, getResponseContentWidth } from '../../src/utils/layout';
 
 describe('JUMP_VERTICAL reducer', () => {
   describe('requests panel', () => {
@@ -309,5 +309,116 @@ describe('JUMP_HORIZONTAL reducer', () => {
 
       expect(resultDefault.requestHorizontalOffset).toBe(resultExplicit.requestHorizontalOffset);
     });
+  });
+});
+
+describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
+  const columns = 200;
+  const longUrl = 'https://api.example.com/' + 'x'.repeat(300);
+
+  it('direction: "end" with maximized requests panel lands on the fullscreen bound', () => {
+    const state = createInitialState({
+      focusedPanel: 'requests',
+      maximizedPanel: 'requests',
+      requests: [createRequest({ url: longUrl })],
+    });
+    const expected = Math.max(
+      0,
+      getMaxRequestLineWidth({ requests: state.requests, variables: state.variables }) -
+        getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns }),
+    );
+
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+
+    expect(result.requestHorizontalOffset).toBe(expected);
+    expect(expected).toBeGreaterThan(0);
+  });
+
+  it('direction: "end" with maximized details panel lands on the fullscreen bound', () => {
+    const state = createInitialState({
+      focusedPanel: 'details',
+      maximizedPanel: 'details',
+      requests: [createRequest({ url: longUrl })],
+    });
+    const expected = Math.max(
+      0,
+      getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables }) -
+        getPanelContentWidth({ panel: 'details', maximizedPanel: 'details', columns }),
+    );
+
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+
+    expect(result.detailsHorizontalOffset).toBe(expected);
+    expect(expected).toBeGreaterThan(0);
+  });
+
+  it('direction: "end" with maximized response panel lands on the fullscreen bound', () => {
+    const state = createInitialState({
+      focusedPanel: 'response',
+      maximizedPanel: 'response',
+      response: createMockResponse({ body: 'x'.repeat(300) }),
+      wrapMode: 'nowrap',
+    });
+    const expected = Math.max(
+      0,
+      getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode }) -
+        getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns }),
+    );
+
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+
+    expect(result.responseHorizontalOffset).toBe(expected);
+    expect(expected).toBeGreaterThan(0);
+  });
+
+  it('direction: "start" resets the offset to 0 while the panel is maximized', () => {
+    const state = createInitialState({
+      focusedPanel: 'response',
+      maximizedPanel: 'response',
+      response: longResponse,
+      responseHorizontalOffset: 50,
+      wrapMode: 'nowrap',
+    });
+
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'start' });
+
+    expect(result.responseHorizontalOffset).toBe(0);
+  });
+
+  it('direction: "end" returns state unchanged when wrapMode is wrap and the response panel is maximized', () => {
+    const state = createInitialState({
+      focusedPanel: 'response',
+      maximizedPanel: 'response',
+      response: longResponse,
+      responseHorizontalOffset: 15,
+      wrapMode: 'wrap',
+    });
+
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+
+    expect(result).toBe(state);
+    expect(result.responseHorizontalOffset).toBe(15);
+  });
+
+  it('direction: "end" uses the split bound when a different panel is maximized', () => {
+    const state = createInitialState({
+      focusedPanel: 'requests',
+      maximizedPanel: 'response',
+      requests: makeRequests(1, { longUrl: true }),
+    });
+    const maxWidth = getMaxRequestLineWidth({ requests: state.requests, variables: state.variables });
+    const splitWidth = getPanelContentWidth({ panel: 'requests', maximizedPanel: 'response', columns });
+    const expected = Math.max(0, maxWidth - splitWidth);
+    const fullscreenBound = Math.max(
+      0,
+      maxWidth - getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns }),
+    );
+
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+
+    expect(splitWidth).toBe(getRequestContentWidth(columns));
+    expect(result.requestHorizontalOffset).toBe(expected);
+    expect(result.requestHorizontalOffset).not.toBe(fullscreenBound);
+    expect(expected).toBeGreaterThan(0);
   });
 });

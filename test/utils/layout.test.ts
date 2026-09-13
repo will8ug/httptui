@@ -8,6 +8,11 @@ import {
   getEditorContentWidth,
   getEditorVisibleHeight,
   getEnvPickerVisibleHeight,
+  getFullscreenContentWidth,
+  getFullscreenRequestContentWidth,
+  getPanelContentWidth,
+  getRequestContentWidth,
+  getResponseContentWidth,
 } from '../../src/utils/layout';
 
 describe('getEnvPickerVisibleHeight', () => {
@@ -87,5 +92,70 @@ describe('getEditorVisibleHeight', () => {
   it('returns 3 on tiny terminals', () => {
     expect(getEditorVisibleHeight(10)).toBe(3);
     expect(getEditorVisibleHeight(1)).toBe(3);
+  });
+});
+
+describe('getPanelContentWidth', () => {
+  it('returns split widths when no panel is maximized', () => {
+    for (const columns of [30, 80, 120, 200]) {
+      expect(getPanelContentWidth({ panel: 'requests', maximizedPanel: null, columns })).toBe(
+        getRequestContentWidth(columns),
+      );
+      expect(getPanelContentWidth({ panel: 'response', maximizedPanel: null, columns })).toBe(
+        getResponseContentWidth(columns),
+      );
+      expect(getPanelContentWidth({ panel: 'details', maximizedPanel: null, columns })).toBe(
+        getResponseContentWidth(columns),
+      );
+    }
+    expect(getPanelContentWidth({ panel: 'requests', maximizedPanel: null, columns: 80 })).toBe(21);
+    expect(getPanelContentWidth({ panel: 'response', maximizedPanel: null, columns: 80 })).toBe(51);
+  });
+
+  it('returns fullscreen widths when the queried panel is maximized', () => {
+    for (const columns of [30, 80, 120, 200]) {
+      expect(
+        getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns }),
+      ).toBe(getFullscreenRequestContentWidth(columns));
+      expect(
+        getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns }),
+      ).toBe(getFullscreenContentWidth(columns));
+      expect(
+        getPanelContentWidth({ panel: 'details', maximizedPanel: 'details', columns }),
+      ).toBe(getFullscreenContentWidth(columns));
+    }
+    expect(getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns: 80 })).toBe(76);
+    expect(getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns: 80 })).toBe(76);
+  });
+
+  it('returns split widths when a different panel is maximized', () => {
+    for (const columns of [30, 80, 200]) {
+      expect(
+        getPanelContentWidth({ panel: 'response', maximizedPanel: 'requests', columns }),
+      ).toBe(getResponseContentWidth(columns));
+      expect(
+        getPanelContentWidth({ panel: 'details', maximizedPanel: 'requests', columns }),
+      ).toBe(getResponseContentWidth(columns));
+      expect(
+        getPanelContentWidth({ panel: 'requests', maximizedPanel: 'response', columns }),
+      ).toBe(getRequestContentWidth(columns));
+      expect(
+        getPanelContentWidth({ panel: 'requests', maximizedPanel: 'details', columns }),
+      ).toBe(getRequestContentWidth(columns));
+      expect(
+        getPanelContentWidth({ panel: 'response', maximizedPanel: 'details', columns }),
+      ).toBe(getResponseContentWidth(columns));
+      expect(
+        getPanelContentWidth({ panel: 'details', maximizedPanel: 'response', columns }),
+      ).toBe(getResponseContentWidth(columns));
+    }
+  });
+
+  it('keeps the MIN_* content-width floors on narrow terminals', () => {
+    expect(getPanelContentWidth({ panel: 'response', maximizedPanel: null, columns: 30 })).toBe(20);
+    expect(getPanelContentWidth({ panel: 'details', maximizedPanel: null, columns: 30 })).toBe(20);
+    expect(getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns: 10 })).toBe(20);
+    expect(getPanelContentWidth({ panel: 'details', maximizedPanel: 'details', columns: 10 })).toBe(20);
+    expect(getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns: 10 })).toBe(10);
   });
 });
