@@ -14,12 +14,12 @@ The vertical axis already models the fix: `computeLayoutMetrics` produces `effec
 - The horizontal clamp bound matches the width the focused panel is actually rendered at, in both layouts, for all three panels.
 - A single width-selection point shared by all six clamp computations, so the render/clamp divergence cannot reappear per-panel.
 - Navigation spec scenarios state observable outcomes (where the offset stops), not width formulas.
+- The response/details content-width budget is verified to match the panel's true rendered content area (chrome measured, not assumed), so the reworded "right edge" scenarios hold literally.
 
 **Non-Goals:**
 
 - Fixing the same-family vertical-axis consumers that also use the split width (`getResponseTotalLines`, `getBodyVisualStart`, `computeVerticalMaxOffset`, status-bar line count in `App.tsx`) — next change; they will consume the same helper introduced here.
 - Changing the horizontal action contracts (see Decision 3).
-- Revisiting `RESPONSE_PANEL_CHROME = 6` vs the true 4-cell box chrome (a 2-cell conservative slack affecting truncation in both layouts — cosmetic, independent).
 - Re-clamping offsets on terminal resize (pre-existing behavior in both layouts, unchanged).
 
 ## Decisions
@@ -51,9 +51,22 @@ If a second, independent reason to stop the reducer seeing `columns` ever appear
 
 The navigation spec's clamp scenarios previously pinned formulas (`max(20, columns - leftPanelWidth - 6)`, helper names, import sources). The delta replaces them with observable statements ("scrolling stops when the longest displayed line's last character meets the right edge of the panel's content area at its current layout") plus per-panel fullscreen scenarios — same precedent as the status-bar spec's observable-behavior reword. Vertical-axis scenarios that name helpers but no formulas are left for the family change.
 
+### Decision 5: Chrome constant resolved by measurement, not assumption
+
+`RESPONSE_PANEL_CHROME = 6` is annotated "plus 2 for adjacent panel border overlap", but the split layout gives the response box exactly `columns − leftPanelWidth` of outer width and no overlapping border exists; the true box chrome appears to be border (2) + paddingX (2) = 4 cells, consistent with `REQUEST_PANEL_CHROME = 4` and `EDITOR_HORIZONTAL_CHROME = 4`. The original intent of the +2 is unverifiable from the code — fossil or deliberate breathing room — and silently picking a side is the failure mode the `recursive-body-synthesis` precedent warns about.
+
+Process: measure first, then apply the outcome inside this change:
+
+- A component test renders the response panel at a known terminal width with a body line exactly as wide as the candidate content width (`columns − 4`) and checks that the border is neither overlapped nor the line wrapped/truncated. That pins the real chrome as a permanent regression test.
+- True chrome is 4 → the constant drops to 4; response/details content widths widen by 2 cells consistently everywhere (render budget, clamp bound, and wrap boundary all consume the same width functions, so nothing diverges).
+- The +2 proves load-bearing → the constant stays 6, its comment is rewritten to state the actual reason, and the spec's "right edge of the content area" wording tolerates a documented conservative budget.
+
+Why here rather than deferred: the reworded scenarios (Decision 4) claim the offset stops when the longest line's last character "reaches the right edge of the panel's content area" — with a 2-cell conservative budget that claim is not literally true — and the helper and width tests being written now would otherwise be re-touched by a later change for a one-constant edit.
+
 ## Risks / Trade-offs
 
 - [Wrong width selected for a constructed `maximizedPanel ≠ focusedPanel` state] → Mitigated by Decision 2's equality guard; a dedicated test pins the behavior.
 - [Helper's floor semantics diverge from the render path over time] → The helper delegates to the same `get*ContentWidth` functions the render path uses (`layout-metrics.ts` calls the same primitives); no arithmetic is duplicated.
 - [Reduced spec precision — a formula was previously copy-checkable] → Traded for implementation freedom; the observable scenarios remain testable by asserting the final offset value against the helper-derived expectation in reducer tests.
 - [Existing tests silently encoding the buggy bound] → None do: no current test maximizes a panel while asserting a horizontal bound; existing tests exercise split-mode bounds only, which are unchanged.
+- [Empirical check contradicts the 4-cell analysis after reducer tests are written] → Reducer tests assert bounds against the helper's output, not literal widths, so a constant flip does not invalidate them; the measurement task is ordered before anything depends on the literal value, and only the layout-helper expectations (updated in the same task) pin it.
