@@ -88,13 +88,15 @@ httptui api.http -E Staging
 
 ## Keyboard Shortcuts
 
+While a panel is fullscreen (`f`), only navigation and keys relevant to the visible panel are active; all other shortcuts are disabled until you leave fullscreen.
+
 ### General
 
 | Key | Action |
 |-----|--------|
 | `?` | Toggle help overlay |
-| `Escape` | Close current overlay / Cancel in-flight request / Exit fullscreen / Dismiss search results |
-| `q` | Dismiss search results when shown, otherwise quit application |
+| `Escape` | Close current overlay / Cancel in-flight request / Dismiss search results / Exit fullscreen (when the response panel is fullscreen with active search results, clear the search first, then press Escape again to exit) |
+| `q` | Dismiss search results when shown, otherwise quit application (while fullscreen, quit is disabled; leave fullscreen or use `Ctrl+C` to exit) |
 
 ### Navigation
 
@@ -114,7 +116,7 @@ httptui api.http -E Staging
 
 | Key | Action |
 |-----|--------|
-| `Enter` | Send selected request |
+| `Enter` | Send selected request (not while a panel is fullscreen) |
 | `R` | Reload file from disk |
 | `o` | Open a different .http file |
 | `E` | Switch environment |
@@ -127,21 +129,21 @@ httptui api.http -E Staging
 
 | Key | Action |
 |-----|--------|
-| `v` | Toggle verbose mode (show/hide headers) |
-| `r` | Toggle raw mode (no JSON formatting) |
-| `w` | Toggle text wrapping |
-| `d` | Toggle request details panel |
+| `v` | Toggle verbose mode (show/hide headers); only when the response panel is fullscreen or no panel is fullscreen |
+| `r` | Toggle raw mode (no JSON formatting); only when the response panel is fullscreen or no panel is fullscreen |
+| `w` | Toggle text wrapping; only when the response panel is fullscreen or no panel is fullscreen |
+| `d` | Toggle request details panel (no-op while fullscreen) |
 | `f` | Toggle fullscreen |
 
 ### Search
 
 | Key | Action |
 |-----|--------|
-| `/` | Search response body |
-| `n` | Go to next match |
-| `N` | Go to previous match |
+| `/` | Search response body (only when the response panel is fullscreen or no panel is fullscreen) |
+| `n` | Go to next match (only when the response panel is fullscreen or no panel is fullscreen) |
+| `N` | Go to previous match (only when the response panel is fullscreen or no panel is fullscreen) |
 | `Escape` | Dismiss search results |
-| `q` | Dismiss search results when shown, otherwise quit |
+| `q` | Dismiss search results when shown, otherwise quit (while fullscreen, dismisses results but does not quit) |
 
 ### Edit
 

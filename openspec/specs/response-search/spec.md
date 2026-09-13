@@ -7,7 +7,7 @@ Search within the response body via `/` key, with case-insensitive matching, mat
 ## Requirements
 
 ### Requirement: Enter search mode with `/` key
-The system SHALL enter search mode when the user presses `/` in normal mode. Search mode SHALL only be enterable when the response panel has a response (i.e., `state.response` is not null). Upon entering search mode, the focused panel SHALL be set to `response` and the search query SHALL be initialized to an empty string.
+The system SHALL enter search mode when the user presses `/` in normal mode. Search mode SHALL only be enterable when the response panel has a response (i.e., `state.response` is not null). While a panel other than the response panel is maximized, `/` SHALL be a no-op (see the **fullscreen-panel** spec). Upon entering search mode, the focused panel SHALL be set to `response` and the search query SHALL be initialized to an empty string.
 
 #### Scenario: Pressing `/` with a response loaded
 - **WHEN** the app is in normal mode and a response exists
@@ -91,7 +91,7 @@ Match computation SHALL run against the output of `formatResponseBody(response.b
 - **THEN** matches SHALL be computed against the raw (unformatted) body text
 
 ### Requirement: Navigate to next match with `n`
-In normal mode, pressing `n` SHALL advance `currentMatchIndex` by 1 and scroll the response panel to the corresponding match line. If `currentMatchIndex` is at the last match, it SHALL wrap around to 0 (first match).
+In normal mode, pressing `n` SHALL advance `currentMatchIndex` by 1 and scroll the response panel to the corresponding match line. If `currentMatchIndex` is at the last match, it SHALL wrap around to 0 (first match). While a panel other than the response panel is maximized, `n` SHALL be a no-op (see the **fullscreen-panel** spec).
 
 #### Scenario: Next match within range
 - **WHEN** `searchMatches` is `[2, 5, 12]` and `currentMatchIndex` is `0`
@@ -106,7 +106,7 @@ In normal mode, pressing `n` SHALL advance `currentMatchIndex` by 1 and scroll t
 - **THEN** pressing `n` SHALL have no effect
 
 ### Requirement: Navigate to previous match with `N`
-In normal mode, pressing `N` SHALL decrement `currentMatchIndex` by 1 and scroll the response panel to the corresponding match line. If `currentMatchIndex` is at the first match (0), it SHALL wrap around to the last match.
+In normal mode, pressing `N` SHALL decrement `currentMatchIndex` by 1 and scroll the response panel to the corresponding match line. If `currentMatchIndex` is at the first match (0), it SHALL wrap around to the last match. While a panel other than the response panel is maximized, `N` SHALL be a no-op (see the **fullscreen-panel** spec).
 
 #### Scenario: Previous match within range
 - **WHEN** `searchMatches` is `[2, 5, 12]` and `currentMatchIndex` is `1`
@@ -208,6 +208,8 @@ When in search mode, `ResponseView` SHALL display a search bar pinned to the bot
 ### Requirement: Dismiss search results with Escape
 In normal mode, when search results are active (non-empty `searchMatches` or non-empty `lastSearchQuery`), pressing Escape SHALL clear all search state and remove the search bar and match indicators. If no search results are active, Escape SHALL have no effect.
 
+While the response panel is maximized, this dismissal SHALL take priority over exiting fullscreen: `Escape` clears the search state, removes the search bar and match indicators, and the panel remains maximized; a subsequent `Escape` exits fullscreen (see the **fullscreen-panel** spec). While a panel other than the response panel is maximized, `Escape` exits fullscreen first and the search state remains active until cleared after exiting.
+
 #### Scenario: Escape dismisses active matches
 - **WHEN** the app is in normal mode with active search matches
 - **THEN** pressing Escape SHALL clear all search state (`searchQuery`, `searchMatches`, `currentMatchIndex`, `lastSearchQuery`)
@@ -216,13 +218,24 @@ In normal mode, when search results are active (non-empty `searchMatches` or non
 #### Scenario: Escape dismisses no-match search bar
 - **WHEN** the app is in normal mode with `lastSearchQuery` set but `searchMatches` empty (no matches found)
 - **THEN** pressing Escape SHALL clear all search state
-#### Scenario: Escape with no search state is a no-op
 
+#### Scenario: Escape with no search state is a no-op
 - **WHEN** the app is in normal mode with no active search state
 - **THEN** pressing Escape SHALL have no effect
 
+#### Scenario: Escape dismisses results in a maximized response panel before exiting fullscreen
+- **WHEN** the response panel is maximized and search results are active, and the user presses `Escape`
+- **THEN** the search state SHALL be cleared and the response panel SHALL remain maximized
+- **AND** a subsequent `Escape` SHALL exit fullscreen
+
 ### Requirement: Dismiss search results with the quit key
-In normal mode, when search results are active (non-empty `searchMatches` or non-empty `lastSearchQuery`), pressing `q` SHALL clear all search state and remove the search bar and match indicators, and SHALL NOT exit the application. When no search results are active, `q` SHALL retain its quit behavior as specified by the **tui** and **unsaved-changes** specs.
+In normal mode, when search results are active (non-empty `searchMatches` or non-empty `lastSearchQuery`), pressing `q` SHALL clear all search state and remove the search bar and match indicators, and SHALL NOT exit the application. When no search results are active, `q` SHALL retain its quit behavior as specified by the **tui** and **unsaved-changes** specs — except while a panel is maximized, where `q` SHALL be a no-op that neither exits the application nor opens the unsaved-changes confirmation prompt (see the **fullscreen-panel** spec).
+
+Dismissal SHALL be indistinguishable from dismissing with Escape: the same state is cleared and the same panel content results. Because the press is a dismissal and not a quit, it SHALL NOT be intercepted by the unsaved-changes confirmation prompt, and it SHALL NOT produce a status-bar message.
+
+This requirement governs `q` only while search results are displayed in normal mode. While the user is still typing a query, `q` remains an ordinary query character, as specified by the search-input requirements in this spec.
+
+Fullscreen and in-flight requests SHALL be unaffected by `q`. While the response panel is maximized, `Escape` and `q` both clear search results without leaving fullscreen (see the **fullscreen-panel** spec for Escape's priority); `q` clears search results regardless of which panel is maximized, and leaves the maximized panel maximized. The quit fallback is the only part of `q`'s behavior that fullscreen restricts.
 
 Dismissal SHALL be indistinguishable from dismissing with Escape: the same state is cleared and the same panel content results. Because the press is a dismissal and not a quit, it SHALL NOT be intercepted by the unsaved-changes confirmation prompt, and it SHALL NOT produce a status-bar message.
 
@@ -244,12 +257,12 @@ Fullscreen and in-flight requests SHALL be unaffected by `q`. Where Escape gives
 
 #### Scenario: The quit key still quits once results are dismissed
 
-- **WHEN** search results have just been dismissed by pressing `q` and no unsaved changes exist
+- **WHEN** search results have just been dismissed by pressing `q`, no panel is maximized, and no unsaved changes exist
 - **THEN** pressing `q` again SHALL exit the application
 
 #### Scenario: The quit key quits when no search results are displayed
 
-- **WHEN** the app is in normal mode with no active search state and no unsaved changes
+- **WHEN** the app is in normal mode, no panel is maximized, no active search state exists, and no unsaved changes exist
 - **THEN** pressing `q` SHALL exit the application
 
 #### Scenario: Dismissal leaves a maximized panel maximized
