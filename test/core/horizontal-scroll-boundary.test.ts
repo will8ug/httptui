@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../src/utils/scroll';
+import { getMaxDetailsLineWidth, getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../src/utils/scroll';
 import { formatResponseBody } from '../../src/core/formatter';
 import { formatStatusLine } from '../../src/core/response-layout';
 import type { Action, AppState, ParsedRequest } from '../../src/core/types';
-import { getRequestContentWidth, getLeftPanelWidth, getResponseContentWidth, getDetailPanelHeight } from '../../src/utils/layout';
+import { getRequestContentWidth, getLeftPanelWidth, getResponseContentWidth, getDetailPanelHeight, getPanelContentWidth } from '../../src/utils/layout';
 import { createInitialState, reducer } from '../helpers/state';
-import { makeRequests } from '../helpers/requests';
-import { compactJsonResponse } from '../helpers/responses';
+import { createRequest, makeRequests } from '../helpers/requests';
+import { compactJsonResponse, createMockResponse } from '../helpers/responses';
 
 const longUrlRequests: ParsedRequest[] = makeRequests(1, { longUrl: true });
 const shortUrlRequests: ParsedRequest[] = makeRequests(1);
@@ -25,9 +25,9 @@ describe('Layout utilities', () => {
   });
 
   it('getResponseContentWidth returns right panel content width, min 20', () => {
-    expect(getResponseContentWidth(100)).toBe(64); // 100 - 30 - 6 = 64
-    expect(getResponseContentWidth(80)).toBe(49); // 80 - 25 - 6 = 49
-    expect(getResponseContentWidth(50)).toBe(20); // 50 - 25(max(15,25)) - 6 = 19, min 20
+    expect(getResponseContentWidth(100)).toBe(66); // 100 - 30 - 4 = 66
+    expect(getResponseContentWidth(80)).toBe(51); // 80 - 25 - 4 = 51
+    expect(getResponseContentWidth(50)).toBe(21); // 50 - 25(max(15,25)) - 4 = 21
   });
 
   it('getDetailPanelHeight returns min(total, max) + 2 border rows', () => {
@@ -261,6 +261,109 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
 
       expect(currentState.responseHorizontalOffset).toBe(formattedBound);
       expect(currentState.responseHorizontalOffset).toBeLessThan(rawMaxBodyLine);
+    });
+  });
+});
+
+describe('SCROLL_HORIZONTAL fullscreen boundary (maximized panel clamps at fullscreen width)', () => {
+  const columns = 200;
+
+  describe('maximized response panel', () => {
+    // Body of exactly 250 cells; not JSON, so it displays as one unformatted line.
+    const wideResponse = createMockResponse({ body: 'x'.repeat(250), size: { bodyBytes: 250 } });
+
+    it('clamps at the fullscreen content width when the response panel is maximized', () => {
+      const state = createInitialState({
+        focusedPanel: 'response',
+        maximizedPanel: 'response',
+        wrapMode: 'nowrap',
+        response: wideResponse,
+      });
+      const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
+      const fullscreenWidth = getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns });
+      const expectedBound = Math.max(0, maxLineWidth - fullscreenWidth);
+      // 250-cell body line - (200 columns - 4 chrome) = 54
+      expect(maxLineWidth).toBe(250);
+      expect(expectedBound).toBe(54);
+
+      // The split-layout response width at 200 columns is 160, so a split-based bound
+      // would be 90 — the fullscreen clamp must stop 36 cells earlier.
+      const splitBound = Math.max(0, maxLineWidth - getResponseContentWidth(columns));
+      expect(splitBound - expectedBound).toBe(36);
+
+      let currentState = state;
+      for (let i = 0; i < 100; i += 1) {
+        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns });
+        expect(currentState.responseHorizontalOffset).toBeLessThanOrEqual(expectedBound);
+      }
+
+      expect(currentState.responseHorizontalOffset).toBe(expectedBound);
+    });
+  });
+
+  describe('maximized requests panel', () => {
+    // Pathname of 30 `segment/` groups (241 cells); displayed line = 2 + 7 + 241 = 250 cells.
+    const longPathRequests = [createRequest({ url: `https://api.example.com/${'segment/'.repeat(30)}` })];
+
+    it('clamps at the fullscreen request width when the requests panel is maximized', () => {
+      const state = createInitialState({
+        focusedPanel: 'requests',
+        maximizedPanel: 'requests',
+        requests: longPathRequests,
+      });
+      const maxLineWidth = getMaxRequestLineWidth({ requests: state.requests, variables: state.variables });
+      const fullscreenWidth = getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns });
+      const expectedBound = Math.max(0, maxLineWidth - fullscreenWidth);
+      // 250-cell request line - (200 columns - 4 chrome) = 54
+      expect(maxLineWidth).toBe(250);
+      expect(expectedBound).toBe(54);
+
+      // The split-layout request width at 200 columns is 32, so a split-based bound
+      // would be 218 — a 164-cell correction separates it from the fullscreen bound.
+      const splitBound = Math.max(0, maxLineWidth - getRequestContentWidth(columns));
+      expect(splitBound - expectedBound).toBe(164);
+
+      let currentState = state;
+      for (let i = 0; i < 100; i += 1) {
+        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns });
+        expect(currentState.requestHorizontalOffset).toBeLessThanOrEqual(expectedBound);
+      }
+
+      expect(currentState.requestHorizontalOffset).toBe(expectedBound);
+    });
+  });
+
+  describe('maximized details panel', () => {
+    // Body of exactly 250 cells; the `GET <url>` line (33 cells) is shorter.
+    const wideBodyRequest = createRequest({ body: 'y'.repeat(250) });
+
+    it('clamps at the fullscreen content width when the details panel is maximized', () => {
+      const state = createInitialState({
+        focusedPanel: 'details',
+        maximizedPanel: 'details',
+        showRequestDetails: true,
+        requests: [wideBodyRequest],
+        selectedIndex: 0,
+      });
+      const maxLineWidth = getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables });
+      const fullscreenWidth = getPanelContentWidth({ panel: 'details', maximizedPanel: 'details', columns });
+      const expectedBound = Math.max(0, maxLineWidth - fullscreenWidth);
+      // 250-cell body line - (200 columns - 4 chrome) = 54
+      expect(maxLineWidth).toBe(250);
+      expect(expectedBound).toBe(54);
+
+      // The split-layout details width at 200 columns is 160, so a split-based bound
+      // would be 90 — the fullscreen clamp must stop 36 cells earlier.
+      const splitBound = Math.max(0, maxLineWidth - getResponseContentWidth(columns));
+      expect(splitBound - expectedBound).toBe(36);
+
+      let currentState = state;
+      for (let i = 0; i < 100; i += 1) {
+        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns });
+        expect(currentState.detailsHorizontalOffset).toBeLessThanOrEqual(expectedBound);
+      }
+
+      expect(currentState.detailsHorizontalOffset).toBe(expectedBound);
     });
   });
 });

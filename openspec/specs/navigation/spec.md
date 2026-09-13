@@ -14,54 +14,64 @@ The system SHALL track horizontal scroll offsets for all panels via `requestHori
 - **THEN** `requestHorizontalOffset` SHALL be `0`, `responseHorizontalOffset` SHALL be `0`, and `detailsHorizontalOffset` SHALL be `0`
 
 ### Requirement: SCROLL_HORIZONTAL action
-The system SHALL define a `SCROLL_HORIZONTAL` action type with `direction: 'left' | 'right'` and an optional `columns` field in the `Action` union type. The reducer SHALL clamp the horizontal offset to an upper bound so that scrolling right stops when the last character of the longest content line reaches the right edge of the visible panel width.
+The system SHALL define a `SCROLL_HORIZONTAL` action type with `direction: 'left' | 'right'` and an optional `columns` field in the `Action` union type. The reducer SHALL clamp the focused panel's horizontal offset to an upper bound so that scrolling right stops when the last character of the longest displayed line reaches the right edge of the panel's visible content area at its current layout: the split-layout content width in the normal view, and the fullscreen content width while that panel is maximized. The bound SHALL always be derived from the lines the panel actually displays, so that at the bound every displayed line of the panel is fully visible.
 
 #### Scenario: Scroll right on focused panel
-- **WHEN** the user presses `→` or `l` and the focused panel is `requests`
-- **THEN** the system SHALL dispatch `{ type: 'SCROLL_HORIZONTAL', direction: 'right', columns }` where `columns` is the current terminal width, and the reducer SHALL increment `requestHorizontalOffset` by `2`, clamped to a maximum of `max(0, maxRequestLineWidth - requestContentWidth)`
+- **WHEN** the user presses `→` or `l` and the focused panel is `requests` in the normal view
+- **THEN** the system SHALL dispatch `{ type: 'SCROLL_HORIZONTAL', direction: 'right', columns }` where `columns` is the current terminal width, and the request list's horizontal offset SHALL increase by 2, stopping once the longest displayed request line's last character reaches the right edge of the request panel's content area
 
 #### Scenario: Scroll left on focused panel
 - **WHEN** the user presses `←` or `h`
-- **THEN** the system SHALL dispatch `{ type: 'SCROLL_HORIZONTAL', direction: 'left' }` and the reducer SHALL decrement the focused panel's horizontal offset by `2`, clamped to a minimum of `0`
+- **THEN** the system SHALL dispatch `{ type: 'SCROLL_HORIZONTAL', direction: 'left' }` and the focused panel's horizontal offset SHALL decrease by 2, clamped to a minimum of `0`
 
 #### Scenario: Scroll right on response panel
-- **WHEN** the user presses `→` or `l` and the focused panel is `response`
-- **THEN** the system SHALL dispatch `{ type: 'SCROLL_HORIZONTAL', direction: 'right', columns }` where `columns` is the current terminal width, and the reducer SHALL increment `responseHorizontalOffset` by `2`, clamped to a maximum of `max(0, maxResponseLineWidth - responseContentWidth)`
+- **WHEN** the user presses `→` or `l` and the focused panel is `response` in the normal view
+- **THEN** the response panel's horizontal offset SHALL increase by 2, stopping once the longest displayed response line's last character reaches the right edge of the response panel's split-layout content area
 
 #### Scenario: Scroll left on response panel
 - **WHEN** the user presses `←` or `h` and the focused panel is `response`
-- **THEN** the system SHALL decrement `responseHorizontalOffset` by `2`, clamped to a minimum of `0`
+- **THEN** the response panel's horizontal offset SHALL decrease by 2, clamped to a minimum of `0`
 
-#### Scenario: Scroll right stops when content right edge is within panel
-- **WHEN** the horizontal offset equals or exceeds `maxLineWidth - contentWidth`
+#### Scenario: Scroll right stops at the panel's rendered width
+- **WHEN** the horizontal offset equals the upper bound for the panel's current layout (split or fullscreen)
 - **AND** the user presses `→` or `l`
-- **THEN** the horizontal offset SHALL NOT increase further; it SHALL be clamped to `max(0, maxLineWidth - contentWidth)`
+- **THEN** the horizontal offset SHALL NOT increase further; it SHALL be clamped at the offset where the longest displayed line's last character reaches the right edge of the panel's content area at its current layout
 
-#### Scenario: Max line width for request panel
-- **WHEN** computing the upper bound for `requestHorizontalOffset`
-- **THEN** `maxRequestLineWidth` SHALL be the length of the longest formatted request line (prefix + padded method + target path) across all requests, and `requestContentWidth` SHALL be `max(10, leftPanelWidth - 4)` where `leftPanelWidth` is `clamp(floor(columns * 0.3), 25, 36)`
+#### Scenario: Fullscreen response panel clamps at fullscreen width
+- **WHEN** the response panel is maximized, wrap mode is off, and the user scrolls right to the bound
+- **THEN** scrolling SHALL stop exactly when the longest displayed line's last character meets the right edge of the maximized panel's content area — the bound SHALL use the fullscreen content width, not the narrower split-layout width
 
-#### Scenario: Max line width for response panel
-- **WHEN** computing the upper bound for `responseHorizontalOffset`
-- **THEN** `maxResponseLineWidth` SHALL be the length of the longest line across the status line, header lines (if verbose mode is on), and the **formatted** body lines, where the formatted body lines SHALL be the lines of `formatResponseBody(response.body, rawMode)` — the same string the `ResponseView` component renders. `responseContentWidth` SHALL be `max(20, columns - leftPanelWidth - 6)` where `leftPanelWidth` is `clamp(floor(columns * 0.3), 25, 36)`
+#### Scenario: Fullscreen requests panel clamps at fullscreen width
+- **WHEN** the requests panel is maximized and the user scrolls right to the bound
+- **THEN** scrolling SHALL stop exactly when the longest displayed request line's last character meets the right edge of the maximized panel's content area — the bound SHALL use the fullscreen content width, not the split-layout request width
 
-#### Scenario: Max line width for response panel uses formatted body in non-raw mode
-- **WHEN** `rawMode` is `false` and `response.body` is compact JSON (a single line whose length exceeds the content width) that `formatResponseBody` expands into multiple shorter indented lines
-- **AND** the upper bound for `responseHorizontalOffset` is computed
-- **THEN** `maxResponseLineWidth` SHALL be derived from the expanded (formatted) body lines, NOT from the raw `response.body` lines
-- **AND** the resulting `max(0, maxResponseLineWidth - responseContentWidth)` SHALL be small enough that every rendered line remains visible when `responseHorizontalOffset` is set to that bound
+#### Scenario: Fullscreen details panel clamps at fullscreen width
+- **WHEN** the details panel is maximized and the user scrolls right to the bound
+- **THEN** scrolling SHALL stop exactly when the longest displayed details line's last character meets the right edge of the maximized panel's content area — the bound SHALL use the fullscreen content width, not the narrower split-layout width
 
-#### Scenario: Max line width for response panel uses raw body in raw mode
+#### Scenario: Bound uses the request lines as displayed
+- **WHEN** the requests panel's upper bound is computed
+- **THEN** the longest line SHALL be measured across the request lines as displayed in the list (the padded method label and target path) over all requests, in display cells
+
+#### Scenario: Bound uses the response lines as displayed
+- **WHEN** the response panel's upper bound is computed
+- **THEN** the longest line SHALL be measured across the status line, the header lines (when verbose mode is on), and the body lines as formatted for display, in display cells
+
+#### Scenario: Bound uses formatted body in non-raw mode
+- **WHEN** `rawMode` is `false` and a compact single-line JSON body is expanded into multiple shorter indented lines for display
+- **THEN** the bound SHALL be derived from the expanded display lines, so that at the bound every displayed line remains fully visible
+
+#### Scenario: Bound uses raw body in raw mode
 - **WHEN** `rawMode` is `true`
-- **THEN** `formatResponseBody(response.body, true)` SHALL return `response.body` unchanged, so `maxResponseLineWidth` SHALL equal the longest raw body line length (no behavior change from before this fix)
+- **THEN** the body SHALL be displayed unformatted, so the bound SHALL be derived from the raw body lines as-is
 
 #### Scenario: Empty or no content
 - **WHEN** the panel has no content (no requests, or no response)
 - **THEN** the horizontal offset SHALL be clamped to `0`
 
-#### Scenario: Default columns value
+#### Scenario: Default width when none provided
 - **WHEN** `columns` is not provided in the `SCROLL_HORIZONTAL` action
-- **THEN** the reducer SHALL default `columns` to `80` for backward compatibility and testability
+- **THEN** the bound SHALL be computed as if the terminal were 80 columns wide in the current layout (split or fullscreen)
 
 ### Requirement: Horizontal offset resets on content change
 The system SHALL reset `requestHorizontalOffset` to `0` when a `SELECT_REQUEST` or `MOVE_SELECTION` action is dispatched. The system SHALL reset `responseHorizontalOffset` to `0` when a `SEND_REQUEST` action is dispatched.
@@ -159,14 +169,8 @@ No other state fields SHALL be modified by `JUMP_VERTICAL`.
 The system SHALL define a `JUMP_HORIZONTAL` action type in the `Action` union with `direction: 'start' | 'end'` and an optional `columns: number` field. The reducer SHALL apply the action based on the currently focused panel:
 
 - When `focusedPanel === 'response'` and `wrapMode === 'wrap'`: return state unchanged (mirrors the existing `SCROLL_HORIZONTAL` guard).
-- When `focusedPanel === 'requests'` and `direction === 'start'`: set `requestHorizontalOffset` to `0`.
-- When `focusedPanel === 'requests'` and `direction === 'end'`: set `requestHorizontalOffset` to `max(0, getMaxRequestLineWidth({ requests, variables, baseDir }) - getRequestContentWidth(columns ?? 80))`.
-- When `focusedPanel === 'details'` and `direction === 'start'`: set `detailsHorizontalOffset` to `0`.
-- When `focusedPanel === 'details'` and `direction === 'end'`: set `detailsHorizontalOffset` to `max(0, getMaxDetailsLineWidth({ request, variables }) - getResponseContentWidth(columns ?? 80))`.
-- When `focusedPanel === 'response'` (and wrap mode is NOT `'wrap'`) and `direction === 'start'`: set `responseHorizontalOffset` to `0`.
-- When `focusedPanel === 'response'` (and wrap mode is NOT `'wrap'`) and `direction === 'end'`: set `responseHorizontalOffset` to `max(0, getMaxResponseLineWidth({ response, verbose, rawMode }) - getResponseContentWidth(columns ?? 80))`.
-
-The `getMaxRequestLineWidth`, `getMaxDetailsLineWidth`, and `getMaxResponseLineWidth` helpers SHALL be imported from `src/utils/scroll.ts` (not `src/core/reducer.ts`) and SHALL accept option bags, not `AppState` directly. `requests`, `variables`, and `baseDir` SHALL be derived from `state.requests`, `state.variables`, and `dirname(state.filePath)` respectively; `request`, `variables` from `state.requests[state.selectedIndex]` and `state.variables`; `response`, `verbose`, `rawMode` from the corresponding `state` fields.
+- When `direction === 'start'`: set the focused panel's horizontal offset to `0`.
+- When `direction === 'end'`: set the focused panel's horizontal offset to the panel's upper bound — the offset at which the longest displayed line of that panel ends at the right edge of the panel's visible content area at its current layout (the split-layout content width in the normal view, the fullscreen content width while that panel is maximized). When the panel's content fits within its content width, the bound SHALL be `0`.
 
 No other state fields SHALL be modified by `JUMP_HORIZONTAL`.
 
@@ -175,8 +179,12 @@ No other state fields SHALL be modified by `JUMP_HORIZONTAL`.
 - **THEN** `requestHorizontalOffset` SHALL become `0`
 
 #### Scenario: Jump to horizontal end of requests panel
-- **WHEN** `focusedPanel` is `requests`, `requests` contain at least one entry whose formatted line width exceeds `getRequestContentWidth(columns)`, and a `JUMP_HORIZONTAL { direction: 'end', columns }` action is dispatched
-- **THEN** `requestHorizontalOffset` SHALL become `max(0, getMaxRequestLineWidth({ requests, variables, baseDir }) - getRequestContentWidth(columns))`
+- **WHEN** `focusedPanel` is `requests` in the normal view, at least one displayed request line is wider than the request panel's split-layout content width, and a `JUMP_HORIZONTAL { direction: 'end', columns }` action is dispatched
+- **THEN** `requestHorizontalOffset` SHALL become the offset at which the longest displayed request line's last character reaches the right edge of the request panel's content area
+
+#### Scenario: Jump to horizontal end of maximized requests panel
+- **WHEN** the requests panel is maximized and a `JUMP_HORIZONTAL { direction: 'end', columns }` action is dispatched
+- **THEN** `requestHorizontalOffset` SHALL become the offset at which the longest displayed request line's last character reaches the right edge of the maximized panel's content area
 
 #### Scenario: Jump to horizontal start of details panel
 - **WHEN** `focusedPanel` is `details`, `detailsHorizontalOffset` is greater than `0`, and a `JUMP_HORIZONTAL { direction: 'start' }` action is dispatched
@@ -184,7 +192,7 @@ No other state fields SHALL be modified by `JUMP_HORIZONTAL`.
 
 #### Scenario: Jump to horizontal end of details panel
 - **WHEN** `focusedPanel` is `details` and a `JUMP_HORIZONTAL { direction: 'end', columns }` action is dispatched
-- **THEN** `detailsHorizontalOffset` SHALL become `max(0, getMaxDetailsLineWidth({ request, variables }) - getResponseContentWidth(columns))`
+- **THEN** `detailsHorizontalOffset` SHALL become the offset at which the longest displayed details line's last character reaches the right edge of the details panel's content area at its current layout (split or fullscreen)
 
 #### Scenario: Jump to horizontal start of response panel
 - **WHEN** `focusedPanel` is `response`, `wrapMode` is `'nowrap'`, `responseHorizontalOffset` is greater than `0`, and a `JUMP_HORIZONTAL { direction: 'start' }` action is dispatched
@@ -192,18 +200,18 @@ No other state fields SHALL be modified by `JUMP_HORIZONTAL`.
 
 #### Scenario: Jump to horizontal end of response panel
 - **WHEN** `focusedPanel` is `response`, `wrapMode` is `'nowrap'`, and a `JUMP_HORIZONTAL { direction: 'end', columns }` action is dispatched
-- **THEN** `responseHorizontalOffset` SHALL become `max(0, getMaxResponseLineWidth({ response, verbose, rawMode }) - getResponseContentWidth(columns))`
+- **THEN** `responseHorizontalOffset` SHALL become the offset at which the longest displayed response line's last character reaches the right edge of the response panel's content area at its current layout (split or fullscreen)
 
 #### Scenario: Jump to horizontal edge is no-op when response wrap mode is active
 - **WHEN** `focusedPanel` is `response`, `wrapMode` is `'wrap'`, and either `JUMP_HORIZONTAL { direction: 'start' }` or `JUMP_HORIZONTAL { direction: 'end' }` is dispatched
 - **THEN** the reducer SHALL return state unchanged
 
-#### Scenario: Default columns value
+#### Scenario: Default width when none provided
 - **WHEN** `JUMP_HORIZONTAL { direction: 'end' }` is dispatched without a `columns` field
-- **THEN** the reducer SHALL default `columns` to `80` for backward compatibility and testability
+- **THEN** the bound SHALL be computed as if the terminal were 80 columns wide in the current layout (split or fullscreen)
 
 #### Scenario: Jump to horizontal end clamped to zero when content fits
-- **WHEN** `focusedPanel` is `requests` and `getMaxRequestLineWidth({ requests, variables, baseDir })` is less than or equal to `getRequestContentWidth(columns)`, and a `JUMP_HORIZONTAL { direction: 'end', columns }` action is dispatched
+- **WHEN** `focusedPanel` is `requests` and every displayed request line fits within the request panel's content width at its current layout, and a `JUMP_HORIZONTAL { direction: 'end', columns }` action is dispatched
 - **THEN** `requestHorizontalOffset` SHALL become `0` (clamped lower bound)
 
 ### Requirement: Keyboard bindings for edge-jump navigation

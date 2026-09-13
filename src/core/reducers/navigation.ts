@@ -1,6 +1,6 @@
 import { dirname } from 'node:path';
 
-import { DEFAULT_TERMINAL_ROWS, getRequestContentWidth, getRequestVisibleHeight, getResponseContentWidth } from '../../utils/layout';
+import { DEFAULT_TERMINAL_ROWS, getPanelContentWidth, getRequestVisibleHeight } from '../../utils/layout';
 import { getMaxDetailsLineWidth, getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../utils/scroll';
 import type { Action, AppState } from '../types';
 import { CLEAR_SEARCH_STATE, clampScrollOffsetToCursor, navigateRequests } from './helpers';
@@ -92,7 +92,7 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
       const horizontalDelta = action.direction === 'left' ? -2 : 2;
 
       if (state.focusedPanel === 'details') {
-        const contentWidth = getResponseContentWidth(columns);
+        const contentWidth = getPanelContentWidth({ panel: 'details', maximizedPanel: state.maximizedPanel, columns });
         const maxOffset = Math.max(0, getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables }) - contentWidth);
         return {
           ...state,
@@ -101,7 +101,7 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
       }
 
       if (state.focusedPanel === 'response') {
-        const contentWidth = getResponseContentWidth(columns);
+        const contentWidth = getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns });
         const maxOffset = Math.max(0, getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode }) - contentWidth);
         return {
           ...state,
@@ -109,7 +109,7 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
         };
       }
 
-      const contentWidth = getRequestContentWidth(columns);
+      const contentWidth = getPanelContentWidth({ panel: 'requests', maximizedPanel: state.maximizedPanel, columns });
       const maxOffset = Math.max(0, getMaxRequestLineWidth({ requests: state.requests, variables: state.variables, baseDir: dirname(state.filePath) }) - contentWidth);
       return {
         ...state,
@@ -167,7 +167,7 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
         if (action.direction === 'start') {
           return { ...state, requestHorizontalOffset: 0 };
         }
-        const contentWidth = getRequestContentWidth(columns);
+        const contentWidth = getPanelContentWidth({ panel: 'requests', maximizedPanel: state.maximizedPanel, columns });
         const maxOffset = Math.max(0, getMaxRequestLineWidth({ requests: state.requests, variables: state.variables, baseDir: dirname(state.filePath) }) - contentWidth);
         return { ...state, requestHorizontalOffset: maxOffset };
       }
@@ -176,7 +176,7 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
         if (action.direction === 'start') {
           return { ...state, detailsHorizontalOffset: 0 };
         }
-        const contentWidth = getResponseContentWidth(columns);
+        const contentWidth = getPanelContentWidth({ panel: 'details', maximizedPanel: state.maximizedPanel, columns });
         const maxOffset = Math.max(0, getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables }) - contentWidth);
         return { ...state, detailsHorizontalOffset: maxOffset };
       }
@@ -186,7 +186,7 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
         if (action.direction === 'start') {
           return { ...state, responseHorizontalOffset: 0 };
         }
-        const contentWidth = getResponseContentWidth(columns);
+        const contentWidth = getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns });
         const maxOffset = Math.max(0, getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode }) - contentWidth);
         return { ...state, responseHorizontalOffset: maxOffset };
       }

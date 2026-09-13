@@ -324,6 +324,53 @@ describe('wide-character content width', () => {
   });
 });
 
+describe('horizontal chrome measurement (regression pin)', () => {
+  // ink-testing-library renders at stdout.columns = 100, so the panel's outer
+  // box (width="100%") is exactly 100 cells wide. Every expectation below is
+  // hard-coded against that width — deliberately no layout-helper imports —
+  // so this measures Ink's real chrome for borderStyle="round" + paddingX={1}
+  // instead of re-asserting our own arithmetic.
+  const TERMINAL_WIDTH = 100;
+
+  it('fits a body line of exactly W-4 = 96 cells on one line with the border intact at column 100', () => {
+    const body = 'z'.repeat(TERMINAL_WIDTH - 4);
+    const response = createMockResponse({ body });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} contentWidthOverride={96} />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+
+    const bodyLines = lines.filter((line) => line.includes(body));
+    expect(bodyLines.length).toBe(1);
+    expect(frame).not.toContain('…');
+    for (const line of lines) {
+      expect(stringWidth(line)).toBe(TERMINAL_WIDTH);
+    }
+    // border (1) + padding (1) + 96 content cells + padding (1) + border (1) = 100:
+    // the true horizontal chrome of the response box is 4 cells.
+    expect(bodyLines[0]).toBe(`│ ${body} │`);
+  });
+
+  it('does not fit a body line of W-3 = 97 cells cleanly under the same conditions', () => {
+    const body = 'z'.repeat(TERMINAL_WIDTH - 3);
+    const response = createMockResponse({ body });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} contentWidthOverride={96} />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+
+    expect(lines.some((line) => line.includes(body))).toBe(false);
+    const truncated = frame.includes('…');
+    const wrapped = lines.filter((line) => line.includes('z')).length > 1;
+    expect(truncated || wrapped).toBe(true);
+    for (const line of lines) {
+      expect(stringWidth(line)).toBe(TERMINAL_WIDTH);
+    }
+  });
+});
+
 describe('search markers', () => {
   it('marks the current search match line with ►', () => {
     // Body: 3 lines — apple, banana, cherry
