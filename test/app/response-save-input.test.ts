@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { handleNormalInput, handleResponseSaveInput } from '../../src/app/input-handlers';
+import { handleNormalInput, handleResponseSaveInput, handleSaveInput } from '../../src/app/input-handlers';
 import type { Action, AppState } from '../../src/core/types';
 import { makeKey } from '../helpers/keys';
 import { createMockResponse } from '../helpers/responses';
@@ -51,6 +51,29 @@ describe('handleResponseSaveInput', () => {
       rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('Enter with an existing target dispatches SET_RESPONSE_SAVE_ERROR and does not overwrite', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-save-resp-unit-'));
+    try {
+      writeFileSync(join(tmpDir, 'resp.txt'), 'existing content', 'utf8');
+      const state = createInitialState({
+        filePath: join(tmpDir, 'api.http'),
+        mode: 'responseSave',
+        responseSaveInput: 'resp.txt',
+        responseSaveCursor: 'resp.txt'.length,
+        response: createMockResponse({ body: 'new body', rawBody: 'new body' }),
+      });
+      const dispatch = vi.fn();
+
+      handleResponseSaveInput({ state, input: '', key: makeKey({ return: true }), dispatch });
+
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_RESPONSE_SAVE_ERROR', error: 'File exists: resp.txt' });
+      expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SAVE_RESPONSE_FILE' }));
+      expect(readFileSync(join(tmpDir, 'resp.txt'), 'utf8')).toBe('existing content');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('handleNormalInput s guard', () => {
@@ -90,3 +113,44 @@ describe('handleNormalInput s guard', () => {
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_TRANSIENT_MESSAGE' }));
   });
 });
+
+describe('s-key mode isolation', () => {
+  it('s while the save-as overlay is open types into the save path', () => {
+    const state = createInitialState({
+      mode: 'saveLoad',
+      saveInput: 'api.http',
+      saveCursor: 'api.http'.length,
+      response: createMockResponse({ body: '{"a":1}', rawBody: '{"a":1}' }),
+    });
+    const dispatched: Action[] = [];
+
+    handleSaveInput({
+      state,
+      input: 's',
+      key: makeKey(),
+      dispatch: (action) => dispatched.push(action),
+    });
+
+    expect(dispatched).toEqual([{ type: 'UPDATE_SAVE_INPUT', value: 'api.https', cursor: 9 }]);
+  });
+
+  it('s while the response-save overlay is open inserts the character into the path', () => {
+    const state = createInitialState({
+      mode: 'responseSave',
+      responseSaveInput: 'Get Users.json',
+      responseSaveCursor: 'Get Users.json'.length,
+      response: createMockResponse({ body: '{"a":1}', rawBody: '{"a":1}' }),
+    });
+    const dispatched: Action[] = [];
+
+    handleResponseSaveInput({
+      state,
+      input: 's',
+      key: makeKey(),
+      dispatch: (action) => dispatched.push(action),
+    });
+
+    expect(dispatched).toEqual([{ type: 'UPDATE_RESPONSE_SAVE_INPUT', value: 'Get Users.jsons', cursor: 15 }]);
+  });
+});
+

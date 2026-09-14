@@ -4,7 +4,7 @@ import { render } from 'ink-testing-library';
 import { App } from '../../src/app/App';
 import type { AppProps, ParsedRequest } from '../../src/core/types';
 
-export const KEY_DELAY_MS = 50;
+export const KEY_DELAY_MS = 15;
 
 /** Common key constants for integration tests. */
 export const ESC = '\u001B';
@@ -28,10 +28,14 @@ export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Ink holds a lone Escape for 20ms (pendingInputFlushDelayMilliseconds) to
+// disambiguate it from the start of an escape sequence such as an arrow key.
+const ESC_FLUSH_DELAY_MS = 30;
+
 export async function press(stdin: { write: (data: string) => void }, key: string): Promise<void> {
   await delay(KEY_DELAY_MS);
   stdin.write(key);
-  await delay(KEY_DELAY_MS);
+  await delay(key === ESC ? ESC_FLUSH_DELAY_MS : KEY_DELAY_MS);
 }
 
 const defaultProps: AppProps = {

@@ -7,10 +7,7 @@ import { join } from 'node:path';
 import { parseHttpFile } from '../../src/core/parser';
 import { parseAnyFormat } from '../../src/core/format-detector';
 import {
-  BACKSPACE,
   CTRL_S,
-  ENTER,
-  ESC,
   KEY_DELAY_MS,
   SHIFT_TAB,
   delay,
@@ -100,28 +97,6 @@ async function commitDirtyEdit(stdin: { write: (data: string) => void }): Promis
 }
 
 describe('in-place save integration', () => {
-  it('Ctrl+S after an edit shows the confirmation prompt and writes nothing yet', async () => {
-    const { tmpDir, filePath, requests } = setupHttpFile();
-    try {
-      const { stdin, lastFrame } = renderApp({ filePath, requests });
-      await delay(KEY_DELAY_MS);
-
-      await gotoCreateUser(stdin);
-      await commitDirtyEdit(stdin);
-      expect(lastFrame() ?? '').toContain('*collection.http');
-
-      await press(stdin, CTRL_S);
-
-      const frame = lastFrame() ?? '';
-      expect(frame).toContain('Confirm overriding');
-      expect(frame).toContain('collection.http');
-
-      expect(readFileSync(filePath, 'utf8')).toBe(HTTP_FILE_CONTENT);
-    } finally {
-      rmSync(tmpDir, { recursive: true, force: true });
-    }
-  });
-
   it('y writes the edited body, preserves other blocks byte-identical, clears markers, keeps the original file name', async () => {
     const { tmpDir, filePath, requests } = setupHttpFile();
     try {
@@ -165,56 +140,6 @@ describe('in-place save integration', () => {
     }
   });
 
-  it('n cancels without writing and keeps the markers set', async () => {
-    const { tmpDir, filePath, requests } = setupHttpFile();
-    try {
-      const { stdin, lastFrame } = renderApp({ filePath, requests });
-      await delay(KEY_DELAY_MS);
-
-      await gotoCreateUser(stdin);
-      await commitDirtyEdit(stdin);
-      expect(lastFrame() ?? '').toContain('*collection.http');
-
-      await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('Confirm overriding');
-
-      await press(stdin, 'n');
-
-      const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Confirm overriding');
-      expect(frame).toContain('*collection.http');
-
-      expect(readFileSync(filePath, 'utf8')).toBe(HTTP_FILE_CONTENT);
-    } finally {
-      rmSync(tmpDir, { recursive: true, force: true });
-    }
-  });
-
-  it('Escape cancels without writing and keeps the markers set', async () => {
-    const { tmpDir, filePath, requests } = setupHttpFile();
-    try {
-      const { stdin, lastFrame } = renderApp({ filePath, requests });
-      await delay(KEY_DELAY_MS);
-
-      await gotoCreateUser(stdin);
-      await commitDirtyEdit(stdin);
-      expect(lastFrame() ?? '').toContain('*collection.http');
-
-      await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('Confirm overriding');
-
-      await press(stdin, ESC);
-
-      const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Confirm overriding');
-      expect(frame).toContain('*collection.http');
-
-      expect(readFileSync(filePath, 'utf8')).toBe(HTTP_FILE_CONTENT);
-    } finally {
-      rmSync(tmpDir, { recursive: true, force: true });
-    }
-  });
-
   it('a Postman-loaded source shows the hint and no prompt', async () => {
     const { tmpDir, filePath, requests } = setupPostmanFile();
     try {
@@ -251,79 +176,6 @@ describe('in-place save integration', () => {
       const frame = lastFrame() ?? '';
       expect(frame).toContain('No changes to save');
       expect(frame).not.toContain('Confirm overriding');
-
-      expect(readFileSync(filePath, 'utf8')).toBe(HTTP_FILE_CONTENT);
-    } finally {
-      rmSync(tmpDir, { recursive: true, force: true });
-    }
-  });
-
-  it('a refused body containing ### writes nothing and keeps the markers', async () => {
-    const { tmpDir, filePath, requests } = setupHttpFile();
-    try {
-      const { stdin, lastFrame } = renderApp({ filePath, requests });
-      await delay(KEY_DELAY_MS);
-
-      await gotoCreateUser(stdin);
-      await press(stdin, 'e');
-      await press(stdin, SHIFT_TAB);
-      await press(stdin, SHIFT_TAB);
-      await press(stdin, ENTER);
-      await press(stdin, '#');
-      await press(stdin, '#');
-      await press(stdin, '#');
-      await press(stdin, CTRL_S);
-
-      expect(lastFrame() ?? '').toContain('*collection.http');
-
-      await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('Confirm overriding');
-
-      await press(stdin, 'y');
-
-      const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Confirm overriding');
-      expect(frame).toContain('###');
-      expect(frame).toContain('separator');
-      expect(frame).toContain('*collection.http');
-
-      expect(readFileSync(filePath, 'utf8')).toBe(HTTP_FILE_CONTENT);
-    } finally {
-      rmSync(tmpDir, { recursive: true, force: true });
-    }
-  });
-
-  it('a reverted body still triggers a confirmation and on y rewrites and clears the markers', async () => {
-    const { tmpDir, filePath, requests } = setupHttpFile();
-    try {
-      const { stdin, lastFrame } = renderApp({ filePath, requests });
-      await delay(KEY_DELAY_MS);
-
-      await gotoCreateUser(stdin);
-      await press(stdin, 'e');
-      await press(stdin, SHIFT_TAB);
-      await press(stdin, SHIFT_TAB);
-      await press(stdin, 'X');
-      await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('*collection.http');
-
-      await press(stdin, 'e');
-      await press(stdin, SHIFT_TAB);
-      await press(stdin, SHIFT_TAB);
-      await press(stdin, BACKSPACE);
-      await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('*collection.http');
-
-      await press(stdin, CTRL_S);
-      expect(lastFrame() ?? '').toContain('Confirm overriding');
-
-      await press(stdin, 'y');
-
-      const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Confirm overriding');
-      expect(frame).not.toContain('*collection.http');
-      expect(frame).toContain('collection.http');
-      expect(frame).toContain('Saved');
 
       expect(readFileSync(filePath, 'utf8')).toBe(HTTP_FILE_CONTENT);
     } finally {

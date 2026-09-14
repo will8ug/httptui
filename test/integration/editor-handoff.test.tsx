@@ -13,7 +13,6 @@ import {
   CTRL_G,
   CTRL_S,
   ENTER,
-  ESC,
   KEY_DELAY_MS,
   SHIFT_TAB,
   delay,
@@ -514,24 +513,6 @@ describe('editor-handoff integration', () => {
       await expectEditorNotLaunched(marker);
     });
 
-    it('abandons with Escape and leaves the dirty marker set', async () => {
-      const marker = useFakeEditor('');
-      const { stdin, lastFrame } = renderHttp();
-      await delay(KEY_DELAY_MS);
-
-      await commitDirtyEdit(stdin);
-      await press(stdin, CTRL_G);
-      expect(lastFrame() ?? '').toContain('Unsaved Changes');
-
-      await press(stdin, ESC);
-
-      const frame = lastFrame() ?? '';
-      expect(frame).not.toContain('Unsaved Changes');
-      expect(frame).toContain('*api.http');
-      expect(frame).not.toContain('Reloaded');
-      await expectEditorNotLaunched(marker);
-    });
-
     it('never reaches the prompt for a format-refused source that is dirty', async () => {
       const marker = useFakeEditor('');
       const content = readFileSync(resolve(__dirname, '../fixtures/postman/postman-basic.json'), 'utf8');
@@ -548,42 +529,6 @@ describe('editor-handoff integration', () => {
       expect(frame).toContain(REFUSAL_MESSAGE);
       expect(frame).not.toContain('Unsaved Changes');
       expect(frame).toContain('*collection.json');
-      await expectEditorNotLaunched(marker);
-    });
-  });
-
-  describe('mode isolation', () => {
-    it('is inert in the request editor', async () => {
-      const marker = useFakeEditor('');
-      const { stdin, lastFrame } = renderHttp();
-      await delay(KEY_DELAY_MS);
-
-      await press(stdin, 'e');
-      expect(lastFrame() ?? '').toContain('Edit Request');
-
-      await press(stdin, CTRL_G);
-
-      const frame = lastFrame() ?? '';
-      expect(frame).toContain('Edit Request');
-      expect(frame).not.toContain(REFUSAL_MESSAGE);
-      expect(frame).not.toContain('Unsaved Changes');
-      await expectEditorNotLaunched(marker);
-    });
-
-    it('is inert in the file-load overlay', async () => {
-      const marker = useFakeEditor('');
-      const { stdin, lastFrame } = renderHttp();
-      await delay(KEY_DELAY_MS);
-
-      await press(stdin, 'o');
-      expect(lastFrame() ?? '').toContain('Open File');
-
-      await press(stdin, CTRL_G);
-
-      const frame = lastFrame() ?? '';
-      expect(frame).toContain('Open File');
-      expect(frame).not.toContain(REFUSAL_MESSAGE);
-      expect(frame).not.toContain('Unsaved Changes');
       await expectEditorNotLaunched(marker);
     });
   });

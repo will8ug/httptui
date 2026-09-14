@@ -4,6 +4,7 @@ import type { Key } from 'ink';
 import { handleNormalInput } from '../../src/app/input-handlers';
 import type { Action, AppState } from '../../src/core/types';
 import { makeKey } from '../helpers/keys';
+import { createRequest } from '../helpers/requests';
 import { createMockResponse } from '../helpers/responses';
 import { createInitialState } from '../helpers/state';
 
@@ -12,27 +13,49 @@ function fullscreenState(panel: 'requests' | 'response' | 'details', overrides: 
 }
 
 function pressKey(state: AppState, input: string, key: Key = makeKey()): Action[] {
+  return runNormalInput(state, input, key).actions;
+}
+
+function runNormalInput(state: AppState, input: string, key: Key = makeKey()) {
   const dispatched: Action[] = [];
+  const exit = vi.fn();
+  const suspend = vi.fn();
+  const clipboardRunner = vi.fn(async () => '');
+  const clipboardReadRunner = vi.fn(async () => '');
   handleNormalInput({
     state,
-    selectedRequest: undefined,
+    selectedRequest: state.requests[state.selectedIndex],
     columns: 80,
     rows: 24,
     effectiveResponseHeight: 10,
     effectiveDetailMaxContent: 40,
     editorVisibleHeight: 10,
     editorContentWidth: 40,
-    exit: () => {},
-    suspend: vi.fn(),
+    exit,
+    suspend,
     executorConfig: { insecure: false },
-    clipboardRunner: undefined,
-    clipboardReadRunner: undefined,
+    clipboardRunner,
+    clipboardReadRunner,
     abortControllerRef: { current: null },
     input,
     key,
     dispatch: (action) => dispatched.push(action),
   });
-  return dispatched;
+  return { actions: dispatched, exit, suspend, clipboardRunner, clipboardReadRunner };
+}
+
+function actionNoopState(panel: 'requests' | 'response' | 'details' = 'response'): AppState {
+  return fullscreenState(panel, {
+    focusedPanel: panel,
+    requests: [createRequest({ name: 'Get Users', body: 'payload', isDirty: true })],
+    selectedIndex: 0,
+    response: createMockResponse({ body: '{"a":1}', rawBody: '{"a":1}' }),
+    availableEnvironments: [
+      { name: '(none)', file: null },
+      { name: 'Dev', file: 'dev.json' },
+    ],
+    showRequestDetails: panel === 'details',
+  });
 }
 
 describe('fullscreen vertical jumps', () => {
@@ -131,6 +154,12 @@ describe('fullscreen match navigation', () => {
     expect(actions).toEqual([]);
   });
 
+  it('N is a no-op while the requests panel is maximized', () => {
+    const actions = pressKey(fullscreenState('requests', { searchMatches: [3, 7, 11], currentMatchIndex: 0 }), 'N');
+
+    expect(actions).toEqual([]);
+  });
+
   it('n is a no-op when there are no matches', () => {
     const actions = pressKey(fullscreenState('response'), 'n');
 
@@ -161,5 +190,127 @@ describe('fullscreen panel-dependent vertical keys', () => {
     const actions = pressKey(fullscreenState('response'), 'j');
 
     expect(actions).toEqual([{ type: 'SCROLL', direction: 'down' }]);
+  });
+});
+
+describe('fullscreen help and quit', () => {
+  it('? while maximized dispatches TOGGLE_HELP', () => {
+    const result = runNormalInput(fullscreenState('response'), '?');
+
+    expect(result.actions).toEqual([{ type: 'TOGGLE_HELP' }]);
+    expect(result.exit).not.toHaveBeenCalled();
+  });
+
+  it('Ctrl+C while maximized calls exit', () => {
+    const result = runNormalInput(fullscreenState('response'), 'c', makeKey({ ctrl: true }));
+
+    expect(result.exit).toHaveBeenCalledOnce();
+    expect(result.actions).toEqual([]);
+  });
+
+  it('q while the response is maximized with active search results dismisses the search', () => {
+    const result = runNormalInput(
+      fullscreenState('response', { searchMatches: [3, 7], currentMatchIndex: 0, lastSearchQuery: 'needle' }),
+      'q',
+    );
+
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
+    expect(result.exit).not.toHaveBeenCalled();
+  });
+
+  it('q without search results does not exit while maximized', () => {
+    const result = runNormalInput(fullscreenState('requests'), 'q');
+
+    expect(result.actions).toEqual([]);
+    expect(result.exit).not.toHaveBeenCalled();
+  });
+
+  it('q with unsaved edits does not request discard confirmation while maximized', () => {
+    const result = runNormalInput(actionNoopState('requests'), 'q');
+
+    expect(result.actions).toEqual([]);
+    expect(result.exit).not.toHaveBeenCalled();
+  });
+
+  it('q calls exit when no panel is maximized and no search is active', () => {
+    const result = runNormalInput(createInitialState({ requests: [createRequest()] }), 'q');
+
+    expect(result.exit).toHaveBeenCalledOnce();
+    expect(result.actions).toEqual([]);
+  });
+});
+
+describe('fullscreen search entry', () => {
+  it('/ while the response is maximized enters search mode', () => {
+    const actions = pressKey(fullscreenState('response'), '/');
+
+    expect(actions).toEqual([{ type: 'ENTER_SEARCH' }]);
+  });
+
+  it('/ while the requests panel is maximized dispatches nothing', () => {
+    const actions = pressKey(fullscreenState('requests'), '/');
+
+    expect(actions).toEqual([]);
+  });
+
+  it('/ while the details panel is maximized dispatches nothing', () => {
+    const actions = pressKey(fullscreenState('details'), '/');
+
+    expect(actions).toEqual([]);
+  });
+});
+
+describe('fullscreen display toggles', () => {
+  it('w while the response is maximized dispatches TOGGLE_WRAP', () => {
+    const actions = pressKey(fullscreenState('response'), 'w');
+
+    expect(actions).toEqual([{ type: 'TOGGLE_WRAP' }]);
+  });
+});
+
+describe('fullscreen action keys are no-ops', () => {
+  const noopKeys: Array<{ label: string; input: string; key?: Key }> = [
+    { label: 'Enter', input: '', key: makeKey({ return: true }) },
+    { label: 'o', input: 'o' },
+    { label: 'Ctrl+G', input: 'g', key: makeKey({ ctrl: true }) },
+    { label: 's', input: 's' },
+    { label: 'S', input: 'S' },
+    { label: 'p', input: 'p' },
+    { label: 'y', input: 'y' },
+    { label: 'E', input: 'E' },
+    { label: 'e', input: 'e' },
+    { label: 'R', input: 'R' },
+    { label: 'Ctrl+S', input: 's', key: makeKey({ ctrl: true }) },
+    { label: 'd', input: 'd' },
+  ];
+
+  it.each(noopKeys)('$label does not run its normal-mode action while maximized', ({ label, input, key }) => {
+    const result = runNormalInput(actionNoopState('response'), input, key ?? makeKey());
+
+    if (label === 'Ctrl+G') {
+      expect(result.actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'start', rows: 24 }]);
+    } else {
+      expect(result.actions).toEqual([]);
+    }
+    expect(result.exit).not.toHaveBeenCalled();
+    expect(result.suspend).not.toHaveBeenCalled();
+    expect(result.clipboardRunner).not.toHaveBeenCalled();
+    expect(result.clipboardReadRunner).not.toHaveBeenCalled();
+  });
+
+  it.each(['v', 'r', 'w'] as const)('%s is a no-op while the requests panel is maximized', (input) => {
+    const result = runNormalInput(actionNoopState('requests'), input);
+
+    expect(result.actions).toEqual([]);
+    expect(result.exit).not.toHaveBeenCalled();
+    expect(result.suspend).not.toHaveBeenCalled();
+  });
+
+  it.each(['v', 'r', 'w'] as const)('%s is a no-op while the details panel is maximized', (input) => {
+    const result = runNormalInput(actionNoopState('details'), input);
+
+    expect(result.actions).toEqual([]);
+    expect(result.exit).not.toHaveBeenCalled();
+    expect(result.suspend).not.toHaveBeenCalled();
   });
 });
