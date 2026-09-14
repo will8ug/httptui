@@ -18,7 +18,7 @@ import { EnvSelectOverlay } from '../components/EnvSelectOverlay';
 import { createInitialState, reducer } from '../core/reducer';
 import type { AppProps } from '../core/types';
 import { EDIT_TAB_ORDER } from '../core/types';
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS } from '../utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getPanelContentWidth } from '../utils/layout';
 import { computeLayoutMetrics } from '../utils/layout-metrics';
 import { TRANSIENT_CLEAR_MS } from '../utils/timing';
 import { hasUnsavedChanges } from '../utils/request';
@@ -175,7 +175,7 @@ return (
             verbose: state.verbose,
             rawMode: state.rawMode,
             wrapMode: state.wrapMode,
-            columns,
+            contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns }),
           }) : 0}
           hasResponse={!!state.response}
           envName={state.activeEnvName}

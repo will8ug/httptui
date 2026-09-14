@@ -1,4 +1,5 @@
 import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
+import { getPanelContentWidth } from '../utils/layout';
 
 import type { Action, AppProps, AppState } from './types';
 import { resolveVariables } from './variables';
@@ -45,7 +46,7 @@ export function computeVerticalMaxOffset(
       verbose: state.verbose,
       rawMode: state.rawMode,
       wrapMode: state.wrapMode,
-      columns,
+      contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns }),
     });
     const visibleHeight = Math.max(1, responseAvailableHeight - RESPONSE_PANEL_VERTICAL_CHROME);
     return getMaxScrollOffset(totalLines, visibleHeight);

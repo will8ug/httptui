@@ -3,7 +3,6 @@ import type { ResponseForLayout } from '../core/response-layout';
 import { formatResponseBody } from '../core/formatter';
 import { resolveVariables } from '../core/variables';
 import { getRequestTarget } from './request';
-import { getResponseContentWidth } from './layout';
 import { cellWidth } from './text';
 import type { FileVariable, ParsedRequest, ResponseData } from '../core/types';
 
@@ -14,10 +13,9 @@ export function getResponseTotalLines(options: {
   verbose: boolean;
   rawMode: boolean;
   wrapMode: 'nowrap' | 'wrap';
-  columns: number;
+  contentWidth: number;
 }): number {
-  const { response, verbose, rawMode, wrapMode, columns } = options;
-  const contentWidth = getResponseContentWidth(columns);
+  const { response, verbose, rawMode, wrapMode, contentWidth } = options;
   const formattedBody = formatResponseBody(response.body, rawMode);
   const layout = computeResponseLayout({
     response,

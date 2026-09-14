@@ -25,10 +25,10 @@ POST {{baseUrl}}/non-exist-req
   "Hobit": "Coding"
 }
 
-### Make a long list below (more than 13 requests)
-GET {{baseUrl}}/ping
+### Long response in both height and width
+GET {{baseUrl}}/long-response
 
-### 002
+### Make a long list below (more than 13 requests)
 GET {{baseUrl}}/ping
 
 ### 003

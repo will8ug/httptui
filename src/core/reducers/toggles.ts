@@ -58,7 +58,7 @@ export function reduceToggles(state: AppState, action: TogglesAction): AppState 
           ...state,
           maximizedPanel: panel,
           ...(panel === 'requests' ? { requestHorizontalOffset: 0 } : {}),
-          ...(panel === 'response' ? { responseHorizontalOffset: 0 } : {}),
+          ...(panel === 'response' ? { responseHorizontalOffset: 0, responseScrollOffset: 0 } : {}),
           ...(panel === 'details' ? { detailsHorizontalOffset: 0 } : {}),
         };
       }
@@ -68,7 +68,7 @@ export function reduceToggles(state: AppState, action: TogglesAction): AppState 
         ...state,
         maximizedPanel: null,
         ...(previousPanel === 'requests' ? { requestHorizontalOffset: 0 } : {}),
-        ...(previousPanel === 'response' ? { responseHorizontalOffset: 0 } : {}),
+        ...(previousPanel === 'response' ? { responseHorizontalOffset: 0, responseScrollOffset: 0 } : {}),
         ...(previousPanel === 'details' ? { detailsHorizontalOffset: 0 } : {}),
       };
     }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getDetailsTotalLines, getMaxResponseLineWidth, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../../src/utils/scroll';
-import { getResponseContentWidth } from '../../src/utils/layout';
+import { getPanelContentWidth, getResponseContentWidth } from '../../src/utils/layout';
 import { createMockResponse } from '../helpers/responses';
 
 describe('scroll utilities', () => {
@@ -71,7 +71,7 @@ describe('scroll utilities', () => {
         verbose: false,
         rawMode: false,
         wrapMode: 'nowrap',
-        columns,
+        contentWidth,
       });
       expect(result).toBe(1 + 1 + 3);
     });
@@ -88,7 +88,7 @@ describe('scroll utilities', () => {
         verbose: true,
         rawMode: false,
         wrapMode: 'nowrap',
-        columns,
+        contentWidth,
       });
       expect(result).toBe(1 + 1 + 1 + 1);
     });
@@ -105,9 +105,72 @@ describe('scroll utilities', () => {
         verbose: false,
         rawMode: false,
         wrapMode: 'wrap',
-        columns,
+        contentWidth,
       });
       expect(result).toBeGreaterThanOrEqual(3);
+    });
+
+    it('counts fewer wrapped lines at the fullscreen width than at the split width', () => {
+      const splitWidth = getPanelContentWidth({ panel: 'response', maximizedPanel: null, columns });
+      const fullscreenWidth = getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns });
+      expect(splitWidth).toBe(51);
+      expect(fullscreenWidth).toBe(76);
+
+      const response = {
+        statusCode: 200,
+        statusText: 'OK',
+        headers: {},
+        body: 'x'.repeat(60),
+        timing: { durationMs: 100 },
+      };
+
+      const splitTotal = getResponseTotalLines({
+        response,
+        verbose: false,
+        rawMode: false,
+        wrapMode: 'wrap',
+        contentWidth: splitWidth,
+      });
+      const fullscreenTotal = getResponseTotalLines({
+        response,
+        verbose: false,
+        rawMode: false,
+        wrapMode: 'wrap',
+        contentWidth: fullscreenWidth,
+      });
+
+      expect(splitTotal).toBe(1 + 1 + 2);
+      expect(fullscreenTotal).toBe(1 + 1 + 1);
+    });
+
+    it('counts identical totals at the split and fullscreen widths in nowrap mode', () => {
+      const splitWidth = getPanelContentWidth({ panel: 'response', maximizedPanel: null, columns });
+      const fullscreenWidth = getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns });
+      const response = {
+        statusCode: 200,
+        statusText: 'OK',
+        headers: {},
+        body: 'x'.repeat(60),
+        timing: { durationMs: 100 },
+      };
+
+      const splitTotal = getResponseTotalLines({
+        response,
+        verbose: false,
+        rawMode: false,
+        wrapMode: 'nowrap',
+        contentWidth: splitWidth,
+      });
+      const fullscreenTotal = getResponseTotalLines({
+        response,
+        verbose: false,
+        rawMode: false,
+        wrapMode: 'nowrap',
+        contentWidth: fullscreenWidth,
+      });
+
+      expect(splitTotal).toBe(1 + 1 + 1);
+      expect(fullscreenTotal).toBe(splitTotal);
     });
 
     it('RESPONSE_PANEL_VERTICAL_CHROME equals 3', () => {
