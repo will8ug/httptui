@@ -3,34 +3,9 @@ import type { Key } from 'ink';
 
 import { handleNormalInput } from '../../src/app/input-handlers';
 import type { Action, AppState } from '../../src/core/types';
+import { makeKey } from '../helpers/keys';
 import { createMockResponse } from '../helpers/responses';
 import { createInitialState } from '../helpers/state';
-
-function makeKey(overrides: Partial<Key> = {}): Key {
-  return {
-    upArrow: false,
-    downArrow: false,
-    leftArrow: false,
-    rightArrow: false,
-    pageUp: false,
-    pageDown: false,
-    home: false,
-    end: false,
-    return: false,
-    escape: false,
-    ctrl: false,
-    shift: false,
-    tab: false,
-    backspace: false,
-    delete: false,
-    meta: false,
-    super: false,
-    hyper: false,
-    capsLock: false,
-    numLock: false,
-    ...overrides,
-  };
-}
 
 function fullscreenState(panel: 'requests' | 'response' | 'details', overrides: Partial<AppState> = {}): AppState {
   return createInitialState({ maximizedPanel: panel, ...overrides });

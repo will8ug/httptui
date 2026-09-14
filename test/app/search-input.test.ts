@@ -8,6 +8,7 @@ import { formatResponseBody } from '../../src/core/formatter';
 import { computeResponseLayout } from '../../src/core/response-layout';
 import type { Action, AppState } from '../../src/core/types';
 import { getPanelContentWidth } from '../../src/utils/layout';
+import { makeKey } from '../helpers/keys';
 
 describe('match offsets in a maximized response panel (wrap mode)', () => {
   const COLUMNS = 80;
@@ -44,32 +45,6 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
       formattedBody: formatResponseBody(response.body, state.rawMode),
     });
     return layout.bodyVisualStart;
-  }
-
-  function makeKey(overrides: Partial<Key> = {}): Key {
-    return {
-      upArrow: false,
-      downArrow: false,
-      leftArrow: false,
-      rightArrow: false,
-      pageUp: false,
-      pageDown: false,
-      home: false,
-      end: false,
-      return: false,
-      escape: false,
-      ctrl: false,
-      shift: false,
-      tab: false,
-      backspace: false,
-      delete: false,
-      meta: false,
-      super: false,
-      hyper: false,
-      capsLock: false,
-      numLock: false,
-      ...overrides,
-    };
   }
 
   function pressNormalKey(state: AppState, input: string, key: Key = makeKey()): Action[] {

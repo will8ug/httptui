@@ -1,40 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Key } from 'ink';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { handleNormalInput, handleResponseSaveInput } from '../../src/app/input-handlers';
 import type { Action, AppState } from '../../src/core/types';
+import { makeKey } from '../helpers/keys';
 import { createMockResponse } from '../helpers/responses';
 import { createRequest } from '../helpers/requests';
 import { createInitialState } from '../helpers/state';
-
-function makeKey(overrides: Partial<Key> = {}): Key {
-  return {
-    upArrow: false,
-    downArrow: false,
-    leftArrow: false,
-    rightArrow: false,
-    pageUp: false,
-    pageDown: false,
-    home: false,
-    end: false,
-    return: false,
-    escape: false,
-    ctrl: false,
-    shift: false,
-    tab: false,
-    backspace: false,
-    delete: false,
-    meta: false,
-    super: false,
-    hyper: false,
-    capsLock: false,
-    numLock: false,
-    ...overrides,
-  };
-}
 
 function pressNormalS(state: AppState, dispatch: (action: Action) => void): void {
   handleNormalInput({
