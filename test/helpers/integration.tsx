@@ -13,15 +13,9 @@ export const BACKSPACE = '\u007F';
 export const CTRL_S = '\u0013';
 export const TAB = '\t';
 export const SHIFT_TAB = '\u001B[Z';
-export const UP_ARROW = '\u001B[A';
-export const DOWN_ARROW = '\u001B[B';
 export const LEFT_ARROW = '\u001B[D';
-export const RIGHT_ARROW = '\u001B[C';
 export const HOME = '\u001B[H';
-export const END = '\u001B[F';
 export const DELETE = '\u001B[3~';
-export const CTRL_A = '\u0001';
-export const CTRL_E = '\u0005';
 export const CTRL_G = '\u0007';
 
 export function delay(ms: number): Promise<void> {
@@ -80,18 +74,6 @@ export function makeShortUrlRequests(count: number): ParsedRequest[] {
     name: `r${i + 1}`,
     method: 'GET' as const,
     url: `https://a.co/u/${i + 1}`,
-    headers: {},
-    body: undefined,
-    lineNumber: i + 1,
-    isDirty: false,
-  }));
-}
-
-export function makeLongUrlRequests(count: number): ParsedRequest[] {
-  return Array.from({ length: count }, (_, i) => ({
-    name: `r${i + 1}`,
-    method: 'GET' as const,
-    url: `https://api.example.com/resource/item-${i + 1}/nested/path/that/exceeds/panel/width`,
     headers: {},
     body: undefined,
     lineNumber: i + 1,
