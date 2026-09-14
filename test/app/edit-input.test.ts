@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Key } from 'ink';
 
-import { handleEditInput } from '../../src/app/input-handlers';
+import { handleEditInput, handleNormalInput } from '../../src/app/input-handlers';
+import { headersToText } from '../../src/core/headers';
 import type { Action, AppState, ParsedRequest } from '../../src/core/types';
 import { EDIT_CANCEL_WINDOW_MS } from '../../src/utils/timing';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
-import { createEditState, reducer } from '../helpers/state';
+import { createEditState, createInitialState, reducer } from '../helpers/state';
 
 const NOW = 1_700_000_000_000;
 
@@ -152,5 +153,42 @@ describe('handleEditInput body insert', () => {
     const next = reducer(state, actions[0]);
     expect(next.editBuffers.body.text).toBe(pasted);
     expect(next.editBuffers.body.cursor).toBe(pasted.length);
+  });
+});
+
+describe('handleNormalInput e', () => {
+  it('dispatches ENTER_EDIT with the headers buffer seeded from raw unresolved values', () => {
+    const headers = { Accept: 'application/json', Authorization: 'Bearer {{token}}' };
+    const request = createRequest({ headers });
+    const state = createInitialState({ requests: [request], selectedIndex: 0 });
+    const dispatched: Action[] = [];
+    handleNormalInput({
+      state,
+      selectedRequest: request,
+      columns: 80,
+      rows: 24,
+      effectiveResponseHeight: 10,
+      effectiveDetailMaxContent: 40,
+      editorVisibleHeight: 10,
+      editorContentWidth: 40,
+      exit: () => {},
+      suspend: vi.fn(),
+      executorConfig: { insecure: false },
+      clipboardRunner: undefined,
+      clipboardReadRunner: undefined,
+      abortControllerRef: { current: null },
+      input: 'e',
+      key: makeKey(),
+      dispatch: (action) => dispatched.push(action),
+    });
+
+    const headersText = headersToText(headers);
+    expect(headersText).toContain('{{token}}');
+    expect(dispatched).toEqual([{
+      type: 'ENTER_EDIT',
+      buffers: { url: request.url, body: '', headers: headersText },
+      visibleHeight: 10,
+      visibleWidth: 40,
+    }]);
   });
 });

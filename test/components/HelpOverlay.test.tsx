@@ -69,5 +69,47 @@ describe('HelpOverlay', () => {
       const frame = lastFrame() ?? '';
       expect(frame).toContain('Jump to end of line');
     });
+
+    it('renders the Toggle request details panel description', () => {
+      const { lastFrame } = render(<HelpOverlay visible={true} />);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Toggle request details panel');
+    });
+
+    it('renders the Jump to top of focused panel description', () => {
+      const { lastFrame } = render(<HelpOverlay visible={true} />);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Jump to top of focused panel');
+    });
+
+    it('renders the Jump to bottom of focused panel description', () => {
+      const { lastFrame } = render(<HelpOverlay visible={true} />);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Jump to bottom of focused panel');
+    });
+
+    it('renders the Jump to horizontal start description', () => {
+      const { lastFrame } = render(<HelpOverlay visible={true} />);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Jump to horizontal start');
+    });
+
+    it('renders the Jump to horizontal end description', () => {
+      const { lastFrame } = render(<HelpOverlay visible={true} />);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Jump to horizontal end');
+    });
+
+    it('renders the Copy request as curl description', () => {
+      const { lastFrame } = render(<HelpOverlay visible={true} />);
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('Copy request as curl');
+    });
   });
 });

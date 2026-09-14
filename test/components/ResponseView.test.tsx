@@ -372,6 +372,54 @@ describe('horizontal chrome measurement (regression pin)', () => {
 });
 
 describe('search markers', () => {
+  it('places ► on the matching body line under wrap, verbose, a long header, and a long preceding body line', () => {
+    const longHeaderValue = 'a'.repeat(120);
+    const longBodyLine = 'xyz '.repeat(30).trim();
+    const matchLine = 'here is the needle target';
+    const body = [longBodyLine, matchLine, 'trailing'].join('\n');
+    const response = createMockResponse({
+      body,
+      headers: { 'x-trace-id': longHeaderValue },
+    });
+
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        verbose={true}
+        wrapMode={'wrap' as const}
+        searchMatches={[1]}
+        currentMatchIndex={0}
+        lastSearchQuery="needle"
+        contentWidthOverride={40}
+        availableHeight={40}
+      />,
+    );
+
+    const markerLine = (lastFrame() ?? '').split('\n').find((line) => line.includes('►'));
+    assertDefinedToNarrowType(markerLine, 'Expected a search-marked body line to be defined');
+    expect(markerLine).toContain('needle');
+  });
+
+  it('places ► on the matching body line when wrap is disabled', () => {
+    const matchLine = 'here is the needle target';
+    const response = createMockResponse({ body: ['alpha', matchLine, 'beta'].join('\n') });
+
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        searchMatches={[1]}
+        currentMatchIndex={0}
+        lastSearchQuery="needle"
+      />,
+    );
+
+    const markerLine = (lastFrame() ?? '').split('\n').find((line) => line.includes('►'));
+    assertDefinedToNarrowType(markerLine, 'Expected a search-marked body line to be defined');
+    expect(markerLine).toContain('needle');
+  });
+
   it('marks the current search match line with ►', () => {
     // Body: 3 lines — apple, banana, cherry
     // Layout: VL0=status, VL1=separator, VL2=apple, VL3=banana, VL4=cherry

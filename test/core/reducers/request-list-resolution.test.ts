@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMaxRequestLineWidth } from '../../src/utils/scroll';
-import { resolveVariables } from '../../src/core/variables';
-import type { FileVariable, ParsedRequest } from '../../src/core/types';
-import { createInitialState, reducer as stateReducer } from '../helpers/state';
-import { createRequest } from '../helpers/requests';
+import { getMaxRequestLineWidth } from '../../../src/utils/scroll';
+import { resolveVariables } from '../../../src/core/variables';
+import type { FileVariable, ParsedRequest } from '../../../src/core/types';
+import { createInitialState, reducer as stateReducer } from '../../helpers/state';
+import { createRequest } from '../../helpers/requests';
 
 describe('request list re-resolves on env switch', () => {
   it('SWITCH_ENV updates the variable map used by the request list', () => {

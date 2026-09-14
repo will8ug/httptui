@@ -3,6 +3,7 @@ import { cleanup, render } from 'ink-testing-library';
 
 import { RequestList } from '../../src/components/RequestList';
 import type { FileVariable } from '../../src/core/types';
+import { assertDefinedToNarrowType } from '../helpers/assertions';
 import { createRequest } from '../helpers/requests';
 
 afterEach(() => {
@@ -72,5 +73,54 @@ describe('RequestList variable resolution', () => {
     const frame = lastFrame() ?? '';
     expect(frame).toContain('{{unknown}}');
     expect(frame).not.toContain('https://');
+  });
+});
+
+describe('RequestList selection and horizontal shift', () => {
+  it('highlights the selected request with ▸', () => {
+    const requests = [
+      createRequest({ url: 'https://a.co/u/1', lineNumber: 1 }),
+      createRequest({ url: 'https://a.co/u/2', lineNumber: 2 }),
+      createRequest({ url: 'https://a.co/u/3', lineNumber: 3 }),
+    ];
+
+    const { lastFrame } = render(
+      <RequestList
+        requests={requests}
+        selectedIndex={1}
+        focused={true}
+        scrollOffset={0}
+        horizontalOffset={0}
+        variables={[]}
+      />,
+    );
+
+    const selectedLine = (lastFrame() ?? '').split('\n').find((line) => line.includes('▸'));
+    assertDefinedToNarrowType(selectedLine, 'Expected a highlighted request line to be defined');
+    expect(selectedLine).toContain('/u/2');
+    expect(selectedLine).not.toContain('/u/1');
+    expect(selectedLine).not.toContain('/u/3');
+  });
+
+  it('clips leading characters when horizontalOffset is greater than 0', () => {
+    const request = createRequest({
+      url: 'https://example.com/ABCDEFGHIJ/TAIL_UNIQUE',
+    });
+
+    const { lastFrame } = render(
+      <RequestList
+        requests={[request]}
+        selectedIndex={0}
+        focused={true}
+        scrollOffset={0}
+        horizontalOffset={21}
+        variables={[]}
+        contentWidthOverride={40}
+      />,
+    );
+
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('ABCDEFGHIJ');
+    expect(frame).toContain('TAIL_UNIQUE');
   });
 });

@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Key } from 'ink';
 
-import { handleNormalInput } from '../../src/app/input-handlers';
+import { handleHelpInput, handleNormalInput } from '../../src/app/input-handlers';
 import type { Action, AppState } from '../../src/core/types';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
 import { createMockResponse } from '../helpers/responses';
-import { createInitialState } from '../helpers/state';
+import { createInitialState, reducer } from '../helpers/state';
 
 function fullscreenState(panel: 'requests' | 'response' | 'details', overrides: Partial<AppState> = {}): AppState {
   return createInitialState({ maximizedPanel: panel, ...overrides });
@@ -16,7 +16,12 @@ function pressKey(state: AppState, input: string, key: Key = makeKey()): Action[
   return runNormalInput(state, input, key).actions;
 }
 
-function runNormalInput(state: AppState, input: string, key: Key = makeKey()) {
+function runNormalInput(
+  state: AppState,
+  input: string,
+  key: Key = makeKey(),
+  abortControllerRef: { current: AbortController | null } = { current: null },
+) {
   const dispatched: Action[] = [];
   const exit = vi.fn();
   const suspend = vi.fn();
@@ -36,7 +41,7 @@ function runNormalInput(state: AppState, input: string, key: Key = makeKey()) {
     executorConfig: { insecure: false },
     clipboardRunner,
     clipboardReadRunner,
-    abortControllerRef: { current: null },
+    abortControllerRef,
     input,
     key,
     dispatch: (action) => dispatched.push(action),
@@ -312,5 +317,118 @@ describe('fullscreen action keys are no-ops', () => {
     expect(result.actions).toEqual([]);
     expect(result.exit).not.toHaveBeenCalled();
     expect(result.suspend).not.toHaveBeenCalled();
+  });
+});
+
+describe('escape while loading', () => {
+  it('Escape during an in-flight request aborts it and dispatches REQUEST_CANCEL', () => {
+    const abortController = new AbortController();
+    const abort = vi.spyOn(abortController, 'abort');
+    const result = runNormalInput(
+      createInitialState({ requests: [createRequest()], isLoading: true }),
+      '',
+      makeKey({ escape: true }),
+      { current: abortController },
+    );
+
+    expect(result.actions).toEqual([{ type: 'REQUEST_CANCEL', warning: 'Request canceled' }]);
+    expect(abort).toHaveBeenCalledOnce();
+  });
+
+  it('Escape with the help overlay open while loading closes the overlay without canceling', () => {
+    const abortController = new AbortController();
+    const abort = vi.spyOn(abortController, 'abort');
+    const dispatched: Action[] = [];
+    handleHelpInput({
+      input: '',
+      key: makeKey({ escape: true }),
+      dispatch: (action) => dispatched.push(action),
+    });
+
+    expect(dispatched).toEqual([{ type: 'CLOSE_HELP' }]);
+    expect(abort).not.toHaveBeenCalled();
+  });
+
+  it('Escape while loading in fullscreen cancels but stays fullscreen', () => {
+    const abortController = new AbortController();
+    const abort = vi.spyOn(abortController, 'abort');
+    const result = runNormalInput(
+      fullscreenState('response', { isLoading: true }),
+      '',
+      makeKey({ escape: true }),
+      { current: abortController },
+    );
+
+    expect(result.actions).toEqual([{ type: 'REQUEST_CANCEL', warning: 'Request canceled' }]);
+    expect(abort).toHaveBeenCalledOnce();
+  });
+});
+
+describe('q with active search in normal mode', () => {
+  it('q with active matches clears the search without exiting', () => {
+    const result = runNormalInput(
+      createInitialState({
+        requests: [createRequest()],
+        searchMatches: [3, 7],
+        currentMatchIndex: 0,
+        lastSearchQuery: 'needle',
+      }),
+      'q',
+    );
+
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
+    expect(result.exit).not.toHaveBeenCalled();
+  });
+
+  it('q dismisses the no-match search bar without exiting', () => {
+    const result = runNormalInput(
+      createInitialState({
+        requests: [createRequest()],
+        lastSearchQuery: 'zzz-absent',
+        searchMatches: [],
+      }),
+      'q',
+    );
+
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
+    expect(result.exit).not.toHaveBeenCalled();
+  });
+
+  it('a second q after the dismissal exits the application', () => {
+    const searchActive = createInitialState({
+      requests: [createRequest()],
+      searchMatches: [3, 7],
+      currentMatchIndex: 0,
+      lastSearchQuery: 'needle',
+    });
+    const first = runNormalInput(searchActive, 'q');
+
+    expect(first.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
+    expect(first.exit).not.toHaveBeenCalled();
+
+    const dismissed = reducer(searchActive, { type: 'CANCEL_SEARCH' });
+    const second = runNormalInput(dismissed, 'q');
+
+    expect(second.exit).toHaveBeenCalledOnce();
+    expect(second.actions).toEqual([]);
+  });
+});
+
+describe('normal mode search and escape', () => {
+  it('/ with a null response dispatches ENTER_SEARCH', () => {
+    const actions = pressKey(createInitialState({ requests: [createRequest()], response: null }), '/');
+
+    expect(actions).toEqual([{ type: 'ENTER_SEARCH' }]);
+  });
+
+  it('Escape is a no-op in normal mode without search state', () => {
+    const result = runNormalInput(
+      createInitialState({ requests: [createRequest()] }),
+      '',
+      makeKey({ escape: true }),
+    );
+
+    expect(result.actions).toEqual([]);
+    expect(result.exit).not.toHaveBeenCalled();
   });
 });

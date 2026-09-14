@@ -95,6 +95,16 @@ describe('RELOAD_FILE reducer', () => {
 
     expect(result.transientError).toBeNull();
   });
+
+  it('sets transientMessage to "Reloaded"', () => {
+    const result = reducer(createInitialState(), {
+      type: 'RELOAD_FILE',
+      requests: sampleRequests,
+      variables: sampleVariables,
+    });
+
+    expect(result.transientMessage).toBe('Reloaded');
+  });
 });
 
 describe('CLEAR_TRANSIENT_MESSAGE reducer', () => {

@@ -32,6 +32,61 @@ describe('shortcut bar and status text', () => {
     expect(frame).toContain('[Enter] Send');
   });
 
+  it('renders the shortcut bar with [h/j/k/l] Nav', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('[h/j/k/l] Nav');
+  });
+
+  it('renders the shortcut bar with [Tab] Panel', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('[Tab] Panel');
+  });
+
+  it('renders the shortcut bar with [v] Verbose', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('[v] Verbose');
+  });
+
+  it('renders the shortcut bar with [q] Quit', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('[q] Quit');
+  });
+
+  it('renders the shortcut bar with [?] Help', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('[?] Help');
+  });
+
+  it('does not render a [g] edge-jump hint', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('[g]');
+  });
+
+  it('does not render a [G] edge-jump hint', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('[G]');
+  });
+
+  it('does not render a [0] edge-jump hint', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('[0]');
+  });
+
+  it('does not render a [$] edge-jump hint', () => {
+    const { lastFrame } = render(<StatusBar {...baseProps} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('[$]');
+  });
+
+
   it('shows selection position when focusedPanel is requests', () => {
     const { lastFrame } = render(<StatusBar {...baseProps} focusedPanel="requests" />);
     const frame = lastFrame() ?? '';
