@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createInitialState, reducer } from '../helpers/state';
-import { createMockResponse } from '../helpers/responses';
+import { createInitialState, reducer } from '../../helpers/state';
+import { createMockResponse } from '../../helpers/responses';
 
 describe('transient channel exclusivity', () => {
   it('initializes transientWarning to null', () => {

@@ -4,12 +4,12 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { handleNormalInput, handleResponseSaveInput } from '../../src/app/input-handlers';
-import { deriveResponseSaveFilename } from '../../src/core/response-save';
-import type { Action, AppState } from '../../src/core/types';
-import { createMockResponse } from '../helpers/responses';
-import { createRequest } from '../helpers/requests';
-import { createInitialState, reducer } from '../helpers/state';
+import { handleNormalInput, handleResponseSaveInput } from '../../../src/app/input-handlers';
+import { deriveResponseSaveFilename } from '../../../src/core/response-save';
+import type { Action, AppState } from '../../../src/core/types';
+import { createMockResponse } from '../../helpers/responses';
+import { createRequest } from '../../helpers/requests';
+import { createInitialState, reducer } from '../../helpers/state';
 
 function makeKey(overrides: Partial<Key> = {}): Key {
   return {

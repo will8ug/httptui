@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ParsedRequest } from '../../src/core/types';
-import { createMockResponse } from '../helpers/responses';
-import { createRequest } from '../helpers/requests';
-import { createInitialState, reducer } from '../helpers/state';
+import type { ParsedRequest } from '../../../src/core/types';
+import { createMockResponse } from '../../helpers/responses';
+import { createRequest } from '../../helpers/requests';
+import { createInitialState, reducer } from '../../helpers/state';
 
 function makeRequests(count: number): ParsedRequest[] {
   return Array.from({ length: count }, (_, i) =>

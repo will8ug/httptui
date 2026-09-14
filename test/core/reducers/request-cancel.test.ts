@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMockResponse } from '../helpers/responses';
-import { createInitialState, reducer } from '../helpers/state';
+import { createMockResponse } from '../../helpers/responses';
+import { createInitialState, reducer } from '../../helpers/state';
 
 function loadingState() {
   return createInitialState({

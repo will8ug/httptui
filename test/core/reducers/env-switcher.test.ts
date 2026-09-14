@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { createInitialState as realCreateInitialState, reducer } from '../../src/core/reducer';
-import { mergeVariables } from '../../src/core/variables';
-import type { Action, AppState, EnvOption, FileVariable } from '../../src/core/types';
-import { createInitialState, defaultAppProps } from '../helpers/state';
+import { createInitialState as realCreateInitialState, reducer } from '../../../src/core/reducer';
+import { mergeVariables } from '../../../src/core/variables';
+import type { Action, AppState, EnvOption, FileVariable } from '../../../src/core/types';
+import { createInitialState, defaultAppProps } from '../../helpers/state';
 
 const fileVariables: FileVariable[] = [
   { name: 'baseUrl', value: 'https://api.local' },

@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Key } from 'ink';
 
-import { createInitialState } from '../helpers/state';
-import { createMockResponse } from '../helpers/responses';
-import { handleNormalInput, handleSearchInput } from '../../src/app/input-handlers';
-import { formatResponseBody } from '../../src/core/formatter';
-import { reducer, CLEAR_SEARCH_STATE, computeSearchScrollOffset } from '../../src/core/reducer';
-import { computeResponseLayout } from '../../src/core/response-layout';
-import type { Action, AppState, ResponseData } from '../../src/core/types';
-import { getPanelContentWidth } from '../../src/utils/layout';
+import { createInitialState } from '../../helpers/state';
+import { createMockResponse } from '../../helpers/responses';
+import { handleNormalInput, handleSearchInput } from '../../../src/app/input-handlers';
+import { formatResponseBody } from '../../../src/core/formatter';
+import { reducer, CLEAR_SEARCH_STATE, computeSearchScrollOffset } from '../../../src/core/reducer';
+import { computeResponseLayout } from '../../../src/core/response-layout';
+import type { Action, AppState, ResponseData } from '../../../src/core/types';
+import { getPanelContentWidth } from '../../../src/utils/layout';
 
 const LEDGER_CONTENT_WIDTH = 49;
 

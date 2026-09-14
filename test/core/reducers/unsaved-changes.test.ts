@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { hasUnsavedChanges } from '../../src/utils/request';
-import { createRequest } from '../helpers/requests';
-import { createInitialState, createEditState, reducer } from '../helpers/state';
+import { hasUnsavedChanges } from '../../../src/utils/request';
+import { createRequest } from '../../helpers/requests';
+import { createInitialState, createEditState, reducer } from '../../helpers/state';
 
 describe('per-request dirty markers', () => {
   it('is set by COMMIT_EDIT when body changes', () => {

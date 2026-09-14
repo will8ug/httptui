@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createInitialState, reducer } from '../helpers/state';
+import { createInitialState, reducer } from '../../helpers/state';
 
 describe('TOGGLE_FULLSCREEN reducer', () => {
   it('entering response fullscreen resets responseScrollOffset and responseHorizontalOffset', () => {

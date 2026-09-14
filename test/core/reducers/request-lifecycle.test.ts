@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMockResponse } from '../helpers/responses';
-import { createInitialState, reducer } from '../helpers/state';
+import { createMockResponse } from '../../helpers/responses';
+import { createInitialState, reducer } from '../../helpers/state';
 
 describe('SEND_REQUEST reducer', () => {
   it('clears a prior response and resets the response offsets', () => {

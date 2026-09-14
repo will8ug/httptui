@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AppState, ParsedRequest } from '../../src/core/types';
-import { createRequest } from '../helpers/requests';
-import { sampleRequests, sampleVariables, toVarMap } from '../helpers/fixtures';
-import { createInitialState, reducer } from '../helpers/state';
+import type { AppState, ParsedRequest } from '../../../src/core/types';
+import { createRequest } from '../../helpers/requests';
+import { sampleRequests, sampleVariables, toVarMap } from '../../helpers/fixtures';
+import { createInitialState, reducer } from '../../helpers/state';
 
 describe('RELOAD_FILE reducer', () => {
   it('preserves selection by name when request still exists', () => {

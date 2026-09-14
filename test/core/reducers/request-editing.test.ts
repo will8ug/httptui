@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AppState } from '../../src/core/types';
-import { createRequest } from '../helpers/requests';
-import { createInitialState, createEditState, reducer } from '../helpers/state';
+import type { AppState } from '../../../src/core/types';
+import { createRequest } from '../../helpers/requests';
+import { createInitialState, createEditState, reducer } from '../../helpers/state';
 
 describe('ENTER_EDIT reducer', () => {
   it('seeds all buffers with the URL tab active and cursors at end', () => {
