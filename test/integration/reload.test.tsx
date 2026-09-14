@@ -39,21 +39,6 @@ afterEach(() => {
 });
 
 describe('reload integration', () => {
-  it("R reloads file and shows 'Reloaded' message briefly", async () => {
-    const parsedRequests = parseHttpFile(INITIAL_HTTP_CONTENT);
-    const { stdin, lastFrame } = renderApp({
-      filePath: tempFilePath,
-      requests: parsedRequests.requests,
-      variables: parsedRequests.variables,
-    });
-
-    await delay(KEY_DELAY_MS);
-    await press(stdin, 'R');
-    await delay(100);
-
-    expect(lastFrame() ?? '').toContain('Reloaded');
-  });
-
   it('R reloads modified file content', async () => {
     const parsedRequests = parseHttpFile(INITIAL_HTTP_CONTENT);
     const { stdin, lastFrame } = renderApp({

@@ -95,6 +95,25 @@ describe('display modes', () => {
     expect(frame).toContain('text/plain');
     expect(frame).toContain('X-Custom');
   });
+
+  it('renders a CRLF-normalized body on separate rows without leaking carriage returns', () => {
+    // The executor normalizes \r\n to \n in body (rawBody keeps the CRLFs);
+    // ResponseView receives the normalized form.
+    const response = createMockResponse({
+      body: '<html>\n<head>\n  <title>Test</title>\n</head>\n<body>\n  <h1>Hello</h1>\n</body>\n</html>',
+      rawBody: '<html>\r\n<head>\r\n  <title>Test</title>\r\n</head>\r\n<body>\r\n  <h1>Hello</h1>\r\n</body>\r\n</html>',
+    });
+    const { lastFrame } = render(<ResponseView {...baseProps} response={response} />);
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+
+    expect(frame).not.toMatch(/\r/);
+    expect(frame).toContain('<html>');
+    expect(frame).toContain('<h1>Hello</h1>');
+    expect(lines.findIndex((line) => line.includes('<html>'))).not.toBe(
+      lines.findIndex((line) => line.includes('<head>')),
+    );
+  });
 });
 
 describe('scroll and overflow', () => {
