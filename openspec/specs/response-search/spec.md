@@ -123,6 +123,8 @@ When scrolling to a match, the system SHALL set `responseScrollOffset` to the **
 - the single separator visual line,
 - and the cumulative visual-line expansion of preceding body lines (each raw body line MAY occupy more than 1 visual line in `wrap` mode).
 
+Visual lines SHALL be counted at the panel's current layout width — the split-layout content width in the normal view, and the fullscreen content width while the response panel is maximized.
+
 The offset SHALL be clamped to the maximum scroll offset. Callers dispatching `CONFIRM_SEARCH`, `NEXT_MATCH`, and `PREV_MATCH` SHALL compute the target visual line index from the canonical response-layout ledger (`computeResponseLayout`) rather than from scalar arithmetic such as `1 + headerCount + 1`.
 
 #### Scenario: Scroll to match without verbose headers in nowrap mode
@@ -147,6 +149,11 @@ The offset SHALL be clamped to the maximum scroll offset. Callers dispatching `C
 - **WHEN** `wrapMode` is `'wrap'`, `verbose` is off, the status line is not wrapped, raw body line 0 occupies 3 visual lines (it wraps), raw body line 1 occupies 1 visual line, and a match is on raw body line 2
 - **THEN** `responseScrollOffset` SHALL be set to `1 (status) + 1 (separator) + 3 (body[0]) + 1 (body[1])` = `6`
 - **AND** the scroll SHALL land on the visual line that actually displays the match
+
+#### Scenario: Scroll to match in a maximized response panel in wrap mode
+- **WHEN** `wrapMode` is `'wrap'`, the response panel is maximized, a preceding body line wraps into fewer visual lines at the fullscreen width than it would at the split width, and a match is on a later body line
+- **THEN** `responseScrollOffset` SHALL be set from the cumulative visual-line expansion as rendered at the fullscreen width
+- **AND** the scroll SHALL land on the visual line that actually displays the match in the maximized panel
 
 ### Requirement: Arrow indicator on matching lines
 `ResponseView` SHALL render a `►` prefix on the **visual line** at which the raw body line identified by `searchMatches[currentMatchIndex]` begins, in a bright color (cyanBright). Other matching raw body lines SHALL have a `·` prefix rendered at their first visual line in a dim color (gray). Non-matching visual lines SHALL have no prefix change. The visual line for each raw body line SHALL be determined by the canonical response-layout ledger (`computeResponseLayout`), so that markers land correctly in both `wrap` and `nowrap` modes regardless of wrapped status, wrapped verbose headers, or wrapped body lines.

@@ -20,7 +20,7 @@ import { completePath } from '../utils/path-completion';
 import type { PathEntry } from '../utils/path-completion';
 import { EDIT_CANCEL_WINDOW_MS } from '../utils/timing';
 import { hasUnsavedChanges } from '../utils/request';
-import { getResponseContentWidth } from '../utils/layout';
+import { getPanelContentWidth } from '../utils/layout';
 import type { Action, AppState, ExecutorConfig, ParsedRequest, ResponseData } from '../core/types';
 import type { ClipboardRunner } from '../core/clipboard';
 import { EDIT_TAB_ORDER } from '../core/types';
@@ -49,7 +49,7 @@ function getBodyVisualStart(state: AppState, columns: number): number[] | null {
     verbose: state.verbose,
     rawMode: state.rawMode,
     wrapMode: state.wrapMode,
-    contentWidth: getResponseContentWidth(columns),
+    contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns }),
     formattedBody,
   });
   return layout.bodyVisualStart;
