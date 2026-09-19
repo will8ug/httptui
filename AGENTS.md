@@ -41,10 +41,20 @@ Precedent: the `recursive-body-synthesis` design said "preserve all existing tes
 The shortcut lists in `README.md` and the help overlay are deliberately different in wording and coverage. Do not align them entry-for-entry.
 
 - **`README.md` is the verbose reference.** Descriptions may qualify behavior per table (e.g. `q` — "Dismiss search results when shown, otherwise quit application"), and tables may repeat a key in another context's table (e.g. `Escape` and `q` in the Search table) when it clarifies that context.
-- **The help overlay is the terse cheat-sheet.** Labels stay short (`q` — "Quit application"); slightly less precise is acceptable, factually wrong is not. It renders from the `SHORTCUTS` registry (`src/core/shortcuts.ts`), as does the status bar's `[q] Quit` — the literal texts are pinned by tests (`test/core/shortcuts.test.ts`, `test/integration/edge-jump.test.tsx`, `test/components/HelpOverlay.test.tsx`).
+- **The help overlay is the terse cheat-sheet.** Labels stay short (`q` — "Quit application"); slightly less precise is acceptable, factually wrong is not. It renders from the `SHORTCUTS` registry (`src/core/shortcuts.ts`), as does the status bar's `[q] Quit` — the literal texts are pinned by tests (`test/core/shortcuts.test.ts`, `test/components/HelpOverlay.test.tsx`).
 - **Change the README, not the registry, when a key gains a qualifier.** Touching the registry cascades into the overlay, the status bar, and their tests for no user-visible benefit.
 
 Precedent: the `scope-quit-key` change documented `q`'s search-dismissal step and `Escape`'s dismissal role across both README tables while leaving the `SHORTCUTS` registry and help overlay untouched — all three text-coupled tests stayed green unmodified.
+
+## Testing pyramid
+
+Prefer the fastest tier that can verify a behavior. Integration tests are for what only they can verify — write one only when no unit tier can.
+
+- **Unit-testable behavior lives at unit tiers.** Input-handler dispatch assertions go in `test/app/*-input.test.ts` (call `handleNormalInput`/`handleXxxInput` directly with a dispatch-capture array — no Ink render, no `press()` delays), reducer transitions in `test/core/reducers/`, single-component rendering in `test/components/`. When a function CAN be covered by one of these tiers, cover it there — do not render the full app to assert it.
+- **Integration tests are reserved for what demands the full render stack:** real fs/subprocess roundtrips, App-level `useEffect` timer semantics (e.g. the `TRANSIENT_CLEAR_MS` window), executor↔reducer race coordination (e.g. late-response discard), and cross-capability wiring invariants that no single unit tier pins (e.g. state → `Layout` → component chains).
+- **Never drop a verifier without naming its replacement.** Before deleting or skipping an integration test, point at the unit/component test that covers the same observable behavior — every spec'd scenario keeps a verifier at some tier. Handler/reducer/component coverage counts; render-level duplication does not.
+
+Precedent: the pyramid refactor (`5abe292`, `738247d`) pruned ~175 integration tests while adding handler/reducer/component coverage for every scenario they pinned, leaving `test/integration/` with only genuine end-to-end concerns (subprocess roundtrips, fs writes, timer semantics, cross-capability invariants).
 
 ## Test directory layout
 

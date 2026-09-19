@@ -28,7 +28,7 @@ POST {{baseUrl}}/non-exist-req
 ### Long response in both height and width
 GET {{baseUrl}}/long-response
 
-### Make a long list below (more than 13 requests)
+### Make a long list below
 GET {{baseUrl}}/ping
 
 ### 003
