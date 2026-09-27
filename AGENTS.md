@@ -38,13 +38,13 @@ Precedent: the `recursive-body-synthesis` design said "preserve all existing tes
 
 ## Shortcut documentation
 
-The shortcut lists in `README.md` and the help overlay are deliberately different in wording and coverage. Do not align them entry-for-entry.
+The shortcut list in `docs/keyboard-shortcuts.md` and the help overlay are deliberately different in wording and coverage. Do not align them entry-for-entry.
 
-- **`README.md` is the verbose reference.** Descriptions may qualify behavior per table (e.g. `q` — "Dismiss search results when shown, otherwise quit application"), and tables may repeat a key in another context's table (e.g. `Escape` and `q` in the Search table) when it clarifies that context.
+- **`docs/keyboard-shortcuts.md` is the verbose reference.** Descriptions may qualify behavior per table (e.g. `q` — "Dismiss search results when shown, otherwise quit application"), and tables may repeat a key in another context's table (e.g. `Escape` and `q` in the Search table) when it clarifies that context.
 - **The help overlay is the terse cheat-sheet.** Labels stay short (`q` — "Quit application"); slightly less precise is acceptable, factually wrong is not. It renders from the `SHORTCUTS` registry (`src/core/shortcuts.ts`), as does the status bar's `[q] Quit` — the literal texts are pinned by tests (`test/core/shortcuts.test.ts`, `test/components/HelpOverlay.test.tsx`).
-- **Change the README, not the registry, when a key gains a qualifier.** Touching the registry cascades into the overlay, the status bar, and their tests for no user-visible benefit.
+- **Change the shortcut reference, not the registry, when a key gains a qualifier.** Touching the registry cascades into the overlay, the status bar, and their tests for no user-visible benefit.
 
-Precedent: the `scope-quit-key` change documented `q`'s search-dismissal step and `Escape`'s dismissal role across both README tables while leaving the `SHORTCUTS` registry and help overlay untouched — all three text-coupled tests stayed green unmodified.
+Precedent: the `scope-quit-key` change documented `q`'s search-dismissal step and `Escape`'s dismissal role across both shortcut tables while leaving the `SHORTCUTS` registry and help overlay untouched — all three text-coupled tests stayed green unmodified.
 
 ## Testing pyramid
 
