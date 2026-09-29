@@ -2,17 +2,11 @@
 
 Guidance for coding agents (and humans) working in this repository.
 
-## OpenSpec spec maintenance
+## Planning workflow
 
-Main specs (`openspec/specs/`) describe **system capabilities and observable behavior** — nothing else.
+Non-trivial work runs through the skills pipeline: grill (or grill-with-docs) → to-spec → to-tickets → implement. `to-tickets` publishes to the local-markdown tracker under `.scratch/` — gitignored by design; tickets are working state, never commit them. Tracker conventions: `docs/agents/issue-tracker.md`; the `## Agent skills` section at the end of this file holds the scaffold pointers.
 
-- **Maintain capability specs.** Each spec covers a user-facing capability (`response-search`, `text-wrap`, `request-details`, …). Requirements state what the system SHALL do; scenarios state observable outcomes (WHEN/THEN).
-- **No process-shaped framing.** Never create specs for test infrastructure, and never mandate test files, test patterns, directory layouts, or helper imports in a spec. "The test suite SHALL include `test/components/X.test.tsx`" is a smell — tests verify spec'd behavior, but specs do not prescribe tests.
-- **Scenarios name observable behavior, not internal actions.** Write scenarios like "WHEN a transient error is set", never "WHEN `RELOAD_ERROR` is dispatched" — action names are implementation details that leak into specs and rot when actions are renamed or consolidated.
-- **Tooling and test infrastructure are self-documenting** in the repo (config files, TypeScript types, existing test files). Do not duplicate them into specs.
-- **Before adding a scenario, check for an existing home.** If another capability spec already mandates the behavior, do not restate it — cross-reference instead. Duplicated behavior across specs means every change needs two spec updates.
-
-Precedent: the `testing` spec was deleted for being purely process-shaped (`1af0b01`), the `eslint-config` spec was removed as self-documenting tooling (`8fad1a7`), `component-tests` was distributed into capability specs (`response-view`, `status-bar`, `request-details`) by the `distribute-component-tests-spec` change, and `tui`'s behavioral requirements and prose (`## File Load`, `## File Reload`) were distributed into new capability specs (`request-list`, `file-reload`), leaving `tui` as an interface map that keeps the composite-layout requirement (`af101c4`). The status-bar spec's scenarios named `RELOAD_ERROR`/`SET_TRANSIENT_MESSAGE`; they were reworded to observable behavior by the `consolidate-transient-error` change.
+Durable knowledge has one home per concern: domain vocabulary and the capability map in `CONTEXT.md`, decisions in `docs/adr/`, coding conventions in this file, and behavior contracts pinned by the test suite (fastest tier that can verify — see Testing pyramid below).
 
 ## Comments
 
@@ -52,9 +46,9 @@ Prefer the fastest tier that can verify a behavior. Integration tests are for wh
 
 - **Unit-testable behavior lives at unit tiers.** Input-handler dispatch assertions go in `test/app/*-input.test.ts` (call `handleNormalInput`/`handleXxxInput` directly with a dispatch-capture array — no Ink render, no `press()` delays), reducer transitions in `test/core/reducers/`, single-component rendering in `test/components/`. When a function CAN be covered by one of these tiers, cover it there — do not render the full app to assert it.
 - **Integration tests are reserved for what demands the full render stack:** real fs/subprocess roundtrips, App-level `useEffect` timer semantics (e.g. the `TRANSIENT_CLEAR_MS` window), executor↔reducer race coordination (e.g. late-response discard), and cross-capability wiring invariants that no single unit tier pins (e.g. state → `Layout` → component chains).
-- **Never drop a verifier without naming its replacement.** Before deleting or skipping an integration test, point at the unit/component test that covers the same observable behavior — every spec'd scenario keeps a verifier at some tier. Handler/reducer/component coverage counts; render-level duplication does not.
+- **Never drop a verifier without naming its replacement.** Before deleting or skipping an integration test, point at the unit/component test that covers the same observable behavior — every pinned behavior keeps a verifier at some tier. Handler/reducer/component coverage counts; render-level duplication does not.
 
-Precedent: the pyramid refactor (`5abe292`, `738247d`) pruned ~175 integration tests while adding handler/reducer/component coverage for every scenario they pinned, leaving `test/integration/` with only genuine end-to-end concerns (subprocess roundtrips, fs writes, timer semantics, cross-capability invariants).
+Precedent: the pyramid refactor (`5abe292`, `738247d`) pruned ~175 integration tests while adding handler/reducer/component coverage for every behavior they pinned, leaving `test/integration/` with only genuine end-to-end concerns (subprocess roundtrips, fs writes, timer semantics, cross-capability invariants).
 
 ## Test directory layout
 
