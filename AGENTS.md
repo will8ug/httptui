@@ -64,3 +64,17 @@ Two test-adjacent directories exist with distinct purposes; do not blur them.
 - **`test/helpers/`** houses shared test infrastructure consumed across test files — data factories (`createRequest`/`createMockResponse`/`createInitialState`), app renderers (`integration.tsx`), and assertion/type-guard helpers (`assertions.ts`). It is the catch-all for "stuff tests need to share but isn't itself a test."
 
 Precedent: the `assertDefinedToNarrowType` helper was first placed in `test/utils/` (introducing the first non-test file in a directory of `*.test.ts` files mirroring `src/utils/`), then moved to `test/helpers/` to preserve the `test/utils/` ↔ `src/utils/` symmetry.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as local markdown files under `.scratch/` (gitignored). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` at the repo root, ADRs in `docs/adr/`. See `docs/agents/domain.md`.
