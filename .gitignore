@@ -15,3 +15,5 @@ badges/
 package-lock.json
 /.worktrees/
 /.scratch/
+.openspec/
+
