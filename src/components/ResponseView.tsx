@@ -2,13 +2,15 @@ import React from 'react';
 import { Spinner } from '@inkjs/ui';
 import { Box, Text, useStdout } from 'ink';
 
-import { formatResponseBody } from "../core/formatter";
-import { computeResponseLayout } from '../core/response-layout';
+import {
+  computeResponseViewport,
+  getPanelContentWidth,
+  sliceVisibleLines,
+} from '../core/response-viewport';
+import type { ResponseViewportGeometry } from '../core/response-viewport';
 import type { ErrorInfo, ResponseData, WrapMode } from '../core/types';
 import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
-import { getResponseContentWidth } from '../core/response-viewport';
-import { RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
-import { clampSegmentsToWidth, shiftText, truncateText } from '../utils/text';
+import { cellWidth, clampSegmentsToWidth, shiftText, truncateText } from '../utils/text';
 import type { ColorSegment } from '../utils/wrap';
 
 interface ResponseViewProps {
@@ -21,13 +23,13 @@ interface ResponseViewProps {
   horizontalOffset: number;
   wrapMode: WrapMode;
   rawMode: boolean;
+  fullscreen: boolean;
   availableHeight: number;
   searchMatches: number[];
   currentMatchIndex: number;
   isSearchMode: boolean;
   lastSearchQuery: string;
   searchQuery: string;
-  contentWidthOverride?: number;
 }
 
 type LineTransform =
@@ -45,7 +47,7 @@ function flattenSegmentText(segments: ColorSegment[]): string {
 
 function truncateSegments(segments: ColorSegment[], maxWidth: number): ColorSegment[] {
   const flat = flattenSegmentText(segments);
-  if (flat.length <= maxWidth) {
+  if (cellWidth(flat) <= maxWidth) {
     return segments;
   }
   const truncated = truncateText(flat, maxWidth);
@@ -102,20 +104,28 @@ export function ResponseView({
   horizontalOffset,
   wrapMode,
   rawMode,
+  fullscreen,
   availableHeight,
   searchMatches,
   currentMatchIndex,
   isSearchMode,
   lastSearchQuery,
   searchQuery,
-  contentWidthOverride,
 }: ResponseViewProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
-  const contentWidth = contentWidthOverride ?? getResponseContentWidth(columns);
-  const showSearchBar = isSearchMode || (lastSearchQuery !== '' && searchMatches.length >= 0 && lastSearchQuery.length > 0);
-  const searchBarHeight = showSearchBar ? 1 : 0;
-  const visibleHeight = Math.max(1, availableHeight - RESPONSE_PANEL_VERTICAL_CHROME - searchBarHeight);
+  const showSearchBar = isSearchMode || lastSearchQuery !== '';
+  const geometry: ResponseViewportGeometry = {
+    columns,
+    availableHeight,
+    fullscreen,
+    searchVisible: showSearchBar,
+  };
+  const contentWidth = getPanelContentWidth({
+    panel: 'response',
+    maximizedPanel: fullscreen ? 'response' : null,
+    columns,
+  });
 
   let content: React.ReactNode;
 
@@ -132,15 +142,7 @@ export function ResponseView({
   } else if (!response) {
     content = <Text color="gray">Press Enter to send a request</Text>;
   } else {
-    const formattedBody = formatResponseBody(response.body, rawMode);
-    const layout = computeResponseLayout({
-      response,
-      verbose,
-      rawMode,
-      wrapMode,
-      contentWidth,
-      formattedBody,
-    });
+    const model = computeResponseViewport({ response, verbose, rawMode, wrapMode, geometry });
 
     const transform: LineTransform =
       wrapMode === 'wrap'
@@ -149,27 +151,20 @@ export function ResponseView({
           ? { kind: 'shift', offset: horizontalOffset }
           : { kind: 'truncate' };
 
-    const matchVisualIndices = new Set(searchMatches.map((i) => layout.bodyVisualStart[i]));
-
-    const responseLines: React.ReactElement[] = [];
-    let visualIndex = 0;
-    for (const section of layout.sections) {
-      for (let i = 0; i < section.visualLines.length; i += 1) {
-        const key = `vl-${visualIndex}`;
-        const widthBudget = matchVisualIndices.has(visualIndex) ? contentWidth - 1 : contentWidth;
-        responseLines.push(renderVisualLine(section.visualLines[i], transform, key, widthBudget));
-        visualIndex += 1;
-      }
-    }
-
+    const matchVisualIndices = new Set(searchMatches.map((i) => model.bodyVisualStart[i]));
     const currentMatchVisualIndex = searchMatches.length > 0
-      ? layout.bodyVisualStart[searchMatches[currentMatchIndex]]
+      ? model.bodyVisualStart[searchMatches[currentMatchIndex]]
       : -1;
 
-    const sliced = responseLines.slice(scrollOffset, scrollOffset + visibleHeight);
-    content = sliced.map((line, sliceIndex) => {
-      const absoluteVisualIndex = scrollOffset + sliceIndex;
-      if (matchVisualIndices.has(absoluteVisualIndex)) {
+    content = sliceVisibleLines(model, scrollOffset, model.visibleHeight).map(
+      (segments, sliceIndex) => {
+        const absoluteVisualIndex = scrollOffset + sliceIndex;
+        const isMatch = matchVisualIndices.has(absoluteVisualIndex);
+        const widthBudget = isMatch ? contentWidth - 1 : contentWidth;
+        const line = renderVisualLine(segments, transform, `vl-${absoluteVisualIndex}`, widthBudget);
+        if (!isMatch) {
+          return line;
+        }
         const isCurrent = absoluteVisualIndex === currentMatchVisualIndex;
         return (
           <Box key={`search-${absoluteVisualIndex}`} flexDirection="row">
@@ -177,9 +172,8 @@ export function ResponseView({
             {line}
           </Box>
         );
-      }
-      return line;
-    });
+      },
+    );
   }
 
   let searchBar: React.ReactNode = null;

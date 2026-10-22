@@ -155,7 +155,7 @@ return (
           isSearchMode={state.mode === 'search'}
           lastSearchQuery={state.lastSearchQuery}
           searchQuery={state.searchQuery}
-          contentWidthOverride={state.maximizedPanel === 'response' ? fullscreenContentWidth : undefined}
+          fullscreen={state.maximizedPanel === 'response'}
         />
       }
       bottom={
