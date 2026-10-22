@@ -6,7 +6,8 @@ import { longResponse, compactJsonResponse, createMockResponse } from '../../hel
 import { reducer, clamp } from '../../../src/core/reducer';
 import { getMaxRequestLineWidth, getMaxResponseLineWidth, getMaxDetailsLineWidth } from '../../../src/utils/scroll';
 import type { Action, AppState, ParsedRequest, ResponseData } from '../../../src/core/types';
-import { getPanelContentWidth, getRequestContentWidth, getResponseContentWidth } from '../../../src/utils/layout';
+import { getRequestContentWidth } from '../../../src/utils/layout';
+import { getPanelContentWidth, getResponseContentWidth } from '../../../src/core/response-viewport';
 
 describe('JUMP_VERTICAL reducer', () => {
   describe('requests panel', () => {

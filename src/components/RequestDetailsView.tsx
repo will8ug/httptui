@@ -4,7 +4,8 @@ import { Box, Text, useStdout } from 'ink';
 import type { FileVariable, ParsedRequest } from '../core/types';
 import { resolveRequestDetails } from '../utils/request';
 import { getMethodColor } from '../utils/colors';
-import { DEFAULT_TERMINAL_COLUMNS, getResponseContentWidth } from '../utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
+import { getResponseContentWidth } from '../core/response-viewport';
 import { expandTabs, shiftText, truncateText } from '../utils/text';
 
 interface RequestDetailsViewProps {

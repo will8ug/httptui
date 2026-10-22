@@ -6,7 +6,7 @@ import { getRequestTarget } from './request';
 import { cellWidth } from './text';
 import type { FileVariable, ParsedRequest, ResponseData } from '../core/types';
 
-export const RESPONSE_PANEL_VERTICAL_CHROME = 3;
+export { RESPONSE_PANEL_VERTICAL_CHROME } from '../core/response-viewport';
 
 export function getResponseTotalLines(options: {
   response: ResponseForLayout & { body: string };

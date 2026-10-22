@@ -13,7 +13,7 @@ vi.mock('undici', () => ({
 
 import { delay, KEY_DELAY_MS, press, renderApp, TAB } from '../helpers/integration';
 import { getResponseTotalLines } from '../../src/utils/scroll';
-import { getPanelContentWidth } from '../../src/utils/layout';
+import { getPanelContentWidth } from '../../src/core/response-viewport';
 import type { FocusedPanel, ParsedRequest } from '../../src/core/types';
 
 const COLUMNS = 100;

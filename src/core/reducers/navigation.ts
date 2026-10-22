@@ -1,6 +1,7 @@
 import { dirname } from 'node:path';
 
-import { DEFAULT_TERMINAL_ROWS, getPanelContentWidth, getRequestVisibleHeight } from '../../utils/layout';
+import { DEFAULT_TERMINAL_ROWS, getRequestVisibleHeight } from '../../utils/layout';
+import { getPanelContentWidth } from '../../core/response-viewport';
 import { getMaxDetailsLineWidth, getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../utils/scroll';
 import type { Action, AppState } from '../types';
 import { CLEAR_SEARCH_STATE, clampScrollOffsetToCursor, navigateRequests } from './helpers';

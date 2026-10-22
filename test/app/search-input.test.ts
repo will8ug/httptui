@@ -7,7 +7,7 @@ import { handleNormalInput, handleSearchInput } from '../../src/app/input-handle
 import { formatResponseBody } from '../../src/core/formatter';
 import { computeResponseLayout } from '../../src/core/response-layout';
 import type { Action, AppState } from '../../src/core/types';
-import { getPanelContentWidth } from '../../src/utils/layout';
+import { getPanelContentWidth } from '../../src/core/response-viewport';
 import { makeKey } from '../helpers/keys';
 
 describe('match offsets in a maximized response panel (wrap mode)', () => {

@@ -8,12 +8,14 @@ import {
   getEditorContentWidth,
   getEditorVisibleHeight,
   getEnvPickerVisibleHeight,
-  getFullscreenContentWidth,
   getFullscreenRequestContentWidth,
-  getPanelContentWidth,
   getRequestContentWidth,
-  getResponseContentWidth,
 } from '../../src/utils/layout';
+import {
+  getFullscreenContentWidth,
+  getPanelContentWidth,
+  getResponseContentWidth,
+} from '../../src/core/response-viewport';
 
 describe('getEnvPickerVisibleHeight', () => {
   it('caps at MAX_ENV_PICKER_VISIBLE (8) on large terminals', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getDetailsTotalLines, getMaxResponseLineWidth, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../../src/utils/scroll';
-import { getPanelContentWidth, getResponseContentWidth } from '../../src/utils/layout';
+import { getPanelContentWidth, getResponseContentWidth } from '../../src/core/response-viewport';
 import { createMockResponse } from '../helpers/responses';
 
 describe('scroll utilities', () => {

@@ -4,7 +4,8 @@ import { getMaxDetailsLineWidth, getMaxRequestLineWidth, getMaxResponseLineWidth
 import { formatResponseBody } from '../../src/core/formatter';
 import { formatStatusLine } from '../../src/core/response-layout';
 import type { Action, AppState, ParsedRequest } from '../../src/core/types';
-import { getRequestContentWidth, getLeftPanelWidth, getResponseContentWidth, getDetailPanelHeight, getPanelContentWidth } from '../../src/utils/layout';
+import { getRequestContentWidth, getLeftPanelWidth, getDetailPanelHeight } from '../../src/utils/layout';
+import { getPanelContentWidth, getResponseContentWidth } from '../../src/core/response-viewport';
 import { createInitialState, reducer } from '../helpers/state';
 import { createRequest, makeRequests } from '../helpers/requests';
 import { compactJsonResponse, createMockResponse } from '../helpers/responses';

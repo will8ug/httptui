@@ -1,5 +1,3 @@
-import type { FocusedPanel } from '../core/types';
-
 export const DEFAULT_TERMINAL_COLUMNS = 80;
 export const DEFAULT_TERMINAL_ROWS = 24;
 export const MIN_CONTENT_AREA_ROWS = 3;
@@ -8,7 +6,6 @@ const LEFT_PANEL_RATIO = 0.3;
 const LEFT_PANEL_MIN_WIDTH = 25;
 const LEFT_PANEL_MAX_WIDTH = 36;
 const MIN_REQUEST_CONTENT_WIDTH = 10;
-const MIN_RESPONSE_CONTENT_WIDTH = 20;
 
 /** Panel chrome (border top + title + border bottom = 3) + status bar (1) + layout flex rounding (1) */
 export const REQUEST_LIST_VERTICAL_OVERHEAD = 5;
@@ -24,8 +21,6 @@ export function getEnvPickerVisibleHeight(rows: number): number {
 
 /** Border (1 + 1) + paddingX (1 + 1) for the request list panel */
 const REQUEST_PANEL_CHROME = 4;
-/** Border (1 + 1) + paddingX (1 + 1) for the response panel */
-const RESPONSE_PANEL_CHROME = 4;
 
 export function getLeftPanelWidth(columns: number): number {
   const proportionalWidth = Math.floor(columns * LEFT_PANEL_RATIO);
@@ -34,10 +29,6 @@ export function getLeftPanelWidth(columns: number): number {
 
 export function getRequestContentWidth(columns: number): number {
   return Math.max(MIN_REQUEST_CONTENT_WIDTH, getLeftPanelWidth(columns) - REQUEST_PANEL_CHROME);
-}
-
-export function getResponseContentWidth(columns: number): number {
-  return Math.max(MIN_RESPONSE_CONTENT_WIDTH, columns - getLeftPanelWidth(columns) - RESPONSE_PANEL_CHROME);
 }
 
 export function getRequestVisibleHeight(rows: number): number {
@@ -52,32 +43,8 @@ export function getDetailPanelHeight(
   return Math.min(totalContentLines, maxContentLines) + BORDER_ROWS;
 }
 
-export function getFullscreenContentWidth(columns: number): number {
-  return Math.max(MIN_RESPONSE_CONTENT_WIDTH, columns - RESPONSE_PANEL_CHROME);
-}
-
 export function getFullscreenRequestContentWidth(columns: number): number {
   return Math.max(MIN_REQUEST_CONTENT_WIDTH, columns - REQUEST_PANEL_CHROME);
-}
-
-export function getPanelContentWidth({
-  panel,
-  maximizedPanel,
-  columns,
-}: {
-  panel: FocusedPanel;
-  maximizedPanel: FocusedPanel | null;
-  columns: number;
-}): number {
-  const isMaximized = maximizedPanel === panel;
-  if (panel === 'requests') {
-    return isMaximized
-      ? getFullscreenRequestContentWidth(columns)
-      : getRequestContentWidth(columns);
-  }
-  return isMaximized
-    ? getFullscreenContentWidth(columns)
-    : getResponseContentWidth(columns);
 }
 
 /** Vertical chrome (border top + title + border bottom) inside any Ink Box with borderStyle="round" */

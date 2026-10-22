@@ -1,7 +1,4 @@
-type ColorSegment = {
-  text: string;
-  color: string;
-};
+import type { ColorSegment } from './wrap';
 
 const STRUCTURAL_CHARACTERS = new Set(['{', '}', '[', ']', ',', ':']);
 

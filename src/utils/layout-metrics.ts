@@ -4,10 +4,10 @@ import {
   getDetailPanelHeight,
   getEditorContentWidth,
   getEditorVisibleHeight,
-  getFullscreenContentWidth,
   getFullscreenRequestContentWidth,
   getFullscreenVisibleHeight,
 } from './layout';
+import { getFullscreenContentWidth } from '../core/response-viewport';
 
 const DETAIL_PANEL_MAX_CONTENT = 10;
 

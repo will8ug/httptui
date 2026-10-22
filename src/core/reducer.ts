@@ -1,5 +1,5 @@
 import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
-import { getPanelContentWidth } from '../utils/layout';
+import { getPanelContentWidth } from './response-viewport';
 
 import type { Action, AppProps, AppState } from './types';
 import { resolveVariables } from './variables';
