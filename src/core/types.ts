@@ -95,6 +95,11 @@ export interface ExecutorConfig {
 
 export type FocusedPanel = 'requests' | 'details' | 'response';
 
+export interface TerminalGeometry {
+  rows: number;
+  columns: number;
+}
+
 export type AppMode =
   | 'normal'
   | 'fileLoad'
@@ -126,6 +131,7 @@ export type EditOp =
   | 'lineEnd';
 
 export interface AppState {
+  geometry: TerminalGeometry;
   requests: ParsedRequest[];
   variables: FileVariable[];
   environmentVariables: FileVariable[];
@@ -196,6 +202,7 @@ export interface AppProps {
 }
 
 export type Action =
+  | { type: 'SET_GEOMETRY'; rows: number; columns: number }
   | { type: 'SELECT_REQUEST'; index: number; rows?: number }
   | { type: 'APPEND_REQUEST'; request: ParsedRequest }
   | { type: 'MOVE_SELECTION'; direction: 'up' | 'down'; rows?: number }
