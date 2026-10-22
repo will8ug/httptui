@@ -93,6 +93,22 @@ describe('SET_GEOMETRY reducer', () => {
     expect(result.responseScrollOffset).toBe(5);
   });
 
+  it('reserves the search bar row when a dismissed query lingers', () => {
+    // A lingering lastSearchQuery keeps the search bar rendered even outside
+    // search mode, so maxVerticalOffset = 10 - 5 = 5, not the normal-mode 4.
+    const state = createInitialState({
+      response: createMockResponse({ body: EIGHT_LINE_BODY }),
+      responseScrollOffset: 7,
+      mode: 'normal',
+      lastSearchQuery: 'alpha',
+      searchMatches: [],
+    });
+
+    const result = reducer(state, { type: 'SET_GEOMETRY', rows: 10, columns: 80 });
+
+    expect(result.responseScrollOffset).toBe(5);
+  });
+
   it('leaves the response offset at 0 when no response is loaded', () => {
     const state = createInitialState();
 
