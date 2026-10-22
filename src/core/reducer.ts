@@ -1,4 +1,5 @@
 import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS } from '../utils/layout';
 import { getPanelContentWidth } from './response-viewport';
 
 import type { Action, AppProps, AppState } from './types';
@@ -7,6 +8,7 @@ import { reduceConfirmDiscard, reduceConfirmInPlaceSave } from './reducers/confi
 import { reduceEdit } from './reducers/edit';
 import { reduceEnvSelect } from './reducers/env-select';
 import { reduceFileLoad } from './reducers/file-load';
+import { reduceGeometry } from './reducers/geometry';
 import { EMPTY_EDIT_BUFFERS } from './reducers/helpers';
 import { reduceRequestLifecycle } from './reducers/lifecycle';
 import { reduceNavigation } from './reducers/navigation';
@@ -57,6 +59,9 @@ export function computeVerticalMaxOffset(
 
 export function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
+    case 'SET_GEOMETRY':
+      return reduceGeometry(state, action);
+
     case 'SELECT_REQUEST':
     case 'MOVE_SELECTION':
     case 'APPEND_REQUEST':
@@ -155,6 +160,7 @@ export function reducer(state: AppState, action: Action): AppState {
 
 export function createInitialState(props: AppProps): AppState {
   return {
+    geometry: { rows: DEFAULT_TERMINAL_ROWS, columns: DEFAULT_TERMINAL_COLUMNS },
     requests: props.requests,
     variables: props.variables,
     environmentVariables: props.environmentVariables,

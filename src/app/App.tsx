@@ -31,6 +31,7 @@ export function App(props: AppProps): React.ReactElement {
   const { stdout } = useStdout();
   const [state, dispatch] = useReducer(reducer, props, createInitialState);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastDispatchedGeometryRef = useRef<{ rows: number; columns: number } | null>(null);
 
   const rows = stdout.rows || DEFAULT_TERMINAL_ROWS;
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
@@ -46,6 +47,24 @@ export function App(props: AppProps): React.ReactElement {
     effectiveResponseHeight,
     effectiveDetailMaxContent,
   } = computeLayoutMetrics(state, selectedRequest, rows, columns);
+
+  useEffect(() => {
+    // Ink re-runs output layout on resize but not component bodies, so geometry
+    // sync rides the stdout 'resize' event rather than render-local rows/columns deps.
+    const syncGeometry = () => {
+      const lastDispatched = lastDispatchedGeometryRef.current;
+      const nextRows = stdout.rows || DEFAULT_TERMINAL_ROWS;
+      const nextColumns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
+      if (lastDispatched?.rows === nextRows && lastDispatched.columns === nextColumns) {
+        return;
+      }
+      lastDispatchedGeometryRef.current = { rows: nextRows, columns: nextColumns };
+      dispatch({ type: 'SET_GEOMETRY', rows: nextRows, columns: nextColumns });
+    };
+    syncGeometry();
+    stdout.on('resize', syncGeometry);
+    return () => { stdout.off('resize', syncGeometry); };
+  }, [stdout, dispatch]);
 
   useEffect(() => {
     if (state.transientMessage === null && state.transientError === null && state.transientWarning === null) {
