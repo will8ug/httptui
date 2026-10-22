@@ -11,7 +11,8 @@ afterEach(() => {
 });
 
 // Shared base-props object covering all ResponseViewProps fields with sensible defaults.
-// Spread-override per test as needed.
+// Spread-override per test as needed. ink-testing-library renders at stdout.columns = 100,
+// so the split content width is 100 - 30 - 4 = 66 and the fullscreen width is 100 - 4 = 96.
 const baseProps = {
   response: null,
   error: null,
@@ -22,13 +23,13 @@ const baseProps = {
   horizontalOffset: 0,
   wrapMode: 'nowrap' as const,
   rawMode: false,
+  fullscreen: false as boolean,
   availableHeight: 20,
   searchMatches: [] as number[],
   currentMatchIndex: 0,
   isSearchMode: false,
   lastSearchQuery: '',
   searchQuery: '',
-  contentWidthOverride: undefined as number | undefined,
 };
 
 describe('content states', () => {
@@ -143,17 +144,16 @@ describe('scroll and overflow', () => {
 
   it('shifts content left with horizontalOffset in nowrap mode', () => {
     // Body: 10 A's, dash, 10 B's, dash, 10 C's = 32 chars (not JSON)
+    // horizontalOffset=11 shifts past "AAAAAAAAAA-" in display cells; at the split
+    // content width (66) the remaining "BBBBBBBBBB-CCCCCCCCCC" (21 cells) fits whole
     const response = createMockResponse({
       body: 'AAAAAAAAAA-BBBBBBBBBB-CCCCCCCCCC',
     });
-    // horizontalOffset=11 shifts past "AAAAAAAAAA-", contentWidthOverride=20 pins width
-    // Body line: flat.slice(11) = "BBBBBBBBBB-CCCCCCCCCC" (21), truncated to 20 = "BBBBBBBBBB-CCCCCCCCC…"
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
         response={response}
         horizontalOffset={11}
-        contentWidthOverride={20}
       />,
     );
     const frame = lastFrame() ?? '';
@@ -163,30 +163,29 @@ describe('scroll and overflow', () => {
 
   it('truncates long lines at the content width in nowrap mode', () => {
     // longResponse body = 'x'.repeat(200) — single long line
-    // contentWidthOverride=10 -> truncateText produces 9 x's + ellipsis
-    const { lastFrame } = render(
-      <ResponseView {...baseProps} response={longResponse} contentWidthOverride={10} />,
-    );
+    // split content width (66) -> truncateText keeps 65 x's + ellipsis
+    const { lastFrame } = render(<ResponseView {...baseProps} response={longResponse} />);
     const frame = lastFrame() ?? '';
     expect(frame).toContain('…');
     expect(frame).not.toContain('x'.repeat(200));
   });
 
   it('wraps long content onto subsequent visual lines in wrap mode', () => {
-    // Body: "ABCDEFGHIJ" (10 chars, not JSON), contentWidthOverride=5
-    // wrapLine("ABCDEFGHIJ", 5) -> ["ABCDE", "FGHIJ"] — two visual lines
-    const response = createMockResponse({ body: 'ABCDEFGHIJ' });
+    // Body: 66 V's then W (67 chars, not JSON). Split content width (66) fills visual
+    // line 1 with V*66 exactly and wraps the trailing W onto visual line 2
+    const response = createMockResponse({ body: `${'V'.repeat(66)}W` });
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
         response={response}
         wrapMode={'wrap' as const}
-        contentWidthOverride={5}
       />,
     );
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('ABCDE');
-    expect(frame).toContain('FGHIJ');
+    expect(frame).toContain('V'.repeat(66));
+    const bodyRows = frame.split('\n').filter((line) => line.includes('V') || line.includes('W'));
+    expect(bodyRows).toHaveLength(2);
+    expect(bodyRows[1]).toContain('W');
     expect(frame).not.toContain('…');
     // Title shows [wrap] indicator
     expect(frame).toContain('[wrap]');
@@ -195,30 +194,48 @@ describe('scroll and overflow', () => {
 
 describe('wide-character content width', () => {
   it('keeps the panel border intact for wrapped CJK lines', () => {
-    // 50 CJK chars = 100 cells; contentWidthOverride=20 wraps each body line to 10 chars (20 cells)
+    // 50 CJK chars = 100 cells; split content width (66) wraps the body into
+    // 33 chars (66 cells) + 17 chars (34 cells)
     const response = createMockResponse({ body: '汉'.repeat(50) });
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
         response={response}
         wrapMode={'wrap' as const}
-        contentWidthOverride={20}
       />,
     );
     const frame = lastFrame() ?? '';
     const lines = frame.split('\n');
     const panelWidth = stringWidth(lines[0]);
 
-    for (const line of lines) {
-      expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
-    }
-
     const bodyLines = lines.filter((line) => line.includes('汉'));
-    expect(bodyLines.length).toBeGreaterThan(0);
+    expect(bodyLines).toHaveLength(2);
+    expect((bodyLines[0].match(/汉/g) ?? []).length).toBe(33);
+    expect((bodyLines[1].match(/汉/g) ?? []).length).toBe(17);
     for (const line of bodyLines) {
       expect(line.startsWith('│')).toBe(true);
       expect(line.endsWith('│')).toBe(true);
     }
+    for (const line of lines) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
+    }
+  });
+
+  it('truncates a wide-character body line by display cells with an ellipsis instead of hard-clamping', () => {
+    // 40 CJK chars are 40 code units but 80 display cells. The split content width at
+    // the test terminal's 100 columns is 100 - 30 - 4 = 66. A code-unit fast path sees
+    // 40 <= 66 and skips truncation, hard-clamping to 33 chars with no ellipsis.
+    // Cell measurement keeps 32 chars (64 cells) + ellipsis = 65 cells.
+    const response = createMockResponse({ body: '汉'.repeat(40) });
+    const { lastFrame } = render(<ResponseView {...baseProps} response={response} />);
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+    const bodyLine = lines.find((line) => line.includes('汉'));
+    assertDefinedToNarrowType(bodyLine, 'Expected a CJK body line to be defined');
+    expect(bodyLine).toContain('…');
+    expect((bodyLine.match(/汉/g) ?? []).length).toBe(32);
+    expect(stringWidth(bodyLine)).toBeLessThanOrEqual(panelWidth);
   });
 
   it('truncates a wide-character body line with an ellipsis and keeps the border intact', () => {
@@ -227,7 +244,6 @@ describe('wide-character content width', () => {
       <ResponseView
         {...baseProps}
         response={response}
-        contentWidthOverride={20}
       />,
     );
     const frame = lastFrame() ?? '';
@@ -242,15 +258,14 @@ describe('wide-character content width', () => {
   });
 
   it('budgets a search-marked CJK line one cell narrower for the marker glyph', () => {
-    // contentWidth=20 -> plain body lines hold 10 CJK chars (20 cells); the marker
-    // consumes 1 cell, so marked lines are clamped to contentWidth-1 = 9 chars (18 cells)
+    // Split content width (66): plain wrapped rows hold 33 CJK chars (66 cells); the
+    // marker consumes 1 cell, so the marked row clamps to 32 chars (64 cells)
     const response = createMockResponse({ body: '汉'.repeat(50) });
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
         response={response}
         wrapMode={'wrap' as const}
-        contentWidthOverride={20}
         searchMatches={[0]}
         currentMatchIndex={0}
       />,
@@ -263,11 +278,11 @@ describe('wide-character content width', () => {
 
     const markedLine = lines.find((line) => line.includes('►'));
     assertDefinedToNarrowType(markedLine, 'Expected a search-marked body line to be defined');
-    expect((markedLine.match(/汉/g) ?? []).length).toBe(9);
+    expect((markedLine.match(/汉/g) ?? []).length).toBe(32);
 
     const plainBodyLine = lines.find((line) => line.includes('汉') && !line.includes('►'));
     assertDefinedToNarrowType(plainBodyLine, 'Expected a plain body line to be defined');
-    expect((plainBodyLine.match(/汉/g) ?? []).length).toBe(10);
+    expect((plainBodyLine.match(/汉/g) ?? []).length).toBe(17);
 
     for (const line of lines) {
       expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
@@ -281,7 +296,6 @@ describe('wide-character content width', () => {
       <ResponseView
         {...baseProps}
         response={createMockResponse({ body })}
-        contentWidthOverride={20}
         horizontalOffset={4}
       />,
     );
@@ -291,14 +305,14 @@ describe('wide-character content width', () => {
   });
 
   it('shows content at the far nowrap scroll position instead of a blank line', () => {
-    // 50 CJK chars = 100 cells; maxScrollOffset = 100 - 20 = 80 cells.
-    // A code-unit slice(80) on a 50-unit string returns '' and renders a blank line.
+    // 50 CJK chars = 100 cells; at the split width (66) the far scroll lands on cell 80
+    // and shows the last 10 chars (20 cells). A code-unit slice(80) on a 50-unit
+    // string returns '' and renders a blank line.
     const response = createMockResponse({ body: '汉'.repeat(50) });
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
         response={response}
-        contentWidthOverride={20}
         horizontalOffset={80}
       />,
     );
@@ -312,14 +326,14 @@ describe('wide-character content width', () => {
   });
 
   it('budgets a nowrap search-marked CJK line one cell narrower for the marker glyph', () => {
-    // contentWidth=21 -> plain body lines hold 10 CJK chars + ellipsis (21 cells); the
-    // marker consumes 1 cell, so the marked line is budgeted to 20 -> 9 chars + ellipsis
-    const response = createMockResponse({ body: `${'汉'.repeat(50)}\n${'汉'.repeat(50)}` });
+    // Body lines of 'a' + 49 CJK (99 cells): the leading 'a' makes the cell parity
+    // visible. Split content width (66): plain lines keep 'a' + 32 CJK + ellipsis
+    // (65 cells); the marked line's 65-cell budget keeps 'a' + 31 CJK + ellipsis
+    const response = createMockResponse({ body: `${'a' + '汉'.repeat(49)}\n${'a' + '汉'.repeat(49)}` });
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
         response={response}
-        contentWidthOverride={21}
         searchMatches={[0]}
         currentMatchIndex={0}
       />,
@@ -330,12 +344,12 @@ describe('wide-character content width', () => {
 
     const markedLine = lines.find((line) => line.includes('►'));
     assertDefinedToNarrowType(markedLine, 'Expected a search-marked body line to be defined');
-    expect((markedLine.match(/汉/g) ?? []).length).toBe(9);
+    expect((markedLine.match(/汉/g) ?? []).length).toBe(31);
     expect(markedLine).toContain('…');
 
     const plainBodyLine = lines.find((line) => line.includes('汉') && !line.includes('►'));
     assertDefinedToNarrowType(plainBodyLine, 'Expected a plain body line to be defined');
-    expect((plainBodyLine.match(/汉/g) ?? []).length).toBe(10);
+    expect((plainBodyLine.match(/汉/g) ?? []).length).toBe(32);
 
     for (const line of lines) {
       expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
@@ -343,11 +357,80 @@ describe('wide-character content width', () => {
   });
 });
 
+describe('fullscreen wide-character rendering', () => {
+  it('breaks a wide-character body on display-cell boundaries in fullscreen wrap', () => {
+    // Fullscreen content width = 100 - 4 = 96 cells. 50 CJK chars = 100 cells:
+    // row 1 holds 48 chars (96 cells), row 2 holds the remaining 2 chars (4 cells).
+    const response = createMockResponse({ body: '汉'.repeat(50) });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} wrapMode={'wrap' as const} fullscreen={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+
+    const bodyRows = lines.filter((line) => line.includes('汉'));
+    expect(bodyRows).toHaveLength(2);
+    expect((bodyRows[0].match(/汉/g) ?? []).length).toBe(48);
+    expect((bodyRows[1].match(/汉/g) ?? []).length).toBe(2);
+
+    for (const row of bodyRows) {
+      expect(row.startsWith('│')).toBe(true);
+      expect(row.endsWith('│')).toBe(true);
+    }
+    for (const line of lines) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
+    }
+  });
+
+  it('wraps emoji alongside CJK by display cells in fullscreen wrap', () => {
+    // ('👍汉') x 24 is exactly 96 cells (each cluster is 2 cells), so it fills the
+    // fullscreen content width on row 1; the trailing '👍' (2 cells) wraps to row 2.
+    const body = `${'👍汉'.repeat(24)}👍`;
+    const response = createMockResponse({ body });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} wrapMode={'wrap' as const} fullscreen={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+
+    const bodyRows = lines.filter((line) => line.includes('👍') || line.includes('汉'));
+    expect(bodyRows).toHaveLength(2);
+    expect((bodyRows[0].match(/👍/g) ?? []).length).toBe(24);
+    expect((bodyRows[0].match(/汉/g) ?? []).length).toBe(24);
+    expect((bodyRows[1].match(/👍/g) ?? []).length).toBe(1);
+    expect((bodyRows[1].match(/汉/g) ?? []).length).toBe(0);
+
+    for (const line of lines) {
+      expect(stringWidth(line)).toBeLessThanOrEqual(panelWidth);
+    }
+  });
+
+  it('truncates a wide-character body with an ellipsis at the fullscreen width in nowrap', () => {
+    // 50 CJK chars = 100 cells at the fullscreen width of 96: cell truncation keeps
+    // 47 chars (94 cells; the 48th would need 96 > 95) + ellipsis = 95 cells.
+    const response = createMockResponse({ body: '汉'.repeat(50) });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} fullscreen={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    const lines = frame.split('\n');
+    const panelWidth = stringWidth(lines[0]);
+    const bodyLine = lines.find((line) => line.includes('汉'));
+    assertDefinedToNarrowType(bodyLine, 'Expected a CJK body line to be defined');
+    expect(bodyLine).toContain('…');
+    expect((bodyLine.match(/汉/g) ?? []).length).toBe(47);
+    expect(stringWidth(bodyLine)).toBeLessThanOrEqual(panelWidth);
+  });
+});
+
 describe('horizontal chrome measurement (regression pin)', () => {
   // ink-testing-library renders at stdout.columns = 100, so the panel's outer
-  // box (width="100%") is exactly 100 cells wide. Every expectation below is
-  // hard-coded against that width — deliberately no layout-helper imports —
-  // so this measures Ink's real chrome for borderStyle="round" + paddingX={1}
+  // box (width="100%") is exactly 100 cells wide. Fullscreen geometry gives the
+  // response panel its widest content width, 100 - 4 = 96 cells. Every expectation
+  // below is hard-coded against those widths — deliberately no layout-helper
+  // imports — so this measures Ink's real chrome for borderStyle="round" + paddingX={1}
   // instead of re-asserting our own arithmetic.
   const TERMINAL_WIDTH = 100;
 
@@ -355,7 +438,7 @@ describe('horizontal chrome measurement (regression pin)', () => {
     const body = 'z'.repeat(TERMINAL_WIDTH - 4);
     const response = createMockResponse({ body });
     const { lastFrame } = render(
-      <ResponseView {...baseProps} response={response} contentWidthOverride={96} />,
+      <ResponseView {...baseProps} response={response} fullscreen={true} />,
     );
     const frame = lastFrame() ?? '';
     const lines = frame.split('\n');
@@ -375,7 +458,7 @@ describe('horizontal chrome measurement (regression pin)', () => {
     const body = 'z'.repeat(TERMINAL_WIDTH - 3);
     const response = createMockResponse({ body });
     const { lastFrame } = render(
-      <ResponseView {...baseProps} response={response} contentWidthOverride={96} />,
+      <ResponseView {...baseProps} response={response} fullscreen={true} />,
     );
     const frame = lastFrame() ?? '';
     const lines = frame.split('\n');
@@ -410,7 +493,6 @@ describe('search markers', () => {
         searchMatches={[1]}
         currentMatchIndex={0}
         lastSearchQuery="needle"
-        contentWidthOverride={40}
         availableHeight={40}
       />,
     );
