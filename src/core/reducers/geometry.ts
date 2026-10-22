@@ -27,7 +27,7 @@ export function reduceGeometry(state: AppState, action: GeometryAction): AppStat
       columns: action.columns,
       availableHeight: effectiveResponseHeight,
       fullscreen: state.maximizedPanel === 'response',
-      searchVisible: state.mode === 'search',
+      searchVisible: state.mode === 'search' || state.lastSearchQuery !== '',
     },
   });
 

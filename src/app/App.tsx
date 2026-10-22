@@ -16,7 +16,7 @@ import { ResponseView } from '../components/ResponseView';
 import { StatusBar } from '../components/StatusBar';
 import { EnvSelectOverlay } from '../components/EnvSelectOverlay';
 import { createInitialState, reducer } from '../core/reducer';
-import type { AppProps } from '../core/types';
+import type { AppProps, TerminalGeometry } from '../core/types';
 import { EDIT_TAB_ORDER } from '../core/types';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS } from '../utils/layout';
 import { computeResponseViewport } from '../core/response-viewport';
@@ -30,7 +30,7 @@ export function App(props: AppProps): React.ReactElement {
   const { stdout } = useStdout();
   const [state, dispatch] = useReducer(reducer, props, createInitialState);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const lastDispatchedGeometryRef = useRef<{ rows: number; columns: number } | null>(null);
+  const lastDispatchedGeometryRef = useRef<TerminalGeometry | null>(null);
 
   const rows = stdout.rows || DEFAULT_TERMINAL_ROWS;
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
@@ -196,7 +196,7 @@ return (
             wrapMode: state.wrapMode,
             geometry: {
               columns,
-              availableHeight: state.maximizedPanel === 'response' ? effectiveResponseHeight : responseAvailableHeight,
+              availableHeight: effectiveResponseHeight,
               fullscreen: state.maximizedPanel === 'response',
               searchVisible: state.mode === 'search' || state.lastSearchQuery !== '',
             },
