@@ -19,11 +19,10 @@ import { createInitialState, reducer } from '../core/reducer';
 import type { AppProps } from '../core/types';
 import { EDIT_TAB_ORDER } from '../core/types';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS } from '../utils/layout';
-import { getPanelContentWidth } from '../core/response-viewport';
+import { computeResponseViewport } from '../core/response-viewport';
 import { computeLayoutMetrics } from '../utils/layout-metrics';
 import { TRANSIENT_CLEAR_MS } from '../utils/timing';
 import { hasUnsavedChanges } from '../utils/request';
-import { getResponseTotalLines } from '../utils/scroll';
 import { handleConfirmDiscardInput, handleConfirmInPlaceSaveInput, handleEditInput, handleEnvSelectInput, handleFileLoadInput, handleHelpInput, handleNormalInput, handleResponseSaveInput, handleSaveInput, handleSearchInput } from './input-handlers';
 
 export function App(props: AppProps): React.ReactElement {
@@ -171,13 +170,18 @@ return (
           detailsScrollOffset={state.detailsScrollOffset}
           detailsTotalLines={detailsTotalLines}
           responseScrollOffset={state.responseScrollOffset}
-          responseTotalLines={state.response ? getResponseTotalLines({
+          responseTotalLines={state.response ? computeResponseViewport({
             response: state.response,
             verbose: state.verbose,
             rawMode: state.rawMode,
             wrapMode: state.wrapMode,
-            contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns }),
-          }) : 0}
+            geometry: {
+              columns,
+              availableHeight: state.maximizedPanel === 'response' ? effectiveResponseHeight : responseAvailableHeight,
+              fullscreen: state.maximizedPanel === 'response',
+              searchVisible: state.mode === 'search' || state.lastSearchQuery !== '',
+            },
+          }).totalVisualLines : 0}
           hasResponse={!!state.response}
           envName={state.activeEnvName}
           isDirty={hasUnsavedChanges(state.requests)}
