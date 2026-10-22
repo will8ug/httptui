@@ -90,6 +90,10 @@ _Avoid_: screen line
 Text length measured in terminal display cells rather than code units; slicing boundaries never split wide characters or grapheme clusters.
 _Avoid_: character count, string length
 
+**Response viewport**:
+The single computation behind everything the response panel shows and scrolls: a response, the display preferences (raw, verbose, wrap), and terminal geometry resolved into the visual-line model (sections, anchors, totals, scroll bounds, visible window).
+_Avoid_: response layout, panel metrics
+
 **Request details panel**:
 The toggleable panel (`d`) showing the resolved request (method, URL, headers, body); the display counterpart to the raw-text editor.
 
