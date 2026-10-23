@@ -4,8 +4,7 @@ import { Box, Text, useStdout } from 'ink';
 import type { FileVariable, ParsedRequest } from '../core/types';
 import { resolveRequestDetails } from '../utils/request';
 import { getMethodColor } from '../utils/colors';
-import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
-import { getResponseContentWidth } from '../core/response-viewport';
+import { DEFAULT_TERMINAL_COLUMNS, getDetailsContentWidth } from '../utils/layout';
 import { expandTabs, shiftText, truncateText } from '../utils/text';
 
 interface RequestDetailsViewProps {
@@ -29,7 +28,7 @@ export function RequestDetailsView({
 }: RequestDetailsViewProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
-  const contentWidth = contentWidthOverride ?? getResponseContentWidth(columns);
+  const contentWidth = contentWidthOverride ?? getDetailsContentWidth(columns);
 
   const resolved = resolveRequestDetails(request, variables);
   const headerEntries = Object.entries(resolved.headers);

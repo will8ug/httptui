@@ -4,10 +4,8 @@ import type { Key } from 'ink';
 import { createInitialState } from '../helpers/state';
 import { createMockResponse } from '../helpers/responses';
 import { handleNormalInput, handleSearchInput } from '../../src/app/input-handlers';
-import { formatResponseBody } from '../../src/core/formatter';
-import { computeResponseLayout } from '../../src/core/response-layout';
 import type { Action, AppState } from '../../src/core/types';
-import { getPanelContentWidth } from '../../src/core/response-viewport';
+import { computeResponseViewport } from '../../src/core/response-viewport';
 import { makeKey } from '../helpers/keys';
 
 describe('match offsets in a maximized response panel (wrap mode)', () => {
@@ -36,15 +34,18 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
     if (!response) {
       throw new Error('expected a state with a response');
     }
-    const layout = computeResponseLayout({
+    return computeResponseViewport({
       response,
       verbose: state.verbose,
       rawMode: state.rawMode,
       wrapMode: state.wrapMode,
-      contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel, columns: COLUMNS }),
-      formattedBody: formatResponseBody(response.body, state.rawMode),
-    });
-    return layout.bodyVisualStart;
+      geometry: {
+        columns: COLUMNS,
+        availableHeight: state.geometry.rows - 1,
+        fullscreen: maximizedPanel === 'response',
+        searchVisible: false,
+      },
+    }).bodyVisualStart;
   }
 
   function pressNormalKey(state: AppState, input: string, key: Key = makeKey()): Action[] {

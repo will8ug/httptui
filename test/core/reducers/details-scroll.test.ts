@@ -58,6 +58,20 @@ const tallDetailsRequests: ParsedRequest[] = [
   }),
 ];
 
+// 12 form-data fields render 3 + 12 = 15 details content lines against the
+// 10-line split window, so the derived max details offset is 5.
+const formdataRequests: ParsedRequest[] = [
+  createRequest({
+    name: 'Formdata request',
+    method: 'POST',
+    formdataFields: Array.from({ length: 12 }, (_, i) => ({
+      key: `field-${i}`,
+      value: 'v',
+      type: 'text' as const,
+    })),
+  }),
+];
+
 // 28 body lines render status + separator + 28 = 30 visual lines; a 24-row
 // terminal shows 24 - 1 (status bar) - 3 (panel chrome) = 20 of them, so the
 // derived max response offset is 10.
@@ -353,6 +367,14 @@ describe('request details scrolling reducer behavior', () => {
       const result = reduce(state, { type: 'SCROLL', direction: 'down' });
 
       expect(result.detailsScrollOffset).toBe(6);
+    });
+
+    it('counts rendered form-data fields in the derived details bound', () => {
+      const state = createInitialState({ requests: formdataRequests, focusedPanel: 'details', detailsScrollOffset: 5 });
+
+      const result = reduce(state, { type: 'SCROLL', direction: 'down' });
+
+      expect(result.detailsScrollOffset).toBe(5);
     });
 
     it('immediately scrolls up from the derived details bound without excess offset accumulation', () => {

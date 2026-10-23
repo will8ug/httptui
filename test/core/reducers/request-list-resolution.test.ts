@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMaxRequestLineWidth } from '../../../src/utils/scroll';
+import { getMaxRequestLineWidth } from '../../../src/core/reducers/helpers';
 import { resolveVariables } from '../../../src/core/variables';
 import type { FileVariable, ParsedRequest } from '../../../src/core/types';
 import { createInitialState, reducer as stateReducer } from '../../helpers/state';

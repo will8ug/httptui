@@ -9,11 +9,11 @@ import {
   getEditorVisibleHeight,
   getEnvPickerVisibleHeight,
   getFullscreenRequestContentWidth,
+  getPanelContentWidth,
   getRequestContentWidth,
 } from '../../src/utils/layout';
 import {
-  getFullscreenContentWidth,
-  getPanelContentWidth,
+  getFullscreenResponseContentWidth,
   getResponseContentWidth,
 } from '../../src/core/response-viewport';
 
@@ -97,21 +97,25 @@ describe('getEditorVisibleHeight', () => {
   });
 });
 
+describe('getFullscreenRequestContentWidth', () => {
+  it('drops the left panel, keeping only the panel chrome', () => {
+    // 80 columns - 4 chrome = 76; the width floors at 10 on tiny terminals.
+    expect(getFullscreenRequestContentWidth(80)).toBe(76);
+    expect(getFullscreenRequestContentWidth(10)).toBe(10);
+  });
+});
+
 describe('getPanelContentWidth', () => {
   it('returns split widths when no panel is maximized', () => {
     for (const columns of [30, 80, 120, 200]) {
       expect(getPanelContentWidth({ panel: 'requests', maximizedPanel: null, columns })).toBe(
         getRequestContentWidth(columns),
       );
-      expect(getPanelContentWidth({ panel: 'response', maximizedPanel: null, columns })).toBe(
-        getResponseContentWidth(columns),
-      );
+      // The details panel shares the right column with the response panel.
       expect(getPanelContentWidth({ panel: 'details', maximizedPanel: null, columns })).toBe(
         getResponseContentWidth(columns),
       );
     }
-    expect(getPanelContentWidth({ panel: 'requests', maximizedPanel: null, columns: 80 })).toBe(21);
-    expect(getPanelContentWidth({ panel: 'response', maximizedPanel: null, columns: 80 })).toBe(51);
   });
 
   it('returns fullscreen widths when the queried panel is maximized', () => {
@@ -120,21 +124,13 @@ describe('getPanelContentWidth', () => {
         getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns }),
       ).toBe(getFullscreenRequestContentWidth(columns));
       expect(
-        getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns }),
-      ).toBe(getFullscreenContentWidth(columns));
-      expect(
         getPanelContentWidth({ panel: 'details', maximizedPanel: 'details', columns }),
-      ).toBe(getFullscreenContentWidth(columns));
+      ).toBe(getFullscreenResponseContentWidth(columns));
     }
-    expect(getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns: 80 })).toBe(76);
-    expect(getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns: 80 })).toBe(76);
   });
 
   it('returns split widths when a different panel is maximized', () => {
     for (const columns of [30, 80, 200]) {
-      expect(
-        getPanelContentWidth({ panel: 'response', maximizedPanel: 'requests', columns }),
-      ).toBe(getResponseContentWidth(columns));
       expect(
         getPanelContentWidth({ panel: 'details', maximizedPanel: 'requests', columns }),
       ).toBe(getResponseContentWidth(columns));
@@ -145,18 +141,13 @@ describe('getPanelContentWidth', () => {
         getPanelContentWidth({ panel: 'requests', maximizedPanel: 'details', columns }),
       ).toBe(getRequestContentWidth(columns));
       expect(
-        getPanelContentWidth({ panel: 'response', maximizedPanel: 'details', columns }),
-      ).toBe(getResponseContentWidth(columns));
-      expect(
         getPanelContentWidth({ panel: 'details', maximizedPanel: 'response', columns }),
       ).toBe(getResponseContentWidth(columns));
     }
   });
 
   it('keeps the MIN_* content-width floors on narrow terminals', () => {
-    expect(getPanelContentWidth({ panel: 'response', maximizedPanel: null, columns: 30 })).toBe(20);
     expect(getPanelContentWidth({ panel: 'details', maximizedPanel: null, columns: 30 })).toBe(20);
-    expect(getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns: 10 })).toBe(20);
     expect(getPanelContentWidth({ panel: 'details', maximizedPanel: 'details', columns: 10 })).toBe(20);
     expect(getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns: 10 })).toBe(10);
   });

@@ -215,6 +215,21 @@ describe('computeResponseViewport — visible window and scroll bounds', () => {
     expect(viewport.maxVerticalOffset).toBe(0);
   });
 
+  it('clamps max vertical offset to zero when the total equals the visible height', () => {
+    const response = createMockResponse({ body: 'line1\nline2\nline3' });
+    // 5 visual lines; availableHeight 8 - 3 chrome = a window of exactly 5.
+    const viewport = computeResponseViewport({
+      response,
+      verbose: false,
+      rawMode: true,
+      wrapMode: 'nowrap',
+      geometry: splitGeometry(8),
+    });
+
+    expect(viewport.visibleHeight).toBe(5);
+    expect(viewport.maxVerticalOffset).toBe(0);
+  });
+
   it('shrinks the visible window by one row while the search bar is shown', () => {
     const response = createMockResponse({ body: 'line1\nline2\nline3' });
     const options = {
@@ -291,6 +306,21 @@ describe('computeResponseViewport — max line display width', () => {
 
     expect(viewport.maxLineDisplayWidth).toBe(104);
   });
+
+  it('counts a CJK body line over a shorter ASCII body line', () => {
+    const response = createMockResponse({ body: `${'日本語'.repeat(4)}\nabc` });
+    // 24-column fullscreen keeps the separator (20) and status (22) lines
+    // below the 24-cell CJK line, so the CJK line must win the max.
+    const viewport = computeResponseViewport({
+      response,
+      verbose: false,
+      rawMode: true,
+      wrapMode: 'nowrap',
+      geometry: { columns: 24, availableHeight: 20, fullscreen: true, searchVisible: false },
+    });
+
+    expect(viewport.maxLineDisplayWidth).toBe(24);
+  });
 });
 
 describe('computeResponseViewport — fullscreen versus split geometry', () => {
@@ -336,6 +366,28 @@ describe('computeResponseViewport — fullscreen versus split geometry', () => {
     expect(split.sections.filter((s) => s.kind === 'body')[0].visualLines).toHaveLength(4);
     expect(fullscreen.bodyVisualStart).toEqual([2]);
     expect(fullscreen.sections.filter((s) => s.kind === 'body')[0].visualLines).toHaveLength(3);
+  });
+
+  it('reports the same nowrap total at the split and fullscreen widths', () => {
+    const response = createMockResponse({ body: 'x'.repeat(60) });
+    const options = {
+      response,
+      verbose: false,
+      rawMode: true as const,
+      wrapMode: 'nowrap' as const,
+    };
+    const split = computeResponseViewport({
+      ...options,
+      geometry: { columns: 80, availableHeight: 40, fullscreen: false, searchVisible: false },
+    });
+    const fullscreen = computeResponseViewport({
+      ...options,
+      geometry: { columns: 80, availableHeight: 40, fullscreen: true, searchVisible: false },
+    });
+
+    // Status + separator + one untruncated body line at either width.
+    expect(split.totalVisualLines).toBe(1 + 1 + 1);
+    expect(fullscreen.totalVisualLines).toBe(split.totalVisualLines);
   });
 
   it('breaks a wide-character body line on display-cell boundaries in fullscreen wrap', () => {
@@ -470,6 +522,27 @@ describe('computeResponseViewport — model shape', () => {
     expect(split.contentWidth).toBe(SPLIT_CONTENT_WIDTH_AT_80_COLUMNS);
     // Fullscreen drops the left panel: 80 columns - 4 chrome = 76.
     expect(fullscreen.contentWidth).toBe(76);
+  });
+
+  it('floors the content width at 20 cells on narrow terminals', () => {
+    const response = createMockResponse({ body: 'hi' });
+    const options = {
+      response,
+      verbose: false,
+      rawMode: true as const,
+      wrapMode: 'nowrap' as const,
+    };
+    const split = computeResponseViewport({
+      ...options,
+      geometry: { columns: 30, availableHeight: 20, fullscreen: false, searchVisible: false },
+    });
+    const fullscreen = computeResponseViewport({
+      ...options,
+      geometry: { columns: 10, availableHeight: 20, fullscreen: true, searchVisible: false },
+    });
+
+    expect(split.contentWidth).toBe(20);
+    expect(fullscreen.contentWidth).toBe(20);
   });
 
   it('orders sections status, separator, body when verbose is off', () => {

@@ -1,12 +1,8 @@
 import { computeResponseLayout } from './response-layout';
 import type { VisualSection } from './response-layout';
 import { formatResponseBody } from './formatter';
-import type { FocusedPanel, ResponseData, WrapMode } from './types';
-import {
-  getFullscreenRequestContentWidth,
-  getLeftPanelWidth,
-  getRequestContentWidth,
-} from '../utils/layout';
+import type { ResponseData, WrapMode } from './types';
+import { getLeftPanelWidth } from '../utils/layout';
 import { cellWidth } from '../utils/text';
 import type { ColorSegment } from '../utils/wrap';
 
@@ -26,28 +22,8 @@ export function getResponseContentWidth(columns: number): number {
   );
 }
 
-export function getFullscreenContentWidth(columns: number): number {
+export function getFullscreenResponseContentWidth(columns: number): number {
   return Math.max(MIN_RESPONSE_CONTENT_WIDTH, columns - RESPONSE_PANEL_CHROME);
-}
-
-export function getPanelContentWidth({
-  panel,
-  maximizedPanel,
-  columns,
-}: {
-  panel: FocusedPanel;
-  maximizedPanel: FocusedPanel | null;
-  columns: number;
-}): number {
-  const isMaximized = maximizedPanel === panel;
-  if (panel === 'requests') {
-    return isMaximized
-      ? getFullscreenRequestContentWidth(columns)
-      : getRequestContentWidth(columns);
-  }
-  return isMaximized
-    ? getFullscreenContentWidth(columns)
-    : getResponseContentWidth(columns);
 }
 
 export interface ResponseViewportGeometry {
@@ -101,7 +77,7 @@ function maxVisualLineDisplayWidth(sections: VisualSection[]): number {
 
 function contentWidthFor(geometry: ResponseViewportGeometry): number {
   return geometry.fullscreen
-    ? getFullscreenContentWidth(geometry.columns)
+    ? getFullscreenResponseContentWidth(geometry.columns)
     : getResponseContentWidth(geometry.columns);
 }
 

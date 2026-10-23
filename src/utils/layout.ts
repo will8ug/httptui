@@ -1,3 +1,5 @@
+import type { FocusedPanel } from '../core/types';
+
 export const DEFAULT_TERMINAL_COLUMNS = 80;
 export const DEFAULT_TERMINAL_ROWS = 24;
 export const MIN_CONTENT_AREA_ROWS = 3;
@@ -45,6 +47,47 @@ export function getDetailPanelHeight(
 
 export function getFullscreenRequestContentWidth(columns: number): number {
   return Math.max(MIN_REQUEST_CONTENT_WIDTH, columns - REQUEST_PANEL_CHROME);
+}
+
+/** Border (1 + 1) + paddingX (1 + 1) for the request details panel */
+const DETAILS_PANEL_CHROME = 4;
+const MIN_DETAILS_CONTENT_WIDTH = 20;
+
+export function getDetailsContentWidth(columns: number): number {
+  return Math.max(
+    MIN_DETAILS_CONTENT_WIDTH,
+    columns - getLeftPanelWidth(columns) - DETAILS_PANEL_CHROME,
+  );
+}
+
+export function getFullscreenDetailsContentWidth(columns: number): number {
+  return Math.max(MIN_DETAILS_CONTENT_WIDTH, columns - DETAILS_PANEL_CHROME);
+}
+
+/**
+ * Content width of the general panels (request list, request details). The
+ * response panel is absent by design: its width belongs to the response
+ * viewport (the model's contentWidth). Details shares the right column with
+ * the response panel, so both widths must agree — pinned in layout tests.
+ */
+export function getPanelContentWidth({
+  panel,
+  maximizedPanel,
+  columns,
+}: {
+  panel: Exclude<FocusedPanel, 'response'>;
+  maximizedPanel: FocusedPanel | null;
+  columns: number;
+}): number {
+  const isMaximized = maximizedPanel === panel;
+  if (panel === 'requests') {
+    return isMaximized
+      ? getFullscreenRequestContentWidth(columns)
+      : getRequestContentWidth(columns);
+  }
+  return isMaximized
+    ? getFullscreenDetailsContentWidth(columns)
+    : getDetailsContentWidth(columns);
 }
 
 /** Vertical chrome (border top + title + border bottom) inside any Ink Box with borderStyle="round" */

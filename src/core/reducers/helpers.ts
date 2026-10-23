@@ -1,11 +1,12 @@
 import { dirname } from 'node:path';
 
-import { getRequestVisibleHeight } from '../../utils/layout';
+import { getPanelContentWidth, getRequestVisibleHeight } from '../../utils/layout';
 import { computeLayoutMetrics } from '../../utils/layout-metrics';
-import { getDetailsTotalLines, getMaxDetailsLineWidth, getMaxRequestLineWidth, getMaxScrollOffset } from '../../utils/scroll';
-import { computeResponseViewport, getPanelContentWidth } from '../response-viewport';
+import { getRequestTarget, resolveRequestDetails } from '../../utils/request';
+import { cellWidth } from '../../utils/text';
+import { computeResponseViewport } from '../response-viewport';
 import type { ResponseViewportModel } from '../response-viewport';
-import type { AppState, ParsedRequest } from '../types';
+import type { AppState, FileVariable, ParsedRequest } from '../types';
 import { resolveVariables } from '../variables';
 
 export function clamp(value: number, min: number, max: number): number {
@@ -57,6 +58,49 @@ export function responseHorizontalMaxOffset(state: AppState): number {
   return Math.max(0, model.maxLineDisplayWidth - model.contentWidth);
 }
 
+export function getMaxRequestLineWidth(options: {
+  requests: readonly ParsedRequest[];
+  variables: FileVariable[];
+  baseDir?: string;
+}): number {
+  const { requests, variables, baseDir } = options;
+  if (requests.length === 0) {
+    return 0;
+  }
+
+  return Math.max(
+    ...requests.map((r) => {
+      const resolved = resolveVariables(r, variables, baseDir);
+      return 2 + 7 + cellWidth(getRequestTarget(resolved.url));
+    }),
+  );
+}
+
+export function getMaxDetailsLineWidth(options: {
+  request: ParsedRequest | undefined;
+  variables: FileVariable[];
+}): number {
+  const { request, variables } = options;
+  if (!request) {
+    return 0;
+  }
+
+  const resolved = resolveVariables(request, variables);
+  const lines: string[] = [];
+
+  lines.push(`${resolved.method} ${resolved.url}`);
+
+  for (const [name, value] of Object.entries(resolved.headers)) {
+    lines.push(`${name}: ${value}`);
+  }
+
+  if (resolved.body !== undefined) {
+    lines.push(...resolved.body.split('\n'));
+  }
+
+  return Math.max(0, ...lines.map((l) => cellWidth(l)));
+}
+
 export function detailsVerticalMaxOffset(state: AppState): number {
   const request = selectedRequest(state);
   if (!request) {
@@ -68,14 +112,10 @@ export function detailsVerticalMaxOffset(state: AppState): number {
     state.geometry.rows,
     state.geometry.columns,
   );
-  const resolved = resolveVariables(request, state.variables);
-  const totalLines = getDetailsTotalLines({
-    method: resolved.method,
-    url: resolved.url,
-    headers: resolved.headers,
-    body: resolved.body,
-  });
-  return getMaxScrollOffset(totalLines, effectiveDetailMaxContent);
+  // Matches the details totals derivation (the same count the panel height
+  // uses), not every rendered line: the form-data separator is uncounted.
+  const { totalContentLines } = resolveRequestDetails(request, state.variables);
+  return Math.max(0, totalContentLines - effectiveDetailMaxContent);
 }
 
 export function detailsHorizontalMaxOffset(state: AppState): number {

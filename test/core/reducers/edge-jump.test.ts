@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../../helpers/state';
 import { createRequest, makeRequests } from '../../helpers/requests';
 import { longResponse, compactJsonResponse, createMockResponse } from '../../helpers/responses';
+import { viewportOf } from '../../helpers/viewport';
 import { reducer, clamp } from '../../../src/core/reducer';
-import { getMaxRequestLineWidth, getMaxResponseLineWidth, getMaxDetailsLineWidth } from '../../../src/utils/scroll';
+import { getMaxRequestLineWidth, getMaxDetailsLineWidth } from '../../../src/core/reducers/helpers';
 import type { AppState, ParsedRequest, ResponseData } from '../../../src/core/types';
-import { getRequestContentWidth } from '../../../src/utils/layout';
-import { getPanelContentWidth, getResponseContentWidth } from '../../../src/core/response-viewport';
+import { getRequestContentWidth, getDetailsContentWidth, getPanelContentWidth } from '../../../src/utils/layout';
 
 describe('JUMP_VERTICAL reducer', () => {
   describe('requests panel', () => {
@@ -167,7 +167,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
 
     it('direction: "end" clamps detailsHorizontalOffset to max(0, maxDetailsWidth - contentWidth)', () => {
       const columns = 80;
-      const contentWidth = getResponseContentWidth(columns);
+      const contentWidth = getDetailsContentWidth(columns);
       const longUrl = 'https://api.example.com/' + 'x'.repeat(contentWidth + 50);
       const requests: ParsedRequest[] = [
         {
@@ -210,20 +210,30 @@ describe('JUMP_HORIZONTAL reducer', () => {
     });
 
     it('direction: "end" clamps responseHorizontalOffset to max(0, maxResponseWidth - contentWidth)', () => {
-      const columns = 80;
-      const contentWidth = getResponseContentWidth(columns);
       const state: AppState = createInitialState({
         focusedPanel: 'response',
         response: longResponse,
         wrapMode: 'nowrap',
       });
-      const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
-      const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
+      const model = viewportOf(state);
+      const expected = clamp(model.maxLineDisplayWidth - model.contentWidth, 0, Number.POSITIVE_INFINITY);
 
       const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
       expect(result.responseHorizontalOffset).toBe(expected);
       expect(expected).toBeGreaterThan(0);
+    });
+
+    it('direction: "end" without a response lands on 0', () => {
+      const state = createInitialState({
+        focusedPanel: 'response',
+        responseHorizontalOffset: 3,
+        wrapMode: 'nowrap',
+      });
+
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
+
+      expect(result.responseHorizontalOffset).toBe(0);
     });
 
     it('direction: "end" measures tab-expanded body lines in display cells', () => {
@@ -244,16 +254,14 @@ describe('JUMP_HORIZONTAL reducer', () => {
 
   describe('response panel (nowrap) — compact JSON uses formatted body width', () => {
     it('direction: "end" with rawMode false uses formatted body bound (regression: body no longer vanishes)', () => {
-      const columns = 80;
-      const contentWidth = getResponseContentWidth(columns);
       const state: AppState = createInitialState({
         focusedPanel: 'response',
         response: compactJsonResponse,
         rawMode: false,
         wrapMode: 'nowrap',
       });
-      const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
-      const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
+      const model = viewportOf(state);
+      const expected = clamp(model.maxLineDisplayWidth - model.contentWidth, 0, Number.POSITIVE_INFINITY);
 
       const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
@@ -262,16 +270,14 @@ describe('JUMP_HORIZONTAL reducer', () => {
     });
 
     it('direction: "end" with rawMode true uses raw body bound (unchanged behavior)', () => {
-      const columns = 80;
-      const contentWidth = getResponseContentWidth(columns);
       const state: AppState = createInitialState({
         focusedPanel: 'response',
         response: compactJsonResponse,
         rawMode: true,
         wrapMode: 'nowrap',
       });
-      const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
-      const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
+      const model = viewportOf(state);
+      const expected = clamp(model.maxLineDisplayWidth - model.contentWidth, 0, Number.POSITIVE_INFINITY);
 
       const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
@@ -389,11 +395,8 @@ describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
       wrapMode: 'nowrap',
       geometry: { rows: 24, columns },
     });
-    const expected = Math.max(
-      0,
-      getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode }) -
-        getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns }),
-    );
+    const model = viewportOf(state);
+    const expected = Math.max(0, model.maxLineDisplayWidth - model.contentWidth);
 
     const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 

@@ -13,8 +13,7 @@ vi.mock('undici', () => ({
 
 import { delay, KEY_DELAY_MS, press, renderApp, TAB } from '../helpers/integration';
 import { createMockResponse } from '../helpers/responses';
-import { getResponseTotalLines } from '../../src/utils/scroll';
-import { computeResponseViewport, getPanelContentWidth } from '../../src/core/response-viewport';
+import { computeResponseViewport } from '../../src/core/response-viewport';
 import { DEFAULT_TERMINAL_ROWS } from '../../src/utils/layout';
 import type { FocusedPanel, ParsedRequest } from '../../src/core/types';
 
@@ -30,13 +29,18 @@ const storedResponse = createMockResponse({
 });
 
 function expectedTotalLines(maximizedPanel: FocusedPanel | null): number {
-  return getResponseTotalLines({
+  return computeResponseViewport({
     response: storedResponse,
     verbose: false,
     rawMode: false,
     wrapMode: 'wrap',
-    contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel, columns: COLUMNS }),
-  });
+    geometry: {
+      columns: COLUMNS,
+      availableHeight: DEFAULT_TERMINAL_ROWS - 1,
+      fullscreen: maximizedPanel === 'response',
+      searchVisible: false,
+    },
+  }).totalVisualLines;
 }
 
 function expectedViewportTotal(fullscreen: boolean): number {

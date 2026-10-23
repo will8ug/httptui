@@ -37,7 +37,7 @@ export function App(props: AppProps): React.ReactElement {
   const selectedRequest = state.requests[state.selectedIndex];
   const {
     detailsTotalLines,
-    fullscreenContentWidth,
+    fullscreenDetailsContentWidth,
     fullscreenRequestContentWidth,
     fullscreenVisibleHeight,
     editorContentWidth,
@@ -219,7 +219,7 @@ return (
           focused={state.focusedPanel === 'details' || state.maximizedPanel === 'details'}
           scrollOffset={state.detailsScrollOffset}
           horizontalOffset={state.detailsHorizontalOffset}
-          contentWidthOverride={state.maximizedPanel === 'details' ? fullscreenContentWidth : undefined}
+          contentWidthOverride={state.maximizedPanel === 'details' ? fullscreenDetailsContentWidth : undefined}
         />
       ) : undefined}
       maximizedPanel={state.maximizedPanel}
