@@ -17,12 +17,6 @@ function pressKey(state: AppState, input: string, key: Key = makeKey()): Action[
   handleNormalInput({
     state,
     selectedRequest: state.requests[state.selectedIndex],
-    columns: 80,
-    rows: 24,
-    effectiveResponseHeight: 10,
-    effectiveDetailMaxContent: 40,
-    editorVisibleHeight: 10,
-    editorContentWidth: 40,
     exit: vi.fn(),
     suspend: vi.fn(),
     executorConfig: { insecure: false },
@@ -40,37 +34,37 @@ describe('normal-mode vertical navigation', () => {
   it('j moves the selection down when the requests panel is focused', () => {
     const actions = pressKey(normalState({ focusedPanel: 'requests' }), 'j');
 
-    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'down', rows: 24 }]);
+    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'down' }]);
   });
 
   it('k moves the selection up when the requests panel is focused', () => {
     const actions = pressKey(normalState({ focusedPanel: 'requests' }), 'k');
 
-    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'up', rows: 24 }]);
+    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'up' }]);
   });
 
   it('down arrow moves the selection down when the requests panel is focused', () => {
     const actions = pressKey(normalState({ focusedPanel: 'requests' }), '', makeKey({ downArrow: true }));
 
-    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'down', rows: 24 }]);
+    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'down' }]);
   });
 
   it('up arrow moves the selection up when the requests panel is focused', () => {
     const actions = pressKey(normalState({ focusedPanel: 'requests' }), '', makeKey({ upArrow: true }));
 
-    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'up', rows: 24 }]);
+    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'up' }]);
   });
 
   it('j, k, and arrow keys scroll when the details panel is focused', () => {
     const state = normalState({ focusedPanel: 'details', requests: [createRequest()] });
 
-    expect(pressKey(state, 'j')).toEqual([{ type: 'SCROLL', direction: 'down', maxOffset: expect.any(Number) }]);
-    expect(pressKey(state, 'k')).toEqual([{ type: 'SCROLL', direction: 'up', maxOffset: expect.any(Number) }]);
+    expect(pressKey(state, 'j')).toEqual([{ type: 'SCROLL', direction: 'down' }]);
+    expect(pressKey(state, 'k')).toEqual([{ type: 'SCROLL', direction: 'up' }]);
     expect(pressKey(state, '', makeKey({ downArrow: true }))).toEqual([
-      { type: 'SCROLL', direction: 'down', maxOffset: expect.any(Number) },
+      { type: 'SCROLL', direction: 'down' },
     ]);
     expect(pressKey(state, '', makeKey({ upArrow: true }))).toEqual([
-      { type: 'SCROLL', direction: 'up', maxOffset: expect.any(Number) },
+      { type: 'SCROLL', direction: 'up' },
     ]);
   });
 
@@ -80,13 +74,13 @@ describe('normal-mode vertical navigation', () => {
       response: createMockResponse({ body: 'line-1\nline-2\nline-3' }),
     });
 
-    expect(pressKey(state, 'j')).toEqual([{ type: 'SCROLL', direction: 'down', maxOffset: expect.any(Number) }]);
-    expect(pressKey(state, 'k')).toEqual([{ type: 'SCROLL', direction: 'up', maxOffset: expect.any(Number) }]);
+    expect(pressKey(state, 'j')).toEqual([{ type: 'SCROLL', direction: 'down' }]);
+    expect(pressKey(state, 'k')).toEqual([{ type: 'SCROLL', direction: 'up' }]);
     expect(pressKey(state, '', makeKey({ downArrow: true }))).toEqual([
-      { type: 'SCROLL', direction: 'down', maxOffset: expect.any(Number) },
+      { type: 'SCROLL', direction: 'down' },
     ]);
     expect(pressKey(state, '', makeKey({ upArrow: true }))).toEqual([
-      { type: 'SCROLL', direction: 'up', maxOffset: expect.any(Number) },
+      { type: 'SCROLL', direction: 'up' },
     ]);
   });
 });
@@ -95,56 +89,47 @@ describe('normal-mode horizontal navigation', () => {
   it('h dispatches SCROLL_HORIZONTAL to the left', () => {
     const actions = pressKey(normalState(), 'h');
 
-    expect(actions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'left', columns: 80 }]);
+    expect(actions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'left' }]);
   });
 
   it('l dispatches SCROLL_HORIZONTAL to the right', () => {
     const actions = pressKey(normalState(), 'l');
 
-    expect(actions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 }]);
+    expect(actions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'right' }]);
   });
 
   it('arrow keys scroll horizontally the same as h and l', () => {
     const leftActions = pressKey(normalState(), '', makeKey({ leftArrow: true }));
     const rightActions = pressKey(normalState(), '', makeKey({ rightArrow: true }));
 
-    expect(leftActions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'left', columns: 80 }]);
-    expect(rightActions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 }]);
+    expect(leftActions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'left' }]);
+    expect(rightActions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'right' }]);
   });
 });
 
 describe('normal-mode edge jumps', () => {
-  it('g dispatches JUMP_VERTICAL to the start with the row count', () => {
+  it('g dispatches JUMP_VERTICAL to the start', () => {
     const actions = pressKey(normalState(), 'g');
 
-    expect(actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'start', rows: 24 }]);
+    expect(actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'start' }]);
   });
 
-  it('G dispatches JUMP_VERTICAL to the end with a computed max offset', () => {
-    const state = normalState({
-      focusedPanel: 'response',
-      response: createMockResponse({
-        body: Array.from({ length: 60 }, (_, i) => `row-${i}`).join('\n'),
-      }),
-    });
+  it('G dispatches JUMP_VERTICAL to the end', () => {
+    const actions = pressKey(normalState(), 'G');
 
-    const actions = pressKey(state, 'G');
-
-    expect(actions).toEqual([
-      { type: 'JUMP_VERTICAL', direction: 'end', rows: 24, maxOffset: expect.any(Number) },
-    ]);
+    expect(actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'end' }]);
   });
 
-  it('0 dispatches JUMP_HORIZONTAL to the start with the column count', () => {
+  it('0 dispatches JUMP_HORIZONTAL to the start', () => {
     const actions = pressKey(normalState(), '0');
 
-    expect(actions).toEqual([{ type: 'JUMP_HORIZONTAL', direction: 'start', columns: 80 }]);
+    expect(actions).toEqual([{ type: 'JUMP_HORIZONTAL', direction: 'start' }]);
   });
 
-  it('$ dispatches JUMP_HORIZONTAL to the end with the column count', () => {
+  it('$ dispatches JUMP_HORIZONTAL to the end', () => {
     const actions = pressKey(normalState(), '$');
 
-    expect(actions).toEqual([{ type: 'JUMP_HORIZONTAL', direction: 'end', columns: 80 }]);
+    expect(actions).toEqual([{ type: 'JUMP_HORIZONTAL', direction: 'end' }]);
   });
 });
 

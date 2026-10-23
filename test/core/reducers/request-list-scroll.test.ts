@@ -67,22 +67,6 @@ describe('request list scrolling reducer behavior', () => {
     expect(current.requestScrollOffset).toBe(0);
   });
 
-  it('ignores a payload rows count and scrolls on the state geometry', () => {
-    const state = createInitialState({
-      requests: makeRequests(25),
-      selectedIndex: 0,
-    });
-
-    let current = state;
-    for (let i = 0; i < 19; i++) {
-      current = reduce(current, { type: 'MOVE_SELECTION', direction: 'down', rows: 999 });
-    }
-
-    const expectedScrollOffset = 1;
-    expect(current.selectedIndex).toBe(19);
-    expect(current.requestScrollOffset).toBe(expectedScrollOffset);
-  });
-
   it('JUMP_VERTICAL end keeps last request visible on a 24-row terminal', () => {
     const state = createInitialState({
       requests: makeRequests(25),
@@ -111,7 +95,7 @@ describe('request list scrolling reducer behavior', () => {
     expect(result.requestScrollOffset).toBe(0);
   });
 
-  it('uses the state geometry rows when the action omits them', () => {
+  it('uses the state geometry rows', () => {
     const state = createInitialState({
       requests: makeRequests(25),
       selectedIndex: 0,

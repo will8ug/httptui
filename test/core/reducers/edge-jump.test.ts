@@ -62,7 +62,7 @@ describe('JUMP_VERTICAL reducer', () => {
       expect(result.detailsScrollOffset).toBe(0);
     });
 
-    it('direction: "end" without payload bounds jumps to the derived content bound', () => {
+    it('direction: "end" jumps to the derived content bound', () => {
       const state = createInitialState({
         focusedPanel: 'details',
         requests: tallDetailsRequests,
@@ -70,18 +70,6 @@ describe('JUMP_VERTICAL reducer', () => {
       });
 
       const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end' });
-
-      expect(result.detailsScrollOffset).toBe(6);
-    });
-
-    it('direction: "end" ignores a payload maxOffset and lands on the derived bound', () => {
-      const state = createInitialState({
-        focusedPanel: 'details',
-        requests: tallDetailsRequests,
-        detailsScrollOffset: 0,
-      });
-
-      const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end', maxOffset: 25 });
 
       expect(result.detailsScrollOffset).toBe(6);
     });
@@ -107,7 +95,7 @@ describe('JUMP_VERTICAL reducer', () => {
       expect(result.responseScrollOffset).toBe(0);
     });
 
-    it('direction: "end" without payload bounds jumps to the derived content bound', () => {
+    it('direction: "end" jumps to the derived content bound', () => {
       const state = createInitialState({
         focusedPanel: 'response',
         response: twentyEightLineResponse,
@@ -115,18 +103,6 @@ describe('JUMP_VERTICAL reducer', () => {
       });
 
       const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end' });
-
-      expect(result.responseScrollOffset).toBe(10);
-    });
-
-    it('direction: "end" ignores a payload maxOffset and lands on the derived bound', () => {
-      const state = createInitialState({
-        focusedPanel: 'response',
-        response: twentyEightLineResponse,
-        responseScrollOffset: 0,
-      });
-
-      const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end', maxOffset: 100 });
 
       expect(result.responseScrollOffset).toBe(10);
     });
@@ -346,7 +322,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
   });
 
   describe('derives columns from the state geometry', () => {
-    it('lands on the geometry bound and ignores a payload columns count', () => {
+    it('lands on the geometry bound', () => {
       // Request line: 2 + 7 + 46-cell path = 55 cells; at 100 columns the
       // content width is 30 - 4 = 26, so the bound is 29 (an 80-column
       // reading would land on 34 instead).

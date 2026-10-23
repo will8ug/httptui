@@ -171,7 +171,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
   });
 
   describe('derives columns from the state geometry', () => {
-    it('plateaus at the geometry bound and ignores a payload columns count', () => {
+    it('plateaus at the geometry bound', () => {
       // Request line: 2 + 7 + 46-cell path = 55 cells; at 100 columns the
       // content width is 30 - 4 = 26, so the bound is 29 (an 80-column
       // reading would plateau at 34 instead).

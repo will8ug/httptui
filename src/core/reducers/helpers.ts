@@ -144,9 +144,6 @@ export function navigateRequests(state: AppState, nextIndex: number): AppState {
   };
 }
 
-export function computeSearchScrollOffset(visualIndex: number, maxOffset?: number): number {
-  if (maxOffset !== undefined) {
-    return Math.min(Math.max(0, visualIndex), maxOffset);
-  }
-  return Math.max(0, visualIndex);
+export function computeSearchScrollOffset(visualIndex: number, maxOffset: number): number {
+  return Math.min(Math.max(0, visualIndex), maxOffset);
 }

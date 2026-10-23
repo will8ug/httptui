@@ -188,8 +188,8 @@ describe('CONFIRM_SEARCH reducer', () => {
   });
 
   it('updates responseScrollOffset to the first match position', () => {
-    // 28 body lines render 30 visual lines; in search mode the window is
-    // 24 - 1 - 3 - 1 = 19 rows, so the derived max offset is 11 and the
+    // 27 body lines render 29 visual lines; in search mode the window is
+    // 24 - 1 - 3 - 1 = 19 rows, so the derived max offset is 10 and the
     // target 5 lands unclamped.
     const body = ['first line', 'second john line', 'third line', ...FILLER_LINES].join('\n');
     const state: AppState = {
@@ -201,7 +201,7 @@ describe('CONFIRM_SEARCH reducer', () => {
     const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: 1 + 4 });
 
     expect(result.searchMatches).toEqual([1]);
-    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(1 + 4));
+    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(1 + 4, 10));
   });
 
   it('finds matches across multiple lines', () => {
@@ -276,19 +276,12 @@ describe('NEXT_MATCH reducer', () => {
     const result = reducer(state, { type: 'NEXT_MATCH', targetVisualIndex: 5 + 3 });
 
     expect(result.currentMatchIndex).toBe(2);
-    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(5 + 3));
+    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(5 + 3, 13));
   });
 
   it('clamps the match offset at the bound derived from state geometry', () => {
     const state = stateWithActiveSearch();
     const result = reducer(state, { type: 'NEXT_MATCH', targetVisualIndex: 99 });
-
-    expect(result.responseScrollOffset).toBe(13);
-  });
-
-  it('ignores a larger payload maxOffset and clamps at the derived bound', () => {
-    const state = stateWithActiveSearch();
-    const result = reducer(state, { type: 'NEXT_MATCH', targetVisualIndex: 99, maxOffset: 999 });
 
     expect(result.responseScrollOffset).toBe(13);
   });
@@ -321,7 +314,7 @@ describe('PREV_MATCH reducer', () => {
     const result = reducer(state, { type: 'PREV_MATCH', targetVisualIndex: 0 + 4 });
 
     expect(result.currentMatchIndex).toBe(0);
-    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(0 + 4));
+    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(0 + 4, 13));
   });
 });
 

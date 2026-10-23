@@ -26,12 +26,6 @@ function runNormalInput(
   handleNormalInput({
     state,
     selectedRequest: state.requests[state.selectedIndex],
-    columns: 80,
-    rows: 24,
-    effectiveResponseHeight: 10,
-    effectiveDetailMaxContent: 40,
-    editorVisibleHeight: 10,
-    editorContentWidth: 40,
     exit: vi.fn(),
     suspend: vi.fn(),
     executorConfig: { insecure: false },
@@ -110,8 +104,6 @@ describe('p is ignored in non-normal handlers', () => {
         },
       }),
       selectedRequest: request,
-      editorVisibleHeight: 10,
-      editorContentWidth: 40,
       input: 'p',
       key: makeKey(),
       dispatch: (action) => dispatched.push(action),
@@ -121,8 +113,6 @@ describe('p is ignored in non-normal handlers', () => {
       type: 'EDIT_KEY',
       op: 'insert',
       insert: 'p',
-      visibleHeight: 10,
-      visibleWidth: 40,
     }]);
     expect(clipboardReadRunner).not.toHaveBeenCalled();
   });
@@ -148,9 +138,6 @@ describe('p is ignored in non-normal handlers', () => {
 
     handleSearchInput({
       state: createInitialState({ mode: 'search', searchQuery: '' }),
-      columns: 80,
-      effectiveResponseHeight: 10,
-      effectiveDetailMaxContent: 40,
       input: 'p',
       key: makeKey(),
       dispatch: (action) => dispatched.push(action),

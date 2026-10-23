@@ -84,7 +84,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (state.mode === 'search') {
-      handleSearchInput({ state, columns, effectiveResponseHeight, effectiveDetailMaxContent, input, key, dispatch });
+      handleSearchInput({ state, input, key, dispatch });
       return;
     }
 
@@ -104,7 +104,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (state.mode === 'edit') {
-      handleEditInput({ state, selectedRequest, editorVisibleHeight, editorContentWidth, input, key, dispatch });
+      handleEditInput({ state, selectedRequest, input, key, dispatch });
       return;
     }
 
@@ -121,12 +121,6 @@ export function App(props: AppProps): React.ReactElement {
     handleNormalInput({
       state,
       selectedRequest,
-      columns,
-      rows,
-      effectiveResponseHeight,
-      effectiveDetailMaxContent,
-      editorVisibleHeight,
-      editorContentWidth,
       exit,
       suspend: suspendTerminal,
       executorConfig: props.executorConfig,

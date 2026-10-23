@@ -24,12 +24,6 @@ function runNormalInput(
   handleNormalInput({
     state,
     selectedRequest: state.requests[state.selectedIndex],
-    columns: 80,
-    rows: 24,
-    effectiveResponseHeight: 10,
-    effectiveDetailMaxContent: 40,
-    editorVisibleHeight: 10,
-    editorContentWidth: 40,
     exit: vi.fn(),
     suspend: vi.fn(),
     executorConfig: { insecure: false },
@@ -105,8 +99,6 @@ describe('handleEditInput y', () => {
         },
       }),
       selectedRequest: request,
-      editorVisibleHeight: 10,
-      editorContentWidth: 40,
       input: 'y',
       key: makeKey(),
       dispatch: (action) => dispatched.push(action),
@@ -116,8 +108,6 @@ describe('handleEditInput y', () => {
       type: 'EDIT_KEY',
       op: 'insert',
       insert: 'y',
-      visibleHeight: 10,
-      visibleWidth: 40,
     }]);
     expect(clipboardRunner).not.toHaveBeenCalled();
   });

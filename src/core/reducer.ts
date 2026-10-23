@@ -1,9 +1,6 @@
-import { getDetailsTotalLines, getMaxScrollOffset, getResponseTotalLines, RESPONSE_PANEL_VERTICAL_CHROME } from '../utils/scroll';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS } from '../utils/layout';
-import { getPanelContentWidth } from './response-viewport';
 
 import type { Action, AppProps, AppState } from './types';
-import { resolveVariables } from './variables';
 import { reduceConfirmDiscard, reduceConfirmInPlaceSave } from './reducers/confirm';
 import { reduceEdit } from './reducers/edit';
 import { reduceEnvSelect } from './reducers/env-select';
@@ -18,44 +15,13 @@ import { reduceSearch } from './reducers/search';
 import { reduceToggles } from './reducers/toggles';
 import { reduceTransient } from './reducers/transient';
 
-export { clamp, clampScrollOffsetToCursor, CLEAR_SEARCH_STATE, computeSearchScrollOffset } from './reducers/helpers';
-
-export function computeVerticalMaxOffset(
-  state: AppState,
-  columns: number,
-  responseAvailableHeight: number,
-  detailPanelMaxContent: number,
-): number | undefined {
-  if (state.focusedPanel === 'details') {
-    const request = state.requests[state.selectedIndex];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds access
-    if (!request) {
-      return undefined;
-    }
-    const resolved = resolveVariables(request, state.variables);
-    const totalContentLines = getDetailsTotalLines({
-      method: resolved.method,
-      url: resolved.url,
-      headers: resolved.headers,
-      body: resolved.body,
-    });
-    return getMaxScrollOffset(totalContentLines, detailPanelMaxContent);
-  }
-
-  if (state.focusedPanel === 'response' && state.response) {
-    const totalLines = getResponseTotalLines({
-      response: state.response,
-      verbose: state.verbose,
-      rawMode: state.rawMode,
-      wrapMode: state.wrapMode,
-      contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns }),
-    });
-    const visibleHeight = Math.max(1, responseAvailableHeight - RESPONSE_PANEL_VERTICAL_CHROME);
-    return getMaxScrollOffset(totalLines, visibleHeight);
-  }
-
-  return undefined;
-}
+export {
+  clamp,
+  clampScrollOffsetToCursor,
+  CLEAR_SEARCH_STATE,
+  computeSearchScrollOffset,
+  responseViewportFromState,
+} from './reducers/helpers';
 
 export function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {

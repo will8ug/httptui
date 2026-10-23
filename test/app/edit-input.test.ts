@@ -34,8 +34,6 @@ function pressEditKey(state: AppState, input: string, key: Key = makeKey()): Act
   handleEditInput({
     state,
     selectedRequest: state.requests[state.selectedIndex],
-    editorVisibleHeight: 10,
-    editorContentWidth: 40,
     input,
     key,
     dispatch: (action) => dispatched.push(action),
@@ -146,8 +144,6 @@ describe('handleEditInput body insert', () => {
       type: 'EDIT_KEY',
       op: 'insert',
       insert: pasted,
-      visibleHeight: 10,
-      visibleWidth: 40,
     }]);
 
     const next = reducer(state, actions[0]);
@@ -165,12 +161,6 @@ describe('handleNormalInput e', () => {
     handleNormalInput({
       state,
       selectedRequest: request,
-      columns: 80,
-      rows: 24,
-      effectiveResponseHeight: 10,
-      effectiveDetailMaxContent: 40,
-      editorVisibleHeight: 10,
-      editorContentWidth: 40,
       exit: () => {},
       suspend: vi.fn(),
       executorConfig: { insecure: false },
@@ -187,8 +177,6 @@ describe('handleNormalInput e', () => {
     expect(dispatched).toEqual([{
       type: 'ENTER_EDIT',
       buffers: { url: request.url, body: '', headers: headersText },
-      visibleHeight: 10,
-      visibleWidth: 40,
     }]);
   });
 });
