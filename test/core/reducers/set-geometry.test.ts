@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createInitialState, reducer } from '../../helpers/state';
 import { createMockResponse } from '../../helpers/responses';
+import { createRequest } from '../../helpers/requests';
 
 /*
  * Worked examples (nowrap, verbose off, no details panel): a body of N plain
@@ -16,6 +17,14 @@ const TWENTY_EIGHT_LINE_BODY = Array.from(
   { length: 28 },
   (_, i) => `line-${i + 1}`,
 ).join('\n');
+
+// 20 headers + 10 body lines render 3 + 20 + 1 + 10 = 34 details content lines.
+const tallDetailsRequest = createRequest({
+  headers: Object.fromEntries(
+    Array.from({ length: 20 }, (_, i) => [`h-${String(i).padStart(2, '0')}`, 'v']),
+  ),
+  body: Array.from({ length: 10 }, (_, i) => `body-${i + 1}`).join('\n'),
+});
 
 describe('SET_GEOMETRY reducer', () => {
   it('uses the default terminal dimensions until the first dispatch lands', () => {
@@ -116,5 +125,38 @@ describe('SET_GEOMETRY reducer', () => {
 
     expect(result.responseScrollOffset).toBe(0);
     expect(result.geometry).toEqual({ rows: 10, columns: 40 });
+  });
+
+  it('clamps an over-scrolled details offset against the split 10-line window', () => {
+    // 34 content lines against the 10-line split window: max offset 24, so
+    // the stale offset 30 clamps even though the row count is unchanged.
+    const state = createInitialState({
+      requests: [tallDetailsRequest],
+      showRequestDetails: true,
+      focusedPanel: 'details',
+      geometry: { rows: 24, columns: 80 },
+      detailsScrollOffset: 30,
+    });
+
+    const result = reducer(state, { type: 'SET_GEOMETRY', rows: 24, columns: 80 });
+
+    expect(result.detailsScrollOffset).toBe(24);
+  });
+
+  it('clamps a details offset when a maximized details panel grows', () => {
+    // Maximized at rows=16 the window is 16 - 1 - 3 = 12, so max offset is
+    // 34 - 12 = 22; growing to rows=30 shows 26 lines and drops the max to 8.
+    const state = createInitialState({
+      requests: [tallDetailsRequest],
+      showRequestDetails: true,
+      focusedPanel: 'details',
+      maximizedPanel: 'details',
+      geometry: { rows: 16, columns: 80 },
+      detailsScrollOffset: 22,
+    });
+
+    const result = reducer(state, { type: 'SET_GEOMETRY', rows: 30, columns: 80 });
+
+    expect(result.detailsScrollOffset).toBe(8);
   });
 });

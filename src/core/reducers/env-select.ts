@@ -1,4 +1,4 @@
-import { DEFAULT_TERMINAL_ROWS, getEnvPickerVisibleHeight } from '../../utils/layout';
+import { getEnvPickerVisibleHeight } from '../../utils/layout';
 import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
 import { clamp, clampScrollOffsetToCursor } from './helpers';
@@ -18,7 +18,7 @@ export function reduceEnvSelect(state: AppState, action: EnvSelectAction): AppSt
         ? findOption(state.activeEnvName)
         : findOption('(none)');
       const initialIndex = activeIndex >= 0 ? activeIndex : 0;
-      const visibleCount = getEnvPickerVisibleHeight(DEFAULT_TERMINAL_ROWS);
+      const visibleCount = getEnvPickerVisibleHeight(state.geometry.rows);
       return {
         ...state,
         mode: 'envSelect',
@@ -35,7 +35,7 @@ export function reduceEnvSelect(state: AppState, action: EnvSelectAction): AppSt
       }
       const delta = action.direction === 'up' ? -1 : 1;
       const nextIndex = clamp(state.envSelectIndex + delta, 0, optionCount - 1);
-      const visibleCount = getEnvPickerVisibleHeight(DEFAULT_TERMINAL_ROWS);
+      const visibleCount = getEnvPickerVisibleHeight(state.geometry.rows);
       return {
         ...state,
         envSelectIndex: nextIndex,
@@ -49,7 +49,7 @@ export function reduceEnvSelect(state: AppState, action: EnvSelectAction): AppSt
         return state;
       }
       const nextIndex = action.target === 'top' ? 0 : optionCount - 1;
-      const visibleCount = getEnvPickerVisibleHeight(DEFAULT_TERMINAL_ROWS);
+      const visibleCount = getEnvPickerVisibleHeight(state.geometry.rows);
       return {
         ...state,
         envSelectIndex: nextIndex,

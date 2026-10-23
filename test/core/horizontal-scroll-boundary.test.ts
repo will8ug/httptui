@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { getMaxDetailsLineWidth, getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../src/utils/scroll';
 import { formatResponseBody } from '../../src/core/formatter';
 import { formatStatusLine } from '../../src/core/response-layout';
-import type { Action, AppState, ParsedRequest } from '../../src/core/types';
+import type { AppState, ParsedRequest } from '../../src/core/types';
 import { getRequestContentWidth, getLeftPanelWidth, getDetailPanelHeight } from '../../src/utils/layout';
 import { getPanelContentWidth, getResponseContentWidth } from '../../src/core/response-viewport';
 import { createInitialState, reducer } from '../helpers/state';
@@ -47,7 +47,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         focusedPanel: 'requests',
         requests: longUrlRequests,
       });
-      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 });
+      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
 
       expect(result.requestHorizontalOffset).toBe(2);
     });
@@ -58,7 +58,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         requestHorizontalOffset: 0,
         requests: longUrlRequests,
       });
-      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'left', columns: 80 });
+      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'left' });
 
       expect(result.requestHorizontalOffset).toBe(0);
     });
@@ -75,7 +75,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         requestHorizontalOffset: expectedMaxOffset,
       });
 
-      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 });
+      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
 
       expect(result.requestHorizontalOffset).toBe(expectedMaxOffset);
     });
@@ -84,9 +84,10 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
       const state = createInitialState({
         focusedPanel: 'requests',
         requests: shortUrlRequests,
+        geometry: { rows: 24, columns: 200 },
       });
 
-      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 200 });
+      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
 
       expect(result.requestHorizontalOffset).toBe(0);
     });
@@ -108,7 +109,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         focusedPanel: 'response',
         response: longResponse,
       });
-      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 });
+      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
 
       expect(result.responseHorizontalOffset).toBe(2);
     });
@@ -129,7 +130,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         responseHorizontalOffset: expectedMaxOffset,
       });
 
-      const result = reducer(scrolledState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 });
+      const result = reducer(scrolledState, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
 
       expect(result.responseHorizontalOffset).toBe(expectedMaxOffset);
     });
@@ -141,7 +142,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         wrapMode: 'wrap' as const,
       });
 
-      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 });
+      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
 
       expect(result).toEqual(state);
     });
@@ -160,27 +161,32 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
       const state = createInitialState({
         focusedPanel: 'response',
         response: shortResponse,
+        geometry: { rows: 24, columns: 200 },
       });
 
-      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 200 });
+      const result = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
 
       expect(result.responseHorizontalOffset).toBe(0);
     });
   });
 
-  describe('defaults columns to 80', () => {
-    it('uses 80 columns when columns is not provided in action', () => {
-      const defaultAction: Action = { type: 'SCROLL_HORIZONTAL', direction: 'right' };
-
+  describe('derives columns from the state geometry', () => {
+    it('plateaus at the geometry bound and ignores a payload columns count', () => {
+      // Request line: 2 + 7 + 46-cell path = 55 cells; at 100 columns the
+      // content width is 30 - 4 = 26, so the bound is 29 (an 80-column
+      // reading would plateau at 34 instead).
       const state = createInitialState({
         focusedPanel: 'requests',
         requests: longUrlRequests,
+        geometry: { rows: 24, columns: 100 },
       });
 
-      const resultWithDefault = reducer(state, defaultAction);
-      const resultWithExplicit = reducer(state, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 });
+      let current = state;
+      for (let i = 0; i < 60; i += 1) {
+        current = reducer(current, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
+      }
 
-      expect(resultWithDefault.requestHorizontalOffset).toBe(resultWithExplicit.requestHorizontalOffset);
+      expect(current.requestHorizontalOffset).toBe(29);
     });
   });
 
@@ -237,7 +243,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
         responseHorizontalOffset: formattedBound,
       });
 
-      const result = reducer(scrolledState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns });
+      const result = reducer(scrolledState, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
 
       expect(result.responseHorizontalOffset).toBeLessThanOrEqual(formattedBound);
       expect(result.responseHorizontalOffset).toBe(formattedBound);
@@ -256,7 +262,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
 
       let currentState = state;
       for (let i = 0; i < 100; i += 1) {
-        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns });
+        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
         expect(currentState.responseHorizontalOffset).toBeLessThanOrEqual(formattedBound);
       }
 
@@ -279,6 +285,7 @@ describe('SCROLL_HORIZONTAL fullscreen boundary (maximized panel clamps at fulls
         maximizedPanel: 'response',
         wrapMode: 'nowrap',
         response: wideResponse,
+        geometry: { rows: 24, columns },
       });
       const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
       const fullscreenWidth = getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns });
@@ -294,7 +301,7 @@ describe('SCROLL_HORIZONTAL fullscreen boundary (maximized panel clamps at fulls
 
       let currentState = state;
       for (let i = 0; i < 100; i += 1) {
-        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns });
+        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
         expect(currentState.responseHorizontalOffset).toBeLessThanOrEqual(expectedBound);
       }
 
@@ -311,6 +318,7 @@ describe('SCROLL_HORIZONTAL fullscreen boundary (maximized panel clamps at fulls
         focusedPanel: 'requests',
         maximizedPanel: 'requests',
         requests: longPathRequests,
+        geometry: { rows: 24, columns },
       });
       const maxLineWidth = getMaxRequestLineWidth({ requests: state.requests, variables: state.variables });
       const fullscreenWidth = getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns });
@@ -326,7 +334,7 @@ describe('SCROLL_HORIZONTAL fullscreen boundary (maximized panel clamps at fulls
 
       let currentState = state;
       for (let i = 0; i < 100; i += 1) {
-        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns });
+        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
         expect(currentState.requestHorizontalOffset).toBeLessThanOrEqual(expectedBound);
       }
 
@@ -345,6 +353,7 @@ describe('SCROLL_HORIZONTAL fullscreen boundary (maximized panel clamps at fulls
         showRequestDetails: true,
         requests: [wideBodyRequest],
         selectedIndex: 0,
+        geometry: { rows: 24, columns },
       });
       const maxLineWidth = getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables });
       const fullscreenWidth = getPanelContentWidth({ panel: 'details', maximizedPanel: 'details', columns });
@@ -360,7 +369,7 @@ describe('SCROLL_HORIZONTAL fullscreen boundary (maximized panel clamps at fulls
 
       let currentState = state;
       for (let i = 0; i < 100; i += 1) {
-        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right', columns });
+        currentState = reducer(currentState, { type: 'SCROLL_HORIZONTAL', direction: 'right' });
         expect(currentState.detailsHorizontalOffset).toBeLessThanOrEqual(expectedBound);
       }
 

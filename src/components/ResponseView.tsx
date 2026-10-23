@@ -4,7 +4,6 @@ import { Box, Text, useStdout } from 'ink';
 
 import {
   computeResponseViewport,
-  getPanelContentWidth,
   sliceVisibleLines,
 } from '../core/response-viewport';
 import type { ResponseViewportGeometry } from '../core/response-viewport';
@@ -121,11 +120,6 @@ export function ResponseView({
     fullscreen,
     searchVisible: showSearchBar,
   };
-  const contentWidth = getPanelContentWidth({
-    panel: 'response',
-    maximizedPanel: fullscreen ? 'response' : null,
-    columns,
-  });
 
   let content: React.ReactNode;
 
@@ -143,6 +137,7 @@ export function ResponseView({
     content = <Text color="gray">Press Enter to send a request</Text>;
   } else {
     const model = computeResponseViewport({ response, verbose, rawMode, wrapMode, geometry });
+    const contentWidth = model.contentWidth;
 
     const transform: LineTransform =
       wrapMode === 'wrap'

@@ -5,7 +5,7 @@ import { createRequest, makeRequests } from '../../helpers/requests';
 import { longResponse, compactJsonResponse, createMockResponse } from '../../helpers/responses';
 import { reducer, clamp } from '../../../src/core/reducer';
 import { getMaxRequestLineWidth, getMaxResponseLineWidth, getMaxDetailsLineWidth } from '../../../src/utils/scroll';
-import type { Action, AppState, ParsedRequest, ResponseData } from '../../../src/core/types';
+import type { AppState, ParsedRequest, ResponseData } from '../../../src/core/types';
 import { getRequestContentWidth } from '../../../src/utils/layout';
 import { getPanelContentWidth, getResponseContentWidth } from '../../../src/core/response-viewport';
 
@@ -40,10 +40,21 @@ describe('JUMP_VERTICAL reducer', () => {
   });
 
   describe('details panel', () => {
+    // 12 headers render 3 + 12 + 1 = 16 content lines against the 10-line
+    // split window, so the derived max details offset is 6.
+    const tallDetailsRequests = [
+      createRequest({
+        headers: Object.fromEntries(
+          Array.from({ length: 12 }, (_, i) => [`h-${String(i).padStart(2, '0')}`, 'v']),
+        ),
+      }),
+    ];
+
     it('direction: "start" sets detailsScrollOffset to 0', () => {
       const state = createInitialState({
         focusedPanel: 'details',
-        detailsScrollOffset: 15,
+        requests: tallDetailsRequests,
+        detailsScrollOffset: 5,
       });
 
       const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'start' });
@@ -51,35 +62,44 @@ describe('JUMP_VERTICAL reducer', () => {
       expect(result.detailsScrollOffset).toBe(0);
     });
 
-    it('direction: "end" with maxOffset sets detailsScrollOffset to maxOffset', () => {
+    it('direction: "end" without payload bounds jumps to the derived content bound', () => {
       const state = createInitialState({
         focusedPanel: 'details',
+        requests: tallDetailsRequests,
+        detailsScrollOffset: 0,
+      });
+
+      const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end' });
+
+      expect(result.detailsScrollOffset).toBe(6);
+    });
+
+    it('direction: "end" ignores a payload maxOffset and lands on the derived bound', () => {
+      const state = createInitialState({
+        focusedPanel: 'details',
+        requests: tallDetailsRequests,
         detailsScrollOffset: 0,
       });
 
       const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end', maxOffset: 25 });
 
-      expect(result.detailsScrollOffset).toBe(25);
-    });
-
-    it('direction: "end" without maxOffset leaves detailsScrollOffset unchanged', () => {
-      const state = createInitialState({
-        focusedPanel: 'details',
-        detailsScrollOffset: 12,
-      });
-
-      const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end' });
-
-      expect(result.detailsScrollOffset).toBe(12);
-      expect(result).toBe(state);
+      expect(result.detailsScrollOffset).toBe(6);
     });
   });
 
   describe('response panel', () => {
+    // 28 body lines render status + separator + 28 = 30 visual lines; the
+    // default 24-row geometry shows 24 - 1 - 3 = 20, so the derived max
+    // response offset is 10.
+    const twentyEightLineResponse = createMockResponse({
+      body: Array.from({ length: 28 }, (_, i) => `line-${i + 1}`).join('\n'),
+    });
+
     it('direction: "start" sets responseScrollOffset to 0', () => {
       const state = createInitialState({
         focusedPanel: 'response',
-        responseScrollOffset: 30,
+        response: twentyEightLineResponse,
+        responseScrollOffset: 9,
       });
 
       const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'start' });
@@ -87,27 +107,39 @@ describe('JUMP_VERTICAL reducer', () => {
       expect(result.responseScrollOffset).toBe(0);
     });
 
-    it('direction: "end" with maxOffset sets responseScrollOffset to maxOffset', () => {
+    it('direction: "end" without payload bounds jumps to the derived content bound', () => {
       const state = createInitialState({
         focusedPanel: 'response',
+        response: twentyEightLineResponse,
+        responseScrollOffset: 0,
+      });
+
+      const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end' });
+
+      expect(result.responseScrollOffset).toBe(10);
+    });
+
+    it('direction: "end" ignores a payload maxOffset and lands on the derived bound', () => {
+      const state = createInitialState({
+        focusedPanel: 'response',
+        response: twentyEightLineResponse,
         responseScrollOffset: 0,
       });
 
       const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end', maxOffset: 100 });
 
-      expect(result.responseScrollOffset).toBe(100);
+      expect(result.responseScrollOffset).toBe(10);
     });
 
-    it('direction: "end" without maxOffset leaves responseScrollOffset unchanged', () => {
+    it('direction: "end" without a response lands on 0', () => {
       const state = createInitialState({
         focusedPanel: 'response',
-        responseScrollOffset: 42,
+        responseScrollOffset: 3,
       });
 
       const result = reducer(state, { type: 'JUMP_VERTICAL', direction: 'end' });
 
-      expect(result.responseScrollOffset).toBe(42);
-      expect(result).toBe(state);
+      expect(result.responseScrollOffset).toBe(0);
     });
   });
 });
@@ -126,7 +158,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
         requests,
       });
 
-      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
       expect(result.requestHorizontalOffset).toBe(expected);
       expect(expected).toBeGreaterThan(0);
@@ -136,9 +168,10 @@ describe('JUMP_HORIZONTAL reducer', () => {
       const state = createInitialState({
         focusedPanel: 'requests',
         requests: makeRequests(1),
+        geometry: { rows: 24, columns: 200 },
       });
 
-      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns: 200 });
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
       expect(result.requestHorizontalOffset).toBe(0);
     });
@@ -178,7 +211,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
       });
       const expected = clamp(getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables }) - contentWidth, 0, Number.POSITIVE_INFINITY);
 
-      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
       expect(result.detailsHorizontalOffset).toBe(expected);
       expect(expected).toBeGreaterThan(0);
@@ -211,10 +244,25 @@ describe('JUMP_HORIZONTAL reducer', () => {
       const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
       const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
 
-      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
       expect(result.responseHorizontalOffset).toBe(expected);
       expect(expected).toBeGreaterThan(0);
+    });
+
+    it('direction: "end" measures tab-expanded body lines in display cells', () => {
+      const state = createInitialState({
+        focusedPanel: 'response',
+        response: createMockResponse({ body: '\t' + 'x'.repeat(60) }),
+        rawMode: true,
+        wrapMode: 'nowrap',
+      });
+
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
+
+      // A tab at column 0 expands to 8 cells, so the rendered line is
+      // 8 + 60 = 68 cells against the 51-cell split content width: bound 17.
+      expect(result.responseHorizontalOffset).toBe(17);
     });
   });
 
@@ -231,7 +279,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
       const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
       const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
 
-      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
       expect(result.responseHorizontalOffset).toBe(expected);
       expect(expected).toBe(0);
@@ -249,7 +297,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
       const maxLineWidth = getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode });
       const expected = clamp(maxLineWidth - contentWidth, 0, Number.POSITIVE_INFINITY);
 
-      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
       expect(result.responseHorizontalOffset).toBe(expected);
       expect(expected).toBeGreaterThan(0);
@@ -278,7 +326,7 @@ describe('JUMP_HORIZONTAL reducer', () => {
         wrapMode: 'wrap',
       });
 
-      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns: 80 });
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
       expect(result).toBe(state);
     });
@@ -291,24 +339,26 @@ describe('JUMP_HORIZONTAL reducer', () => {
         wrapMode: 'wrap',
       });
 
-      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns: 80 });
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
       expect(result).toBe(state);
     });
   });
 
-  describe('defaults columns to 80', () => {
-    it('produces identical result whether columns is omitted or explicitly 80', () => {
+  describe('derives columns from the state geometry', () => {
+    it('lands on the geometry bound and ignores a payload columns count', () => {
+      // Request line: 2 + 7 + 46-cell path = 55 cells; at 100 columns the
+      // content width is 30 - 4 = 26, so the bound is 29 (an 80-column
+      // reading would land on 34 instead).
       const state = createInitialState({
         focusedPanel: 'requests',
         requests: makeRequests(1, { longUrl: true }),
+        geometry: { rows: 24, columns: 100 },
       });
 
-      const action: Action = { type: 'JUMP_HORIZONTAL', direction: 'end' };
-      const resultDefault = reducer(state, action);
-      const resultExplicit = reducer(state, { ...action, columns: 80 });
+      const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
-      expect(resultDefault.requestHorizontalOffset).toBe(resultExplicit.requestHorizontalOffset);
+      expect(result.requestHorizontalOffset).toBe(29);
     });
   });
 });
@@ -322,6 +372,7 @@ describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
       focusedPanel: 'requests',
       maximizedPanel: 'requests',
       requests: [createRequest({ url: longUrl })],
+      geometry: { rows: 24, columns },
     });
     const expected = Math.max(
       0,
@@ -329,7 +380,7 @@ describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
         getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns }),
     );
 
-    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
     expect(result.requestHorizontalOffset).toBe(expected);
     expect(expected).toBeGreaterThan(0);
@@ -340,6 +391,7 @@ describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
       focusedPanel: 'details',
       maximizedPanel: 'details',
       requests: [createRequest({ url: longUrl })],
+      geometry: { rows: 24, columns },
     });
     const expected = Math.max(
       0,
@@ -347,7 +399,7 @@ describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
         getPanelContentWidth({ panel: 'details', maximizedPanel: 'details', columns }),
     );
 
-    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
     expect(result.detailsHorizontalOffset).toBe(expected);
     expect(expected).toBeGreaterThan(0);
@@ -359,6 +411,7 @@ describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
       maximizedPanel: 'response',
       response: createMockResponse({ body: 'x'.repeat(300) }),
       wrapMode: 'nowrap',
+      geometry: { rows: 24, columns },
     });
     const expected = Math.max(
       0,
@@ -366,7 +419,7 @@ describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
         getPanelContentWidth({ panel: 'response', maximizedPanel: 'response', columns }),
     );
 
-    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
     expect(result.responseHorizontalOffset).toBe(expected);
     expect(expected).toBeGreaterThan(0);
@@ -395,7 +448,7 @@ describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
       wrapMode: 'wrap',
     });
 
-    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
     expect(result).toBe(state);
     expect(result.responseHorizontalOffset).toBe(15);
@@ -406,6 +459,7 @@ describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
       focusedPanel: 'requests',
       maximizedPanel: 'response',
       requests: makeRequests(1, { longUrl: true }),
+      geometry: { rows: 24, columns },
     });
     const maxWidth = getMaxRequestLineWidth({ requests: state.requests, variables: state.variables });
     const splitWidth = getPanelContentWidth({ panel: 'requests', maximizedPanel: 'response', columns });
@@ -415,7 +469,7 @@ describe('JUMP_HORIZONTAL reducer — fullscreen bounds', () => {
       maxWidth - getPanelContentWidth({ panel: 'requests', maximizedPanel: 'requests', columns }),
     );
 
-    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+    const result = reducer(state, { type: 'JUMP_HORIZONTAL', direction: 'end' });
 
     expect(splitWidth).toBe(getRequestContentWidth(columns));
     expect(result.requestHorizontalOffset).toBe(expected);

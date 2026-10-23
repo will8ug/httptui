@@ -73,6 +73,7 @@ export interface ResponseViewportModel {
   visibleHeight: number;
   maxVerticalOffset: number;
   maxLineDisplayWidth: number;
+  contentWidth: number;
 }
 
 function visibleHeightFor(geometry: ResponseViewportGeometry): number {
@@ -155,12 +156,13 @@ export function computeResponseViewport(options: ResponseViewportOptions): Respo
   }
 
   const { response, verbose, rawMode, wrapMode, geometry } = options;
+  const contentWidth = contentWidthFor(geometry);
   const layout = computeResponseLayout({
     response,
     verbose,
     rawMode,
     wrapMode,
-    contentWidth: contentWidthFor(geometry),
+    contentWidth,
     formattedBody: formatResponseBody(response.body, rawMode),
   });
   const visibleHeight = visibleHeightFor(geometry);
@@ -172,6 +174,7 @@ export function computeResponseViewport(options: ResponseViewportOptions): Respo
     visibleHeight,
     maxVerticalOffset: Math.max(0, layout.totalVisualLines - visibleHeight),
     maxLineDisplayWidth: maxVisualLineDisplayWidth(layout.sections),
+    contentWidth,
   };
   memoizedOptions = options;
   memoizedModel = model;

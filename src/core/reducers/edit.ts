@@ -1,3 +1,4 @@
+import { getEditorContentWidth, getEditorVisibleHeight } from '../../utils/layout';
 import { expandTabs } from '../../utils/text';
 import { applyEditOp, offsetToLineCol } from '../editor';
 import { headersEqual, parseHeadersText } from '../headers';
@@ -5,6 +6,13 @@ import type { Action, AppState } from '../types';
 import { EMPTY_EDIT_BUFFERS, clampScrollOffsetToCursor, setTransient } from './helpers';
 
 type EditAction = Extract<Action, { type: 'ENTER_EDIT' | 'EDIT_KEY' | 'SWITCH_EDIT_TAB' | 'COMMIT_EDIT' | 'CANCEL_EDIT' | 'ARM_EDIT_CANCEL' }>;
+
+function editVisibleWindow(state: AppState): { height: number; width: number } {
+  return {
+    height: getEditorVisibleHeight(state.geometry.rows),
+    width: getEditorContentWidth(state.geometry.columns),
+  };
+}
 
 export function reduceEdit(state: AppState, action: EditAction): AppState {
   switch (action.type) {
@@ -15,6 +23,7 @@ export function reduceEdit(state: AppState, action: EditAction): AppState {
       const { line, col } = offsetToLineCol(urlText, urlText.length);
       const cursorLineText = urlText.split('\n')[line] ?? '';
       const visualCol = expandTabs(cursorLineText.slice(0, col)).length;
+      const view = editVisibleWindow(state);
       return {
         ...state,
         mode: 'edit',
@@ -24,8 +33,8 @@ export function reduceEdit(state: AppState, action: EditAction): AppState {
           body: { text: bodyText, cursor: bodyText.length },
           headers: { text: headersText, cursor: headersText.length },
         },
-        editScrollOffset: clampScrollOffsetToCursor(line, 0, action.visibleHeight),
-        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, 0, action.visibleWidth),
+        editScrollOffset: clampScrollOffsetToCursor(line, 0, view.height),
+        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, 0, view.width),
       };
     }
 
@@ -42,14 +51,15 @@ export function reduceEdit(state: AppState, action: EditAction): AppState {
       const { line, col } = offsetToLineCol(updated.text, updated.cursor);
       const cursorLineText = updated.text.split('\n')[line] ?? '';
       const visualCol = expandTabs(cursorLineText.slice(0, col)).length;
+      const view = editVisibleWindow(state);
       return {
         ...state,
         editBuffers: {
           ...state.editBuffers,
           [state.editTarget]: updated,
         },
-        editScrollOffset: clampScrollOffsetToCursor(line, state.editScrollOffset, action.visibleHeight),
-        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, state.editHorizontalOffset, action.visibleWidth),
+        editScrollOffset: clampScrollOffsetToCursor(line, state.editScrollOffset, view.height),
+        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, state.editHorizontalOffset, view.width),
       };
     }
 
@@ -69,11 +79,12 @@ export function reduceEdit(state: AppState, action: EditAction): AppState {
       const { line, col } = offsetToLineCol(buffer.text, buffer.cursor);
       const cursorLineText = buffer.text.split('\n')[line] ?? '';
       const visualCol = expandTabs(cursorLineText.slice(0, col)).length;
+      const view = editVisibleWindow(state);
       return {
         ...state,
         editTarget: action.target,
-        editScrollOffset: clampScrollOffsetToCursor(line, 0, action.visibleHeight),
-        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, 0, action.visibleWidth),
+        editScrollOffset: clampScrollOffsetToCursor(line, 0, view.height),
+        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, 0, view.width),
       };
     }
 

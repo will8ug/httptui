@@ -443,6 +443,7 @@ describe('computeResponseViewport — model shape', () => {
       [
         'bodyStartVisualIndex',
         'bodyVisualStart',
+        'contentWidth',
         'maxLineDisplayWidth',
         'maxVerticalOffset',
         'sections',
@@ -450,6 +451,25 @@ describe('computeResponseViewport — model shape', () => {
         'visibleHeight',
       ].sort(),
     );
+  });
+
+  it('exposes the content width the body wraps and truncates against', () => {
+    const response = createMockResponse({ body: 'hi' });
+    const options = {
+      response,
+      verbose: false,
+      rawMode: true as const,
+      wrapMode: 'nowrap' as const,
+    };
+    const split = computeResponseViewport({ ...options, geometry: splitGeometry(20) });
+    const fullscreen = computeResponseViewport({
+      ...options,
+      geometry: { columns: 80, availableHeight: 20, fullscreen: true, searchVisible: false },
+    });
+
+    expect(split.contentWidth).toBe(SPLIT_CONTENT_WIDTH_AT_80_COLUMNS);
+    // Fullscreen drops the left panel: 80 columns - 4 chrome = 76.
+    expect(fullscreen.contentWidth).toBe(76);
   });
 
   it('orders sections status, separator, body when verbose is off', () => {

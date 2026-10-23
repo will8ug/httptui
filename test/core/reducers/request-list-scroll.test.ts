@@ -47,7 +47,7 @@ describe('request list scrolling reducer behavior', () => {
       selectedIndex: 0,
     });
 
-    const result = reduce(state, { type: 'MOVE_SELECTION', direction: 'down', rows: 24 });
+    const result = reduce(state, { type: 'MOVE_SELECTION', direction: 'down' });
     expect(result.selectedIndex).toBe(1);
     expect(result.requestScrollOffset).toBe(0);
   });
@@ -60,14 +60,14 @@ describe('request list scrolling reducer behavior', () => {
 
     let current = state;
     for (let i = 0; i < 12; i++) {
-      current = reduce(current, { type: 'MOVE_SELECTION', direction: 'down', rows: 24 });
+      current = reduce(current, { type: 'MOVE_SELECTION', direction: 'down' });
     }
 
     expect(current.selectedIndex).toBe(12);
     expect(current.requestScrollOffset).toBe(0);
   });
 
-  it('scrolls correctly when requests exceed visible height', () => {
+  it('ignores a payload rows count and scrolls on the state geometry', () => {
     const state = createInitialState({
       requests: makeRequests(25),
       selectedIndex: 0,
@@ -75,7 +75,7 @@ describe('request list scrolling reducer behavior', () => {
 
     let current = state;
     for (let i = 0; i < 19; i++) {
-      current = reduce(current, { type: 'MOVE_SELECTION', direction: 'down', rows: 24 });
+      current = reduce(current, { type: 'MOVE_SELECTION', direction: 'down', rows: 999 });
     }
 
     const expectedScrollOffset = 1;
@@ -90,7 +90,7 @@ describe('request list scrolling reducer behavior', () => {
       focusedPanel: 'requests',
     });
 
-    const result = reduce(state, { type: 'JUMP_VERTICAL', direction: 'end', rows: 24 });
+    const result = reduce(state, { type: 'JUMP_VERTICAL', direction: 'end' });
     const expectedScrollOffset = 6;
 
     expect(result.selectedIndex).toBe(24);
@@ -105,13 +105,13 @@ describe('request list scrolling reducer behavior', () => {
       focusedPanel: 'requests',
     });
 
-    const result = reduce(state, { type: 'JUMP_VERTICAL', direction: 'start', rows: 24 });
+    const result = reduce(state, { type: 'JUMP_VERTICAL', direction: 'start' });
 
     expect(result.selectedIndex).toBe(0);
     expect(result.requestScrollOffset).toBe(0);
   });
 
-  it('defaults to DEFAULT_TERMINAL_ROWS when rows is not provided', () => {
+  it('uses the state geometry rows when the action omits them', () => {
     const state = createInitialState({
       requests: makeRequests(25),
       selectedIndex: 0,
@@ -131,11 +131,12 @@ describe('request list scrolling reducer behavior', () => {
     const state = createInitialState({
       requests: makeRequests(15),
       selectedIndex: 0,
+      geometry: { rows: 15, columns: 80 },
     });
 
     let current = state;
     for (let i = 0; i < 10; i++) {
-      current = reduce(current, { type: 'MOVE_SELECTION', direction: 'down', rows: 15 });
+      current = reduce(current, { type: 'MOVE_SELECTION', direction: 'down' });
     }
 
     const expectedScrollOffset = 1;

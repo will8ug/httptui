@@ -145,6 +145,9 @@ describe('EDIT_KEY reducer', () => {
         headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 0,
+      // Editor box height at 12 rows floors at 10; minus 7 chrome rows the
+      // derived visible height is 3, matching the payload below.
+      geometry: { rows: 12, columns: 80 },
     });
 
     for (let i = 0; i < 3; i++) {
@@ -153,6 +156,31 @@ describe('EDIT_KEY reducer', () => {
         op: 'down',
         visibleHeight: 3,
         visibleWidth: 40,
+      });
+    }
+
+    expect(current.editBuffers.body.cursor).toBe(18);
+    expect(current.editScrollOffset).toBe(1);
+  });
+
+  it('derives the visible window from the state geometry, ignoring payload sizes', () => {
+    let current = createEditState({
+      editTarget: 'body',
+      editBuffers: {
+        url: { text: '', cursor: 0 },
+        body: { text: 'line0\nline1\nline2\nline3\nline4\nline5', cursor: 0 },
+        headers: { text: '', cursor: 0 },
+      },
+      editScrollOffset: 0,
+      geometry: { rows: 12, columns: 80 },
+    });
+
+    for (let i = 0; i < 3; i++) {
+      current = reducer(current, {
+        type: 'EDIT_KEY',
+        op: 'down',
+        visibleHeight: 999,
+        visibleWidth: 999,
       });
     }
 
@@ -169,6 +197,7 @@ describe('EDIT_KEY reducer', () => {
         headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 2,
+      geometry: { rows: 12, columns: 80 },
     });
 
     for (let i = 0; i < 3; i++) {
@@ -204,9 +233,12 @@ describe('EDIT_KEY reducer', () => {
         headers: { text: '', cursor: 0 },
       },
       editHorizontalOffset: 0,
+      // At 50 columns the editor box floors at 48 wide; minus 4 chrome the
+      // derived visible width is 44. The payload below is deliberately wrong.
+      geometry: { rows: 24, columns: 50 },
     });
 
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 50; i++) {
       current = reducer(current, {
         type: 'EDIT_KEY',
         op: 'right',
@@ -215,8 +247,9 @@ describe('EDIT_KEY reducer', () => {
       });
     }
 
-    expect(current.editBuffers.body.cursor).toBe(25);
-    expect(current.editHorizontalOffset).toBe(6);
+    // Cursor column 50 in a 44-cell window: offset = 50 - 44 + 1 = 7.
+    expect(current.editBuffers.body.cursor).toBe(50);
+    expect(current.editHorizontalOffset).toBe(7);
   });
 });
 
@@ -247,11 +280,14 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       editTarget: 'url',
       editBuffers: {
         url: { text: 'short', cursor: 5 },
-        body: { text: 'line0\nline1\nline2\nline3', cursor: 18 },
+        body: { text: 'line0\nline1\nline2\nline3\nline4', cursor: 24 },
         headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 0,
       editHorizontalOffset: 0,
+      // Derived visible height at 12 rows is 3; the payload below is
+      // deliberately wrong. Cursor line 4 → offset = 4 - 3 + 1 = 2.
+      geometry: { rows: 12, columns: 80 },
     });
 
     const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'body', visibleHeight: 2, visibleWidth: 40 });

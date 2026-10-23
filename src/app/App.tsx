@@ -37,7 +37,6 @@ export function App(props: AppProps): React.ReactElement {
   const selectedRequest = state.requests[state.selectedIndex];
   const {
     detailsTotalLines,
-    responseAvailableHeight,
     fullscreenContentWidth,
     fullscreenRequestContentWidth,
     fullscreenVisibleHeight,
@@ -167,7 +166,7 @@ return (
           horizontalOffset={state.responseHorizontalOffset}
           wrapMode={state.wrapMode}
           rawMode={state.rawMode}
-          availableHeight={state.maximizedPanel === 'response' ? effectiveResponseHeight : responseAvailableHeight}
+          availableHeight={effectiveResponseHeight}
           searchMatches={state.searchMatches}
           currentMatchIndex={state.currentMatchIndex}
           isSearchMode={state.mode === 'search'}
