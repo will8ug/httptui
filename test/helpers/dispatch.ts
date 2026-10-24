@@ -3,6 +3,7 @@ import type { Key } from 'ink';
 import type { Mock } from 'vitest';
 
 import { handleNormalInput } from '../../src/app/input-handlers';
+import type { ClipboardRunner } from '../../src/core/clipboard';
 import type { Action, AppState, FocusedPanel } from '../../src/core/types';
 import { makeKey } from './keys';
 import { createRequest } from './requests';
@@ -11,30 +12,59 @@ import { createInitialState } from './state';
 
 export type Panel = FocusedPanel | null;
 
+/** Sink overrides for tests that need to drive a sink themselves. */
+export interface NormalInputOptions {
+  clipboardRunner?: ClipboardRunner;
+  clipboardReadRunner?: ClipboardRunner;
+}
+
 interface NormalInputRun {
   actions: Action[];
+  dispatch: Mock;
   exit: Mock;
   suspend: Mock;
-  clipboardRunner: Mock;
-  clipboardReadRunner: Mock;
+  clipboardRunner: Mock | ClipboardRunner;
+  clipboardReadRunner: Mock | ClipboardRunner;
+}
+
+function isKey(value: Key | NormalInputOptions): value is Key {
+  return 'upArrow' in value;
 }
 
 /**
- * Drives handleNormalInput — the single dispatch handler serving both split
- * view and fullscreen — capturing every observable sink: dispatched actions,
- * exit, suspend, and both clipboard runners.
+ * Drives handleNormalInput, capturing dispatched actions, exit, suspend, both
+ * clipboard runners, and the dispatch mock. Runner overrides
+ * ({ clipboardRunner, clipboardReadRunner }) in the third argument are
+ * discriminated from a Key at runtime by `'upArrow' in value`.
  */
 export function runNormalInput(
   state: AppState,
   input: string,
-  key: Key = makeKey(),
+  key?: Key,
+  abortControllerRef?: { current: AbortController | null },
+): NormalInputRun;
+export function runNormalInput(
+  state: AppState,
+  input: string,
+  options: NormalInputOptions,
+  abortControllerRef?: { current: AbortController | null },
+): NormalInputRun;
+export function runNormalInput(
+  state: AppState,
+  input: string,
+  keyOrOptions: Key | NormalInputOptions = makeKey(),
   abortControllerRef: { current: AbortController | null } = { current: null },
 ): NormalInputRun {
+  const key = isKey(keyOrOptions) ? keyOrOptions : makeKey();
+  const options = isKey(keyOrOptions) ? {} : keyOrOptions;
   const actions: Action[] = [];
+  const dispatch = vi.fn((action: Action) => {
+    actions.push(action);
+  });
   const exit = vi.fn();
   const suspend = vi.fn();
-  const clipboardRunner = vi.fn(async () => '');
-  const clipboardReadRunner = vi.fn(async () => '');
+  const clipboardRunner = options.clipboardRunner ?? vi.fn(async () => '');
+  const clipboardReadRunner = options.clipboardReadRunner ?? vi.fn(async () => '');
   handleNormalInput({
     state,
     selectedRequest: state.requests[state.selectedIndex],
@@ -46,9 +76,9 @@ export function runNormalInput(
     abortControllerRef,
     input,
     key,
-    dispatch: (action) => actions.push(action),
+    dispatch,
   });
-  return { actions, exit, suspend, clipboardRunner, clipboardReadRunner };
+  return { actions, dispatch, exit, suspend, clipboardRunner, clipboardReadRunner };
 }
 
 export function pressKey(state: AppState, input: string, key: Key = makeKey()): Action[] {

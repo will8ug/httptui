@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { Key } from 'ink';
 
 import { createInitialState } from '../helpers/state';
 import { createMockResponse } from '../helpers/responses';
-import { handleNormalInput, handleSearchInput } from '../../src/app/input-handlers';
+import { pressKey } from '../helpers/dispatch';
+import { handleSearchInput } from '../../src/app/input-handlers';
 import type { Action, AppState } from '../../src/core/types';
 import { computeResponseViewport } from '../../src/core/response-viewport';
 import { makeKey } from '../helpers/keys';
@@ -48,24 +49,6 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
     }).bodyVisualStart;
   }
 
-  function pressNormalKey(state: AppState, input: string, key: Key = makeKey()): Action[] {
-    const dispatched: Action[] = [];
-    handleNormalInput({
-      state,
-      selectedRequest: undefined,
-      exit: () => {},
-      suspend: vi.fn(),
-      executorConfig: { insecure: false },
-      clipboardRunner: undefined,
-      clipboardReadRunner: undefined,
-      abortControllerRef: { current: null },
-      input,
-      key,
-      dispatch: (action) => dispatched.push(action),
-    });
-    return dispatched;
-  }
-
   function pressSearchKey(state: AppState, input: string, key: Key = makeKey()): Action[] {
     const dispatched: Action[] = [];
     handleSearchInput({
@@ -86,11 +69,11 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
     expect(split[1] - split[0]).toBe(3);
     expect(fullscreen[1]).toBeLessThan(split[1]);
 
-    const nextActions = pressNormalKey(state, 'n');
+    const nextActions = pressKey(state, 'n');
     expect(nextActions).toHaveLength(1);
     expect(nextActions[0]).toEqual({ type: 'NEXT_MATCH', targetVisualIndex: fullscreen[2] });
 
-    const prevActions = pressNormalKey(searchState({ currentMatchIndex: 1 }), 'N');
+    const prevActions = pressKey(searchState({ currentMatchIndex: 1 }), 'N');
     expect(prevActions).toHaveLength(1);
     expect(prevActions[0]).toEqual({ type: 'PREV_MATCH', targetVisualIndex: fullscreen[1] });
   });

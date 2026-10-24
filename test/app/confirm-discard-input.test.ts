@@ -1,30 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Key } from 'ink';
 
-import { handleConfirmDiscardInput, handleNormalInput } from '../../src/app/input-handlers';
+import { handleConfirmDiscardInput } from '../../src/app/input-handlers';
 import type { Action, AppState } from '../../src/core/types';
+import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
 import { createInitialState } from '../helpers/state';
-
-function runNormalInput(state: AppState, input: string, key: Key = makeKey()) {
-  const dispatched: Action[] = [];
-  const exit = vi.fn();
-  handleNormalInput({
-    state,
-    selectedRequest: state.requests[state.selectedIndex],
-    exit,
-    suspend: vi.fn(),
-    executorConfig: { insecure: false },
-    clipboardRunner: vi.fn(async () => ''),
-    clipboardReadRunner: vi.fn(async () => ''),
-    abortControllerRef: { current: null },
-    input,
-    key,
-    dispatch: (action) => dispatched.push(action),
-  });
-  return { actions: dispatched, exit };
-}
 
 function runConfirmInput(state: AppState, input: string, key: Key = makeKey()) {
   const dispatched: Action[] = [];

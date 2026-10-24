@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { Key } from 'ink';
 
-import { handleFileLoadInput, handleNormalInput } from '../../src/app/input-handlers';
+import { handleFileLoadInput } from '../../src/app/input-handlers';
 import type { Action, AppState } from '../../src/core/types';
+import { pressKey } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createInitialState } from '../helpers/state';
 
@@ -27,27 +28,9 @@ function pressFileLoadKey(state: AppState, input: string, key: Key = makeKey()):
   return dispatched;
 }
 
-function pressNormalKey(state: AppState, input: string, key: Key = makeKey()): Action[] {
-  const dispatched: Action[] = [];
-  handleNormalInput({
-    state,
-    selectedRequest: undefined,
-    exit: () => {},
-    suspend: vi.fn(),
-    executorConfig: { insecure: false },
-    clipboardRunner: undefined,
-    clipboardReadRunner: undefined,
-    abortControllerRef: { current: null },
-    input,
-    key,
-    dispatch: (action) => dispatched.push(action),
-  });
-  return dispatched;
-}
-
 describe('handleNormalInput o', () => {
   it('enters file-load mode when there are no unsaved changes', () => {
-    const actions = pressNormalKey(createInitialState(), 'o');
+    const actions = pressKey(createInitialState(), 'o');
 
     expect(actions).toEqual([{ type: 'ENTER_FILE_LOAD' }]);
   });
