@@ -1,7 +1,7 @@
 import { getEnvPickerVisibleHeight } from '../../utils/layout';
 import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
-import { clamp, clampScrollOffsetToCursor } from './helpers';
+import { clamp, clampScrollOffsetToCursor, CLEAR_SEARCH_STATE } from './helpers';
 
 type EnvSelectAction = Extract<Action, { type: 'ENTER_ENV_SELECT' | 'MOVE_ENV_SELECTION' | 'JUMP_ENV_SELECTION' | 'SWITCH_ENV' | 'CANCEL_ENV_SELECT' | 'SET_ENV_SELECT_ERROR' }>;
 
@@ -73,6 +73,7 @@ export function reduceEnvSelect(state: AppState, action: EnvSelectAction): AppSt
         detailsHorizontalOffset: 0,
         mode: 'normal',
         envSelectError: null,
+        ...CLEAR_SEARCH_STATE,
       };
 
     case 'CANCEL_ENV_SELECT':
