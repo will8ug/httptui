@@ -602,7 +602,9 @@ export function handleNormalInput({
   }
 
   if (key.escape) {
-    if (responseVisible(state) && isSearchActive(state)) {
+    // Back up one level at a time: an active search is dismissed first in
+    // every panel state; exiting fullscreen remains only once none is left.
+    if (isSearchActive(state)) {
       dispatch({ type: 'CANCEL_SEARCH' });
       return;
     }

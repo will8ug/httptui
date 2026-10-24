@@ -100,13 +100,20 @@ describe('fullscreen Escape priority', () => {
     expect(lastFrame() ?? '').toContain('Requests');
   });
 
-  it('Escape in a maximized request list exits fullscreen and keeps the search bar', async () => {
+  it('Tab away from the response dismisses the search bar and Escape then exits fullscreen', async () => {
     const { stdin, lastFrame } = renderApp({ requests: makeShortUrlRequests(1) });
     await delay(KEY_DELAY_MS);
     await loadResponse(stdin, THREE_MATCH_BODY);
 
     await searchFor(stdin, 'needle');
     await press(stdin, TAB);
+    await delay(KEY_DELAY_MS);
+    const splitFrame = lastFrame() ?? '';
+    expect(splitFrame).toContain('Requests');
+    expect(splitFrame).toContain('Response');
+    expect(splitFrame).not.toContain('(Esc to dismiss)');
+    expect(splitFrame).not.toContain('[1/3]');
+
     await press(stdin, 'f');
     expectRequestsMaximized(lastFrame() ?? '');
 
@@ -115,7 +122,5 @@ describe('fullscreen Escape priority', () => {
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Requests');
     expect(frame).toContain('Response');
-    expect(frame).toContain('(Esc to dismiss)');
-    expect(frame).toContain('[1/3]');
   });
 });

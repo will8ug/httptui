@@ -120,6 +120,47 @@ describe('quit-key divergence: q never quits from fullscreen, Ctrl+C always exit
   });
 });
 
+describe('escape priority in fullscreen: search first, fullscreen exit second', () => {
+  const searchActiveState = (panel: 'requests' | 'response' | 'details'): AppState =>
+    panelState(panel, { searchMatches: [3, 7], currentMatchIndex: 0, lastSearchQuery: 'needle' });
+
+  it('Escape while the response is maximized with active search results dismisses the search', () => {
+    const result = runNormalInput(searchActiveState('response'), '', makeKey({ escape: true }));
+
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
+  });
+
+  it('Escape while the requests panel is maximized with active search results dismisses the search', () => {
+    const result = runNormalInput(searchActiveState('requests'), '', makeKey({ escape: true }));
+
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
+  });
+
+  it('Escape while the details panel is maximized with active search results dismisses the search', () => {
+    const result = runNormalInput(searchActiveState('details'), '', makeKey({ escape: true }));
+
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
+  });
+
+  it('a second Escape after the dismissal exits fullscreen', () => {
+    const searchActive = searchActiveState('requests');
+    const first = runNormalInput(searchActive, '', makeKey({ escape: true }));
+
+    expect(first.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
+
+    const dismissed = reducer(searchActive, { type: 'CANCEL_SEARCH' });
+    const second = runNormalInput(dismissed, '', makeKey({ escape: true }));
+
+    expect(second.actions).toEqual([{ type: 'TOGGLE_FULLSCREEN' }]);
+  });
+
+  it('Escape without search results exits fullscreen', () => {
+    const result = runNormalInput(panelState('requests'), '', makeKey({ escape: true }));
+
+    expect(result.actions).toEqual([{ type: 'TOGGLE_FULLSCREEN' }]);
+  });
+});
+
 describe('fullscreen action keys are no-ops', () => {
   const noopKeys: Array<{ label: string; input: string; key?: Key }> = [
     { label: 'Tab', input: '', key: makeKey({ tab: true }) },
@@ -255,6 +296,22 @@ describe('normal mode escape', () => {
     );
 
     expect(result.actions).toEqual([]);
+    expect(result.exit).not.toHaveBeenCalled();
+  });
+
+  it('Escape dismisses an active search in split view', () => {
+    const result = runNormalInput(
+      createInitialState({
+        requests: [createRequest()],
+        searchMatches: [3, 7],
+        currentMatchIndex: 0,
+        lastSearchQuery: 'needle',
+      }),
+      '',
+      makeKey({ escape: true }),
+    );
+
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
     expect(result.exit).not.toHaveBeenCalled();
   });
 });

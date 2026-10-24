@@ -7,17 +7,11 @@ type NavigationAction = Extract<Action, { type: 'SELECT_REQUEST' | 'MOVE_SELECTI
 export function reduceNavigation(state: AppState, action: NavigationAction): AppState {
   switch (action.type) {
     case 'SELECT_REQUEST':
-      return {
-        ...navigateRequests(state, action.index),
-        ...CLEAR_SEARCH_STATE,
-      };
+      return navigateRequests(state, action.index);
 
     case 'MOVE_SELECTION': {
       const delta = action.direction === 'up' ? -1 : 1;
-      return {
-        ...navigateRequests(state, state.selectedIndex + delta),
-        ...CLEAR_SEARCH_STATE,
-      };
+      return navigateRequests(state, state.selectedIndex + delta);
     }
 
     case 'APPEND_REQUEST': {
@@ -27,10 +21,7 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
       const maxLineNumber = state.requests.reduce((max, req) => Math.max(max, req.lineNumber), 0);
       const appended = { ...action.request, lineNumber: maxLineNumber + 1 };
       const nextState = { ...state, requests: [...state.requests, appended] };
-      return {
-        ...navigateRequests(nextState, nextState.requests.length - 1),
-        ...CLEAR_SEARCH_STATE,
-      };
+      return navigateRequests(nextState, nextState.requests.length - 1);
     }
 
     case 'SWITCH_PANEL': {
@@ -44,9 +35,15 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
             return 'requests';
         }
       })();
+      // The Tab cycle is the only focus-departure mechanism (maximized-panel
+      // changes go through focus — see the invariant in core/types.ts), so
+      // clearing here keeps a lingering search out of every non-response
+      // panel state, fullscreen included.
+      const leavesResponse = state.focusedPanel === 'response' && nextPanel !== 'response';
       return {
         ...state,
         focusedPanel: nextPanel,
+        ...(leavesResponse && CLEAR_SEARCH_STATE),
       };
     }
 
