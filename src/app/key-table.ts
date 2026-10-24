@@ -11,11 +11,12 @@ export interface KeyTableEntry {
 }
 
 /**
- * Static key-to-intent bindings for the normal/fullscreen dispatch paths.
+ * Static key-to-intent bindings for the single dispatch handler serving both
+ * split-view and fullscreen modes.
  * Deliberately separate from the SHORTCUTS display registry (core/shortcuts.ts).
  * Computed keys (n/N, vertical routing) and side-effecting keys (exit, abort,
  * clipboard, editor handoff, execution, file system) stay imperative in the
- * handlers and never enter this table.
+ * handler and never enter this table.
  */
 export const KEY_TABLE: Readonly<Record<string, KeyTableEntry>> = {
   g: { action: { type: 'JUMP_VERTICAL', direction: 'start' } },
