@@ -14,12 +14,6 @@ function pressNormalS(state: AppState, dispatch: (action: Action) => void): void
   handleNormalInput({
     state,
     selectedRequest: undefined,
-    columns: 80,
-    rows: 24,
-    effectiveResponseHeight: 10,
-    effectiveDetailMaxContent: 40,
-    editorVisibleHeight: 10,
-    editorContentWidth: 40,
     exit: () => {},
     suspend: vi.fn(),
     executorConfig: { insecure: false },

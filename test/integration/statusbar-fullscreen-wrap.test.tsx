@@ -12,8 +12,9 @@ vi.mock('undici', () => ({
 }));
 
 import { delay, KEY_DELAY_MS, press, renderApp, TAB } from '../helpers/integration';
-import { getResponseTotalLines } from '../../src/utils/scroll';
-import { getPanelContentWidth } from '../../src/utils/layout';
+import { createMockResponse } from '../helpers/responses';
+import { computeResponseViewport } from '../../src/core/response-viewport';
+import { DEFAULT_TERMINAL_ROWS } from '../../src/utils/layout';
 import type { FocusedPanel, ParsedRequest } from '../../src/core/types';
 
 const COLUMNS = 100;
@@ -22,22 +23,39 @@ const WRAPPING_BODY_LINE = 'word '.repeat(16).trim();
 const BODY = Array.from({ length: 3 }, () => WRAPPING_BODY_LINE).join('\n');
 
 /** Mirrors the ResponseData the executor stores for the stubbed undici response. */
-const storedResponse = {
-  statusCode: 200,
-  statusText: 'OK',
-  headers: {},
+const storedResponse = createMockResponse({
   body: BODY,
-  timing: { durationMs: 0 },
-};
+  size: { bodyBytes: Buffer.byteLength(BODY) },
+});
 
 function expectedTotalLines(maximizedPanel: FocusedPanel | null): number {
-  return getResponseTotalLines({
+  return computeResponseViewport({
     response: storedResponse,
     verbose: false,
     rawMode: false,
     wrapMode: 'wrap',
-    contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel, columns: COLUMNS }),
-  });
+    geometry: {
+      columns: COLUMNS,
+      availableHeight: DEFAULT_TERMINAL_ROWS - 1,
+      fullscreen: maximizedPanel === 'response',
+      searchVisible: false,
+    },
+  }).totalVisualLines;
+}
+
+function expectedViewportTotal(fullscreen: boolean): number {
+  return computeResponseViewport({
+    response: storedResponse,
+    verbose: false,
+    rawMode: false,
+    wrapMode: 'nowrap',
+    geometry: {
+      columns: COLUMNS,
+      availableHeight: DEFAULT_TERMINAL_ROWS - 1,
+      fullscreen,
+      searchVisible: false,
+    },
+  }).totalVisualLines;
 }
 
 function makeRequest(): ParsedRequest[] {
@@ -105,5 +123,32 @@ describe('status bar response line total — fullscreen wrap mode', () => {
     await press(stdin, 'f');
 
     expect(lineIndicatorTotal(lastFrame() ?? '')).toBe(expectedTotalLines(null));
+  });
+});
+
+describe('status bar response line total — nowrap mode', () => {
+  it('shows the viewport-model total while split and maximized', async () => {
+    stubResponse(BODY);
+
+    const { stdin, lastFrame } = renderApp({ requests: makeRequest() });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, '\r');
+    await delay(KEY_DELAY_MS * 4);
+
+    await press(stdin, TAB);
+
+    const splitFrame = lastFrame() ?? '';
+    expect(splitFrame).toContain('Response');
+    expect(lineIndicatorTotal(splitFrame)).toBe(expectedViewportTotal(false));
+
+    await press(stdin, 'f');
+
+    const fullscreenFrame = lastFrame() ?? '';
+    expect(lineIndicatorTotal(fullscreenFrame)).toBe(expectedViewportTotal(true));
+
+    await press(stdin, 'f');
+
+    expect(lineIndicatorTotal(lastFrame() ?? '')).toBe(expectedViewportTotal(false));
   });
 });

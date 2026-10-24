@@ -1,8 +1,20 @@
 import { formatResponseBody } from '../formatter';
 import type { Action, AppState } from '../types';
-import { CLEAR_SEARCH_STATE, computeSearchScrollOffset } from './helpers';
+import { CLEAR_SEARCH_STATE, computeSearchScrollOffset, responseVerticalMaxOffset } from './helpers';
 
 type SearchAction = Extract<Action, { type: 'ENTER_SEARCH' | 'UPDATE_SEARCH_INPUT' | 'CONFIRM_SEARCH' | 'CANCEL_SEARCH' | 'NEXT_MATCH' | 'PREV_MATCH' }>;
+
+function leaveSearch(state: AppState): AppState {
+  const next: AppState = {
+    ...state,
+    mode: 'normal',
+    ...CLEAR_SEARCH_STATE,
+  };
+  return {
+    ...next,
+    responseScrollOffset: Math.min(next.responseScrollOffset, responseVerticalMaxOffset(next)),
+  };
+}
 
 export function reduceSearch(state: AppState, action: SearchAction): AppState {
   switch (action.type) {
@@ -28,11 +40,7 @@ export function reduceSearch(state: AppState, action: SearchAction): AppState {
 
     case 'CONFIRM_SEARCH': {
       if (!state.searchQuery || !state.response) {
-        return {
-          ...state,
-          mode: 'normal',
-          ...CLEAR_SEARCH_STATE,
-        };
+        return leaveSearch(state);
       }
 
       const formattedBody = formatResponseBody(state.response.body, state.rawMode);
@@ -47,7 +55,7 @@ export function reduceSearch(state: AppState, action: SearchAction): AppState {
       }
 
       const scrollOffset = action.firstMatchVisualIndex !== undefined
-        ? computeSearchScrollOffset(action.firstMatchVisualIndex, action.maxOffset)
+        ? computeSearchScrollOffset(action.firstMatchVisualIndex, responseVerticalMaxOffset(state))
         : state.responseScrollOffset;
 
       return {
@@ -61,18 +69,14 @@ export function reduceSearch(state: AppState, action: SearchAction): AppState {
     }
 
     case 'CANCEL_SEARCH':
-      return {
-        ...state,
-        mode: 'normal',
-        ...CLEAR_SEARCH_STATE,
-      };
+      return leaveSearch(state);
 
     case 'NEXT_MATCH': {
       if (state.searchMatches.length === 0) {
         return state;
       }
       const nextIndex = (state.currentMatchIndex + 1) % state.searchMatches.length;
-      const scrollOffset = computeSearchScrollOffset(action.targetVisualIndex, action.maxOffset);
+      const scrollOffset = computeSearchScrollOffset(action.targetVisualIndex, responseVerticalMaxOffset(state));
       return {
         ...state,
         currentMatchIndex: nextIndex,
@@ -85,7 +89,7 @@ export function reduceSearch(state: AppState, action: SearchAction): AppState {
         return state;
       }
       const prevIndex = (state.currentMatchIndex - 1 + state.searchMatches.length) % state.searchMatches.length;
-      const scrollOffset = computeSearchScrollOffset(action.targetVisualIndex, action.maxOffset);
+      const scrollOffset = computeSearchScrollOffset(action.targetVisualIndex, responseVerticalMaxOffset(state));
       return {
         ...state,
         currentMatchIndex: prevIndex,

@@ -9,8 +9,7 @@ import type { EditorBuffer } from '../core/editor';
 import { toErrorInfo } from '../core/executor';
 import { formatResponseBody } from '../core/formatter';
 import { headersToText } from '../core/headers';
-import { computeVerticalMaxOffset } from '../core/reducer';
-import { computeResponseLayout } from '../core/response-layout';
+import { responseViewportFromState } from '../core/reducer';
 import { serializeHttpFile } from '../core/http-serializer';
 import { buildInPlaceContent } from '../core/in-place-save';
 import { detectFormat, parseAnyFormat } from '../core/format-detector';
@@ -20,7 +19,6 @@ import { completePath } from '../utils/path-completion';
 import type { PathEntry } from '../utils/path-completion';
 import { EDIT_CANCEL_WINDOW_MS } from '../utils/timing';
 import { hasUnsavedChanges } from '../utils/request';
-import { getPanelContentWidth } from '../utils/layout';
 import type { Action, AppState, ExecutorConfig, ParsedRequest, ResponseData } from '../core/types';
 import type { ClipboardRunner } from '../core/clipboard';
 import { EDIT_TAB_ORDER } from '../core/types';
@@ -39,31 +37,15 @@ function findMatchIndices(response: ResponseData, rawMode: boolean, query: strin
   return matches;
 }
 
-function getBodyVisualStart(state: AppState, columns: number): number[] | null {
-  if (!state.response) {
-    return null;
-  }
-  const formattedBody = formatResponseBody(state.response.body, state.rawMode);
-  const layout = computeResponseLayout({
-    response: state.response,
-    verbose: state.verbose,
-    rawMode: state.rawMode,
-    wrapMode: state.wrapMode,
-    contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns }),
-    formattedBody,
-  });
-  return layout.bodyVisualStart;
+function getBodyVisualStart(state: AppState): number[] | null {
+  return responseViewportFromState(state)?.bodyVisualStart ?? null;
 }
 
 function buildMatchNavigationAction(
   state: AppState,
-  columns: number,
-  effectiveResponseHeight: number,
-  effectiveDetailMaxContent: number,
   direction: 'next' | 'prev',
 ): Extract<Action, { type: 'NEXT_MATCH' | 'PREV_MATCH' }> {
-  const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
-  const bodyVisualStart = getBodyVisualStart(state, columns);
+  const bodyVisualStart = getBodyVisualStart(state);
   const matchCount = state.searchMatches.length;
   const targetIndex = direction === 'next'
     ? (state.currentMatchIndex + 1) % matchCount
@@ -71,8 +53,8 @@ function buildMatchNavigationAction(
   const targetRawIndex = state.searchMatches[targetIndex];
   const targetVisualIndex = bodyVisualStart ? bodyVisualStart[targetRawIndex] : targetRawIndex;
   return direction === 'next'
-    ? { type: 'NEXT_MATCH', targetVisualIndex, maxOffset }
-    : { type: 'PREV_MATCH', targetVisualIndex, maxOffset };
+    ? { type: 'NEXT_MATCH', targetVisualIndex }
+    : { type: 'PREV_MATCH', targetVisualIndex };
 }
 
 function applyLineEdit(
@@ -217,11 +199,8 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
   );
 }
 
-export function handleSearchInput({ state, columns, effectiveResponseHeight, effectiveDetailMaxContent, input, key, dispatch }: {
+export function handleSearchInput({ state, input, key, dispatch }: {
   state: AppState;
-  columns: number;
-  effectiveResponseHeight: number;
-  effectiveDetailMaxContent: number;
   input: string;
   key: Key;
   dispatch: Dispatch<Action>;
@@ -232,18 +211,17 @@ export function handleSearchInput({ state, columns, effectiveResponseHeight, eff
   }
 
   if (key.return) {
-    const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
     let firstMatchVisualIndex: number | undefined;
     if (state.response && state.searchQuery) {
       const matches = findMatchIndices(state.response, state.rawMode, state.searchQuery);
       if (matches.length > 0) {
-        const bodyVisualStart = getBodyVisualStart(state, columns);
+        const bodyVisualStart = getBodyVisualStart(state);
         if (bodyVisualStart) {
           firstMatchVisualIndex = bodyVisualStart[matches[0]];
         }
       }
     }
-    dispatch({ type: 'CONFIRM_SEARCH', firstMatchVisualIndex, maxOffset });
+    dispatch({ type: 'CONFIRM_SEARCH', firstMatchVisualIndex });
     return;
   }
 
@@ -418,11 +396,9 @@ export function handleResponseSaveInput({ state, input, key, dispatch }: {
   );
 }
 
-export function handleEditInput({ state, selectedRequest, editorVisibleHeight, editorContentWidth, input, key, dispatch }: {
+export function handleEditInput({ state, selectedRequest, input, key, dispatch }: {
   state: AppState;
   selectedRequest: ParsedRequest | undefined;
-  editorVisibleHeight: number;
-  editorContentWidth: number;
   input: string;
   key: Key;
   dispatch: Dispatch<Action>;
@@ -460,58 +436,58 @@ export function handleEditInput({ state, selectedRequest, editorVisibleHeight, e
   }
 
   if (key.home || (key.ctrl && input === 'a')) {
-    dispatch({ type: 'EDIT_KEY', op: 'lineStart', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'EDIT_KEY', op: 'lineStart' });
     return;
   }
 
   if (key.end || (key.ctrl && input === 'e')) {
-    dispatch({ type: 'EDIT_KEY', op: 'lineEnd', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'EDIT_KEY', op: 'lineEnd' });
     return;
   }
 
   if (key.return) {
-    dispatch({ type: 'EDIT_KEY', op: 'insert', insert: '\n', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'EDIT_KEY', op: 'insert', insert: '\n' });
     return;
   }
 
   if (key.backspace) {
-    dispatch({ type: 'EDIT_KEY', op: 'deleteBackward', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'EDIT_KEY', op: 'deleteBackward' });
     return;
   }
 
   if (key.delete) {
-    dispatch({ type: 'EDIT_KEY', op: 'deleteForward', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'EDIT_KEY', op: 'deleteForward' });
     return;
   }
 
   if (key.leftArrow) {
-    dispatch({ type: 'EDIT_KEY', op: 'left', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'EDIT_KEY', op: 'left' });
     return;
   }
 
   if (key.rightArrow) {
-    dispatch({ type: 'EDIT_KEY', op: 'right', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'EDIT_KEY', op: 'right' });
     return;
   }
 
   if (key.upArrow) {
-    dispatch({ type: 'EDIT_KEY', op: 'up', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'EDIT_KEY', op: 'up' });
     return;
   }
 
   if (key.downArrow) {
-    dispatch({ type: 'EDIT_KEY', op: 'down', visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'EDIT_KEY', op: 'down' });
     return;
   }
 
   if (key.tab && key.shift) {
     const nextTarget = EDIT_TAB_ORDER[(EDIT_TAB_ORDER.indexOf(state.editTarget) + 1) % EDIT_TAB_ORDER.length];
-    dispatch({ type: 'SWITCH_EDIT_TAB', target: nextTarget, visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'SWITCH_EDIT_TAB', target: nextTarget });
     return;
   }
 
   if (input && !key.ctrl && !key.meta) {
-    dispatch({ type: 'EDIT_KEY', op: 'insert', insert: input, visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'EDIT_KEY', op: 'insert', insert: input });
   }
 }
 
@@ -593,10 +569,6 @@ export function handleConfirmInPlaceSaveInput({ state, input, key, dispatch }: {
 
 function handleFullscreenInput({
   state,
-  columns,
-  rows,
-  effectiveResponseHeight,
-  effectiveDetailMaxContent,
   exit,
   abortControllerRef,
   input,
@@ -604,10 +576,6 @@ function handleFullscreenInput({
   dispatch,
 }: {
   state: AppState;
-  columns: number;
-  rows: number;
-  effectiveResponseHeight: number;
-  effectiveDetailMaxContent: number;
   exit: () => void;
   abortControllerRef: { current: AbortController | null };
   input: string;
@@ -646,23 +614,22 @@ function handleFullscreenInput({
   }
 
   if (input === 'g') {
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'start', rows });
+    dispatch({ type: 'JUMP_VERTICAL', direction: 'start' });
     return;
   }
 
   if (input === 'G') {
-    const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'end', maxOffset, rows });
+    dispatch({ type: 'JUMP_VERTICAL', direction: 'end' });
     return;
   }
 
   if (input === '0') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'start', columns });
+    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'start' });
     return;
   }
 
   if (input === '$') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'end' });
     return;
   }
 
@@ -672,18 +639,17 @@ function handleFullscreenInput({
   const isRight = input === 'l' || key.rightArrow;
 
   if (isLeft || isRight) {
-    dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right', columns });
+    dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right' });
     return;
   }
 
   if (isUp || isDown) {
     if (state.maximizedPanel === 'requests') {
-      dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down', rows });
+      dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down' });
       return;
     }
 
-    const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
-    dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
+    dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down' });
     return;
   }
 
@@ -709,12 +675,12 @@ function handleFullscreenInput({
     }
 
     if (input === 'n' && state.searchMatches.length > 0) {
-      dispatch(buildMatchNavigationAction(state, columns, effectiveResponseHeight, effectiveDetailMaxContent, 'next'));
+      dispatch(buildMatchNavigationAction(state, 'next'));
       return;
     }
 
     if (input === 'N' && state.searchMatches.length > 0) {
-      dispatch(buildMatchNavigationAction(state, columns, effectiveResponseHeight, effectiveDetailMaxContent, 'prev'));
+      dispatch(buildMatchNavigationAction(state, 'prev'));
       return;
     }
   }
@@ -727,12 +693,6 @@ function handleFullscreenInput({
 export function handleNormalInput({
   state,
   selectedRequest,
-  columns,
-  rows,
-  effectiveResponseHeight,
-  effectiveDetailMaxContent,
-  editorVisibleHeight,
-  editorContentWidth,
   exit,
   suspend,
   executorConfig,
@@ -745,12 +705,6 @@ export function handleNormalInput({
 }: {
   state: AppState;
   selectedRequest: ParsedRequest | undefined;
-  columns: number;
-  rows: number;
-  effectiveResponseHeight: number;
-  effectiveDetailMaxContent: number;
-  editorVisibleHeight: number;
-  editorContentWidth: number;
   exit: () => void;
   suspend: SuspendTerminal;
   executorConfig: ExecutorConfig;
@@ -764,10 +718,6 @@ export function handleNormalInput({
   if (state.maximizedPanel !== null) {
     handleFullscreenInput({
       state,
-      columns,
-      rows,
-      effectiveResponseHeight,
-      effectiveDetailMaxContent,
       exit,
       abortControllerRef,
       input,
@@ -942,7 +892,7 @@ export function handleNormalInput({
     if (!selectedRequest) {
       return;
     }
-    dispatch({ type: 'ENTER_EDIT', buffers: { url: selectedRequest.url, body: selectedRequest.body ?? '', headers: headersToText(selectedRequest.headers) }, visibleHeight: editorVisibleHeight, visibleWidth: editorContentWidth });
+    dispatch({ type: 'ENTER_EDIT', buffers: { url: selectedRequest.url, body: selectedRequest.body ?? '', headers: headersToText(selectedRequest.headers) } });
     return;
   }
 
@@ -952,12 +902,12 @@ export function handleNormalInput({
   }
 
   if (input === 'n' && state.searchMatches.length > 0) {
-    dispatch(buildMatchNavigationAction(state, columns, effectiveResponseHeight, effectiveDetailMaxContent, 'next'));
+    dispatch(buildMatchNavigationAction(state, 'next'));
     return;
   }
 
   if (input === 'N' && state.searchMatches.length > 0) {
-    dispatch(buildMatchNavigationAction(state, columns, effectiveResponseHeight, effectiveDetailMaxContent, 'prev'));
+    dispatch(buildMatchNavigationAction(state, 'prev'));
     return;
   }
 
@@ -983,23 +933,22 @@ export function handleNormalInput({
   }
 
   if (input === 'g') {
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'start', rows });
+    dispatch({ type: 'JUMP_VERTICAL', direction: 'start' });
     return;
   }
 
   if (input === 'G') {
-    const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'end', maxOffset, rows });
+    dispatch({ type: 'JUMP_VERTICAL', direction: 'end' });
     return;
   }
 
   if (input === '0') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'start', columns });
+    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'start' });
     return;
   }
 
   if (input === '$') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'end', columns });
+    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'end' });
     return;
   }
 
@@ -1009,7 +958,7 @@ export function handleNormalInput({
   const isRight = input === 'l' || key.rightArrow;
 
   if (isLeft || isRight) {
-    dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right', columns });
+    dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right' });
     return;
   }
 
@@ -1018,19 +967,7 @@ export function handleNormalInput({
   }
 
   if (state.focusedPanel === 'requests') {
-    dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down', rows });
-    return;
-  }
-
-  if (state.focusedPanel === 'details' && selectedRequest) {
-    const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
-    dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
-    return;
-  }
-
-  if (state.focusedPanel === 'response' && state.response) {
-    const maxOffset = computeVerticalMaxOffset(state, columns, effectiveResponseHeight, effectiveDetailMaxContent);
-    dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down', maxOffset });
+    dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down' });
     return;
   }
 

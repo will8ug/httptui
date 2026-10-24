@@ -95,6 +95,11 @@ export interface ExecutorConfig {
 
 export type FocusedPanel = 'requests' | 'details' | 'response';
 
+export interface TerminalGeometry {
+  rows: number;
+  columns: number;
+}
+
 export type AppMode =
   | 'normal'
   | 'fileLoad'
@@ -126,6 +131,7 @@ export type EditOp =
   | 'lineEnd';
 
 export interface AppState {
+  geometry: TerminalGeometry;
   requests: ParsedRequest[];
   variables: FileVariable[];
   environmentVariables: FileVariable[];
@@ -196,9 +202,10 @@ export interface AppProps {
 }
 
 export type Action =
-  | { type: 'SELECT_REQUEST'; index: number; rows?: number }
+  | { type: 'SET_GEOMETRY'; rows: number; columns: number }
+  | { type: 'SELECT_REQUEST'; index: number }
   | { type: 'APPEND_REQUEST'; request: ParsedRequest }
-  | { type: 'MOVE_SELECTION'; direction: 'up' | 'down'; rows?: number }
+  | { type: 'MOVE_SELECTION'; direction: 'up' | 'down' }
   | { type: 'SEND_REQUEST' }
   | { type: 'RECEIVE_RESPONSE'; response: ResponseData }
   | { type: 'REQUEST_ERROR'; error: ErrorInfo }
@@ -206,8 +213,8 @@ export type Action =
   | { type: 'SWITCH_PANEL' }
   | { type: 'TOGGLE_VERBOSE' }
   | { type: 'TOGGLE_HELP' }
-  | { type: 'SCROLL'; direction: 'up' | 'down'; maxOffset?: number }
-  | { type: 'SCROLL_HORIZONTAL'; direction: 'left' | 'right'; columns?: number }
+  | { type: 'SCROLL'; direction: 'up' | 'down' }
+  | { type: 'SCROLL_HORIZONTAL'; direction: 'left' | 'right' }
   | { type: 'CLOSE_HELP' }
   | { type: 'RELOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[] }
   | { type: 'SET_TRANSIENT_MESSAGE'; message: string }
@@ -224,14 +231,14 @@ export type Action =
   | { type: 'TOGGLE_WRAP' }
   | { type: 'TOGGLE_RAW' }
   | { type: 'TOGGLE_REQUEST_DETAILS' }
-  | { type: 'JUMP_VERTICAL'; direction: 'start' | 'end'; maxOffset?: number; rows?: number }
-  | { type: 'JUMP_HORIZONTAL'; direction: 'start' | 'end'; columns?: number }
+  | { type: 'JUMP_VERTICAL'; direction: 'start' | 'end' }
+  | { type: 'JUMP_HORIZONTAL'; direction: 'start' | 'end' }
   | { type: 'ENTER_SEARCH' }
   | { type: 'UPDATE_SEARCH_INPUT'; value: string }
-  | { type: 'CONFIRM_SEARCH'; firstMatchVisualIndex?: number; maxOffset?: number }
+  | { type: 'CONFIRM_SEARCH'; firstMatchVisualIndex?: number }
   | { type: 'CANCEL_SEARCH' }
-  | { type: 'NEXT_MATCH'; targetVisualIndex: number; maxOffset?: number }
-  | { type: 'PREV_MATCH'; targetVisualIndex: number; maxOffset?: number }
+  | { type: 'NEXT_MATCH'; targetVisualIndex: number }
+  | { type: 'PREV_MATCH'; targetVisualIndex: number }
   | { type: 'TOGGLE_FULLSCREEN' }
   | { type: 'ENTER_ENV_SELECT' }
   | { type: 'MOVE_ENV_SELECTION'; direction: 'up' | 'down' }
@@ -251,9 +258,9 @@ export type Action =
   | { type: 'SET_RESPONSE_SAVE_ERROR'; error: string }
   | { type: 'SAVE_RESPONSE_FILE'; message: string }
   | { type: 'CANCEL_RESPONSE_SAVE' }
-  | { type: 'ENTER_EDIT'; buffers: Record<EditTarget, string>; visibleHeight: number; visibleWidth: number }
-  | { type: 'EDIT_KEY'; op: EditOp; insert?: string; visibleHeight: number; visibleWidth: number }
-  | { type: 'SWITCH_EDIT_TAB'; target: EditTarget; visibleHeight: number; visibleWidth: number }
+  | { type: 'ENTER_EDIT'; buffers: Record<EditTarget, string> }
+  | { type: 'EDIT_KEY'; op: EditOp; insert?: string }
+  | { type: 'SWITCH_EDIT_TAB'; target: EditTarget }
   | { type: 'COMMIT_EDIT' }
   | { type: 'CANCEL_EDIT' }
   | { type: 'ARM_EDIT_CANCEL'; now: number }

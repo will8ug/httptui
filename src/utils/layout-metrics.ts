@@ -4,7 +4,7 @@ import {
   getDetailPanelHeight,
   getEditorContentWidth,
   getEditorVisibleHeight,
-  getFullscreenContentWidth,
+  getFullscreenDetailsContentWidth,
   getFullscreenRequestContentWidth,
   getFullscreenVisibleHeight,
 } from './layout';
@@ -14,7 +14,7 @@ const DETAIL_PANEL_MAX_CONTENT = 10;
 export interface LayoutMetrics {
   detailsTotalLines: number;
   responseAvailableHeight: number;
-  fullscreenContentWidth: number;
+  fullscreenDetailsContentWidth: number;
   fullscreenRequestContentWidth: number;
   fullscreenVisibleHeight: number;
   editorContentWidth: number;
@@ -39,7 +39,7 @@ export function computeLayoutMetrics(
 
   const responseAvailableHeight = rows - 1 - detailPanelHeight;
   const fullscreenAvailableHeight = rows - 1;
-  const fullscreenContentWidth = getFullscreenContentWidth(columns);
+  const fullscreenDetailsContentWidth = getFullscreenDetailsContentWidth(columns);
   const fullscreenRequestContentWidth = getFullscreenRequestContentWidth(columns);
   const fullscreenVisibleHeight = getFullscreenVisibleHeight(fullscreenAvailableHeight);
   const editorContentWidth = getEditorContentWidth(columns);
@@ -48,7 +48,7 @@ export function computeLayoutMetrics(
   return {
     detailsTotalLines,
     responseAvailableHeight,
-    fullscreenContentWidth,
+    fullscreenDetailsContentWidth,
     fullscreenRequestContentWidth,
     fullscreenVisibleHeight,
     editorContentWidth,

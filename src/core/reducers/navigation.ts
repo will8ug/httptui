@@ -1,9 +1,6 @@
-import { dirname } from 'node:path';
-
-import { DEFAULT_TERMINAL_ROWS, getPanelContentWidth, getRequestVisibleHeight } from '../../utils/layout';
-import { getMaxDetailsLineWidth, getMaxRequestLineWidth, getMaxResponseLineWidth } from '../../utils/scroll';
+import { getRequestVisibleHeight } from '../../utils/layout';
 import type { Action, AppState } from '../types';
-import { CLEAR_SEARCH_STATE, clampScrollOffsetToCursor, navigateRequests } from './helpers';
+import { CLEAR_SEARCH_STATE, clamp, clampScrollOffsetToCursor, detailsHorizontalMaxOffset, detailsVerticalMaxOffset, navigateRequests, requestsHorizontalMaxOffset, responseHorizontalMaxOffset, responseVerticalMaxOffset } from './helpers';
 
 type NavigationAction = Extract<Action, { type: 'SELECT_REQUEST' | 'MOVE_SELECTION' | 'APPEND_REQUEST' | 'SWITCH_PANEL' | 'SCROLL' | 'SCROLL_HORIZONTAL' | 'JUMP_VERTICAL' | 'JUMP_HORIZONTAL' }>;
 
@@ -11,14 +8,14 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
   switch (action.type) {
     case 'SELECT_REQUEST':
       return {
-        ...navigateRequests(state, action.index, action.rows),
+        ...navigateRequests(state, action.index),
         ...CLEAR_SEARCH_STATE,
       };
 
     case 'MOVE_SELECTION': {
       const delta = action.direction === 'up' ? -1 : 1;
       return {
-        ...navigateRequests(state, state.selectedIndex + delta, action.rows),
+        ...navigateRequests(state, state.selectedIndex + delta),
         ...CLEAR_SEARCH_STATE,
       };
     }
@@ -55,25 +52,18 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
 
     case 'SCROLL': {
       const delta = action.direction === 'up' ? -1 : 1;
-      const maxOffset = action.maxOffset;
 
       if (state.focusedPanel === 'details') {
-        const next = state.detailsScrollOffset + delta;
         return {
           ...state,
-          detailsScrollOffset: maxOffset !== undefined
-            ? Math.min(Math.max(0, next), maxOffset)
-            : Math.max(0, next),
+          detailsScrollOffset: clamp(state.detailsScrollOffset + delta, 0, detailsVerticalMaxOffset(state)),
         };
       }
 
       if (state.focusedPanel === 'response') {
-        const next = state.responseScrollOffset + delta;
         return {
           ...state,
-          responseScrollOffset: maxOffset !== undefined
-            ? Math.min(Math.max(0, next), maxOffset)
-            : Math.max(0, next),
+          responseScrollOffset: clamp(state.responseScrollOffset + delta, 0, responseVerticalMaxOffset(state)),
         };
       }
 
@@ -88,32 +78,25 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
         return state;
       }
 
-      const columns = action.columns ?? 80;
       const horizontalDelta = action.direction === 'left' ? -2 : 2;
 
       if (state.focusedPanel === 'details') {
-        const contentWidth = getPanelContentWidth({ panel: 'details', maximizedPanel: state.maximizedPanel, columns });
-        const maxOffset = Math.max(0, getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables }) - contentWidth);
         return {
           ...state,
-          detailsHorizontalOffset: Math.min(Math.max(0, state.detailsHorizontalOffset + horizontalDelta), maxOffset),
+          detailsHorizontalOffset: clamp(state.detailsHorizontalOffset + horizontalDelta, 0, detailsHorizontalMaxOffset(state)),
         };
       }
 
       if (state.focusedPanel === 'response') {
-        const contentWidth = getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns });
-        const maxOffset = Math.max(0, getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode }) - contentWidth);
         return {
           ...state,
-          responseHorizontalOffset: Math.min(Math.max(0, state.responseHorizontalOffset + horizontalDelta), maxOffset),
+          responseHorizontalOffset: clamp(state.responseHorizontalOffset + horizontalDelta, 0, responseHorizontalMaxOffset(state)),
         };
       }
 
-      const contentWidth = getPanelContentWidth({ panel: 'requests', maximizedPanel: state.maximizedPanel, columns });
-      const maxOffset = Math.max(0, getMaxRequestLineWidth({ requests: state.requests, variables: state.variables, baseDir: dirname(state.filePath) }) - contentWidth);
       return {
         ...state,
-        requestHorizontalOffset: Math.min(Math.max(0, state.requestHorizontalOffset + horizontalDelta), maxOffset),
+        requestHorizontalOffset: clamp(state.requestHorizontalOffset + horizontalDelta, 0, requestsHorizontalMaxOffset(state)),
       };
     }
 
@@ -121,7 +104,7 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
       if (state.focusedPanel === 'requests') {
         const lastIndex = Math.max(0, state.requests.length - 1);
         const nextIndex = action.direction === 'start' ? 0 : lastIndex;
-        const visibleCount = getRequestVisibleHeight(action.rows ?? DEFAULT_TERMINAL_ROWS);
+        const visibleCount = getRequestVisibleHeight(state.geometry.rows);
         return {
           ...state,
           selectedIndex: nextIndex,
@@ -133,27 +116,16 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
       }
 
       if (state.focusedPanel === 'details') {
-        if (action.direction === 'start') {
-          return { ...state, detailsScrollOffset: 0 };
-        }
-        if (action.maxOffset === undefined) {
-          return state;
-        }
-        return { ...state, detailsScrollOffset: Math.max(0, action.maxOffset) };
+        return {
+          ...state,
+          detailsScrollOffset: action.direction === 'start' ? 0 : detailsVerticalMaxOffset(state),
+        };
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- discriminated union narrowing is correct but TS infers always-true
-      if (state.focusedPanel === 'response') {
-        if (action.direction === 'start') {
-          return { ...state, responseScrollOffset: 0 };
-        }
-        if (action.maxOffset === undefined) {
-          return state;
-        }
-        return { ...state, responseScrollOffset: Math.max(0, action.maxOffset) };
-      }
-
-      return state;
+      return {
+        ...state,
+        responseScrollOffset: action.direction === 'start' ? 0 : responseVerticalMaxOffset(state),
+      };
     }
 
     case 'JUMP_HORIZONTAL': {
@@ -161,37 +133,24 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
         return state;
       }
 
-      const columns = action.columns ?? 80;
-
       if (state.focusedPanel === 'requests') {
         if (action.direction === 'start') {
           return { ...state, requestHorizontalOffset: 0 };
         }
-        const contentWidth = getPanelContentWidth({ panel: 'requests', maximizedPanel: state.maximizedPanel, columns });
-        const maxOffset = Math.max(0, getMaxRequestLineWidth({ requests: state.requests, variables: state.variables, baseDir: dirname(state.filePath) }) - contentWidth);
-        return { ...state, requestHorizontalOffset: maxOffset };
+        return { ...state, requestHorizontalOffset: requestsHorizontalMaxOffset(state) };
       }
 
       if (state.focusedPanel === 'details') {
         if (action.direction === 'start') {
           return { ...state, detailsHorizontalOffset: 0 };
         }
-        const contentWidth = getPanelContentWidth({ panel: 'details', maximizedPanel: state.maximizedPanel, columns });
-        const maxOffset = Math.max(0, getMaxDetailsLineWidth({ request: state.requests[state.selectedIndex], variables: state.variables }) - contentWidth);
-        return { ...state, detailsHorizontalOffset: maxOffset };
+        return { ...state, detailsHorizontalOffset: detailsHorizontalMaxOffset(state) };
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- discriminated union narrowing is correct but TS infers always-true
-      if (state.focusedPanel === 'response') {
-        if (action.direction === 'start') {
-          return { ...state, responseHorizontalOffset: 0 };
-        }
-        const contentWidth = getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns });
-        const maxOffset = Math.max(0, getMaxResponseLineWidth({ response: state.response, verbose: state.verbose, rawMode: state.rawMode }) - contentWidth);
-        return { ...state, responseHorizontalOffset: maxOffset };
+      if (action.direction === 'start') {
+        return { ...state, responseHorizontalOffset: 0 };
       }
-
-      return state;
+      return { ...state, responseHorizontalOffset: responseHorizontalMaxOffset(state) };
     }
   }
 }

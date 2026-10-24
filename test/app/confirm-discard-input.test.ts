@@ -13,12 +13,6 @@ function runNormalInput(state: AppState, input: string, key: Key = makeKey()) {
   handleNormalInput({
     state,
     selectedRequest: state.requests[state.selectedIndex],
-    columns: 80,
-    rows: 24,
-    effectiveResponseHeight: 10,
-    effectiveDetailMaxContent: 40,
-    editorVisibleHeight: 10,
-    editorContentWidth: 40,
     exit,
     suspend: vi.fn(),
     executorConfig: { insecure: false },

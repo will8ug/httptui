@@ -4,10 +4,8 @@ import type { Key } from 'ink';
 import { createInitialState } from '../helpers/state';
 import { createMockResponse } from '../helpers/responses';
 import { handleNormalInput, handleSearchInput } from '../../src/app/input-handlers';
-import { formatResponseBody } from '../../src/core/formatter';
-import { computeResponseLayout } from '../../src/core/response-layout';
 import type { Action, AppState } from '../../src/core/types';
-import { getPanelContentWidth } from '../../src/utils/layout';
+import { computeResponseViewport } from '../../src/core/response-viewport';
 import { makeKey } from '../helpers/keys';
 
 describe('match offsets in a maximized response panel (wrap mode)', () => {
@@ -36,15 +34,18 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
     if (!response) {
       throw new Error('expected a state with a response');
     }
-    const layout = computeResponseLayout({
+    return computeResponseViewport({
       response,
       verbose: state.verbose,
       rawMode: state.rawMode,
       wrapMode: state.wrapMode,
-      contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel, columns: COLUMNS }),
-      formattedBody: formatResponseBody(response.body, state.rawMode),
-    });
-    return layout.bodyVisualStart;
+      geometry: {
+        columns: COLUMNS,
+        availableHeight: state.geometry.rows - 1,
+        fullscreen: maximizedPanel === 'response',
+        searchVisible: false,
+      },
+    }).bodyVisualStart;
   }
 
   function pressNormalKey(state: AppState, input: string, key: Key = makeKey()): Action[] {
@@ -52,12 +53,6 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
     handleNormalInput({
       state,
       selectedRequest: undefined,
-      columns: COLUMNS,
-      rows: 24,
-      effectiveResponseHeight: 10,
-      effectiveDetailMaxContent: 40,
-      editorVisibleHeight: 10,
-      editorContentWidth: 40,
       exit: () => {},
       suspend: vi.fn(),
       executorConfig: { insecure: false },
@@ -75,9 +70,6 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
     const dispatched: Action[] = [];
     handleSearchInput({
       state,
-      columns: COLUMNS,
-      effectiveResponseHeight: 10,
-      effectiveDetailMaxContent: 40,
       input,
       key,
       dispatch: (action) => dispatched.push(action),
@@ -96,18 +88,18 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
 
     const nextActions = pressNormalKey(state, 'n');
     expect(nextActions).toHaveLength(1);
-    expect(nextActions[0]).toMatchObject({ type: 'NEXT_MATCH', targetVisualIndex: fullscreen[2] });
+    expect(nextActions[0]).toEqual({ type: 'NEXT_MATCH', targetVisualIndex: fullscreen[2] });
 
     const prevActions = pressNormalKey(searchState({ currentMatchIndex: 1 }), 'N');
     expect(prevActions).toHaveLength(1);
-    expect(prevActions[0]).toMatchObject({ type: 'PREV_MATCH', targetVisualIndex: fullscreen[1] });
+    expect(prevActions[0]).toEqual({ type: 'PREV_MATCH', targetVisualIndex: fullscreen[1] });
   });
 
   it('search Enter dispatches CONFIRM_SEARCH at the fullscreen width while maximized and at the split width otherwise', () => {
     const maximized = searchState({ mode: 'search', searchQuery: 'needle' });
     const maximizedActions = pressSearchKey(maximized, '', makeKey({ return: true }));
     expect(maximizedActions).toHaveLength(1);
-    expect(maximizedActions[0]).toMatchObject({
+    expect(maximizedActions[0]).toEqual({
       type: 'CONFIRM_SEARCH',
       firstMatchVisualIndex: bodyVisualStartAt(maximized, 'response')[1],
     });
@@ -115,7 +107,7 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
     const splitState = searchState({ mode: 'search', searchQuery: 'needle', maximizedPanel: null });
     const splitActions = pressSearchKey(splitState, '', makeKey({ return: true }));
     expect(splitActions).toHaveLength(1);
-    expect(splitActions[0]).toMatchObject({
+    expect(splitActions[0]).toEqual({
       type: 'CONFIRM_SEARCH',
       firstMatchVisualIndex: bodyVisualStartAt(splitState, null)[1],
     });

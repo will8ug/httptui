@@ -9,7 +9,7 @@ describe('ENTER_EDIT reducer', () => {
     const request = createRequest({ url: 'https://{{host}}/users', body: '{"name":"Alice"}' });
     const state = createInitialState({ requests: [request], selectedIndex: 0 });
 
-    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: 'https://{{host}}/users', body: '{"name":"Alice"}', headers: '' }, visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: 'https://{{host}}/users', body: '{"name":"Alice"}', headers: '' } });
 
     expect(result.mode).toBe('edit');
     expect(result.editTarget).toBe('url');
@@ -26,7 +26,7 @@ describe('ENTER_EDIT reducer', () => {
     const request = createRequest({ headers: { Accept: 'application/json', Authorization: 'Bearer {{token}}' } });
     const state = createInitialState({ requests: [request], selectedIndex: 0 });
 
-    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: request.url, body: '', headers: headersText }, visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: request.url, body: '', headers: headersText } });
 
     expect(result.editBuffers.headers.text).toBe(headersText);
     expect(result.editBuffers.headers.cursor).toBe(headersText.length);
@@ -36,7 +36,7 @@ describe('ENTER_EDIT reducer', () => {
     const request = createRequest({ body: undefined });
     const state = createInitialState({ requests: [request], selectedIndex: 0 });
 
-    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: request.url, body: '', headers: '' }, visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: request.url, body: '', headers: '' } });
 
     expect(result.editBuffers.body.text).toBe('');
     expect(result.editBuffers.body.cursor).toBe(0);
@@ -48,7 +48,7 @@ describe('ENTER_EDIT reducer', () => {
       editHorizontalOffset: 10,
     });
 
-    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: 'hello', body: '', headers: '' }, visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'ENTER_EDIT', buffers: { url: 'hello', body: '', headers: '' } });
 
     expect(result.editScrollOffset).toBe(0);
     expect(result.editHorizontalOffset).toBe(0);
@@ -66,7 +66,7 @@ describe('EDIT_KEY reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'EDIT_KEY', op: 'insert', insert: 'd', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'EDIT_KEY', op: 'insert', insert: 'd' });
 
     expect(result.editBuffers.url.text).toBe('abcd');
     expect(result.editBuffers.body.text).toBe('xyz');
@@ -82,7 +82,7 @@ describe('EDIT_KEY reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'EDIT_KEY', op: 'insert', insert: 'w', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'EDIT_KEY', op: 'insert', insert: 'w' });
 
     expect(result.editBuffers.body.text).toBe('xyzw');
     expect(result.editBuffers.url.text).toBe('abc');
@@ -98,7 +98,7 @@ describe('EDIT_KEY reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'EDIT_KEY', op: 'insert', insert: '\n', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'EDIT_KEY', op: 'insert', insert: '\n' });
 
     expect(result.editBuffers.url.text).toBe('https://a.com');
     expect(result.editBuffers.url.cursor).toBe(12);
@@ -114,7 +114,7 @@ describe('EDIT_KEY reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'EDIT_KEY', op: 'insert', insert: 'https://a.com\n/x', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'EDIT_KEY', op: 'insert', insert: 'https://a.com\n/x' });
 
     expect(result.editBuffers.url.text).toBe('https://a.com/x');
     expect(result.editBuffers.url.cursor).toBe('https://a.com/x'.length);
@@ -130,7 +130,7 @@ describe('EDIT_KEY reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'EDIT_KEY', op: 'insert', insert: '\n', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'EDIT_KEY', op: 'insert', insert: '\n' });
 
     expect(result.editBuffers.body.text).toBe('ab\ncd');
     expect(result.editBuffers.body.cursor).toBe(3);
@@ -145,14 +145,15 @@ describe('EDIT_KEY reducer', () => {
         headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 0,
+      // Editor box height at 12 rows floors at 10; minus 7 chrome rows the
+      // derived visible height is 3.
+      geometry: { rows: 12, columns: 80 },
     });
 
     for (let i = 0; i < 3; i++) {
       current = reducer(current, {
         type: 'EDIT_KEY',
         op: 'down',
-        visibleHeight: 3,
-        visibleWidth: 40,
       });
     }
 
@@ -169,14 +170,13 @@ describe('EDIT_KEY reducer', () => {
         headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 2,
+      geometry: { rows: 12, columns: 80 },
     });
 
     for (let i = 0; i < 3; i++) {
       current = reducer(current, {
         type: 'EDIT_KEY',
         op: 'up',
-        visibleHeight: 3,
-        visibleWidth: 40,
       });
     }
 
@@ -186,8 +186,6 @@ describe('EDIT_KEY reducer', () => {
     current = reducer(current, {
       type: 'EDIT_KEY',
       op: 'up',
-      visibleHeight: 3,
-      visibleWidth: 40,
     });
 
     expect(current.editBuffers.body.cursor).toBe(0);
@@ -204,19 +202,21 @@ describe('EDIT_KEY reducer', () => {
         headers: { text: '', cursor: 0 },
       },
       editHorizontalOffset: 0,
+      // At 50 columns the editor box floors at 48 wide; minus 4 chrome the
+      // derived visible width is 44.
+      geometry: { rows: 24, columns: 50 },
     });
 
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 50; i++) {
       current = reducer(current, {
         type: 'EDIT_KEY',
         op: 'right',
-        visibleHeight: 10,
-        visibleWidth: 20,
       });
     }
 
-    expect(current.editBuffers.body.cursor).toBe(25);
-    expect(current.editHorizontalOffset).toBe(6);
+    // Cursor column 50 in a 44-cell window: offset = 50 - 44 + 1 = 7.
+    expect(current.editBuffers.body.cursor).toBe(50);
+    expect(current.editHorizontalOffset).toBe(7);
   });
 });
 
@@ -233,7 +233,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       editHorizontalOffset: 2,
     });
 
-    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'body', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'body' });
 
     expect(result.editTarget).toBe('body');
     expect(result.editBuffers.url.text).toBe('https://a.com');
@@ -247,14 +247,17 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       editTarget: 'url',
       editBuffers: {
         url: { text: 'short', cursor: 5 },
-        body: { text: 'line0\nline1\nline2\nline3', cursor: 18 },
+        body: { text: 'line0\nline1\nline2\nline3\nline4', cursor: 24 },
         headers: { text: '', cursor: 0 },
       },
       editScrollOffset: 0,
       editHorizontalOffset: 0,
+      // Derived visible height at 12 rows is 3.
+      // Cursor line 4 → offset = 4 - 3 + 1 = 2.
+      geometry: { rows: 12, columns: 80 },
     });
 
-    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'body', visibleHeight: 2, visibleWidth: 40 });
+    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'body' });
 
     expect(result.editScrollOffset).toBe(2);
   });
@@ -269,7 +272,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'url', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'url' });
 
     expect(result.editTarget).toBe('url');
   });
@@ -284,7 +287,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'headers', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'headers' });
 
     expect(result.editTarget).toBe('headers');
     expect(result.editBuffers.headers.text).toBe('Accept: application/json');
@@ -301,7 +304,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'body', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'body' });
 
     expect(result.editTarget).toBe('body');
   });
@@ -316,13 +319,13 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       },
     });
 
-    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'headers', visibleHeight: 10, visibleWidth: 40 });
+    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'headers' });
     expect(current.editTarget).toBe('headers');
 
-    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'body', visibleHeight: 10, visibleWidth: 40 });
+    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'body' });
     expect(current.editTarget).toBe('body');
 
-    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'url', visibleHeight: 10, visibleWidth: 40 });
+    current = reducer(current, { type: 'SWITCH_EDIT_TAB', target: 'url' });
     expect(current.editTarget).toBe('url');
   });
 
@@ -336,7 +339,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'url', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'url' });
 
     expect(result).toBe(state);
   });
@@ -354,7 +357,7 @@ describe('SWITCH_EDIT_TAB reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'body', visibleHeight: 10, visibleWidth: 40 });
+    const result = reducer(state, { type: 'SWITCH_EDIT_TAB', target: 'body' });
 
     expect(result.editTarget).toBe('url');
     expect(result.editBuffers).toBe(state.editBuffers);

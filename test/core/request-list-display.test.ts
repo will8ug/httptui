@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMaxRequestLineWidth } from '../../src/utils/scroll';
+import { getMaxRequestLineWidth } from '../../src/core/reducers/helpers';
 import type { FileVariable } from '../../src/core/types';
 import { createRequest } from '../helpers/requests';
 

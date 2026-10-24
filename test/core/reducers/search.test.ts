@@ -9,6 +9,8 @@ import type { Action, AppState, ResponseData } from '../../../src/core/types';
 
 const LEDGER_CONTENT_WIDTH = 49;
 
+const FILLER_LINES = Array.from({ length: 24 }, (_, i) => `filler-${i + 1}`);
+
 function stateWithResponse(body: string): AppState {
   const response: ResponseData = createMockResponse({
     headers: { 'content-type': 'application/json' },
@@ -19,9 +21,12 @@ function stateWithResponse(body: string): AppState {
   return createInitialState({ response });
 }
 
+// 30 plain body lines render status + separator + 30 = 32 visual lines; the
+// lingering search bar claims one row of the 24 - 1 - 3 - 1 = 19-row window,
+// so the derived max response offset is 13.
 function stateWithActiveSearch(): AppState {
   return {
-    ...stateWithResponse('{"name":"John"}'),
+    ...stateWithResponse(['john alpha', 'plain-1', 'john beta', 'plain-2', 'plain-3', 'john gamma', ...FILLER_LINES].join('\n')),
     searchMatches: [0, 2, 5],
     currentMatchIndex: 1,
     lastSearchQuery: 'john',
@@ -139,6 +144,22 @@ describe('CONFIRM_SEARCH reducer', () => {
     expectClearedSearchState(result);
   });
 
+  it('re-clamps responseScrollOffset when an empty query hides the search bar', () => {
+    // 30 body lines render 32 visual lines; the bar-visible window is
+    // 24 - 1 - 3 - 1 = 19 rows, so max is 13. The empty confirm hides the
+    // lingering bar, growing the window to 20 rows and dropping max to 12.
+    const state: AppState = {
+      ...stateWithActiveSearch(),
+      mode: 'search',
+      searchQuery: '',
+      responseScrollOffset: 13,
+    };
+
+    const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: undefined });
+
+    expect(result.responseScrollOffset).toBe(12);
+  });
+
   it('sets currentMatchIndex to 0 and lastSearchQuery to the confirmed query', () => {
     const state: AppState = {
       ...stateWithResponse('{"users":[{"name":"John"},{"name":"John"}]}'),
@@ -167,7 +188,10 @@ describe('CONFIRM_SEARCH reducer', () => {
   });
 
   it('updates responseScrollOffset to the first match position', () => {
-    const body = 'first line\nsecond john line\nthird line';
+    // 27 body lines render 29 visual lines; in search mode the window is
+    // 24 - 1 - 3 - 1 = 19 rows, so the derived max offset is 10 and the
+    // target 5 lands unclamped.
+    const body = ['first line', 'second john line', 'third line', ...FILLER_LINES].join('\n');
     const state: AppState = {
       ...stateWithResponse(body),
       mode: 'search',
@@ -177,7 +201,7 @@ describe('CONFIRM_SEARCH reducer', () => {
     const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: 1 + 4 });
 
     expect(result.searchMatches).toEqual([1]);
-    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(1 + 4));
+    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(1 + 4, 10));
   });
 
   it('finds matches across multiple lines', () => {
@@ -208,6 +232,21 @@ describe('CANCEL_SEARCH reducer', () => {
 
     expectClearedSearchState(result);
   });
+
+  it('re-clamps responseScrollOffset when cancelling hides the search bar', () => {
+    // 30 body lines render 32 visual lines; the bar-visible window is
+    // 24 - 1 - 3 - 1 = 19 rows, so max is 13. Cancelling hides the bar,
+    // growing the window to 20 rows and dropping max to 12.
+    const state: AppState = {
+      ...stateWithActiveSearch(),
+      mode: 'search',
+      responseScrollOffset: 13,
+    };
+
+    const result = reducer(state, { type: 'CANCEL_SEARCH' });
+
+    expect(result.responseScrollOffset).toBe(12);
+  });
 });
 
 describe('NEXT_MATCH reducer', () => {
@@ -237,7 +276,14 @@ describe('NEXT_MATCH reducer', () => {
     const result = reducer(state, { type: 'NEXT_MATCH', targetVisualIndex: 5 + 3 });
 
     expect(result.currentMatchIndex).toBe(2);
-    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(5 + 3));
+    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(5 + 3, 13));
+  });
+
+  it('clamps the match offset at the bound derived from state geometry', () => {
+    const state = stateWithActiveSearch();
+    const result = reducer(state, { type: 'NEXT_MATCH', targetVisualIndex: 99 });
+
+    expect(result.responseScrollOffset).toBe(13);
   });
 });
 
@@ -268,7 +314,7 @@ describe('PREV_MATCH reducer', () => {
     const result = reducer(state, { type: 'PREV_MATCH', targetVisualIndex: 0 + 4 });
 
     expect(result.currentMatchIndex).toBe(0);
-    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(0 + 4));
+    expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(0 + 4, 13));
   });
 });
 
@@ -390,7 +436,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
   it('wrap + long status: scroll target accounts for wrapped status lines', () => {
     const response = createMockResponse({
       statusText: 'Non-Authoritative Information With Extra Long Text To Force Wrapping',
-      body: 'alpha\nbeta needle\ngamma',
+      body: ['alpha', 'beta needle', 'gamma', ...FILLER_LINES].join('\n'),
       size: { bodyBytes: 0 },
     });
 
@@ -425,7 +471,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
         'x-trace-id': 'this-is-a-deliberately-long-header-value-that-definitely-exceeds-content-width',
         short: 'v',
       },
-      body: 'alpha\nbeta needle\ngamma',
+      body: ['alpha', 'beta needle', 'gamma', ...FILLER_LINES].join('\n'),
       size: { bodyBytes: 0 },
     });
 
@@ -459,7 +505,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
 
   it('wrap + wrapped preceding body line: scroll target accounts for wrapped body expansion', () => {
     const longLine = 'abcdefghijklmnopqrstuvwxyz '.repeat(5).trim();
-    const body = `${longLine}\nneedle\ntrailing`;
+    const body = [longLine, 'needle', 'trailing', ...FILLER_LINES].join('\n');
     const response = createMockResponse({ body, size: { bodyBytes: body.length } });
 
     const result = confirmSearchWithLedger({

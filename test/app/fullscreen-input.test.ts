@@ -30,12 +30,6 @@ function runNormalInput(
   handleNormalInput({
     state,
     selectedRequest: state.requests[state.selectedIndex],
-    columns: 80,
-    rows: 24,
-    effectiveResponseHeight: 10,
-    effectiveDetailMaxContent: 40,
-    editorVisibleHeight: 10,
-    editorContentWidth: 40,
     exit,
     suspend,
     executorConfig: { insecure: false },
@@ -64,65 +58,53 @@ function actionNoopState(panel: 'requests' | 'response' | 'details' = 'response'
 }
 
 describe('fullscreen vertical jumps', () => {
-  it('g dispatches JUMP_VERTICAL to the start with the row count', () => {
+  it('g dispatches JUMP_VERTICAL to the start', () => {
     const actions = pressKey(fullscreenState('response'), 'g');
 
-    expect(actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'start', rows: 24 }]);
+    expect(actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'start' }]);
   });
 
-  it('G dispatches JUMP_VERTICAL to the end with a computed max offset while the response is maximized', () => {
-    const state = fullscreenState('response', {
-      focusedPanel: 'response',
-      response: createMockResponse({
-        body: Array.from({ length: 60 }, (_, i) => `row-${i}`).join('\n'),
-      }),
-    });
-
-    const actions = pressKey(state, 'G');
-
-    expect(actions).toEqual([
-      { type: 'JUMP_VERTICAL', direction: 'end', rows: 24, maxOffset: expect.any(Number) },
+  it('G dispatches JUMP_VERTICAL to the end regardless of the maximized panel', () => {
+    expect(pressKey(fullscreenState('response'), 'G')).toEqual([
+      { type: 'JUMP_VERTICAL', direction: 'end' },
     ]);
-  });
-
-  it('G while the requests panel is maximized passes no max offset', () => {
-    const actions = pressKey(fullscreenState('requests'), 'G');
-
-    expect(actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'end', rows: 24 }]);
+    expect(pressKey(fullscreenState('requests'), 'G')).toEqual([
+      { type: 'JUMP_VERTICAL', direction: 'end' },
+    ]);
   });
 });
 
 describe('fullscreen horizontal navigation', () => {
-  it('0 dispatches JUMP_HORIZONTAL to the start with the column count', () => {
+  it('0 dispatches JUMP_HORIZONTAL to the start', () => {
     const actions = pressKey(fullscreenState('response'), '0');
 
-    expect(actions).toEqual([{ type: 'JUMP_HORIZONTAL', direction: 'start', columns: 80 }]);
+    expect(actions).toEqual([{ type: 'JUMP_HORIZONTAL', direction: 'start' }]);
   });
 
-  it('$ dispatches JUMP_HORIZONTAL to the end with the column count', () => {
+  it('$ dispatches JUMP_HORIZONTAL to the end', () => {
     const actions = pressKey(fullscreenState('response'), '$');
 
-    expect(actions).toEqual([{ type: 'JUMP_HORIZONTAL', direction: 'end', columns: 80 }]);
+    expect(actions).toEqual([{ type: 'JUMP_HORIZONTAL', direction: 'end' }]);
   });
 
   it('h dispatches SCROLL_HORIZONTAL to the left', () => {
     const actions = pressKey(fullscreenState('response'), 'h');
 
-    expect(actions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'left', columns: 80 }]);
+    expect(actions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'left' }]);
   });
 
   it('l dispatches SCROLL_HORIZONTAL to the right', () => {
     const actions = pressKey(fullscreenState('response'), 'l');
 
-    expect(actions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 }]);
+    expect(actions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'right' }]);
   });
 
   it('arrow keys scroll horizontally the same as h and l', () => {
     const leftActions = pressKey(fullscreenState('response'), '', makeKey({ leftArrow: true }));
     const rightActions = pressKey(fullscreenState('response'), '', makeKey({ rightArrow: true }));
 
-    expect(leftActions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'left', columns: 80 }]);
-    expect(rightActions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'right', columns: 80 }]);
+    expect(leftActions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'left' }]);
+    expect(rightActions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'right' }]);
   });
 });
 
@@ -176,19 +158,19 @@ describe('fullscreen panel-dependent vertical keys', () => {
   it('j moves the selection down while the requests panel is maximized', () => {
     const actions = pressKey(fullscreenState('requests'), 'j');
 
-    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'down', rows: 24 }]);
+    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'down' }]);
   });
 
   it('k moves the selection up while the requests panel is maximized', () => {
     const actions = pressKey(fullscreenState('requests'), 'k');
 
-    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'up', rows: 24 }]);
+    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'up' }]);
   });
 
   it('down arrow moves the selection while the requests panel is maximized', () => {
     const actions = pressKey(fullscreenState('requests'), '', makeKey({ downArrow: true }));
 
-    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'down', rows: 24 }]);
+    expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'down' }]);
   });
 
   it('j scrolls the response down while the response is maximized', () => {
@@ -293,7 +275,7 @@ describe('fullscreen action keys are no-ops', () => {
     const result = runNormalInput(actionNoopState('response'), input, key ?? makeKey());
 
     if (label === 'Ctrl+G') {
-      expect(result.actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'start', rows: 24 }]);
+      expect(result.actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'start' }]);
     } else {
       expect(result.actions).toEqual([]);
     }

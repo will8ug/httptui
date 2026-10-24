@@ -437,6 +437,21 @@ describe('MOVE_ENV_SELECTION scroll offset', () => {
     expect(result.envSelectIndex).toBe(4);
     expect(result.envSelectScrollOffset).toBe(0);
   });
+
+  it('derives the picker window from the state geometry', () => {
+    // At 12 rows the picker shows min(8, 12 - 8) = 4 options, so moving to
+    // index 4 scrolls to 4 - 4 + 1 = 1; the 8-row window of a 24-row
+    // terminal would keep the offset at 0.
+    const state = makeManyEnvState({
+      envSelectIndex: 3,
+      envSelectScrollOffset: 0,
+      geometry: { rows: 12, columns: 80 },
+    });
+    const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'down' });
+
+    expect(result.envSelectIndex).toBe(4);
+    expect(result.envSelectScrollOffset).toBe(1);
+  });
 });
 
 describe('JUMP_ENV_SELECTION reducer', () => {

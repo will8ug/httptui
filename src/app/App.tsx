@@ -16,13 +16,13 @@ import { ResponseView } from '../components/ResponseView';
 import { StatusBar } from '../components/StatusBar';
 import { EnvSelectOverlay } from '../components/EnvSelectOverlay';
 import { createInitialState, reducer } from '../core/reducer';
-import type { AppProps } from '../core/types';
+import type { AppProps, TerminalGeometry } from '../core/types';
 import { EDIT_TAB_ORDER } from '../core/types';
-import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS, getPanelContentWidth } from '../utils/layout';
+import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS } from '../utils/layout';
+import { computeResponseViewport } from '../core/response-viewport';
 import { computeLayoutMetrics } from '../utils/layout-metrics';
 import { TRANSIENT_CLEAR_MS } from '../utils/timing';
 import { hasUnsavedChanges } from '../utils/request';
-import { getResponseTotalLines } from '../utils/scroll';
 import { handleConfirmDiscardInput, handleConfirmInPlaceSaveInput, handleEditInput, handleEnvSelectInput, handleFileLoadInput, handleHelpInput, handleNormalInput, handleResponseSaveInput, handleSaveInput, handleSearchInput } from './input-handlers';
 
 export function App(props: AppProps): React.ReactElement {
@@ -30,14 +30,14 @@ export function App(props: AppProps): React.ReactElement {
   const { stdout } = useStdout();
   const [state, dispatch] = useReducer(reducer, props, createInitialState);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastDispatchedGeometryRef = useRef<TerminalGeometry | null>(null);
 
   const rows = stdout.rows || DEFAULT_TERMINAL_ROWS;
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
   const selectedRequest = state.requests[state.selectedIndex];
   const {
     detailsTotalLines,
-    responseAvailableHeight,
-    fullscreenContentWidth,
+    fullscreenDetailsContentWidth,
     fullscreenRequestContentWidth,
     fullscreenVisibleHeight,
     editorContentWidth,
@@ -45,6 +45,24 @@ export function App(props: AppProps): React.ReactElement {
     effectiveResponseHeight,
     effectiveDetailMaxContent,
   } = computeLayoutMetrics(state, selectedRequest, rows, columns);
+
+  useEffect(() => {
+    // Ink re-runs output layout on resize but not component bodies, so geometry
+    // sync rides the stdout 'resize' event rather than render-local rows/columns deps.
+    const syncGeometry = () => {
+      const lastDispatched = lastDispatchedGeometryRef.current;
+      const nextRows = stdout.rows || DEFAULT_TERMINAL_ROWS;
+      const nextColumns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
+      if (lastDispatched?.rows === nextRows && lastDispatched.columns === nextColumns) {
+        return;
+      }
+      lastDispatchedGeometryRef.current = { rows: nextRows, columns: nextColumns };
+      dispatch({ type: 'SET_GEOMETRY', rows: nextRows, columns: nextColumns });
+    };
+    syncGeometry();
+    stdout.on('resize', syncGeometry);
+    return () => { stdout.off('resize', syncGeometry); };
+  }, [stdout, dispatch]);
 
   useEffect(() => {
     if (state.transientMessage === null && state.transientError === null && state.transientWarning === null) {
@@ -66,7 +84,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (state.mode === 'search') {
-      handleSearchInput({ state, columns, effectiveResponseHeight, effectiveDetailMaxContent, input, key, dispatch });
+      handleSearchInput({ state, input, key, dispatch });
       return;
     }
 
@@ -86,7 +104,7 @@ export function App(props: AppProps): React.ReactElement {
     }
 
     if (state.mode === 'edit') {
-      handleEditInput({ state, selectedRequest, editorVisibleHeight, editorContentWidth, input, key, dispatch });
+      handleEditInput({ state, selectedRequest, input, key, dispatch });
       return;
     }
 
@@ -103,12 +121,6 @@ export function App(props: AppProps): React.ReactElement {
     handleNormalInput({
       state,
       selectedRequest,
-      columns,
-      rows,
-      effectiveResponseHeight,
-      effectiveDetailMaxContent,
-      editorVisibleHeight,
-      editorContentWidth,
       exit,
       suspend: suspendTerminal,
       executorConfig: props.executorConfig,
@@ -148,13 +160,13 @@ return (
           horizontalOffset={state.responseHorizontalOffset}
           wrapMode={state.wrapMode}
           rawMode={state.rawMode}
-          availableHeight={state.maximizedPanel === 'response' ? effectiveResponseHeight : responseAvailableHeight}
+          availableHeight={effectiveResponseHeight}
           searchMatches={state.searchMatches}
           currentMatchIndex={state.currentMatchIndex}
           isSearchMode={state.mode === 'search'}
           lastSearchQuery={state.lastSearchQuery}
           searchQuery={state.searchQuery}
-          contentWidthOverride={state.maximizedPanel === 'response' ? fullscreenContentWidth : undefined}
+          fullscreen={state.maximizedPanel === 'response'}
         />
       }
       bottom={
@@ -170,13 +182,18 @@ return (
           detailsScrollOffset={state.detailsScrollOffset}
           detailsTotalLines={detailsTotalLines}
           responseScrollOffset={state.responseScrollOffset}
-          responseTotalLines={state.response ? getResponseTotalLines({
+          responseTotalLines={state.response ? computeResponseViewport({
             response: state.response,
             verbose: state.verbose,
             rawMode: state.rawMode,
             wrapMode: state.wrapMode,
-            contentWidth: getPanelContentWidth({ panel: 'response', maximizedPanel: state.maximizedPanel, columns }),
-          }) : 0}
+            geometry: {
+              columns,
+              availableHeight: effectiveResponseHeight,
+              fullscreen: state.maximizedPanel === 'response',
+              searchVisible: state.mode === 'search' || state.lastSearchQuery !== '',
+            },
+          }).totalVisualLines : 0}
           hasResponse={!!state.response}
           envName={state.activeEnvName}
           isDirty={hasUnsavedChanges(state.requests)}
@@ -202,7 +219,7 @@ return (
           focused={state.focusedPanel === 'details' || state.maximizedPanel === 'details'}
           scrollOffset={state.detailsScrollOffset}
           horizontalOffset={state.detailsHorizontalOffset}
-          contentWidthOverride={state.maximizedPanel === 'details' ? fullscreenContentWidth : undefined}
+          contentWidthOverride={state.maximizedPanel === 'details' ? fullscreenDetailsContentWidth : undefined}
         />
       ) : undefined}
       maximizedPanel={state.maximizedPanel}
