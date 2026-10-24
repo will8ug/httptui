@@ -1,6 +1,6 @@
 import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
-import { setTransient } from './helpers';
+import { CLEAR_SEARCH_STATE, setTransient } from './helpers';
 
 type FileLoadAction = Extract<Action, { type: 'ENTER_FILE_LOAD' | 'UPDATE_FILE_LOAD_INPUT' | 'MOVE_FILE_LOAD_CURSOR' | 'SET_FILE_LOAD_ERROR' | 'SET_FILE_LOAD_COMPLETIONS' | 'LOAD_FILE' | 'CANCEL_FILE_LOAD' }>;
 
@@ -72,6 +72,7 @@ export function reduceFileLoad(state: AppState, action: FileLoadAction): AppStat
           certificates: action.executorConfig.certificates,
           editor: action.executorConfig.editor,
         }),
+        ...CLEAR_SEARCH_STATE,
       };
     }
 

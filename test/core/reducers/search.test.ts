@@ -377,6 +377,40 @@ describe('Search state clearing reducer cases', () => {
     const result = reducer(stateWithActiveSearch(), { type: 'TOGGLE_RAW' });
     expectClearedSearchState(result);
   });
+
+  it('LOAD_FILE clears all search state', () => {
+    const result = reducer(stateWithActiveSearch(), {
+      type: 'LOAD_FILE',
+      requests: [],
+      variables: [],
+      filePath: 'other.http',
+    });
+
+    expect(result.response).toBeNull();
+    expectClearedSearchState(result);
+  });
+
+  it('RELOAD_FILE clears all search state', () => {
+    const result = reducer(stateWithActiveSearch(), {
+      type: 'RELOAD_FILE',
+      requests: [],
+      variables: [],
+    });
+
+    expect(result.response).toBeNull();
+    expectClearedSearchState(result);
+  });
+
+  it('SWITCH_ENV clears all search state', () => {
+    const result = reducer(stateWithActiveSearch(), {
+      type: 'SWITCH_ENV',
+      environmentVariables: [],
+      envName: null,
+    });
+
+    expect(result.response).toBeNull();
+    expectClearedSearchState(result);
+  });
 });
 
 describe('Selection movement preserves search state', () => {
