@@ -23,6 +23,7 @@ import type { Action, AppState, ExecutorConfig, ParsedRequest, ResponseData } fr
 import type { ClipboardRunner } from '../core/clipboard';
 import { EDIT_TAB_ORDER } from '../core/types';
 import { copySelectedAsCurl, pasteFromClipboard, performEditorHandoff, sendSelectedRequest } from './commands';
+import { normalizeKeyName, resolveKeyAction } from './key-table';
 
 function findMatchIndices(response: ResponseData, rawMode: boolean, query: string): number[] {
   const formattedBody = formatResponseBody(response.body, rawMode);
@@ -96,6 +97,22 @@ function applyLineEdit(
     return true;
   }
   return false;
+}
+
+function dispatchVerticalNavigation(
+  keyName: 'up' | 'down',
+  state: AppState,
+  dispatch: Dispatch<Action>,
+): void {
+  const direction: 'up' | 'down' = keyName === 'up' ? 'up' : 'down';
+  // Safe to read focusedPanel while maximized: maximizedPanel, when set,
+  // always equals focusedPanel (see the invariant in core/types.ts).
+  if (state.focusedPanel === 'requests') {
+    dispatch({ type: 'MOVE_SELECTION', direction });
+    return;
+  }
+
+  dispatch({ type: 'SCROLL', direction });
 }
 
 export function handleHelpInput({ input, key, dispatch }: {
@@ -603,77 +620,20 @@ function handleFullscreenInput({
     return;
   }
 
-  if (input === 'f') {
-    dispatch({ type: 'TOGGLE_FULLSCREEN' });
+  const keyName = normalizeKeyName(input, key);
+
+  const tableAction = resolveKeyAction(keyName, state);
+  if (tableAction) {
+    dispatch(tableAction);
     return;
   }
 
-  if (input === '?') {
-    dispatch({ type: 'TOGGLE_HELP' });
-    return;
-  }
-
-  if (input === 'g') {
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'start' });
-    return;
-  }
-
-  if (input === 'G') {
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'end' });
-    return;
-  }
-
-  if (input === '0') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'start' });
-    return;
-  }
-
-  if (input === '$') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'end' });
-    return;
-  }
-
-  const isUp = input === 'k' || key.upArrow;
-  const isDown = input === 'j' || key.downArrow;
-  const isLeft = input === 'h' || key.leftArrow;
-  const isRight = input === 'l' || key.rightArrow;
-
-  if (isLeft || isRight) {
-    dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right' });
-    return;
-  }
-
-  if (isUp || isDown) {
-    if (state.maximizedPanel === 'requests') {
-      dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down' });
-      return;
-    }
-
-    dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down' });
+  if (keyName === 'up' || keyName === 'down') {
+    dispatchVerticalNavigation(keyName, state, dispatch);
     return;
   }
 
   if (state.maximizedPanel === 'response') {
-    if (input === 'v') {
-      dispatch({ type: 'TOGGLE_VERBOSE' });
-      return;
-    }
-
-    if (input === 'w') {
-      dispatch({ type: 'TOGGLE_WRAP' });
-      return;
-    }
-
-    if (input === 'r') {
-      dispatch({ type: 'TOGGLE_RAW' });
-      return;
-    }
-
-    if (input === '/') {
-      dispatch({ type: 'ENTER_SEARCH' });
-      return;
-    }
-
     if (input === 'n' && state.searchMatches.length > 0) {
       dispatch(buildMatchNavigationAction(state, 'next'));
       return;
@@ -743,73 +703,8 @@ export function handleNormalInput({
     return;
   }
 
-  if (input === 'q') {
-    if (isSearchActive(state)) {
-      dispatch({ type: 'CANCEL_SEARCH' });
-      return;
-    }
-
-    if (hasUnsavedChanges(state.requests)) {
-      dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'quit' });
-    } else {
-      exit();
-    }
-    return;
-  }
-
-  if (input === '?') {
-    dispatch({ type: 'TOGGLE_HELP' });
-    return;
-  }
-
-  if (key.tab) {
-    dispatch({ type: 'SWITCH_PANEL' });
-    return;
-  }
-
-  if (input === 'v') {
-    dispatch({ type: 'TOGGLE_VERBOSE' });
-    return;
-  }
-
-  if (input === 'w') {
-    dispatch({ type: 'TOGGLE_WRAP' });
-    return;
-  }
-
-  if (input === 'r') {
-    dispatch({ type: 'TOGGLE_RAW' });
-    return;
-  }
-
-  if (input === 'd') {
-    dispatch({ type: 'TOGGLE_REQUEST_DETAILS' });
-    return;
-  }
-
-  if (input === 'f') {
-    dispatch({ type: 'TOGGLE_FULLSCREEN' });
-    return;
-  }
-
-  if (input === 'o') {
-    if (hasUnsavedChanges(state.requests)) {
-      dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'fileLoad' });
-    } else {
-      dispatch({ type: 'ENTER_FILE_LOAD' });
-    }
-    return;
-  }
-
-  if (input === 'E') {
-    if (state.availableEnvironments.length > 1) {
-      dispatch({ type: 'ENTER_ENV_SELECT' });
-    } else {
-      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No environments configured' });
-    }
-    return;
-  }
-
+  // Ctrl+S and Ctrl+G are intercepted before the key-table lookup: bare 'g'
+  // resolves to a jump, which fullscreen keeps on Ctrl+G (pinned by test).
   if (key.ctrl && input === 's') {
     if (!hasUnsavedChanges(state.requests)) {
       dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No changes to save' });
@@ -849,6 +744,56 @@ export function handleNormalInput({
     }
 
     void performEditorHandoff({ filePath: state.filePath, editor: state.editor, suspend, dispatch });
+    return;
+  }
+
+  const keyName = normalizeKeyName(input, key);
+
+  const tableAction = resolveKeyAction(keyName, state);
+  if (tableAction) {
+    dispatch(tableAction);
+    return;
+  }
+
+  if (input === 'q') {
+    if (isSearchActive(state)) {
+      dispatch({ type: 'CANCEL_SEARCH' });
+      return;
+    }
+
+    if (hasUnsavedChanges(state.requests)) {
+      dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'quit' });
+    } else {
+      exit();
+    }
+    return;
+  }
+
+  if (key.tab) {
+    dispatch({ type: 'SWITCH_PANEL' });
+    return;
+  }
+
+  if (input === 'd') {
+    dispatch({ type: 'TOGGLE_REQUEST_DETAILS' });
+    return;
+  }
+
+  if (input === 'o') {
+    if (hasUnsavedChanges(state.requests)) {
+      dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'fileLoad' });
+    } else {
+      dispatch({ type: 'ENTER_FILE_LOAD' });
+    }
+    return;
+  }
+
+  if (input === 'E') {
+    if (state.availableEnvironments.length > 1) {
+      dispatch({ type: 'ENTER_ENV_SELECT' });
+    } else {
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No environments configured' });
+    }
     return;
   }
 
@@ -896,11 +841,6 @@ export function handleNormalInput({
     return;
   }
 
-  if (input === '/') {
-    dispatch({ type: 'ENTER_SEARCH' });
-    return;
-  }
-
   if (input === 'n' && state.searchMatches.length > 0) {
     dispatch(buildMatchNavigationAction(state, 'next'));
     return;
@@ -932,44 +872,7 @@ export function handleNormalInput({
     return;
   }
 
-  if (input === 'g') {
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'start' });
-    return;
+  if (keyName === 'up' || keyName === 'down') {
+    dispatchVerticalNavigation(keyName, state, dispatch);
   }
-
-  if (input === 'G') {
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'end' });
-    return;
-  }
-
-  if (input === '0') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'start' });
-    return;
-  }
-
-  if (input === '$') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'end' });
-    return;
-  }
-
-  const isUp = input === 'k' || key.upArrow;
-  const isDown = input === 'j' || key.downArrow;
-  const isLeft = input === 'h' || key.leftArrow;
-  const isRight = input === 'l' || key.rightArrow;
-
-  if (isLeft || isRight) {
-    dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right' });
-    return;
-  }
-
-  if (!isUp && !isDown) {
-    return;
-  }
-
-  if (state.focusedPanel === 'requests') {
-    dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down' });
-    return;
-  }
-
-  dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down' });
 }

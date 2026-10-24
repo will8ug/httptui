@@ -22,6 +22,7 @@ export {
   computeSearchScrollOffset,
   isSearchActive,
   responseViewportFromState,
+  responseVisible,
 } from './reducers/helpers';
 
 export function reducer(state: AppState, action: Action): AppState {

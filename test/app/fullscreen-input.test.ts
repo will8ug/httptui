@@ -9,7 +9,7 @@ import { createMockResponse } from '../helpers/responses';
 import { createInitialState, reducer } from '../helpers/state';
 
 function fullscreenState(panel: 'requests' | 'response' | 'details', overrides: Partial<AppState> = {}): AppState {
-  return createInitialState({ maximizedPanel: panel, ...overrides });
+  return createInitialState({ maximizedPanel: panel, focusedPanel: panel, ...overrides });
 }
 
 function pressKey(state: AppState, input: string, key: Key = makeKey()): Action[] {
@@ -45,7 +45,6 @@ function runNormalInput(
 
 function actionNoopState(panel: 'requests' | 'response' | 'details' = 'response'): AppState {
   return fullscreenState(panel, {
-    focusedPanel: panel,
     requests: [createRequest({ name: 'Get Users', body: 'payload', isDirty: true })],
     selectedIndex: 0,
     response: createMockResponse({ body: '{"a":1}', rawBody: '{"a":1}' }),

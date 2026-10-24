@@ -29,6 +29,17 @@ export function isSearchActive(state: AppState): boolean {
 }
 
 /**
+ * Canonical response-visible predicate: the response panel is rendered —
+ * always in split view (no panel maximized), and in fullscreen only when the
+ * response panel is the maximized one. Keys that operate on the response
+ * (display toggles, search entry) are gated on this; details-maximized counts
+ * as not visible, where those keys are no-ops.
+ */
+export function responseVisible(state: AppState): boolean {
+  return state.maximizedPanel === null || state.maximizedPanel === 'response';
+}
+
+/**
  * Builds the response viewport from state alone (geometry, panel visibility,
  * search-bar visibility), so reducer-derived bounds always match the model the
  * panel renders from. Returns null while no response is loaded.
