@@ -26,6 +26,8 @@ interface ResponseViewProps {
   availableHeight: number;
   searchMatches: number[];
   currentMatchIndex: number;
+  /** Search-bar visibility per isSearchActive on the caller's state; isSearchMode/lastSearchQuery carry bar content only. */
+  searchVisible: boolean;
   isSearchMode: boolean;
   lastSearchQuery: string;
   searchQuery: string;
@@ -107,18 +109,18 @@ export function ResponseView({
   availableHeight,
   searchMatches,
   currentMatchIndex,
+  searchVisible,
   isSearchMode,
   lastSearchQuery,
   searchQuery,
 }: ResponseViewProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
-  const showSearchBar = isSearchMode || lastSearchQuery !== '';
   const geometry: ResponseViewportGeometry = {
     columns,
     availableHeight,
     fullscreen,
-    searchVisible: showSearchBar,
+    searchVisible,
   };
 
   let content: React.ReactNode;
