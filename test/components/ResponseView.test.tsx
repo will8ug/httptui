@@ -27,6 +27,7 @@ const baseProps = {
   availableHeight: 20,
   searchMatches: [] as number[],
   currentMatchIndex: 0,
+  searchVisible: false,
   isSearchMode: false,
   lastSearchQuery: '',
   searchQuery: '',
@@ -492,6 +493,7 @@ describe('search markers', () => {
         wrapMode={'wrap' as const}
         searchMatches={[1]}
         currentMatchIndex={0}
+        searchVisible={true}
         lastSearchQuery="needle"
         availableHeight={40}
       />,
@@ -512,6 +514,7 @@ describe('search markers', () => {
         response={response}
         searchMatches={[1]}
         currentMatchIndex={0}
+        searchVisible={true}
         lastSearchQuery="needle"
       />,
     );
@@ -565,7 +568,7 @@ describe('search bar', () => {
   it('shows / and the query while typing in search mode', () => {
     // isSearchMode=true -> search bar renders "/{searchQuery}_  (Esc to cancel)"
     const { lastFrame } = render(
-      <ResponseView {...baseProps} isSearchMode={true} searchQuery="world" />,
+      <ResponseView {...baseProps} searchVisible={true} isSearchMode={true} searchQuery="world" />,
     );
     const frame = lastFrame() ?? '';
     expect(frame).toContain('/world');
@@ -579,6 +582,7 @@ describe('search bar', () => {
       <ResponseView
         {...baseProps}
         response={response}
+        searchVisible={true}
         lastSearchQuery="a"
         searchMatches={[0, 1, 2]}
         currentMatchIndex={0}
@@ -595,6 +599,7 @@ describe('search bar', () => {
       <ResponseView
         {...baseProps}
         response={response}
+        searchVisible={true}
         lastSearchQuery="xyz"
         searchMatches={[]}
       />,
