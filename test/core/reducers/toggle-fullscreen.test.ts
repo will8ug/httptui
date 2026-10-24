@@ -55,3 +55,17 @@ describe('TOGGLE_FULLSCREEN reducer', () => {
     expect(result.responseScrollOffset).toBe(7);
   });
 });
+
+describe('TOGGLE_FULLSCREEN maximized-focus invariant entry', () => {
+  it.each(['requests', 'response', 'details'] as const)(
+    'maximizes the %s panel when it is focused',
+    (panel) => {
+      const state = createInitialState({ maximizedPanel: null, focusedPanel: panel });
+
+      const result = reducer(state, { type: 'TOGGLE_FULLSCREEN' });
+
+      expect(result.maximizedPanel).toBe(panel);
+      expect(result.maximizedPanel).toBe(result.focusedPanel);
+    },
+  );
+});

@@ -9,7 +9,7 @@ import type { EditorBuffer } from '../core/editor';
 import { toErrorInfo } from '../core/executor';
 import { formatResponseBody } from '../core/formatter';
 import { headersToText } from '../core/headers';
-import { responseViewportFromState } from '../core/reducer';
+import { isSearchActive, responseViewportFromState } from '../core/reducer';
 import { serializeHttpFile } from '../core/http-serializer';
 import { buildInPlaceContent } from '../core/in-place-save';
 import { detectFormat, parseAnyFormat } from '../core/format-detector';
@@ -588,7 +588,7 @@ function handleFullscreenInput({
     return;
   }
 
-  if (key.escape && state.maximizedPanel === 'response' && (state.searchMatches.length > 0 || state.lastSearchQuery)) {
+  if (key.escape && state.maximizedPanel === 'response' && isSearchActive(state)) {
     dispatch({ type: 'CANCEL_SEARCH' });
     return;
   }
@@ -685,7 +685,7 @@ function handleFullscreenInput({
     }
   }
 
-  if (input === 'q' && (state.searchMatches.length > 0 || state.lastSearchQuery)) {
+  if (input === 'q' && isSearchActive(state)) {
     dispatch({ type: 'CANCEL_SEARCH' });
   }
 }
@@ -733,7 +733,7 @@ export function handleNormalInput({
     return;
   }
 
-  if (key.escape && (state.searchMatches.length > 0 || state.lastSearchQuery)) {
+  if (key.escape && isSearchActive(state)) {
     dispatch({ type: 'CANCEL_SEARCH' });
     return;
   }
@@ -744,7 +744,7 @@ export function handleNormalInput({
   }
 
   if (input === 'q') {
-    if (state.searchMatches.length > 0 || state.lastSearchQuery) {
+    if (isSearchActive(state)) {
       dispatch({ type: 'CANCEL_SEARCH' });
       return;
     }

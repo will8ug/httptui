@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../../helpers/state';
 import { createMockResponse } from '../../helpers/responses';
 import { formatResponseBody } from '../../../src/core/formatter';
-import { reducer, CLEAR_SEARCH_STATE, computeSearchScrollOffset } from '../../../src/core/reducer';
+import { reducer, CLEAR_SEARCH_STATE, computeSearchScrollOffset, isSearchActive } from '../../../src/core/reducer';
 import { computeResponseLayout } from '../../../src/core/response-layout';
 import type { Action, AppState, ResponseData } from '../../../src/core/types';
 
@@ -388,6 +388,47 @@ describe('Dismissing active search results in normal mode', () => {
     const result = reducer(state, { type: 'CANCEL_SEARCH' });
 
     expectClearedSearchState(result);
+  });
+});
+
+describe('isSearchActive predicate', () => {
+  function confirmSearch(query: string): AppState {
+    return reducer(
+      { ...stateWithResponse('{"name":"John"}'), mode: 'search', searchQuery: query },
+      { type: 'CONFIRM_SEARCH' },
+    );
+  }
+
+  it('is inactive in a fresh state', () => {
+    expect(isSearchActive(createInitialState())).toBe(false);
+  });
+
+  it('is active while the search bar is open before any query is confirmed', () => {
+    const entered = reducer(stateWithResponse('{"name":"John"}'), { type: 'ENTER_SEARCH' });
+
+    expect(entered.mode).toBe('search');
+    expect(entered.lastSearchQuery).toBe('');
+    expect(isSearchActive(entered)).toBe(true);
+  });
+
+  it('is active for a confirmed query with matches', () => {
+    const confirmed = confirmSearch('john');
+
+    expect(confirmed.searchMatches.length).toBeGreaterThan(0);
+    expect(isSearchActive(confirmed)).toBe(true);
+  });
+
+  it('is active for a confirmed query with no matches', () => {
+    const confirmed = confirmSearch('alice');
+
+    expect(confirmed.searchMatches).toEqual([]);
+    expect(isSearchActive(confirmed)).toBe(true);
+  });
+
+  it('is inactive after the confirmed search is dismissed', () => {
+    const dismissed = reducer(confirmSearch('john'), { type: 'CANCEL_SEARCH' });
+
+    expect(isSearchActive(dismissed)).toBe(false);
   });
 });
 

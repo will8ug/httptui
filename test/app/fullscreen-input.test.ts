@@ -257,6 +257,7 @@ describe('fullscreen display toggles', () => {
 
 describe('fullscreen action keys are no-ops', () => {
   const noopKeys: Array<{ label: string; input: string; key?: Key }> = [
+    { label: 'Tab', input: '', key: makeKey({ tab: true }) },
     { label: 'Enter', input: '', key: makeKey({ return: true }) },
     { label: 'o', input: 'o' },
     { label: 'Ctrl+G', input: 'g', key: makeKey({ ctrl: true }) },

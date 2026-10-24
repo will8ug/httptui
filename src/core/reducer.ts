@@ -20,6 +20,7 @@ export {
   clampScrollOffsetToCursor,
   CLEAR_SEARCH_STATE,
   computeSearchScrollOffset,
+  isSearchActive,
   responseViewportFromState,
 } from './reducers/helpers';
 
