@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { INITIAL_SEARCH } from '../../../src/core/reducers/helpers';
 import type { ParsedRequest } from '../../../src/core/types';
 import { createMockResponse } from '../../helpers/responses';
 import { createRequest } from '../../helpers/requests';
@@ -74,18 +75,12 @@ describe('APPEND_REQUEST reducer', () => {
     const state = createInitialState({
       requests: makeRequests(3),
       response: createMockResponse({ body: '{"ok":true}' }),
-      searchQuery: 'users',
-      searchMatches: [1, 3],
-      currentMatchIndex: 1,
-      lastSearchQuery: 'users',
+      search: { ...INITIAL_SEARCH, query: 'users', matches: [1, 3], currentMatchIndex: 1, lastQuery: 'users' },
     });
 
     const result = reducer(state, { type: 'APPEND_REQUEST', request: pastedRequest() });
 
-    expect(result.searchQuery).toBe('users');
-    expect(result.searchMatches).toEqual([1, 3]);
-    expect(result.currentMatchIndex).toBe(1);
-    expect(result.lastSearchQuery).toBe('users');
+    expect(result.search).toEqual({ query: 'users', cursor: 0, matches: [1, 3], currentMatchIndex: 1, lastQuery: 'users' });
   });
 
   it('leaves the response untouched', () => {

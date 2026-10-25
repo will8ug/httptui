@@ -6,7 +6,7 @@ import { getRequestTarget, resolveRequestDetails } from '../../utils/request';
 import { cellWidth } from '../../utils/text';
 import { computeResponseViewport } from '../response-viewport';
 import type { ResponseViewportModel } from '../response-viewport';
-import type { AppState, FileVariable, ParsedRequest } from '../types';
+import type { AppState, ConfirmState, EditState, EnvSelectState, FileLoadState, FileVariable, ParsedRequest, SearchState, TextEntryState } from '../types';
 import { resolveVariables } from '../variables';
 
 export function clamp(value: number, min: number, max: number): number {
@@ -19,13 +19,13 @@ function selectedRequest(state: AppState): ParsedRequest | undefined {
 
 /**
  * Canonical search-active predicate: the search bar is open (mode) or a
- * confirmed query lingers. searchMatches is deliberately not consulted: the
- * reducers couple it to lastSearchQuery (set together, cleared together).
+ * confirmed query lingers. `matches` is deliberately not consulted: the
+ * reducers couple it to `lastQuery` (set together, cleared together).
  * Callers run only in normal mode (search mode is routed to the search input
  * handler first), so the mode disjunct is unreachable at those sites.
  */
 export function isSearchActive(state: AppState): boolean {
-  return state.mode === 'search' || state.lastSearchQuery !== '';
+  return state.mode === 'search' || state.search.lastQuery !== '';
 }
 
 /**
@@ -170,17 +170,55 @@ export function clampScrollOffsetToCursor(selectedIndex: number, currentOffset: 
   return currentOffset;
 }
 
-export const CLEAR_SEARCH_STATE = {
-  searchQuery: '',
-  searchMatches: [] as number[],
+export const INITIAL_SEARCH: SearchState = {
+  query: '',
+  cursor: 0,
+  matches: [],
   currentMatchIndex: 0,
-  lastSearchQuery: '',
+  lastQuery: '',
 };
 
-export const EMPTY_EDIT_BUFFERS = {
+export const INITIAL_FILE_LOAD: FileLoadState = {
+  input: '',
+  cursor: 0,
+  error: null,
+  completions: null,
+};
+
+export const INITIAL_SAVE_LOAD: TextEntryState = {
+  input: '',
+  cursor: 0,
+  error: null,
+};
+
+export const INITIAL_RESPONSE_SAVE: TextEntryState = {
+  input: '',
+  cursor: 0,
+  error: null,
+};
+
+export const INITIAL_ENV_SELECT: EnvSelectState = {
+  selectedIndex: 0,
+  scrollOffset: 0,
+  error: null,
+};
+
+const EMPTY_EDIT_BUFFERS = {
   body: { text: '', cursor: 0 },
   headers: { text: '', cursor: 0 },
   url: { text: '', cursor: 0 },
+};
+
+export const INITIAL_EDIT: EditState = {
+  target: 'url',
+  buffers: EMPTY_EDIT_BUFFERS,
+  scrollOffset: 0,
+  horizontalOffset: 0,
+  escapeArmedAt: null,
+};
+
+export const INITIAL_CONFIRM: ConfirmState = {
+  pendingDiscardAction: null,
 };
 
 export function setTransient(

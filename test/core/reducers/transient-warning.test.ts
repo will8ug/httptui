@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { INITIAL_SEARCH } from '../../../src/core/reducers/helpers';
 import { createInitialState, reducer } from '../../helpers/state';
 import { createMockResponse } from '../../helpers/responses';
 
@@ -99,10 +100,7 @@ describe('transient channel exclusivity', () => {
       ...createInitialState(),
       response,
       requestError,
-      searchQuery: 'test',
-      searchMatches: [1, 3, 5],
-      currentMatchIndex: 1,
-      lastSearchQuery: 'test',
+      search: { ...INITIAL_SEARCH, query: 'test', matches: [1, 3, 5], currentMatchIndex: 1, lastQuery: 'test' },
       isLoading: true,
     };
 
@@ -110,10 +108,7 @@ describe('transient channel exclusivity', () => {
 
     expect(result.response).toBe(response);
     expect(result.requestError).toBe(requestError);
-    expect(result.searchQuery).toBe('test');
-    expect(result.searchMatches).toEqual([1, 3, 5]);
-    expect(result.currentMatchIndex).toBe(1);
-    expect(result.lastSearchQuery).toBe('test');
+    expect(result.search).toEqual({ query: 'test', cursor: 0, matches: [1, 3, 5], currentMatchIndex: 1, lastQuery: 'test' });
     expect(result.isLoading).toBe(true);
   });
 

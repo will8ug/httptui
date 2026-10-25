@@ -2,17 +2,16 @@ import { describe, expect, it } from 'vitest';
 import type { Key } from 'ink';
 
 import { handleFileLoadInput, handleSaveInput } from '../../src/app/input-handlers';
-import type { Action, AppState } from '../../src/core/types';
+import { INITIAL_FILE_LOAD, INITIAL_SAVE_LOAD } from '../../src/core/reducers/helpers';
+import type { Action, AppState, TextEntryState } from '../../src/core/types';
 import { pressKey } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createInitialState } from '../helpers/state';
 
-function saveState(overrides: Partial<AppState> = {}): AppState {
+function saveState(overrides: Partial<TextEntryState> = {}): AppState {
   return createInitialState({
     mode: 'saveLoad',
-    saveInput: 'api.http',
-    saveCursor: 'api.http'.length,
-    ...overrides,
+    saveLoad: { ...INITIAL_SAVE_LOAD, input: 'api.http', cursor: 'api.http'.length, ...overrides },
   });
 }
 
@@ -42,8 +41,7 @@ describe('S-key mode isolation', () => {
     handleFileLoadInput({
       state: createInitialState({
         mode: 'fileLoad',
-        fileLoadInput: 'api.http',
-        fileLoadCursor: 'api.http'.length,
+        fileLoad: { ...INITIAL_FILE_LOAD, input: 'api.http', cursor: 'api.http'.length },
       }),
       input: 'S',
       key: makeKey(),
@@ -51,14 +49,14 @@ describe('S-key mode isolation', () => {
       dispatch: (action) => dispatched.push(action),
     });
 
-    expect(dispatched).toEqual([{ type: 'UPDATE_FILE_LOAD_INPUT', value: 'api.httpS', cursor: 9 }]);
+    expect(dispatched).toEqual([{ type: 'FILE_LOAD_KEY', op: 'insert', insert: 'S' }]);
     expect(dispatched).not.toContainEqual({ type: 'ENTER_SAVE' });
   });
 
   it('S while the save overlay is open types into the save path', () => {
     const actions = pressSaveKey(saveState(), 'S');
 
-    expect(actions).toEqual([{ type: 'UPDATE_SAVE_INPUT', value: 'api.httpS', cursor: 9 }]);
+    expect(actions).toEqual([{ type: 'SAVE_KEY', op: 'insert', insert: 'S' }]);
     expect(actions).not.toContainEqual({ type: 'ENTER_SAVE' });
   });
 });
@@ -72,7 +70,7 @@ describe('handleSaveInput', () => {
 
   it('Enter with empty input sets the save error', () => {
     const actions = pressSaveKey(
-      saveState({ saveInput: '   ', saveCursor: 3 }),
+      saveState({ input: '   ', cursor: 3 }),
       '',
       makeKey({ return: true }),
     );
@@ -80,25 +78,30 @@ describe('handleSaveInput', () => {
     expect(actions).toEqual([{ type: 'SET_SAVE_ERROR', error: 'Please enter a file path' }]);
   });
 
-  it('typing a character inserts it at the cursor', () => {
-    const actions = pressSaveKey(saveState({ saveInput: '', saveCursor: 0 }), 'a');
+  it('typing a character dispatches an insert op', () => {
+    const actions = pressSaveKey(saveState({ input: '', cursor: 0 }), 'a');
 
-    expect(actions).toEqual([{ type: 'UPDATE_SAVE_INPUT', value: 'a', cursor: 1 }]);
+    expect(actions).toEqual([{ type: 'SAVE_KEY', op: 'insert', insert: 'a' }]);
   });
 
-  it('Backspace deletes the character before the cursor', () => {
+  it('Backspace dispatches deleteBackward', () => {
     const actions = pressSaveKey(
-      saveState({ saveInput: 'abcdef', saveCursor: 3 }),
+      saveState({ input: 'abcdef', cursor: 3 }),
       '',
       makeKey({ backspace: true }),
     );
 
-    expect(actions).toEqual([{ type: 'UPDATE_SAVE_INPUT', value: 'abdef', cursor: 2 }]);
+    expect(actions).toEqual([{ type: 'SAVE_KEY', op: 'deleteBackward' }]);
   });
 
-  it('left arrow moves the cursor left', () => {
+  it('left arrow dispatches the left motion', () => {
     const actions = pressSaveKey(saveState(), '', makeKey({ leftArrow: true }));
 
-    expect(actions).toEqual([{ type: 'MOVE_SAVE_CURSOR', cursor: 7 }]);
+    expect(actions).toEqual([{ type: 'SAVE_KEY', op: 'left' }]);
+  });
+
+  it('up and down arrows dispatch nothing on the single-line path', () => {
+    expect(pressSaveKey(saveState(), '', makeKey({ upArrow: true }))).toEqual([]);
+    expect(pressSaveKey(saveState(), '', makeKey({ downArrow: true }))).toEqual([]);
   });
 });

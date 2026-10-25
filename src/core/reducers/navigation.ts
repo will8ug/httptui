@@ -1,6 +1,6 @@
 import { getRequestVisibleHeight } from '../../utils/layout';
 import type { Action, AppState } from '../types';
-import { CLEAR_SEARCH_STATE, clamp, clampScrollOffsetToCursor, detailsHorizontalMaxOffset, detailsVerticalMaxOffset, navigateRequests, requestsHorizontalMaxOffset, responseHorizontalMaxOffset, responseVerticalMaxOffset } from './helpers';
+import { clamp, clampScrollOffsetToCursor, detailsHorizontalMaxOffset, detailsVerticalMaxOffset, INITIAL_SEARCH, navigateRequests, requestsHorizontalMaxOffset, responseHorizontalMaxOffset, responseVerticalMaxOffset } from './helpers';
 
 type NavigationAction = Extract<Action, { type: 'SELECT_REQUEST' | 'MOVE_SELECTION' | 'APPEND_REQUEST' | 'SWITCH_PANEL' | 'SCROLL' | 'SCROLL_HORIZONTAL' | 'JUMP_VERTICAL' | 'JUMP_HORIZONTAL' }>;
 
@@ -43,7 +43,7 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
       return {
         ...state,
         focusedPanel: nextPanel,
-        ...(leavesResponse && CLEAR_SEARCH_STATE),
+        ...(leavesResponse && { search: INITIAL_SEARCH }),
       };
     }
 

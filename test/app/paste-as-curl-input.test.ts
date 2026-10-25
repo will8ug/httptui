@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { handleEditInput, handleHelpInput, handleSearchInput } from '../../src/app/input-handlers';
 import { ClipboardError } from '../../src/core/clipboard';
 import type { ClipboardRunner } from '../../src/core/clipboard';
+import { INITIAL_EDIT } from '../../src/core/reducers/helpers';
 import type { Action, AppState } from '../../src/core/types';
 import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
@@ -69,10 +70,13 @@ describe('p is ignored in non-normal handlers', () => {
       state: createEditState({
         requests: [request],
         selectedIndex: 0,
-        editBuffers: {
-          url: { text: request.url, cursor: request.url.length },
-          body: { text: '', cursor: 0 },
-          headers: { text: '', cursor: 0 },
+        edit: {
+          ...INITIAL_EDIT,
+          buffers: {
+            url: { text: request.url, cursor: request.url.length },
+            body: { text: '', cursor: 0 },
+            headers: { text: '', cursor: 0 },
+          },
         },
       }),
       selectedRequest: request,
@@ -109,13 +113,13 @@ describe('p is ignored in non-normal handlers', () => {
     const dispatched: Action[] = [];
 
     handleSearchInput({
-      state: createInitialState({ mode: 'search', searchQuery: '' }),
+      state: createInitialState({ mode: 'search' }),
       input: 'p',
       key: makeKey(),
       dispatch: (action) => dispatched.push(action),
     });
 
-    expect(dispatched).toEqual([{ type: 'UPDATE_SEARCH_INPUT', value: 'p' }]);
+    expect(dispatched).toEqual([{ type: 'SEARCH_KEY', op: 'insert', insert: 'p' }]);
     expect(dispatched.map((action) => action.type)).not.toContain('APPEND_REQUEST');
     expect(clipboardReadRunner).not.toHaveBeenCalled();
   });

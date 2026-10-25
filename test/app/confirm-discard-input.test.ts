@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Key } from 'ink';
 
 import { handleConfirmDiscardInput } from '../../src/app/input-handlers';
-import type { Action, AppState } from '../../src/core/types';
+import type { Action, AppState, PendingDiscardAction } from '../../src/core/types';
+import { INITIAL_CONFIRM } from '../../src/core/reducers/helpers';
 import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
@@ -38,10 +39,10 @@ function cleanState(overrides: Partial<AppState> = {}): AppState {
   });
 }
 
-function confirming(action: NonNullable<AppState['pendingDiscardAction']>, overrides: Partial<AppState> = {}): AppState {
+function confirming(action: PendingDiscardAction, overrides: Partial<AppState> = {}): AppState {
   return dirtyState({
     mode: 'confirmDiscard',
-    pendingDiscardAction: action,
+    confirm: { ...INITIAL_CONFIRM, pendingDiscardAction: action },
     ...overrides,
   });
 }

@@ -1,8 +1,9 @@
+import { applyEditOp, mutatesText } from '../editor';
 import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
-import { CLEAR_SEARCH_STATE, setTransient } from './helpers';
+import { INITIAL_FILE_LOAD, INITIAL_SEARCH, setTransient } from './helpers';
 
-type FileLoadAction = Extract<Action, { type: 'ENTER_FILE_LOAD' | 'UPDATE_FILE_LOAD_INPUT' | 'MOVE_FILE_LOAD_CURSOR' | 'SET_FILE_LOAD_ERROR' | 'SET_FILE_LOAD_COMPLETIONS' | 'LOAD_FILE' | 'CANCEL_FILE_LOAD' }>;
+type FileLoadAction = Extract<Action, { type: 'ENTER_FILE_LOAD' | 'UPDATE_FILE_LOAD_INPUT' | 'FILE_LOAD_KEY' | 'SET_FILE_LOAD_ERROR' | 'SET_FILE_LOAD_COMPLETIONS' | 'LOAD_FILE' | 'CANCEL_FILE_LOAD' }>;
 
 export function reduceFileLoad(state: AppState, action: FileLoadAction): AppState {
   switch (action.type) {
@@ -10,37 +11,55 @@ export function reduceFileLoad(state: AppState, action: FileLoadAction): AppStat
       return {
         ...state,
         mode: 'fileLoad',
-        fileLoadInput: '',
-        fileLoadCursor: 0,
-        fileLoadError: null,
-        fileLoadCompletions: null,
+        fileLoad: INITIAL_FILE_LOAD,
       };
 
     case 'UPDATE_FILE_LOAD_INPUT':
       return {
         ...state,
-        fileLoadInput: action.value,
-        fileLoadCursor: action.cursor,
-        fileLoadCompletions: null,
+        fileLoad: {
+          ...state.fileLoad,
+          input: action.value,
+          cursor: action.cursor,
+          error: null,
+          completions: null,
+        },
       };
 
-    case 'MOVE_FILE_LOAD_CURSOR':
+    case 'FILE_LOAD_KEY': {
+      const next = applyEditOp(
+        { text: state.fileLoad.input, cursor: state.fileLoad.cursor },
+        action.op,
+        action.insert,
+      );
       return {
         ...state,
-        fileLoadCursor: action.cursor,
-        fileLoadCompletions: null,
+        fileLoad: {
+          ...state.fileLoad,
+          input: next.text,
+          cursor: next.cursor,
+          error: mutatesText(action.op) ? null : state.fileLoad.error,
+          completions: null,
+        },
       };
+    }
 
     case 'SET_FILE_LOAD_ERROR':
       return {
         ...state,
-        fileLoadError: action.error,
+        fileLoad: {
+          ...state.fileLoad,
+          error: action.error,
+        },
       };
 
     case 'SET_FILE_LOAD_COMPLETIONS':
       return {
         ...state,
-        fileLoadCompletions: action.completions,
+        fileLoad: {
+          ...state.fileLoad,
+          completions: action.completions,
+        },
       };
 
     case 'LOAD_FILE': {
@@ -63,16 +82,13 @@ export function reduceFileLoad(state: AppState, action: FileLoadAction): AppStat
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
         mode: 'normal',
-        fileLoadInput: '',
-        fileLoadCursor: 0,
-        fileLoadError: null,
-        fileLoadCompletions: null,
+        fileLoad: INITIAL_FILE_LOAD,
         ...setTransient({ message: `Loaded: ${action.filePath.split('/').pop() ?? ''}` }),
         ...(action.executorConfig && {
           certificates: action.executorConfig.certificates,
           editor: action.executorConfig.editor,
         }),
-        ...CLEAR_SEARCH_STATE,
+        search: INITIAL_SEARCH,
       };
     }
 
@@ -80,10 +96,7 @@ export function reduceFileLoad(state: AppState, action: FileLoadAction): AppStat
       return {
         ...state,
         mode: 'normal',
-        fileLoadInput: '',
-        fileLoadCursor: 0,
-        fileLoadError: null,
-        fileLoadCompletions: null,
+        fileLoad: INITIAL_FILE_LOAD,
       };
   }
 }

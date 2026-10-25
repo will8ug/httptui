@@ -130,6 +130,42 @@ export type EditOp =
   | 'lineStart'
   | 'lineEnd';
 
+export interface TextEntryState {
+  input: string;
+  cursor: number;
+  error: string | null;
+}
+
+export interface FileLoadState extends TextEntryState {
+  completions: string[] | null;
+}
+
+export interface EnvSelectState {
+  selectedIndex: number;
+  scrollOffset: number;
+  error: string | null;
+}
+
+export interface EditState {
+  target: EditTarget;
+  buffers: Record<EditTarget, { text: string; cursor: number }>;
+  scrollOffset: number;
+  horizontalOffset: number;
+  escapeArmedAt: number | null;
+}
+
+export interface ConfirmState {
+  pendingDiscardAction: PendingDiscardAction | null;
+}
+
+export interface SearchState {
+  query: string;
+  cursor: number;
+  matches: number[];
+  currentMatchIndex: number;
+  lastQuery: string;
+}
+
 export interface AppState {
   geometry: TerminalGeometry;
   requests: ParsedRequest[];
@@ -154,39 +190,28 @@ export interface AppState {
   transientError: string | null;
   transientWarning: string | null;
   mode: AppMode;
-  fileLoadInput: string;
-  fileLoadCursor: number;
-  fileLoadError: string | null;
-  fileLoadCompletions: string[] | null;
-  saveInput: string;
-  saveCursor: number;
-  saveError: string | null;
-  responseSaveInput: string;
-  responseSaveCursor: number;
-  responseSaveError: string | null;
+  // Dormancy invariant: each overlay cluster equals its initial object whenever
+  // `mode` is not that overlay's mode: the owning reducer resets it on exit and
+  // commit. Search is the documented exception and lives outside this invariant.
+  fileLoad: FileLoadState;
+  saveLoad: TextEntryState;
+  responseSave: TextEntryState;
+  envSelect: EnvSelectState;
+  edit: EditState;
+  confirm: ConfirmState;
   fileVariables: FileVariable[];
   activeEnvName: string | null;
   availableEnvironments: EnvOption[];
-  envSelectIndex: number;
-  envSelectScrollOffset: number;
-  envSelectError: string | null;
   wrapMode: WrapMode;
   showRequestDetails: boolean;
   rawMode: boolean;
-  searchQuery: string;
-  searchMatches: number[];
-  currentMatchIndex: number;
-  lastSearchQuery: string;
-  // Invariant: when non-null, equals focusedPanel — fullscreen entry maximizes
+  // Clears on response changes, focus leaving the response panel, raw reformat,
+  // and its own dismissal paths; it otherwise persists across modes.
+  search: SearchState;
+  // Invariant: when non-null, equals focusedPanel. Fullscreen entry maximizes
   // the focused panel, and nothing reachable while maximized changes focus
   // (Tab is dead there; ENTER_SEARCH re-focuses the already-maximized response).
   maximizedPanel: FocusedPanel | null;
-  editTarget: EditTarget;
-  editBuffers: Record<EditTarget, { text: string; cursor: number }>;
-  editScrollOffset: number;
-  editHorizontalOffset: number;
-  editEscapeArmedAt: number | null;
-  pendingDiscardAction: PendingDiscardAction | null;
   certificates?: Record<string, CertEntry>;
   editor?: string;
 }
@@ -225,8 +250,9 @@ export type Action =
   | { type: 'SET_TRANSIENT_ERROR'; error: string }
   | { type: 'CLEAR_TRANSIENT_MESSAGE' }
   | { type: 'ENTER_FILE_LOAD' }
+  // Programmatic value+cursor sets only (path completion); keystrokes go through FILE_LOAD_KEY.
   | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string; cursor: number }
-  | { type: 'MOVE_FILE_LOAD_CURSOR'; cursor: number }
+  | { type: 'FILE_LOAD_KEY'; op: EditOp; insert?: string }
   | { type: 'SET_FILE_LOAD_ERROR'; error: string }
   | { type: 'SET_FILE_LOAD_COMPLETIONS'; completions: string[] | null }
   | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string; executorConfig?: ExecutorConfig }
@@ -237,7 +263,7 @@ export type Action =
   | { type: 'JUMP_VERTICAL'; direction: 'start' | 'end' }
   | { type: 'JUMP_HORIZONTAL'; direction: 'start' | 'end' }
   | { type: 'ENTER_SEARCH' }
-  | { type: 'UPDATE_SEARCH_INPUT'; value: string }
+  | { type: 'SEARCH_KEY'; op: EditOp; insert?: string }
   | { type: 'CONFIRM_SEARCH'; firstMatchVisualIndex?: number }
   | { type: 'CANCEL_SEARCH' }
   | { type: 'NEXT_MATCH'; targetVisualIndex: number }
@@ -250,14 +276,12 @@ export type Action =
   | { type: 'CANCEL_ENV_SELECT' }
   | { type: 'SET_ENV_SELECT_ERROR'; error: string }
   | { type: 'ENTER_SAVE' }
-  | { type: 'UPDATE_SAVE_INPUT'; value: string; cursor: number }
-  | { type: 'MOVE_SAVE_CURSOR'; cursor: number }
+  | { type: 'SAVE_KEY'; op: EditOp; insert?: string }
   | { type: 'SAVE_FILE'; message: string; filePath: string }
   | { type: 'SET_SAVE_ERROR'; error: string }
   | { type: 'CANCEL_SAVE' }
   | { type: 'ENTER_RESPONSE_SAVE' }
-  | { type: 'UPDATE_RESPONSE_SAVE_INPUT'; value: string; cursor: number }
-  | { type: 'MOVE_RESPONSE_SAVE_CURSOR'; cursor: number }
+  | { type: 'RESPONSE_SAVE_KEY'; op: EditOp; insert?: string }
   | { type: 'SET_RESPONSE_SAVE_ERROR'; error: string }
   | { type: 'SAVE_RESPONSE_FILE'; message: string }
   | { type: 'CANCEL_RESPONSE_SAVE' }

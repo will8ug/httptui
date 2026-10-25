@@ -6,7 +6,7 @@ import { reduceEdit } from './reducers/edit';
 import { reduceEnvSelect } from './reducers/env-select';
 import { reduceFileLoad } from './reducers/file-load';
 import { reduceGeometry } from './reducers/geometry';
-import { EMPTY_EDIT_BUFFERS } from './reducers/helpers';
+import { INITIAL_CONFIRM, INITIAL_EDIT, INITIAL_ENV_SELECT, INITIAL_FILE_LOAD, INITIAL_RESPONSE_SAVE, INITIAL_SAVE_LOAD, INITIAL_SEARCH } from './reducers/helpers';
 import { reduceRequestLifecycle } from './reducers/lifecycle';
 import { reduceNavigation } from './reducers/navigation';
 import { reduceResponseSave } from './reducers/response-save';
@@ -18,7 +18,6 @@ import { reduceTransient } from './reducers/transient';
 export {
   clamp,
   clampScrollOffsetToCursor,
-  CLEAR_SEARCH_STATE,
   computeSearchScrollOffset,
   isSearchActive,
   responseViewportFromState,
@@ -64,7 +63,7 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'ENTER_FILE_LOAD':
     case 'UPDATE_FILE_LOAD_INPUT':
-    case 'MOVE_FILE_LOAD_CURSOR':
+    case 'FILE_LOAD_KEY':
     case 'SET_FILE_LOAD_ERROR':
     case 'SET_FILE_LOAD_COMPLETIONS':
     case 'LOAD_FILE':
@@ -72,16 +71,14 @@ export function reducer(state: AppState, action: Action): AppState {
       return reduceFileLoad(state, action);
 
     case 'ENTER_SAVE':
-    case 'UPDATE_SAVE_INPUT':
-    case 'MOVE_SAVE_CURSOR':
+    case 'SAVE_KEY':
     case 'SET_SAVE_ERROR':
     case 'SAVE_FILE':
     case 'CANCEL_SAVE':
       return reduceSaveLoad(state, action);
 
     case 'ENTER_RESPONSE_SAVE':
-    case 'UPDATE_RESPONSE_SAVE_INPUT':
-    case 'MOVE_RESPONSE_SAVE_CURSOR':
+    case 'RESPONSE_SAVE_KEY':
     case 'SET_RESPONSE_SAVE_ERROR':
     case 'SAVE_RESPONSE_FILE':
     case 'CANCEL_RESPONSE_SAVE':
@@ -96,7 +93,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return reduceEnvSelect(state, action);
 
     case 'ENTER_SEARCH':
-    case 'UPDATE_SEARCH_INPUT':
+    case 'SEARCH_KEY':
     case 'CONFIRM_SEARCH':
     case 'CANCEL_SEARCH':
     case 'NEXT_MATCH':
@@ -135,9 +132,6 @@ export function createInitialState(props: AppProps): AppState {
     fileVariables: props.fileVariables,
     activeEnvName: props.activeEnvName,
     availableEnvironments: props.availableEnvironments,
-    envSelectIndex: 0,
-    envSelectScrollOffset: 0,
-    envSelectError: null,
     selectedIndex: 0,
     focusedPanel: 'requests',
     response: null,
@@ -157,31 +151,18 @@ export function createInitialState(props: AppProps): AppState {
     transientError: null,
     transientWarning: null,
     mode: 'normal',
-    fileLoadInput: '',
-    fileLoadCursor: 0,
-    fileLoadError: null,
-    fileLoadCompletions: null,
-    saveInput: '',
-    saveCursor: 0,
-    saveError: null,
-    responseSaveInput: '',
-    responseSaveCursor: 0,
-    responseSaveError: null,
+    fileLoad: INITIAL_FILE_LOAD,
+    saveLoad: INITIAL_SAVE_LOAD,
+    responseSave: INITIAL_RESPONSE_SAVE,
+    envSelect: INITIAL_ENV_SELECT,
+    edit: INITIAL_EDIT,
+    confirm: INITIAL_CONFIRM,
     wrapMode: 'nowrap',
     showRequestDetails: false,
     rawMode: false,
-    searchQuery: '',
-    searchMatches: [],
-    currentMatchIndex: 0,
-    lastSearchQuery: '',
+    search: INITIAL_SEARCH,
     maximizedPanel: null,
     certificates: props.executorConfig.certificates,
     editor: props.executorConfig.editor,
-    editTarget: 'url',
-    editBuffers: EMPTY_EDIT_BUFFERS,
-    editScrollOffset: 0,
-    editHorizontalOffset: 0,
-    editEscapeArmedAt: null,
-    pendingDiscardAction: null,
   };
 }

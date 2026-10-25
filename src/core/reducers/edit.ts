@@ -3,7 +3,7 @@ import { expandTabs } from '../../utils/text';
 import { applyEditOp, offsetToLineCol } from '../editor';
 import { headersEqual, parseHeadersText } from '../headers';
 import type { Action, AppState } from '../types';
-import { EMPTY_EDIT_BUFFERS, clampScrollOffsetToCursor, setTransient } from './helpers';
+import { INITIAL_EDIT, clampScrollOffsetToCursor, setTransient } from './helpers';
 
 type EditAction = Extract<Action, { type: 'ENTER_EDIT' | 'EDIT_KEY' | 'SWITCH_EDIT_TAB' | 'COMMIT_EDIT' | 'CANCEL_EDIT' | 'ARM_EDIT_CANCEL' }>;
 
@@ -27,20 +27,22 @@ export function reduceEdit(state: AppState, action: EditAction): AppState {
       return {
         ...state,
         mode: 'edit',
-        editTarget: 'url',
-        editBuffers: {
-          url: { text: urlText, cursor: urlText.length },
-          body: { text: bodyText, cursor: bodyText.length },
-          headers: { text: headersText, cursor: headersText.length },
+        edit: {
+          ...INITIAL_EDIT,
+          buffers: {
+            url: { text: urlText, cursor: urlText.length },
+            body: { text: bodyText, cursor: bodyText.length },
+            headers: { text: headersText, cursor: headersText.length },
+          },
+          scrollOffset: clampScrollOffsetToCursor(line, 0, view.height),
+          horizontalOffset: clampScrollOffsetToCursor(visualCol, 0, view.width),
         },
-        editScrollOffset: clampScrollOffsetToCursor(line, 0, view.height),
-        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, 0, view.width),
       };
     }
 
     case 'EDIT_KEY': {
-      const active = state.editBuffers[state.editTarget];
-      const insert = state.editTarget === 'url' && action.insert !== undefined
+      const active = state.edit.buffers[state.edit.target];
+      const insert = state.edit.target === 'url' && action.insert !== undefined
         ? action.insert.replace(/[\n\r]/g, '')
         : action.insert;
       const updated = applyEditOp(
@@ -54,17 +56,20 @@ export function reduceEdit(state: AppState, action: EditAction): AppState {
       const view = editVisibleWindow(state);
       return {
         ...state,
-        editBuffers: {
-          ...state.editBuffers,
-          [state.editTarget]: updated,
+        edit: {
+          ...state.edit,
+          buffers: {
+            ...state.edit.buffers,
+            [state.edit.target]: updated,
+          },
+          scrollOffset: clampScrollOffsetToCursor(line, state.edit.scrollOffset, view.height),
+          horizontalOffset: clampScrollOffsetToCursor(visualCol, state.edit.horizontalOffset, view.width),
         },
-        editScrollOffset: clampScrollOffsetToCursor(line, state.editScrollOffset, view.height),
-        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, state.editHorizontalOffset, view.width),
       };
     }
 
     case 'SWITCH_EDIT_TAB': {
-      if (action.target === state.editTarget) {
+      if (action.target === state.edit.target) {
         return state;
       }
       const request = state.requests[state.selectedIndex];
@@ -75,16 +80,19 @@ export function reduceEdit(state: AppState, action: EditAction): AppState {
           ...setTransient({ message: 'form-data request body is not supported to edit for now' }),
         };
       }
-      const buffer = state.editBuffers[action.target];
+      const buffer = state.edit.buffers[action.target];
       const { line, col } = offsetToLineCol(buffer.text, buffer.cursor);
       const cursorLineText = buffer.text.split('\n')[line] ?? '';
       const visualCol = expandTabs(cursorLineText.slice(0, col)).length;
       const view = editVisibleWindow(state);
       return {
         ...state,
-        editTarget: action.target,
-        editScrollOffset: clampScrollOffsetToCursor(line, 0, view.height),
-        editHorizontalOffset: clampScrollOffsetToCursor(visualCol, 0, view.width),
+        edit: {
+          ...state.edit,
+          target: action.target,
+          scrollOffset: clampScrollOffsetToCursor(line, 0, view.height),
+          horizontalOffset: clampScrollOffsetToCursor(visualCol, 0, view.width),
+        },
       };
     }
 
@@ -94,15 +102,15 @@ export function reduceEdit(state: AppState, action: EditAction): AppState {
       if (!request) {
         return state;
       }
-      const parsedHeaders = parseHeadersText(state.editBuffers.headers.text);
+      const parsedHeaders = parseHeadersText(state.edit.buffers.headers.text);
       if (!parsedHeaders.ok) {
         return {
           ...state,
           ...setTransient({ error: `Cannot save: header line ${parsedHeaders.line} is ${parsedHeaders.error}` }),
         };
       }
-      const nextBody = state.editBuffers.body.text === '' ? undefined : state.editBuffers.body.text;
-      const nextUrl = state.editBuffers.url.text;
+      const nextBody = state.edit.buffers.body.text === '' ? undefined : state.edit.buffers.body.text;
+      const nextUrl = state.edit.buffers.url.text;
       const nextHeaders = parsedHeaders.headers;
       const changed = nextUrl !== request.url || nextBody !== request.body || !headersEqual(nextHeaders, request.headers);
       const updatedRequests = state.requests.map((req, i) =>
@@ -112,11 +120,7 @@ export function reduceEdit(state: AppState, action: EditAction): AppState {
         ...state,
         requests: updatedRequests,
         mode: 'normal',
-        editTarget: 'url',
-        editBuffers: EMPTY_EDIT_BUFFERS,
-        editScrollOffset: 0,
-        editHorizontalOffset: 0,
-        editEscapeArmedAt: null,
+        edit: INITIAL_EDIT,
         ...setTransient({ message: changed ? 'Request updated' : null }),
       };
     }
@@ -125,18 +129,17 @@ export function reduceEdit(state: AppState, action: EditAction): AppState {
       return {
         ...state,
         mode: 'normal',
-        editTarget: 'url',
-        editBuffers: EMPTY_EDIT_BUFFERS,
-        editScrollOffset: 0,
-        editHorizontalOffset: 0,
-        editEscapeArmedAt: null,
+        edit: INITIAL_EDIT,
         ...setTransient({}),
       };
 
     case 'ARM_EDIT_CANCEL':
       return {
         ...state,
-        editEscapeArmedAt: action.now,
+        edit: {
+          ...state.edit,
+          escapeArmedAt: action.now,
+        },
         ...setTransient({ message: 'Press Esc again to discard changes' }),
       };
   }

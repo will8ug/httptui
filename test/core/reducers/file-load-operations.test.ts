@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AppState, ParsedRequest } from '../../../src/core/types';
+import { INITIAL_FILE_LOAD } from '../../../src/core/reducers/helpers';
 import { createRequest } from '../../helpers/requests';
 import { sampleRequests, sampleVariables, toVarMap } from '../../helpers/fixtures';
 import { createInitialState, reducer } from '../../helpers/state';
@@ -172,57 +173,122 @@ describe('ENTER_FILE_LOAD reducer', () => {
   it('clears previous input, error, and cursor when entering file-load mode', () => {
     const state: AppState = {
       ...createInitialState(),
-      fileLoadInput: 'stale path',
-      fileLoadCursor: 5,
-      fileLoadError: 'stale error',
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'stale path', cursor: 5, error: 'stale error' },
     };
 
     const result = reducer(state, { type: 'ENTER_FILE_LOAD' });
 
-    expect(result.fileLoadInput).toBe('');
-    expect(result.fileLoadCursor).toBe(0);
-    expect(result.fileLoadError).toBeNull();
+    expect(result.fileLoad.input).toBe('');
+    expect(result.fileLoad.cursor).toBe(0);
+    expect(result.fileLoad.error).toBeNull();
   });
 });
 
 describe('UPDATE_FILE_LOAD_INPUT reducer', () => {
-  it('updates fileLoadInput and fileLoadCursor', () => {
+  it('updates fileLoad input and cursor', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'fileLoad',
-      fileLoadInput: 'old',
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'old' },
     };
 
     const result = reducer(state, { type: 'UPDATE_FILE_LOAD_INPUT', value: 'api.http', cursor: 4 });
 
-    expect(result.fileLoadInput).toBe('api.http');
-    expect(result.fileLoadCursor).toBe(4);
+    expect(result.fileLoad.input).toBe('api.http');
+    expect(result.fileLoad.cursor).toBe(4);
   });
-});
 
-describe('MOVE_FILE_LOAD_CURSOR reducer', () => {
-  it('sets fileLoadCursor without modifying fileLoadInput', () => {
+  it('clears a lingering fileLoad error like the save siblings', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'fileLoad',
-      fileLoadInput: 'api.http',
-      fileLoadCursor: 2,
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'api.htt', error: 'File not found: api.htt' },
     };
 
-    const result = reducer(state, { type: 'MOVE_FILE_LOAD_CURSOR', cursor: 5 });
+    const result = reducer(state, { type: 'UPDATE_FILE_LOAD_INPUT', value: 'api.http', cursor: 8 });
 
-    expect(result.fileLoadCursor).toBe(5);
-    expect(result.fileLoadInput).toBe('api.http');
+    expect(result.fileLoad.error).toBeNull();
+  });
+});
+
+describe('FILE_LOAD_KEY reducer', () => {
+  it('applies the op to the cluster buffer', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'api.http', cursor: 2 },
+    };
+
+    const inserted = reducer(state, { type: 'FILE_LOAD_KEY', op: 'insert', insert: 'X' });
+    expect(inserted.fileLoad.input).toBe('apXi.http');
+    expect(inserted.fileLoad.cursor).toBe(3);
+
+    const moved = reducer(state, { type: 'FILE_LOAD_KEY', op: 'left' });
+    expect(moved.fileLoad.input).toBe('api.http');
+    expect(moved.fileLoad.cursor).toBe(1);
+  });
+
+  it('clears a lingering error on text-editing ops but not on cursor motions', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'api.htt', cursor: 7, error: 'File not found: api.htt' },
+    };
+
+    const moved = reducer(state, { type: 'FILE_LOAD_KEY', op: 'left' });
+    expect(moved.fileLoad.error).toBe('File not found: api.htt');
+
+    const edited = reducer(state, { type: 'FILE_LOAD_KEY', op: 'insert', insert: 'p' });
+    expect(edited.fileLoad.error).toBeNull();
+  });
+
+  it('clears the completion list on every key op', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'src/', cursor: 4, completions: ['src/app'] },
+    };
+
+    expect(reducer(state, { type: 'FILE_LOAD_KEY', op: 'left' }).fileLoad.completions).toBeNull();
+    expect(reducer(state, { type: 'FILE_LOAD_KEY', op: 'insert', insert: 'a' }).fileLoad.completions).toBeNull();
   });
 });
 
 describe('SET_FILE_LOAD_ERROR reducer', () => {
   it('stays in fileLoad mode after error', () => {
-    const state: AppState = { ...createInitialState(), mode: 'fileLoad', fileLoadInput: 'bad.http' };
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'bad.http' },
+    };
     const result = reducer(state, { type: 'SET_FILE_LOAD_ERROR', error: 'File not found: bad.http' });
 
     expect(result.mode).toBe('fileLoad');
-    expect(result.fileLoadInput).toBe('bad.http');
+    expect(result.fileLoad.input).toBe('bad.http');
+  });
+});
+
+describe('fileLoad dormancy invariant', () => {
+  // Characterization pin: the exit and commit resets already enforce dormancy.
+  it('cluster deep-equals INITIAL_FILE_LOAD after every exit/commit action', () => {
+    const dirty: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoad: { input: 'stale.http', cursor: 4, error: 'File not found: stale.http', completions: ['stale.http'] },
+    };
+
+    const afterCancel = reducer(dirty, { type: 'CANCEL_FILE_LOAD' });
+    expect(afterCancel.mode).toBe('normal');
+    expect(afterCancel.fileLoad).toEqual(INITIAL_FILE_LOAD);
+
+    const afterLoad = reducer(dirty, {
+      type: 'LOAD_FILE',
+      requests: sampleRequests,
+      variables: sampleVariables,
+      filePath: 'next.http',
+    });
+    expect(afterLoad.mode).toBe('normal');
+    expect(afterLoad.fileLoad).toEqual(INITIAL_FILE_LOAD);
   });
 });
 
@@ -342,8 +408,8 @@ describe('CANCEL_FILE_LOAD reducer', () => {
     expect(result.requests).toEqual(sampleRequests);
     expect(result.filePath).toBe('original.http');
     expect(result.mode).toBe('normal');
-    expect(result.fileLoadInput).toBe('');
-    expect(result.fileLoadError).toBeNull();
+    expect(result.fileLoad.input).toBe('');
+    expect(result.fileLoad.error).toBeNull();
   });
 });
 

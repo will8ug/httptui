@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { reducer, clampScrollOffsetToCursor } from '../../../src/core/reducer';
+import { INITIAL_FILE_LOAD } from '../../../src/core/reducers/helpers';
 import type { Action, AppState, ParsedRequest } from '../../../src/core/types';
 import { createRequest } from '../../helpers/requests';
 import { createMockResponse } from '../../helpers/responses';
@@ -322,8 +323,7 @@ describe('request details scrolling reducer behavior', () => {
         detailsScrollOffset: 8,
         detailsHorizontalOffset: 10,
         mode: 'fileLoad',
-        fileLoadInput: 'next.http',
-        fileLoadError: 'bad path',
+        fileLoad: { ...INITIAL_FILE_LOAD, input: 'next.http', error: 'bad path' },
       });
 
       const result = reduce(state, {

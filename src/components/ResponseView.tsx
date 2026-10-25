@@ -31,6 +31,8 @@ interface ResponseViewProps {
   isSearchMode: boolean;
   lastSearchQuery: string;
   searchQuery: string;
+  /** Insertion point within searchQuery; rendered only while isSearchMode. */
+  searchCursor: number;
 }
 
 type LineTransform =
@@ -113,6 +115,7 @@ export function ResponseView({
   isSearchMode,
   lastSearchQuery,
   searchQuery,
+  searchCursor,
 }: ResponseViewProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
@@ -177,7 +180,9 @@ export function ResponseView({
   if (isSearchMode) {
     searchBar = (
       <Text color="cyanBright">
-        /{searchQuery}<Text color="white" bold>_</Text>
+        /{searchQuery.slice(0, searchCursor)}
+        <Text inverse>{searchQuery[searchCursor] ?? ' '}</Text>
+        {searchQuery.slice(searchCursor + 1)}
         <Text color="gray">  (Esc to cancel)</Text>
       </Text>
     );

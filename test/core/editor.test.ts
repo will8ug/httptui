@@ -13,7 +13,9 @@ import {
   moveRight,
   moveUp,
   offsetToLineCol,
+  resolveEditOp,
 } from '../../src/core/editor.js';
+import { makeKey } from '../helpers/keys';
 
 describe('offsetToLineCol', () => {
   it('returns {line:0, col:0} for an empty string', () => {
@@ -333,5 +335,61 @@ describe('applyEditOp', () => {
 
   it('dispatches lineEnd', () => {
     expect(applyEditOp({ text: 'ab\ncd', cursor: 3 }, 'lineEnd')).toEqual({ text: 'ab\ncd', cursor: 5 });
+  });
+});
+
+describe('resolveEditOp', () => {
+  it('resolves printable input to an insert carrying the text', () => {
+    expect(resolveEditOp('a', makeKey())).toEqual({ op: 'insert', insert: 'a' });
+  });
+
+  it('resolves a multi-character paste to one insert', () => {
+    expect(resolveEditOp('hello', makeKey())).toEqual({ op: 'insert', insert: 'hello' });
+  });
+
+  it('resolves Backspace to deleteBackward', () => {
+    expect(resolveEditOp('', makeKey({ backspace: true }))).toEqual({ op: 'deleteBackward' });
+  });
+
+  it('resolves Delete to deleteForward', () => {
+    expect(resolveEditOp('', makeKey({ delete: true }))).toEqual({ op: 'deleteForward' });
+  });
+
+  it('resolves each arrow to its motion op, including the vertical pair single-line callers skip', () => {
+    expect(resolveEditOp('', makeKey({ leftArrow: true }))).toEqual({ op: 'left' });
+    expect(resolveEditOp('', makeKey({ rightArrow: true }))).toEqual({ op: 'right' });
+    expect(resolveEditOp('', makeKey({ upArrow: true }))).toEqual({ op: 'up' });
+    expect(resolveEditOp('', makeKey({ downArrow: true }))).toEqual({ op: 'down' });
+  });
+
+  it('resolves Home and Ctrl+A to lineStart', () => {
+    expect(resolveEditOp('', makeKey({ home: true }))).toEqual({ op: 'lineStart' });
+    expect(resolveEditOp('a', makeKey({ ctrl: true }))).toEqual({ op: 'lineStart' });
+  });
+
+  it('resolves End and Ctrl+E to lineEnd', () => {
+    expect(resolveEditOp('', makeKey({ end: true }))).toEqual({ op: 'lineEnd' });
+    expect(resolveEditOp('e', makeKey({ ctrl: true }))).toEqual({ op: 'lineEnd' });
+  });
+
+  // Callers where Tab carries mode meaning (path completion, tab switching)
+  // intercept it before consulting the translator.
+  it('resolves a bare Tab to a tab-character insert', () => {
+    expect(resolveEditOp('\t', makeKey({ tab: true }))).toEqual({ op: 'insert', insert: '\t' });
+  });
+
+  it('rejects Enter and Escape so their raw input bytes never become insert text', () => {
+    expect(resolveEditOp('\r', makeKey({ return: true }))).toBeNull();
+    expect(resolveEditOp('\u001b', makeKey({ escape: true }))).toBeNull();
+  });
+
+  it('rejects ctrl combinations beyond the lineStart/lineEnd aliases', () => {
+    expect(resolveEditOp('g', makeKey({ ctrl: true }))).toBeNull();
+    expect(resolveEditOp('c', makeKey({ ctrl: true }))).toBeNull();
+  });
+
+  it('rejects meta combinations and empty input', () => {
+    expect(resolveEditOp('x', makeKey({ meta: true }))).toBeNull();
+    expect(resolveEditOp('', makeKey())).toBeNull();
   });
 });

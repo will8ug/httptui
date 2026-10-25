@@ -4,9 +4,10 @@ import { createInitialState } from '../../helpers/state';
 import { createRequest } from '../../helpers/requests';
 import { createMockResponse } from '../../helpers/responses';
 import { formatResponseBody } from '../../../src/core/formatter';
-import { reducer, CLEAR_SEARCH_STATE, computeSearchScrollOffset, isSearchActive } from '../../../src/core/reducer';
+import { reducer, computeSearchScrollOffset, isSearchActive } from '../../../src/core/reducer';
+import { INITIAL_SEARCH } from '../../../src/core/reducers/helpers';
 import { computeResponseLayout } from '../../../src/core/response-layout';
-import type { Action, AppState, ResponseData } from '../../../src/core/types';
+import type { Action, AppState, ResponseData, SearchState } from '../../../src/core/types';
 
 const LEDGER_CONTENT_WIDTH = 49;
 
@@ -25,48 +26,30 @@ function stateWithResponse(body: string): AppState {
 // 30 plain body lines render status + separator + 30 = 32 visual lines; the
 // lingering search bar claims one row of the 24 - 1 - 3 - 1 = 19-row window,
 // so the derived max response offset is 13.
-function stateWithActiveSearch(): AppState {
+function stateWithActiveSearch(search: Partial<SearchState> = {}): AppState {
   return {
     ...stateWithResponse(['john alpha', 'plain-1', 'john beta', 'plain-2', 'plain-3', 'john gamma', ...FILLER_LINES].join('\n')),
-    searchMatches: [0, 2, 5],
-    currentMatchIndex: 1,
-    lastSearchQuery: 'john',
-    searchQuery: 'john',
+    search: { ...INITIAL_SEARCH, query: 'john', matches: [0, 2, 5], currentMatchIndex: 1, lastQuery: 'john', ...search },
   };
 }
 
 function expectClearedSearchState(state: AppState): void {
-  expect({
-    searchQuery: state.searchQuery,
-    searchMatches: state.searchMatches,
-    currentMatchIndex: state.currentMatchIndex,
-    lastSearchQuery: state.lastSearchQuery,
-  }).toEqual(CLEAR_SEARCH_STATE);
+  expect(state.search).toEqual(INITIAL_SEARCH);
 }
 
 function expectSearchStatePreserved(before: AppState, after: AppState): void {
-  expect({
-    searchQuery: after.searchQuery,
-    searchMatches: after.searchMatches,
-    currentMatchIndex: after.currentMatchIndex,
-    lastSearchQuery: after.lastSearchQuery,
-  }).toEqual({
-    searchQuery: before.searchQuery,
-    searchMatches: before.searchMatches,
-    currentMatchIndex: before.currentMatchIndex,
-    lastSearchQuery: before.lastSearchQuery,
-  });
+  expect(after.search).toEqual(before.search);
 }
 
 describe('ENTER_SEARCH reducer', () => {
-  it('sets mode to search, focuses response, and clears searchQuery when response exists', () => {
+  it('sets mode to search, focuses response, and clears the search query when response exists', () => {
     const state = stateWithResponse('{"name":"John"}');
     const action: Action = { type: 'ENTER_SEARCH' };
     const result = reducer(state, action);
 
     expect(result.mode).toBe('search');
     expect(result.focusedPanel).toBe('response');
-    expect(result.searchQuery).toBe('');
+    expect(result.search.query).toBe('');
   });
 
   it('returns state unchanged when response is null', () => {
@@ -76,35 +59,102 @@ describe('ENTER_SEARCH reducer', () => {
     expect(result).toEqual(state);
   });
 
-  it('clears previous searchMatches and currentMatchIndex', () => {
+  it('clears previous matches and the current match index', () => {
     const state: AppState = {
       ...stateWithResponse('{"name":"John"}'),
-      searchMatches: [1, 3],
-      currentMatchIndex: 1,
-      searchQuery: 'stale',
+      search: { ...INITIAL_SEARCH, query: 'stale', matches: [1, 3], currentMatchIndex: 1 },
     };
 
     const result = reducer(state, { type: 'ENTER_SEARCH' });
 
-    expect(result.searchMatches).toEqual([]);
-    expect(result.currentMatchIndex).toBe(0);
-    expect(result.searchQuery).toBe('');
+    expect(result.search.matches).toEqual([]);
+    expect(result.search.currentMatchIndex).toBe(0);
+    expect(result.search.query).toBe('');
+  });
+
+  // Characterization pin: re-entry resets the three live fields but keeps the
+  // lingering last query, so the lingering bar stays anchored across modes.
+  it('preserves a lingering last query while resetting the other search fields', () => {
+    const state: AppState = {
+      ...stateWithResponse('{"name":"John"}'),
+      search: { ...INITIAL_SEARCH, lastQuery: 'old' },
+    };
+
+    const result = reducer(state, { type: 'ENTER_SEARCH' });
+
+    expect(result.search).toEqual({ ...INITIAL_SEARCH, lastQuery: 'old' });
   });
 });
 
-describe('UPDATE_SEARCH_INPUT reducer', () => {
-  it('updates searchQuery with the new value', () => {
-    const state: AppState = { ...stateWithResponse('{"name":"John"}'), mode: 'search' };
-    const result = reducer(state, { type: 'UPDATE_SEARCH_INPUT', value: 'john' });
+describe('SEARCH_KEY reducer', () => {
+  function searchModeState(search: Partial<SearchState> = {}): AppState {
+    return {
+      ...stateWithResponse('{"name":"John"}'),
+      mode: 'search',
+      search: { ...INITIAL_SEARCH, query: 'needle', cursor: 6, ...search },
+    };
+  }
 
-    expect(result.searchQuery).toBe('john');
+  it('applies insert at the cursor and advances the cursor past the inserted text', () => {
+    const result = reducer(searchModeState({ query: 'nedle', cursor: 2 }), {
+      type: 'SEARCH_KEY',
+      op: 'insert',
+      insert: 'e',
+    });
+
+    expect(result.search.query).toBe('needle');
+    expect(result.search.cursor).toBe(3);
+  });
+
+  it('applies deleteBackward at the cursor', () => {
+    const result = reducer(searchModeState(), { type: 'SEARCH_KEY', op: 'deleteBackward' });
+
+    expect(result.search.query).toBe('needl');
+    expect(result.search.cursor).toBe(5);
+  });
+
+  it('applies deleteForward at the cursor', () => {
+    const result = reducer(searchModeState({ cursor: 0 }), { type: 'SEARCH_KEY', op: 'deleteForward' });
+
+    expect(result.search.query).toBe('eedle');
+    expect(result.search.cursor).toBe(0);
+  });
+
+  it('applies left as a cursor-only motion preserving the query', () => {
+    const result = reducer(searchModeState(), { type: 'SEARCH_KEY', op: 'left' });
+
+    expect(result.search.query).toBe('needle');
+    expect(result.search.cursor).toBe(5);
+  });
+
+  it('applies lineStart and lineEnd against the query bounds', () => {
+    expect(reducer(searchModeState(), { type: 'SEARCH_KEY', op: 'lineStart' }).search.cursor).toBe(0);
+    expect(reducer(searchModeState({ cursor: 2 }), { type: 'SEARCH_KEY', op: 'lineEnd' }).search.cursor).toBe(6);
+  });
+
+  it('treats up and down as no-ops on the single-line query', () => {
+    const state = searchModeState();
+
+    expect(reducer(state, { type: 'SEARCH_KEY', op: 'up' }).search).toEqual(state.search);
+    expect(reducer(state, { type: 'SEARCH_KEY', op: 'down' }).search).toEqual(state.search);
+  });
+
+  it('preserves matches and the lingering last query while editing', () => {
+    const result = reducer(searchModeState({ matches: [1, 2], lastQuery: 'old' }), {
+      type: 'SEARCH_KEY',
+      op: 'insert',
+      insert: 'x',
+    });
+
+    expect(result.search.matches).toEqual([1, 2]);
+    expect(result.search.lastQuery).toBe('old');
   });
 });
 
 describe('CONFIRM_SEARCH reducer', () => {
   it('computes matches correctly for known content', () => {
     const body = '{"users":[{"name":"John"},{"name":"Jane"},{"name":"John"}]}';
-    const state: AppState = { ...stateWithResponse(body), mode: 'search', searchQuery: 'John' };
+    const state: AppState = { ...stateWithResponse(body), mode: 'search', search: { ...INITIAL_SEARCH, query: 'John' } };
     const expectedMatches = formatResponseBody(body, false)
       .split('\n')
       .reduce<number[]>((matches, line, index) => {
@@ -116,41 +166,39 @@ describe('CONFIRM_SEARCH reducer', () => {
 
     const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: expectedMatches[0] + 2 });
 
-    expect(result.searchMatches).toEqual(expectedMatches);
+    expect(result.search.matches).toEqual(expectedMatches);
   });
 
   it('matches case-insensitively', () => {
     const state: AppState = {
       ...stateWithResponse('{"name":"John"}'),
       mode: 'search',
-      searchQuery: 'john',
+      search: { ...INITIAL_SEARCH, query: 'john' },
     };
 
     const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: 1 + 1 });
 
-    expect(result.searchMatches).toEqual([1]);
+    expect(result.search.matches).toEqual([1]);
   });
 
-  it('returns an empty searchMatches array when no matches exist', () => {
+  it('returns an empty matches array when no matches exist', () => {
     const state: AppState = {
       ...stateWithResponse('{"name":"John"}'),
       mode: 'search',
-      searchQuery: 'alice',
+      search: { ...INITIAL_SEARCH, query: 'alice' },
       responseScrollOffset: 4,
     };
 
     const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: undefined });
 
-    expect(result.searchMatches).toEqual([]);
+    expect(result.search.matches).toEqual([]);
     expect(result.responseScrollOffset).toBe(4);
   });
 
   it('clears all search state for an empty query', () => {
     const state: AppState = {
-      ...stateWithActiveSearch(),
+      ...stateWithActiveSearch({ query: '', lastQuery: 'stale' }),
       mode: 'search',
-      searchQuery: '',
-      lastSearchQuery: 'stale',
     };
 
     const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: undefined });
@@ -164,9 +212,8 @@ describe('CONFIRM_SEARCH reducer', () => {
     // 24 - 1 - 3 - 1 = 19 rows, so max is 13. The empty confirm hides the
     // lingering bar, growing the window to 20 rows and dropping max to 12.
     const state: AppState = {
-      ...stateWithActiveSearch(),
+      ...stateWithActiveSearch({ query: '' }),
       mode: 'search',
-      searchQuery: '',
       responseScrollOffset: 13,
     };
 
@@ -175,26 +222,24 @@ describe('CONFIRM_SEARCH reducer', () => {
     expect(result.responseScrollOffset).toBe(12);
   });
 
-  it('sets currentMatchIndex to 0 and lastSearchQuery to the confirmed query', () => {
+  it('sets the current match index to 0 and the last query to the confirmed query', () => {
     const state: AppState = {
       ...stateWithResponse('{"users":[{"name":"John"},{"name":"John"}]}'),
       mode: 'search',
-      searchQuery: 'john',
-      currentMatchIndex: 2,
-      lastSearchQuery: 'old',
+      search: { ...INITIAL_SEARCH, query: 'john', currentMatchIndex: 2, lastQuery: 'old' },
     };
 
     const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: 1 + 2 });
 
-    expect(result.currentMatchIndex).toBe(0);
-    expect(result.lastSearchQuery).toBe('john');
+    expect(result.search.currentMatchIndex).toBe(0);
+    expect(result.search.lastQuery).toBe('john');
   });
 
   it('returns to normal mode after confirming search', () => {
     const state: AppState = {
       ...stateWithResponse('{"name":"John"}'),
       mode: 'search',
-      searchQuery: 'john',
+      search: { ...INITIAL_SEARCH, query: 'john' },
     };
 
     const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: 1 + 1 });
@@ -210,12 +255,12 @@ describe('CONFIRM_SEARCH reducer', () => {
     const state: AppState = {
       ...stateWithResponse(body),
       mode: 'search',
-      searchQuery: 'john',
+      search: { ...INITIAL_SEARCH, query: 'john' },
     };
 
     const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: 1 + 4 });
 
-    expect(result.searchMatches).toEqual([1]);
+    expect(result.search.matches).toEqual([1]);
     expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(1 + 4, 10));
   });
 
@@ -224,12 +269,12 @@ describe('CONFIRM_SEARCH reducer', () => {
     const state: AppState = {
       ...stateWithResponse(body),
       mode: 'search',
-      searchQuery: 'john',
+      search: { ...INITIAL_SEARCH, query: 'john' },
     };
 
     const result = reducer(state, { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: 1 + 0 });
 
-    expect(result.searchMatches).toEqual([1, 3]);
+    expect(result.search.matches).toEqual([1, 3]);
   });
 });
 
@@ -265,22 +310,22 @@ describe('CANCEL_SEARCH reducer', () => {
 });
 
 describe('NEXT_MATCH reducer', () => {
-  it('increments currentMatchIndex by 1', () => {
+  it('increments the current match index by 1', () => {
     const state = stateWithActiveSearch();
     const result = reducer(state, { type: 'NEXT_MATCH', targetVisualIndex: 5 + 1 });
 
-    expect(result.currentMatchIndex).toBe(2);
+    expect(result.search.currentMatchIndex).toBe(2);
   });
 
   it('wraps around from last match to first', () => {
-    const state: AppState = { ...stateWithActiveSearch(), currentMatchIndex: 2 };
+    const state = stateWithActiveSearch({ currentMatchIndex: 2 });
     const result = reducer(state, { type: 'NEXT_MATCH', targetVisualIndex: 0 + 1 });
 
-    expect(result.currentMatchIndex).toBe(0);
+    expect(result.search.currentMatchIndex).toBe(0);
   });
 
-  it('is a no-op when searchMatches is empty', () => {
-    const state: AppState = { ...stateWithResponse('{"name":"John"}'), currentMatchIndex: 0 };
+  it('is a no-op when the matches are empty', () => {
+    const state: AppState = { ...stateWithResponse('{"name":"John"}'), search: { ...INITIAL_SEARCH, currentMatchIndex: 0 } };
     const result = reducer(state, { type: 'NEXT_MATCH', targetVisualIndex: 0 });
 
     expect(result).toEqual(state);
@@ -290,7 +335,7 @@ describe('NEXT_MATCH reducer', () => {
     const state = stateWithActiveSearch();
     const result = reducer(state, { type: 'NEXT_MATCH', targetVisualIndex: 5 + 3 });
 
-    expect(result.currentMatchIndex).toBe(2);
+    expect(result.search.currentMatchIndex).toBe(2);
     expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(5 + 3, 13));
   });
 
@@ -303,22 +348,22 @@ describe('NEXT_MATCH reducer', () => {
 });
 
 describe('PREV_MATCH reducer', () => {
-  it('decrements currentMatchIndex by 1', () => {
+  it('decrements the current match index by 1', () => {
     const state = stateWithActiveSearch();
     const result = reducer(state, { type: 'PREV_MATCH', targetVisualIndex: 0 + 2 });
 
-    expect(result.currentMatchIndex).toBe(0);
+    expect(result.search.currentMatchIndex).toBe(0);
   });
 
   it('wraps around from first match to last', () => {
-    const state: AppState = { ...stateWithActiveSearch(), currentMatchIndex: 0 };
+    const state = stateWithActiveSearch({ currentMatchIndex: 0 });
     const result = reducer(state, { type: 'PREV_MATCH', targetVisualIndex: 5 + 2 });
 
-    expect(result.currentMatchIndex).toBe(2);
+    expect(result.search.currentMatchIndex).toBe(2);
   });
 
-  it('is a no-op when searchMatches is empty', () => {
-    const state: AppState = { ...stateWithResponse('{"name":"John"}'), currentMatchIndex: 0 };
+  it('is a no-op when the matches are empty', () => {
+    const state: AppState = { ...stateWithResponse('{"name":"John"}'), search: { ...INITIAL_SEARCH, currentMatchIndex: 0 } };
     const result = reducer(state, { type: 'PREV_MATCH', targetVisualIndex: 0 });
 
     expect(result).toEqual(state);
@@ -328,7 +373,7 @@ describe('PREV_MATCH reducer', () => {
     const state = stateWithActiveSearch();
     const result = reducer(state, { type: 'PREV_MATCH', targetVisualIndex: 0 + 4 });
 
-    expect(result.currentMatchIndex).toBe(0);
+    expect(result.search.currentMatchIndex).toBe(0);
     expect(result.responseScrollOffset).toBe(computeSearchScrollOffset(0 + 4, 13));
   });
 });
@@ -413,6 +458,21 @@ describe('Search state clearing reducer cases', () => {
   });
 });
 
+describe('search persistence', () => {
+  // Characterization pin: the search cluster survives the confirm path back to
+  // normal mode and clears on response changes, focus departure, raw reformat,
+  // and its own dismissal paths; it otherwise persists across modes.
+  it('the cluster survives the confirm path to normal mode', () => {
+    const confirmed = reducer(
+      { ...stateWithResponse('{"name":"John"}'), mode: 'search', search: { ...INITIAL_SEARCH, query: 'john' } },
+      { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: 2 },
+    );
+
+    expect(confirmed.mode).toBe('normal');
+    expect(confirmed.search).toEqual({ query: 'john', cursor: 0, matches: [1], currentMatchIndex: 0, lastQuery: 'john' });
+  });
+});
+
 describe('Selection movement preserves search state', () => {
   const stateWithRequests = (): AppState => ({
     ...stateWithActiveSearch(),
@@ -473,10 +533,10 @@ describe('Panel-departure search clearing', () => {
   it('a confirmed search cannot survive into a non-response maximized state', () => {
     // Confirming pins focus to the response, Tab is the only focus-departure
     // mechanism and clears the search, and fullscreen maximizes the focused
-    // panel — so no non-response maximized state can carry an active search.
+    // panel, so no non-response maximized state can carry an active search.
     const entered = reducer(stateWithResponse('{"name":"John"}'), { type: 'ENTER_SEARCH' });
     const confirmed = reducer(
-      reducer(entered, { type: 'UPDATE_SEARCH_INPUT', value: 'john' }),
+      reducer(entered, { type: 'SEARCH_KEY', op: 'insert', insert: 'john' }),
       { type: 'CONFIRM_SEARCH' },
     );
     expect(isSearchActive(confirmed)).toBe(true);
@@ -496,7 +556,7 @@ describe('Dismissing active search results in normal mode', () => {
   it('CANCEL_SEARCH clears search state when in normal mode with active matches', () => {
     const state = stateWithActiveSearch();
     expect(state.mode).toBe('normal');
-    expect(state.searchMatches.length).toBeGreaterThan(0);
+    expect(state.search.matches.length).toBeGreaterThan(0);
 
     const result = reducer(state, { type: 'CANCEL_SEARCH' });
 
@@ -504,12 +564,10 @@ describe('Dismissing active search results in normal mode', () => {
     expectClearedSearchState(result);
   });
 
-  it('CANCEL_SEARCH clears search state when only lastSearchQuery is set (no matches)', () => {
+  it('CANCEL_SEARCH clears search state when only the last query is set (no matches)', () => {
     const state: AppState = {
       ...stateWithResponse('{"name":"John"}'),
-      lastSearchQuery: 'xyz',
-      searchMatches: [],
-      currentMatchIndex: 0,
+      search: { ...INITIAL_SEARCH, lastQuery: 'xyz' },
     };
 
     const result = reducer(state, { type: 'CANCEL_SEARCH' });
@@ -521,7 +579,7 @@ describe('Dismissing active search results in normal mode', () => {
 describe('isSearchActive predicate', () => {
   function confirmSearch(query: string): AppState {
     return reducer(
-      { ...stateWithResponse('{"name":"John"}'), mode: 'search', searchQuery: query },
+      { ...stateWithResponse('{"name":"John"}'), mode: 'search', search: { ...INITIAL_SEARCH, query } },
       { type: 'CONFIRM_SEARCH' },
     );
   }
@@ -534,21 +592,21 @@ describe('isSearchActive predicate', () => {
     const entered = reducer(stateWithResponse('{"name":"John"}'), { type: 'ENTER_SEARCH' });
 
     expect(entered.mode).toBe('search');
-    expect(entered.lastSearchQuery).toBe('');
+    expect(entered.search.lastQuery).toBe('');
     expect(isSearchActive(entered)).toBe(true);
   });
 
   it('is active for a confirmed query with matches', () => {
     const confirmed = confirmSearch('john');
 
-    expect(confirmed.searchMatches.length).toBeGreaterThan(0);
+    expect(confirmed.search.matches.length).toBeGreaterThan(0);
     expect(isSearchActive(confirmed)).toBe(true);
   });
 
   it('is active for a confirmed query with no matches', () => {
     const confirmed = confirmSearch('alice');
 
-    expect(confirmed.searchMatches).toEqual([]);
+    expect(confirmed.search.matches).toEqual([]);
     expect(isSearchActive(confirmed)).toBe(true);
   });
 
@@ -574,7 +632,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
       verbose,
       rawMode,
       mode: 'search',
-      searchQuery: query,
+      search: { ...INITIAL_SEARCH, query },
     };
 
     const formattedBody = formatResponseBody(response.body, rawMode);
@@ -628,7 +686,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
     const statusSection = layout.sections.find((s) => s.kind === 'status');
     expect(statusSection?.visualLines.length).toBeGreaterThanOrEqual(2);
 
-    expect(result.searchMatches).toEqual([1]);
+    expect(result.search.matches).toEqual([1]);
     expect(result.responseScrollOffset).toBe(layout.bodyVisualStart[1]);
     expect(result.responseScrollOffset).toBeGreaterThan(1 + 1 + 1);
   });
@@ -665,7 +723,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
       .reduce((sum, h) => sum + h.visualLines.length, 0);
     expect(headerVisualTotal).toBeGreaterThan(2);
 
-    expect(result.searchMatches).toEqual([1]);
+    expect(result.search.matches).toEqual([1]);
     expect(result.responseScrollOffset).toBe(layout.bodyVisualStart[1]);
     const flattenedHeaderOffset = 1 + 2 + 1;
     expect(result.responseScrollOffset).toBeGreaterThan(1 + flattenedHeaderOffset);
@@ -694,7 +752,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
       formattedBody,
     });
 
-    expect(result.searchMatches).toEqual([1]);
+    expect(result.search.matches).toEqual([1]);
     expect(result.responseScrollOffset).toBe(layout.bodyVisualStart[1]);
     expect(layout.bodyVisualStart[1] - layout.bodyVisualStart[0]).toBeGreaterThan(1);
     const naiveOffset = 1 + 1 + 1;

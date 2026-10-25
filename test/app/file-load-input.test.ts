@@ -2,17 +2,16 @@ import { describe, expect, it } from 'vitest';
 import type { Key } from 'ink';
 
 import { handleFileLoadInput } from '../../src/app/input-handlers';
-import type { Action, AppState } from '../../src/core/types';
+import { INITIAL_FILE_LOAD } from '../../src/core/reducers/helpers';
+import type { Action, AppState, FileLoadState } from '../../src/core/types';
 import { pressKey } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createInitialState } from '../helpers/state';
 
-function fileLoadState(overrides: Partial<AppState> = {}): AppState {
+function fileLoadState(overrides: Partial<FileLoadState> = {}): AppState {
   return createInitialState({
     mode: 'fileLoad',
-    fileLoadInput: 'api.http',
-    fileLoadCursor: 'api.http'.length,
-    ...overrides,
+    fileLoad: { ...INITIAL_FILE_LOAD, input: 'api.http', cursor: 'api.http'.length, ...overrides },
   });
 }
 
@@ -37,83 +36,88 @@ describe('handleNormalInput o', () => {
 });
 
 describe('handleFileLoadInput typing and cursor', () => {
-  it('typing a character inserts it at the cursor', () => {
-    const actions = pressFileLoadKey(fileLoadState({ fileLoadInput: '', fileLoadCursor: 0 }), 'a');
+  it('typing a character dispatches an insert op', () => {
+    const actions = pressFileLoadKey(fileLoadState({ input: '', cursor: 0 }), 'a');
 
-    expect(actions).toEqual([{ type: 'UPDATE_FILE_LOAD_INPUT', value: 'a', cursor: 1 }]);
+    expect(actions).toEqual([{ type: 'FILE_LOAD_KEY', op: 'insert', insert: 'a' }]);
   });
 
-  it('Backspace deletes the character before the cursor', () => {
+  it('Backspace dispatches deleteBackward', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: 'abcdef', fileLoadCursor: 3 }),
+      fileLoadState({ input: 'abcdef', cursor: 3 }),
       '',
       makeKey({ backspace: true }),
     );
 
-    expect(actions).toEqual([{ type: 'UPDATE_FILE_LOAD_INPUT', value: 'abdef', cursor: 2 }]);
+    expect(actions).toEqual([{ type: 'FILE_LOAD_KEY', op: 'deleteBackward' }]);
   });
 
-  it('Delete removes the character after the cursor', () => {
+  it('Delete dispatches deleteForward', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: 'abcdef', fileLoadCursor: 3 }),
+      fileLoadState({ input: 'abcdef', cursor: 3 }),
       '',
       makeKey({ delete: true }),
     );
 
-    expect(actions).toEqual([{ type: 'UPDATE_FILE_LOAD_INPUT', value: 'abcef', cursor: 3 }]);
+    expect(actions).toEqual([{ type: 'FILE_LOAD_KEY', op: 'deleteForward' }]);
   });
 
-  it('left arrow moves the cursor left', () => {
+  it('left arrow dispatches the left motion', () => {
     const actions = pressFileLoadKey(fileLoadState(), '', makeKey({ leftArrow: true }));
 
-    expect(actions).toEqual([{ type: 'MOVE_FILE_LOAD_CURSOR', cursor: 7 }]);
+    expect(actions).toEqual([{ type: 'FILE_LOAD_KEY', op: 'left' }]);
   });
 
-  it('right arrow moves the cursor right', () => {
+  it('right arrow dispatches the right motion', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: 'api.http', fileLoadCursor: 2 }),
+      fileLoadState({ input: 'api.http', cursor: 2 }),
       '',
       makeKey({ rightArrow: true }),
     );
 
-    expect(actions).toEqual([{ type: 'MOVE_FILE_LOAD_CURSOR', cursor: 3 }]);
+    expect(actions).toEqual([{ type: 'FILE_LOAD_KEY', op: 'right' }]);
   });
 
-  it('Home moves the cursor to the start', () => {
+  it('Home dispatches lineStart', () => {
     const actions = pressFileLoadKey(fileLoadState(), '', makeKey({ home: true }));
 
-    expect(actions).toEqual([{ type: 'MOVE_FILE_LOAD_CURSOR', cursor: 0 }]);
+    expect(actions).toEqual([{ type: 'FILE_LOAD_KEY', op: 'lineStart' }]);
   });
 
-  it('End moves the cursor to the end', () => {
+  it('End dispatches lineEnd', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: 'api.http', fileLoadCursor: 2 }),
+      fileLoadState({ input: 'api.http', cursor: 2 }),
       '',
       makeKey({ end: true }),
     );
 
-    expect(actions).toEqual([{ type: 'MOVE_FILE_LOAD_CURSOR', cursor: 8 }]);
+    expect(actions).toEqual([{ type: 'FILE_LOAD_KEY', op: 'lineEnd' }]);
   });
 
   it('Ctrl+A aliases Home', () => {
     const actions = pressFileLoadKey(fileLoadState(), 'a', makeKey({ ctrl: true }));
 
-    expect(actions).toEqual([{ type: 'MOVE_FILE_LOAD_CURSOR', cursor: 0 }]);
+    expect(actions).toEqual([{ type: 'FILE_LOAD_KEY', op: 'lineStart' }]);
   });
 
   it('Ctrl+E aliases End', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: 'api.http', fileLoadCursor: 2 }),
+      fileLoadState({ input: 'api.http', cursor: 2 }),
       'e',
       makeKey({ ctrl: true }),
     );
 
-    expect(actions).toEqual([{ type: 'MOVE_FILE_LOAD_CURSOR', cursor: 8 }]);
+    expect(actions).toEqual([{ type: 'FILE_LOAD_KEY', op: 'lineEnd' }]);
+  });
+
+  it('up and down arrows dispatch nothing on the single-line path', () => {
+    expect(pressFileLoadKey(fileLoadState(), '', makeKey({ upArrow: true }))).toEqual([]);
+    expect(pressFileLoadKey(fileLoadState(), '', makeKey({ downArrow: true }))).toEqual([]);
   });
 
   it('Enter with empty input sets the file-load error', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: '   ', fileLoadCursor: 3 }),
+      fileLoadState({ input: '   ', cursor: 3 }),
       '',
       makeKey({ return: true }),
     );

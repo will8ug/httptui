@@ -1,8 +1,9 @@
+import { applyEditOp, mutatesText } from '../editor';
 import type { Action, AppState } from '../types';
 import { deriveResponseSaveFilename } from '../response-save';
-import { setTransient } from './helpers';
+import { INITIAL_RESPONSE_SAVE, setTransient } from './helpers';
 
-type ResponseSaveAction = Extract<Action, { type: 'ENTER_RESPONSE_SAVE' | 'UPDATE_RESPONSE_SAVE_INPUT' | 'MOVE_RESPONSE_SAVE_CURSOR' | 'SET_RESPONSE_SAVE_ERROR' | 'SAVE_RESPONSE_FILE' | 'CANCEL_RESPONSE_SAVE' }>;
+type ResponseSaveAction = Extract<Action, { type: 'ENTER_RESPONSE_SAVE' | 'RESPONSE_SAVE_KEY' | 'SET_RESPONSE_SAVE_ERROR' | 'SAVE_RESPONSE_FILE' | 'CANCEL_RESPONSE_SAVE' }>;
 
 export function reduceResponseSave(state: AppState, action: ResponseSaveAction): AppState {
   switch (action.type) {
@@ -14,39 +15,41 @@ export function reduceResponseSave(state: AppState, action: ResponseSaveAction):
       return {
         ...state,
         mode: 'responseSave',
-        responseSaveInput: defaultFilename,
-        responseSaveCursor: defaultFilename.length,
-        responseSaveError: null,
+        responseSave: { ...INITIAL_RESPONSE_SAVE, input: defaultFilename, cursor: defaultFilename.length },
       };
     }
 
-    case 'UPDATE_RESPONSE_SAVE_INPUT':
+    case 'RESPONSE_SAVE_KEY': {
+      const next = applyEditOp(
+        { text: state.responseSave.input, cursor: state.responseSave.cursor },
+        action.op,
+        action.insert,
+      );
       return {
         ...state,
-        responseSaveInput: action.value,
-        responseSaveCursor: action.cursor,
-        responseSaveError: null,
+        responseSave: {
+          ...state.responseSave,
+          input: next.text,
+          cursor: next.cursor,
+          error: mutatesText(action.op) ? null : state.responseSave.error,
+        },
       };
-
-    case 'MOVE_RESPONSE_SAVE_CURSOR':
-      return {
-        ...state,
-        responseSaveCursor: action.cursor,
-      };
+    }
 
     case 'SET_RESPONSE_SAVE_ERROR':
       return {
         ...state,
-        responseSaveError: action.error,
+        responseSave: {
+          ...state.responseSave,
+          error: action.error,
+        },
       };
 
     case 'SAVE_RESPONSE_FILE':
       return {
         ...state,
         mode: 'normal',
-        responseSaveInput: '',
-        responseSaveCursor: 0,
-        responseSaveError: null,
+        responseSave: INITIAL_RESPONSE_SAVE,
         ...setTransient({ message: action.message }),
       };
 
@@ -54,9 +57,7 @@ export function reduceResponseSave(state: AppState, action: ResponseSaveAction):
       return {
         ...state,
         mode: 'normal',
-        responseSaveInput: '',
-        responseSaveCursor: 0,
-        responseSaveError: null,
+        responseSave: INITIAL_RESPONSE_SAVE,
       };
   }
 }

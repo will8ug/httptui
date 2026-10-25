@@ -3,7 +3,8 @@ import type { Key } from 'ink';
 
 import { handleEditInput } from '../../src/app/input-handlers';
 import { headersToText } from '../../src/core/headers';
-import type { Action, AppState, ParsedRequest } from '../../src/core/types';
+import { INITIAL_EDIT } from '../../src/core/reducers/helpers';
+import type { Action, AppState, EditState, ParsedRequest } from '../../src/core/types';
 import { EDIT_CANCEL_WINDOW_MS } from '../../src/utils/timing';
 import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
@@ -12,16 +13,15 @@ import { createEditState, createInitialState, reducer } from '../helpers/state';
 
 const NOW = 1_700_000_000_000;
 
-function editState(request: ParsedRequest, buffers: AppState['editBuffers'], overrides: Partial<AppState> = {}): AppState {
+function editState(request: ParsedRequest, buffers: EditState['buffers'], overrides: Partial<EditState> = {}): AppState {
   return createEditState({
     requests: [request],
     selectedIndex: 0,
-    editBuffers: buffers,
-    ...overrides,
+    edit: { ...INITIAL_EDIT, buffers, ...overrides },
   });
 }
 
-function matchingBuffers(request: ParsedRequest): AppState['editBuffers'] {
+function matchingBuffers(request: ParsedRequest): EditState['buffers'] {
   const body = request.body ?? '';
   return {
     url: { text: request.url, cursor: request.url.length },
@@ -66,7 +66,7 @@ describe('handleEditInput Escape cancel window', () => {
 
     const next = reducer(state, actions[0]);
     expect(next.mode).toBe('edit');
-    expect(next.editEscapeArmedAt).toBe(NOW);
+    expect(next.edit.escapeArmedAt).toBe(NOW);
     expect(next.transientMessage).toBe('Press Esc again to discard changes');
   });
 
@@ -89,7 +89,7 @@ describe('handleEditInput Escape cancel window', () => {
       url: { text: request.url, cursor: request.url.length },
       body: { text: 'changed', cursor: 7 },
       headers: { text: '', cursor: 0 },
-    }, { editEscapeArmedAt: NOW });
+    }, { escapeArmedAt: NOW });
 
     vi.setSystemTime(NOW + EDIT_CANCEL_WINDOW_MS);
 
@@ -104,7 +104,7 @@ describe('handleEditInput Escape cancel window', () => {
       url: { text: request.url, cursor: request.url.length },
       body: { text: 'changed', cursor: 7 },
       headers: { text: '', cursor: 0 },
-    }, { editEscapeArmedAt: NOW });
+    }, { escapeArmedAt: NOW });
 
     const expiredAt = NOW + EDIT_CANCEL_WINDOW_MS + 1;
     vi.setSystemTime(expiredAt);
@@ -115,7 +115,7 @@ describe('handleEditInput Escape cancel window', () => {
 
     const next = reducer(state, actions[0]);
     expect(next.mode).toBe('edit');
-    expect(next.editEscapeArmedAt).toBe(expiredAt);
+    expect(next.edit.escapeArmedAt).toBe(expiredAt);
     expect(next.transientMessage).toBe('Press Esc again to discard changes');
   });
 });
@@ -129,6 +129,52 @@ describe('handleEditInput mode isolation', () => {
   });
 });
 
+describe('handleEditInput key translation', () => {
+  it('routes cursor keys through the shared translator, including the vertical motions single-line overlays skip', () => {
+    const request = createRequest({ body: 'original' });
+    const state = editState(request, matchingBuffers(request));
+
+    expect(pressEditKey(state, '', makeKey({ leftArrow: true }))).toEqual([{ type: 'EDIT_KEY', op: 'left' }]);
+    expect(pressEditKey(state, '', makeKey({ rightArrow: true }))).toEqual([{ type: 'EDIT_KEY', op: 'right' }]);
+    expect(pressEditKey(state, '', makeKey({ upArrow: true }))).toEqual([{ type: 'EDIT_KEY', op: 'up' }]);
+    expect(pressEditKey(state, '', makeKey({ downArrow: true }))).toEqual([{ type: 'EDIT_KEY', op: 'down' }]);
+    expect(pressEditKey(state, '', makeKey({ backspace: true }))).toEqual([{ type: 'EDIT_KEY', op: 'deleteBackward' }]);
+    expect(pressEditKey(state, '', makeKey({ delete: true }))).toEqual([{ type: 'EDIT_KEY', op: 'deleteForward' }]);
+    expect(pressEditKey(state, '', makeKey({ home: true }))).toEqual([{ type: 'EDIT_KEY', op: 'lineStart' }]);
+    expect(pressEditKey(state, 'a', makeKey({ ctrl: true }))).toEqual([{ type: 'EDIT_KEY', op: 'lineStart' }]);
+    expect(pressEditKey(state, '', makeKey({ end: true }))).toEqual([{ type: 'EDIT_KEY', op: 'lineEnd' }]);
+    expect(pressEditKey(state, 'e', makeKey({ ctrl: true }))).toEqual([{ type: 'EDIT_KEY', op: 'lineEnd' }]);
+  });
+
+  it('Enter stays an overlay-specific newline insert', () => {
+    const request = createRequest({ body: 'original' });
+    const actions = pressEditKey(editState(request, matchingBuffers(request)), '', makeKey({ return: true }));
+
+    expect(actions).toEqual([{ type: 'EDIT_KEY', op: 'insert', insert: '\n' }]);
+  });
+
+  it('Shift+Tab stays an overlay-specific tab switch', () => {
+    const request = createRequest({ body: 'original' });
+    const state = editState(request, matchingBuffers(request));
+
+    const actions = pressEditKey(state, '\t', makeKey({ tab: true, shift: true }));
+
+    expect(actions).toEqual([{ type: 'SWITCH_EDIT_TAB', target: 'headers' }]);
+  });
+
+  it('a bare Tab inserts a tab character', () => {
+    const request = createRequest({ body: 'original' });
+    const state = editState(request, matchingBuffers(request), { target: 'body' });
+
+    const actions = pressEditKey(state, '\t', makeKey({ tab: true }));
+
+    expect(actions).toEqual([{ type: 'EDIT_KEY', op: 'insert', insert: '\t' }]);
+
+    const next = reducer(state, actions[0]);
+    expect(next.edit.buffers.body.text).toBe('original\t');
+  });
+});
+
 describe('handleEditInput body insert', () => {
   it('inserts newlines when a multi-line body is pasted as one chunk', () => {
     const request = createRequest({ body: '' });
@@ -136,7 +182,7 @@ describe('handleEditInput body insert', () => {
       url: { text: request.url, cursor: request.url.length },
       body: { text: '', cursor: 0 },
       headers: { text: '', cursor: 0 },
-    }, { editTarget: 'body' });
+    }, { target: 'body' });
 
     const pasted = '{"a":1,\n"b":2}';
     const actions = pressEditKey(state, pasted);
@@ -148,8 +194,8 @@ describe('handleEditInput body insert', () => {
     }]);
 
     const next = reducer(state, actions[0]);
-    expect(next.editBuffers.body.text).toBe(pasted);
-    expect(next.editBuffers.body.cursor).toBe(pasted.length);
+    expect(next.edit.buffers.body.text).toBe(pasted);
+    expect(next.edit.buffers.body.cursor).toBe(pasted.length);
   });
 });
 

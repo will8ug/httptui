@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import chalk from 'chalk';
 import { cleanup, render } from 'ink-testing-library';
 import stringWidth from 'string-width';
 
@@ -9,6 +10,9 @@ import { createMockResponse, longResponse, compactJsonResponse } from '../helper
 afterEach(() => {
   cleanup();
 });
+
+const INVERSE_ON = '\u001b[7m';
+const INVERSE_OFF = '\u001b[27m';
 
 // Shared base-props object covering all ResponseViewProps fields with sensible defaults.
 // Spread-override per test as needed. ink-testing-library renders at stdout.columns = 100,
@@ -31,6 +35,7 @@ const baseProps = {
   isSearchMode: false,
   lastSearchQuery: '',
   searchQuery: '',
+  searchCursor: 0,
 };
 
 describe('content states', () => {
@@ -566,12 +571,44 @@ describe('search markers', () => {
 
 describe('search bar', () => {
   it('shows / and the query while typing in search mode', () => {
-    // isSearchMode=true -> search bar renders "/{searchQuery}_  (Esc to cancel)"
+    // isSearchMode=true -> search bar renders "/{searchQuery}" followed by the
+    // inverse insertion point at searchCursor, then "  (Esc to cancel)"
     const { lastFrame } = render(
-      <ResponseView {...baseProps} searchVisible={true} isSearchMode={true} searchQuery="world" />,
+      <ResponseView {...baseProps} searchVisible={true} isSearchMode={true} searchQuery="world" searchCursor={5} />,
     );
     const frame = lastFrame() ?? '';
     expect(frame).toContain('/world');
+  });
+
+  it('renders the insertion point inverse at the cursor within the query', () => {
+    const previousLevel = chalk.level;
+    chalk.level = 3;
+    try {
+      const { lastFrame } = render(
+        <ResponseView {...baseProps} searchVisible={true} isSearchMode={true} searchQuery="world" searchCursor={2} />,
+      );
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('/wo');
+      expect(frame).toContain(`${INVERSE_ON}r${INVERSE_OFF}`);
+      expect(frame).toContain('ld');
+      expect(frame).not.toContain('_');
+    } finally {
+      chalk.level = previousLevel;
+    }
+  });
+
+  it('renders an inverted trailing space when the search cursor is at the end', () => {
+    const previousLevel = chalk.level;
+    chalk.level = 3;
+    try {
+      const { lastFrame } = render(
+        <ResponseView {...baseProps} searchVisible={true} isSearchMode={true} searchQuery="world" searchCursor={5} />,
+      );
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain(`${INVERSE_ON} ${INVERSE_OFF}`);
+    } finally {
+      chalk.level = previousLevel;
+    }
   });
 
   it('shows the match position indicator after search', () => {
