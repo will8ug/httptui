@@ -119,7 +119,7 @@ describe('p is ignored in non-normal handlers', () => {
       dispatch: (action) => dispatched.push(action),
     });
 
-    expect(dispatched).toEqual([{ type: 'UPDATE_SEARCH_INPUT', value: 'p' }]);
+    expect(dispatched).toEqual([{ type: 'SEARCH_KEY', op: 'insert', insert: 'p' }]);
     expect(dispatched.map((action) => action.type)).not.toContain('APPEND_REQUEST');
     expect(clipboardReadRunner).not.toHaveBeenCalled();
   });

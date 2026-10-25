@@ -56,7 +56,19 @@ describe('ENTER_RESPONSE_SAVE reducer', () => {
   });
 });
 
-describe('MOVE_RESPONSE_SAVE_CURSOR reducer', () => {
+describe('RESPONSE_SAVE_KEY reducer', () => {
+  it('applies the op to the cluster buffer', () => {
+    const state = createInitialState({
+      mode: 'responseSave',
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get Users.json', cursor: 4 },
+    });
+
+    const result = reducer(state, { type: 'RESPONSE_SAVE_KEY', op: 'insert', insert: '-' });
+
+    expect(result.responseSave.input).toBe('Get -Users.json');
+    expect(result.responseSave.cursor).toBe(5);
+  });
+
   it('moves the cursor without clearing an existing error', () => {
     const state = createInitialState({
       mode: 'responseSave',
@@ -68,9 +80,9 @@ describe('MOVE_RESPONSE_SAVE_CURSOR reducer', () => {
       },
     });
 
-    const result = reducer(state, { type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: 3 });
+    const result = reducer(state, { type: 'RESPONSE_SAVE_KEY', op: 'left' });
 
-    expect(result.responseSave.cursor).toBe(3);
+    expect(result.responseSave.cursor).toBe(4);
     expect(result.responseSave.input).toBe('Get Users.json');
     expect(result.responseSave.error).toBe('File exists: Get Users.json');
   });
@@ -148,19 +160,19 @@ describe('responseSave dormancy invariant', () => {
 });
 
 describe('SET_RESPONSE_SAVE_ERROR reducer', () => {
-  it('persists the error until UPDATE_RESPONSE_SAVE_INPUT clears it', () => {
+  it('persists the error until a text-editing key clears it', () => {
     const state = createInitialState({
       mode: 'responseSave',
-      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get Users.json', cursor: 5 },
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get Users.json', cursor: 14 },
     });
 
     const errored = reducer(state, { type: 'SET_RESPONSE_SAVE_ERROR', error: 'File exists: Get Users.json' });
     expect(errored.responseSave.error).toBe('File exists: Get Users.json');
     expect(errored.responseSave.input).toBe('Get Users.json');
 
-    const edited = reducer(errored, { type: 'UPDATE_RESPONSE_SAVE_INPUT', value: 'Get Users 2.json', cursor: 15 });
+    const edited = reducer(errored, { type: 'RESPONSE_SAVE_KEY', op: 'insert', insert: 'x' });
     expect(edited.responseSave.error).toBeNull();
-    expect(edited.responseSave.input).toBe('Get Users 2.json');
+    expect(edited.responseSave.input).toBe('Get Users.jsonx');
     expect(edited.responseSave.cursor).toBe(15);
   });
 });

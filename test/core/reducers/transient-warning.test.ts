@@ -108,7 +108,7 @@ describe('transient channel exclusivity', () => {
 
     expect(result.response).toBe(response);
     expect(result.requestError).toBe(requestError);
-    expect(result.search).toEqual({ query: 'test', matches: [1, 3, 5], currentMatchIndex: 1, lastQuery: 'test' });
+    expect(result.search).toEqual({ query: 'test', cursor: 0, matches: [1, 3, 5], currentMatchIndex: 1, lastQuery: 'test' });
     expect(result.isLoading).toBe(true);
   });
 

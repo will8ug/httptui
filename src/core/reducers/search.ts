@@ -1,8 +1,9 @@
+import { applyEditOp } from '../editor';
 import { formatResponseBody } from '../formatter';
 import type { Action, AppState } from '../types';
 import { INITIAL_SEARCH, computeSearchScrollOffset, responseVerticalMaxOffset } from './helpers';
 
-type SearchAction = Extract<Action, { type: 'ENTER_SEARCH' | 'UPDATE_SEARCH_INPUT' | 'CONFIRM_SEARCH' | 'CANCEL_SEARCH' | 'NEXT_MATCH' | 'PREV_MATCH' }>;
+type SearchAction = Extract<Action, { type: 'ENTER_SEARCH' | 'SEARCH_KEY' | 'CONFIRM_SEARCH' | 'CANCEL_SEARCH' | 'NEXT_MATCH' | 'PREV_MATCH' }>;
 
 function leaveSearch(state: AppState): AppState {
   const next: AppState = {
@@ -30,11 +31,17 @@ export function reduceSearch(state: AppState, action: SearchAction): AppState {
       };
     }
 
-    case 'UPDATE_SEARCH_INPUT':
+    case 'SEARCH_KEY': {
+      const next = applyEditOp(
+        { text: state.search.query, cursor: state.search.cursor },
+        action.op,
+        action.insert,
+      );
       return {
         ...state,
-        search: { ...state.search, query: action.value },
+        search: { ...state.search, query: next.text, cursor: next.cursor },
       };
+    }
 
     case 'CONFIRM_SEARCH': {
       if (!state.search.query || !state.response) {

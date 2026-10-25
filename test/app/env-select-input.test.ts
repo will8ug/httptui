@@ -90,7 +90,7 @@ describe('E is ignored in non-normal handlers', () => {
       dispatch: (action) => dispatched.push(action),
     });
 
-    expect(dispatched).toEqual([{ type: 'UPDATE_FILE_LOAD_INPUT', value: 'E', cursor: 1 }]);
+    expect(dispatched).toEqual([{ type: 'FILE_LOAD_KEY', op: 'insert', insert: 'E' }]);
     expect(dispatched.map((action) => action.type)).not.toContain('ENTER_ENV_SELECT');
   });
 
@@ -103,7 +103,7 @@ describe('E is ignored in non-normal handlers', () => {
       dispatch: (action) => dispatched.push(action),
     });
 
-    expect(dispatched).toEqual([{ type: 'UPDATE_SEARCH_INPUT', value: 'E' }]);
+    expect(dispatched).toEqual([{ type: 'SEARCH_KEY', op: 'insert', insert: 'E' }]);
     expect(dispatched.map((action) => action.type)).not.toContain('ENTER_ENV_SELECT');
   });
 });

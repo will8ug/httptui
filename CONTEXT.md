@@ -98,7 +98,7 @@ _Avoid_: response layout, panel metrics
 The toggleable panel (`d`) showing the resolved request (method, URL, headers, body); the display counterpart to the raw-text editor.
 
 **Search state**:
-The response-search quartet: current query, matched line numbers, current match index, and last confirmed query. Computed against the formatted body, cleared on response changes or when focus leaves the response panel, dismissible with `Escape` or `q`.
+The response-search fields: the query under editing and its cursor, matched line numbers, current match index, and last confirmed query. Computed against the formatted body, cleared on response changes or when focus leaves the response panel, dismissible with `Escape` or `q`.
 
 **Transient message**:
 A status-bar success, error, or warning notice; the three channels are mutually exclusive and auto-clear roughly 2 seconds after the displayed text last changed.

@@ -129,6 +129,52 @@ describe('handleEditInput mode isolation', () => {
   });
 });
 
+describe('handleEditInput key translation', () => {
+  it('routes cursor keys through the shared translator, including the vertical motions single-line overlays skip', () => {
+    const request = createRequest({ body: 'original' });
+    const state = editState(request, matchingBuffers(request));
+
+    expect(pressEditKey(state, '', makeKey({ leftArrow: true }))).toEqual([{ type: 'EDIT_KEY', op: 'left' }]);
+    expect(pressEditKey(state, '', makeKey({ rightArrow: true }))).toEqual([{ type: 'EDIT_KEY', op: 'right' }]);
+    expect(pressEditKey(state, '', makeKey({ upArrow: true }))).toEqual([{ type: 'EDIT_KEY', op: 'up' }]);
+    expect(pressEditKey(state, '', makeKey({ downArrow: true }))).toEqual([{ type: 'EDIT_KEY', op: 'down' }]);
+    expect(pressEditKey(state, '', makeKey({ backspace: true }))).toEqual([{ type: 'EDIT_KEY', op: 'deleteBackward' }]);
+    expect(pressEditKey(state, '', makeKey({ delete: true }))).toEqual([{ type: 'EDIT_KEY', op: 'deleteForward' }]);
+    expect(pressEditKey(state, '', makeKey({ home: true }))).toEqual([{ type: 'EDIT_KEY', op: 'lineStart' }]);
+    expect(pressEditKey(state, 'a', makeKey({ ctrl: true }))).toEqual([{ type: 'EDIT_KEY', op: 'lineStart' }]);
+    expect(pressEditKey(state, '', makeKey({ end: true }))).toEqual([{ type: 'EDIT_KEY', op: 'lineEnd' }]);
+    expect(pressEditKey(state, 'e', makeKey({ ctrl: true }))).toEqual([{ type: 'EDIT_KEY', op: 'lineEnd' }]);
+  });
+
+  it('Enter stays an overlay-specific newline insert', () => {
+    const request = createRequest({ body: 'original' });
+    const actions = pressEditKey(editState(request, matchingBuffers(request)), '', makeKey({ return: true }));
+
+    expect(actions).toEqual([{ type: 'EDIT_KEY', op: 'insert', insert: '\n' }]);
+  });
+
+  it('Shift+Tab stays an overlay-specific tab switch', () => {
+    const request = createRequest({ body: 'original' });
+    const state = editState(request, matchingBuffers(request));
+
+    const actions = pressEditKey(state, '\t', makeKey({ tab: true, shift: true }));
+
+    expect(actions).toEqual([{ type: 'SWITCH_EDIT_TAB', target: 'headers' }]);
+  });
+
+  it('a bare Tab inserts a tab character', () => {
+    const request = createRequest({ body: 'original' });
+    const state = editState(request, matchingBuffers(request), { target: 'body' });
+
+    const actions = pressEditKey(state, '\t', makeKey({ tab: true }));
+
+    expect(actions).toEqual([{ type: 'EDIT_KEY', op: 'insert', insert: '\t' }]);
+
+    const next = reducer(state, actions[0]);
+    expect(next.edit.buffers.body.text).toBe('original\t');
+  });
+});
+
 describe('handleEditInput body insert', () => {
   it('inserts newlines when a multi-line body is pasted as one chunk', () => {
     const request = createRequest({ body: '' });

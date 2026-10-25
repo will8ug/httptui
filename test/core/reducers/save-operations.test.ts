@@ -66,44 +66,42 @@ describe('ENTER_SAVE reducer', () => {
   });
 });
 
-describe('UPDATE_SAVE_INPUT reducer', () => {
-  it('updates saveLoad input and cursor and clears the error', () => {
+describe('SAVE_KEY reducer', () => {
+  it('applies the op to the cluster buffer and clears the error', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveLoad: { ...INITIAL_SAVE_LOAD, input: '/default.http', error: 'some error' },
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: '/default.http', cursor: 1, error: 'some error' },
     };
 
-    const result = reducer(state, { type: 'UPDATE_SAVE_INPUT', value: '/custom/path.http', cursor: 17 });
+    const result = reducer(state, { type: 'SAVE_KEY', op: 'insert', insert: 'X' });
 
-    expect(result.saveLoad.input).toBe('/custom/path.http');
-    expect(result.saveLoad.cursor).toBe(17);
+    expect(result.saveLoad.input).toBe('/Xdefault.http');
+    expect(result.saveLoad.cursor).toBe(2);
     expect(result.saveLoad.error).toBeNull();
   });
-});
 
-describe('MOVE_SAVE_CURSOR reducer', () => {
-  it('sets saveLoad cursor without modifying saveLoad input', () => {
+  it('applies cursor motions without modifying saveLoad input', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
       saveLoad: { ...INITIAL_SAVE_LOAD, input: '/tmp/output.http', cursor: 5 },
     };
 
-    const result = reducer(state, { type: 'MOVE_SAVE_CURSOR', cursor: 3 });
+    const result = reducer(state, { type: 'SAVE_KEY', op: 'left' });
 
-    expect(result.saveLoad.cursor).toBe(3);
+    expect(result.saveLoad.cursor).toBe(4);
     expect(result.saveLoad.input).toBe('/tmp/output.http');
   });
 
-  it('does not clear the error', () => {
+  it('does not clear the error on cursor motions', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
       saveLoad: { ...INITIAL_SAVE_LOAD, input: '/tmp/output.http', cursor: 5, error: 'Permission denied' },
     };
 
-    const result = reducer(state, { type: 'MOVE_SAVE_CURSOR', cursor: 0 });
+    const result = reducer(state, { type: 'SAVE_KEY', op: 'lineStart' });
 
     expect(result.saveLoad.cursor).toBe(0);
     expect(result.saveLoad.error).toBe('Permission denied');

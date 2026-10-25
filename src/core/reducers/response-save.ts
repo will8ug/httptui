@@ -1,8 +1,9 @@
+import { applyEditOp, mutatesText } from '../editor';
 import type { Action, AppState } from '../types';
 import { deriveResponseSaveFilename } from '../response-save';
 import { INITIAL_RESPONSE_SAVE, setTransient } from './helpers';
 
-type ResponseSaveAction = Extract<Action, { type: 'ENTER_RESPONSE_SAVE' | 'UPDATE_RESPONSE_SAVE_INPUT' | 'MOVE_RESPONSE_SAVE_CURSOR' | 'SET_RESPONSE_SAVE_ERROR' | 'SAVE_RESPONSE_FILE' | 'CANCEL_RESPONSE_SAVE' }>;
+type ResponseSaveAction = Extract<Action, { type: 'ENTER_RESPONSE_SAVE' | 'RESPONSE_SAVE_KEY' | 'SET_RESPONSE_SAVE_ERROR' | 'SAVE_RESPONSE_FILE' | 'CANCEL_RESPONSE_SAVE' }>;
 
 export function reduceResponseSave(state: AppState, action: ResponseSaveAction): AppState {
   switch (action.type) {
@@ -18,25 +19,22 @@ export function reduceResponseSave(state: AppState, action: ResponseSaveAction):
       };
     }
 
-    case 'UPDATE_RESPONSE_SAVE_INPUT':
+    case 'RESPONSE_SAVE_KEY': {
+      const next = applyEditOp(
+        { text: state.responseSave.input, cursor: state.responseSave.cursor },
+        action.op,
+        action.insert,
+      );
       return {
         ...state,
         responseSave: {
           ...state.responseSave,
-          input: action.value,
-          cursor: action.cursor,
-          error: null,
+          input: next.text,
+          cursor: next.cursor,
+          error: mutatesText(action.op) ? null : state.responseSave.error,
         },
       };
-
-    case 'MOVE_RESPONSE_SAVE_CURSOR':
-      return {
-        ...state,
-        responseSave: {
-          ...state.responseSave,
-          cursor: action.cursor,
-        },
-      };
+    }
 
     case 'SET_RESPONSE_SAVE_ERROR':
       return {

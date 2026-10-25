@@ -4,8 +4,8 @@ import { basename, dirname, resolve } from 'node:path';
 import type { Dispatch } from 'react';
 import type { Key, SuspendTerminal } from 'ink';
 
-import { deleteBackward, deleteForward, insertText, moveLeft, moveLineEnd, moveLineStart, moveRight } from '../core/editor';
-import type { EditorBuffer } from '../core/editor';
+import { resolveEditOp } from '../core/editor';
+import type { EditOpIntent } from '../core/editor';
 import { toErrorInfo } from '../core/executor';
 import { formatResponseBody } from '../core/formatter';
 import { headersToText } from '../core/headers';
@@ -58,45 +58,17 @@ function buildMatchNavigationAction(
     : { type: 'PREV_MATCH', targetVisualIndex };
 }
 
-function applyLineEdit(
-  buffer: EditorBuffer,
-  input: string,
-  key: Key,
-  moveCursor: (cursor: number) => void,
-  updateInput: (value: string, cursor: number) => void,
-): boolean {
-  if (key.home || (key.ctrl && input === 'a')) {
-    moveCursor(moveLineStart(buffer).cursor);
-    return true;
+/**
+ * The shared key-to-op translation minus vertical motion: single-line buffers
+ * have no other line to reach, and dispatching a no-op key action would still
+ * clear fileLoad's completion list, so up/down resolve to nothing here.
+ */
+function resolveSingleLineEditOp(input: string, key: Key): EditOpIntent | null {
+  const intent = resolveEditOp(input, key);
+  if (intent === null || intent.op === 'up' || intent.op === 'down') {
+    return null;
   }
-  if (key.end || (key.ctrl && input === 'e')) {
-    moveCursor(moveLineEnd(buffer).cursor);
-    return true;
-  }
-  if (key.backspace) {
-    const moved = deleteBackward(buffer);
-    updateInput(moved.text, moved.cursor);
-    return true;
-  }
-  if (key.delete) {
-    const moved = deleteForward(buffer);
-    updateInput(moved.text, moved.cursor);
-    return true;
-  }
-  if (key.leftArrow) {
-    moveCursor(moveLeft(buffer).cursor);
-    return true;
-  }
-  if (key.rightArrow) {
-    moveCursor(moveRight(buffer).cursor);
-    return true;
-  }
-  if (input && !key.ctrl && !key.meta) {
-    const moved = insertText(buffer, input);
-    updateInput(moved.text, moved.cursor);
-    return true;
-  }
-  return false;
+  return intent;
 }
 
 export function handleHelpInput({ input, key, dispatch }: {
@@ -187,17 +159,10 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
     return;
   }
 
-  applyLineEdit(
-    { text: state.fileLoad.input, cursor: state.fileLoad.cursor },
-    input,
-    key,
-    (cursor) => {
-      dispatch({ type: 'MOVE_FILE_LOAD_CURSOR', cursor });
-    },
-    (value, cursor) => {
-      dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value, cursor });
-    },
-  );
+  const editOp = resolveSingleLineEditOp(input, key);
+  if (editOp) {
+    dispatch({ type: 'FILE_LOAD_KEY', ...editOp });
+  }
 }
 
 export function handleSearchInput({ state, input, key, dispatch }: {
@@ -226,13 +191,9 @@ export function handleSearchInput({ state, input, key, dispatch }: {
     return;
   }
 
-  if (key.backspace) {
-    dispatch({ type: 'UPDATE_SEARCH_INPUT', value: state.search.query.slice(0, -1) });
-    return;
-  }
-
-  if (input && !key.ctrl && !key.meta) {
-    dispatch({ type: 'UPDATE_SEARCH_INPUT', value: state.search.query + input });
+  const editOp = resolveSingleLineEditOp(input, key);
+  if (editOp) {
+    dispatch({ type: 'SEARCH_KEY', ...editOp });
   }
 }
 
@@ -331,17 +292,10 @@ export function handleSaveInput({ state, input, key, dispatch }: {
     return;
   }
 
-  applyLineEdit(
-    { text: state.saveLoad.input, cursor: state.saveLoad.cursor },
-    input,
-    key,
-    (cursor) => {
-      dispatch({ type: 'MOVE_SAVE_CURSOR', cursor });
-    },
-    (value, cursor) => {
-      dispatch({ type: 'UPDATE_SAVE_INPUT', value, cursor });
-    },
-  );
+  const editOp = resolveSingleLineEditOp(input, key);
+  if (editOp) {
+    dispatch({ type: 'SAVE_KEY', ...editOp });
+  }
 }
 
 export function handleResponseSaveInput({ state, input, key, dispatch }: {
@@ -384,17 +338,10 @@ export function handleResponseSaveInput({ state, input, key, dispatch }: {
     return;
   }
 
-  applyLineEdit(
-    { text: state.responseSave.input, cursor: state.responseSave.cursor },
-    input,
-    key,
-    (cursor) => {
-      dispatch({ type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor });
-    },
-    (value, cursor) => {
-      dispatch({ type: 'UPDATE_RESPONSE_SAVE_INPUT', value, cursor });
-    },
-  );
+  const editOp = resolveSingleLineEditOp(input, key);
+  if (editOp) {
+    dispatch({ type: 'RESPONSE_SAVE_KEY', ...editOp });
+  }
 }
 
 export function handleEditInput({ state, selectedRequest, input, key, dispatch }: {
@@ -436,48 +383,8 @@ export function handleEditInput({ state, selectedRequest, input, key, dispatch }
     return;
   }
 
-  if (key.home || (key.ctrl && input === 'a')) {
-    dispatch({ type: 'EDIT_KEY', op: 'lineStart' });
-    return;
-  }
-
-  if (key.end || (key.ctrl && input === 'e')) {
-    dispatch({ type: 'EDIT_KEY', op: 'lineEnd' });
-    return;
-  }
-
   if (key.return) {
     dispatch({ type: 'EDIT_KEY', op: 'insert', insert: '\n' });
-    return;
-  }
-
-  if (key.backspace) {
-    dispatch({ type: 'EDIT_KEY', op: 'deleteBackward' });
-    return;
-  }
-
-  if (key.delete) {
-    dispatch({ type: 'EDIT_KEY', op: 'deleteForward' });
-    return;
-  }
-
-  if (key.leftArrow) {
-    dispatch({ type: 'EDIT_KEY', op: 'left' });
-    return;
-  }
-
-  if (key.rightArrow) {
-    dispatch({ type: 'EDIT_KEY', op: 'right' });
-    return;
-  }
-
-  if (key.upArrow) {
-    dispatch({ type: 'EDIT_KEY', op: 'up' });
-    return;
-  }
-
-  if (key.downArrow) {
-    dispatch({ type: 'EDIT_KEY', op: 'down' });
     return;
   }
 
@@ -487,8 +394,9 @@ export function handleEditInput({ state, selectedRequest, input, key, dispatch }
     return;
   }
 
-  if (input && !key.ctrl && !key.meta) {
-    dispatch({ type: 'EDIT_KEY', op: 'insert', insert: input });
+  const editOp = resolveEditOp(input, key);
+  if (editOp) {
+    dispatch({ type: 'EDIT_KEY', ...editOp });
   }
 }
 

@@ -1,8 +1,9 @@
+import { applyEditOp, mutatesText } from '../editor';
 import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
 import { INITIAL_FILE_LOAD, INITIAL_SEARCH, setTransient } from './helpers';
 
-type FileLoadAction = Extract<Action, { type: 'ENTER_FILE_LOAD' | 'UPDATE_FILE_LOAD_INPUT' | 'MOVE_FILE_LOAD_CURSOR' | 'SET_FILE_LOAD_ERROR' | 'SET_FILE_LOAD_COMPLETIONS' | 'LOAD_FILE' | 'CANCEL_FILE_LOAD' }>;
+type FileLoadAction = Extract<Action, { type: 'ENTER_FILE_LOAD' | 'UPDATE_FILE_LOAD_INPUT' | 'FILE_LOAD_KEY' | 'SET_FILE_LOAD_ERROR' | 'SET_FILE_LOAD_COMPLETIONS' | 'LOAD_FILE' | 'CANCEL_FILE_LOAD' }>;
 
 export function reduceFileLoad(state: AppState, action: FileLoadAction): AppState {
   switch (action.type) {
@@ -25,15 +26,23 @@ export function reduceFileLoad(state: AppState, action: FileLoadAction): AppStat
         },
       };
 
-    case 'MOVE_FILE_LOAD_CURSOR':
+    case 'FILE_LOAD_KEY': {
+      const next = applyEditOp(
+        { text: state.fileLoad.input, cursor: state.fileLoad.cursor },
+        action.op,
+        action.insert,
+      );
       return {
         ...state,
         fileLoad: {
           ...state.fileLoad,
-          cursor: action.cursor,
+          input: next.text,
+          cursor: next.cursor,
+          error: mutatesText(action.op) ? null : state.fileLoad.error,
           completions: null,
         },
       };
+    }
 
     case 'SET_FILE_LOAD_ERROR':
       return {

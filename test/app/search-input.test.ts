@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Key } from 'ink';
 
-import { createInitialState } from '../helpers/state';
+import { createInitialState, reducer } from '../helpers/state';
 import { createMockResponse } from '../helpers/responses';
 import { pressKey } from '../helpers/dispatch';
 import { handleSearchInput } from '../../src/app/input-handlers';
@@ -9,6 +9,17 @@ import { INITIAL_SEARCH } from '../../src/core/reducers/helpers';
 import type { Action, AppState, SearchState } from '../../src/core/types';
 import { computeResponseViewport } from '../../src/core/response-viewport';
 import { makeKey } from '../helpers/keys';
+
+function pressSearchKey(state: AppState, input: string, key: Key = makeKey()): Action[] {
+  const dispatched: Action[] = [];
+  handleSearchInput({
+    state,
+    input,
+    key,
+    dispatch: (action) => dispatched.push(action),
+  });
+  return dispatched;
+}
 
 describe('match offsets in a maximized response panel (wrap mode)', () => {
   const COLUMNS = 80;
@@ -48,17 +59,6 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
     }).bodyVisualStart;
   }
 
-  function pressSearchKey(state: AppState, input: string, key: Key = makeKey()): Action[] {
-    const dispatched: Action[] = [];
-    handleSearchInput({
-      state,
-      input,
-      key,
-      dispatch: (action) => dispatched.push(action),
-    });
-    return dispatched;
-  }
-
   it('n and N dispatch match offsets computed at the fullscreen width while maximized', () => {
     const state = searchState();
     const fullscreen = bodyVisualStartAt(state, 'response');
@@ -94,5 +94,85 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
       firstMatchVisualIndex: bodyVisualStartAt(splitState, null)[1],
     });
     expect(bodyVisualStartAt(splitState, null)[1]).toBeGreaterThan(bodyVisualStartAt(maximized, 'response')[1]);
+  });
+});
+
+describe('handleSearchInput line editing', () => {
+  function searchModeState(search: Partial<SearchState> = {}): AppState {
+    return createInitialState({
+      mode: 'search',
+      search: { ...INITIAL_SEARCH, query: 'needle', cursor: 6, ...search },
+    });
+  }
+
+  it('typing a character dispatches an insert op', () => {
+    expect(pressSearchKey(searchModeState(), 'x')).toEqual([
+      { type: 'SEARCH_KEY', op: 'insert', insert: 'x' },
+    ]);
+  });
+
+  it('Backspace dispatches deleteBackward', () => {
+    expect(pressSearchKey(searchModeState(), '', makeKey({ backspace: true }))).toEqual([
+      { type: 'SEARCH_KEY', op: 'deleteBackward' },
+    ]);
+  });
+
+  it('Delete dispatches deleteForward', () => {
+    expect(pressSearchKey(searchModeState(), '', makeKey({ delete: true }))).toEqual([
+      { type: 'SEARCH_KEY', op: 'deleteForward' },
+    ]);
+  });
+
+  it('left and right arrows dispatch their motion ops', () => {
+    expect(pressSearchKey(searchModeState(), '', makeKey({ leftArrow: true }))).toEqual([
+      { type: 'SEARCH_KEY', op: 'left' },
+    ]);
+    expect(pressSearchKey(searchModeState(), '', makeKey({ rightArrow: true }))).toEqual([
+      { type: 'SEARCH_KEY', op: 'right' },
+    ]);
+  });
+
+  it('Home and Ctrl+A dispatch lineStart, End and Ctrl+E dispatch lineEnd', () => {
+    expect(pressSearchKey(searchModeState(), '', makeKey({ home: true }))).toEqual([
+      { type: 'SEARCH_KEY', op: 'lineStart' },
+    ]);
+    expect(pressSearchKey(searchModeState(), 'a', makeKey({ ctrl: true }))).toEqual([
+      { type: 'SEARCH_KEY', op: 'lineStart' },
+    ]);
+    expect(pressSearchKey(searchModeState(), '', makeKey({ end: true }))).toEqual([
+      { type: 'SEARCH_KEY', op: 'lineEnd' },
+    ]);
+    expect(pressSearchKey(searchModeState(), 'e', makeKey({ ctrl: true }))).toEqual([
+      { type: 'SEARCH_KEY', op: 'lineEnd' },
+    ]);
+  });
+
+  it('up and down arrows dispatch nothing on the single-line query', () => {
+    expect(pressSearchKey(searchModeState(), '', makeKey({ upArrow: true }))).toEqual([]);
+    expect(pressSearchKey(searchModeState(), '', makeKey({ downArrow: true }))).toEqual([]);
+  });
+
+  it('Escape still cancels and Enter still confirms', () => {
+    expect(pressSearchKey(searchModeState(), '', makeKey({ escape: true }))).toEqual([
+      { type: 'CANCEL_SEARCH' },
+    ]);
+    expect(pressSearchKey(searchModeState({ query: '' }), '', makeKey({ return: true }))).toEqual([
+      { type: 'CONFIRM_SEARCH', firstMatchVisualIndex: undefined },
+    ]);
+  });
+
+  it('edits the query at the cursor through the reducer', () => {
+    let state = searchModeState();
+
+    state = reducer(state, pressSearchKey(state, '', makeKey({ leftArrow: true }))[0]);
+    expect(state.search.cursor).toBe(5);
+
+    state = reducer(state, pressSearchKey(state, 'X')[0]);
+    expect(state.search.query).toBe('needlXe');
+    expect(state.search.cursor).toBe(6);
+
+    state = reducer(state, pressSearchKey(state, '', makeKey({ backspace: true }))[0]);
+    expect(state.search.query).toBe('needle');
+    expect(state.search.cursor).toBe(5);
   });
 });

@@ -86,12 +86,68 @@ describe('ENTER_SEARCH reducer', () => {
   });
 });
 
-describe('UPDATE_SEARCH_INPUT reducer', () => {
-  it('updates the search query with the new value', () => {
-    const state: AppState = { ...stateWithResponse('{"name":"John"}'), mode: 'search' };
-    const result = reducer(state, { type: 'UPDATE_SEARCH_INPUT', value: 'john' });
+describe('SEARCH_KEY reducer', () => {
+  function searchModeState(search: Partial<SearchState> = {}): AppState {
+    return {
+      ...stateWithResponse('{"name":"John"}'),
+      mode: 'search',
+      search: { ...INITIAL_SEARCH, query: 'needle', cursor: 6, ...search },
+    };
+  }
 
-    expect(result.search.query).toBe('john');
+  it('applies insert at the cursor and advances the cursor past the inserted text', () => {
+    const result = reducer(searchModeState({ query: 'nedle', cursor: 2 }), {
+      type: 'SEARCH_KEY',
+      op: 'insert',
+      insert: 'e',
+    });
+
+    expect(result.search.query).toBe('needle');
+    expect(result.search.cursor).toBe(3);
+  });
+
+  it('applies deleteBackward at the cursor', () => {
+    const result = reducer(searchModeState(), { type: 'SEARCH_KEY', op: 'deleteBackward' });
+
+    expect(result.search.query).toBe('needl');
+    expect(result.search.cursor).toBe(5);
+  });
+
+  it('applies deleteForward at the cursor', () => {
+    const result = reducer(searchModeState({ cursor: 0 }), { type: 'SEARCH_KEY', op: 'deleteForward' });
+
+    expect(result.search.query).toBe('eedle');
+    expect(result.search.cursor).toBe(0);
+  });
+
+  it('applies left as a cursor-only motion preserving the query', () => {
+    const result = reducer(searchModeState(), { type: 'SEARCH_KEY', op: 'left' });
+
+    expect(result.search.query).toBe('needle');
+    expect(result.search.cursor).toBe(5);
+  });
+
+  it('applies lineStart and lineEnd against the query bounds', () => {
+    expect(reducer(searchModeState(), { type: 'SEARCH_KEY', op: 'lineStart' }).search.cursor).toBe(0);
+    expect(reducer(searchModeState({ cursor: 2 }), { type: 'SEARCH_KEY', op: 'lineEnd' }).search.cursor).toBe(6);
+  });
+
+  it('treats up and down as no-ops on the single-line query', () => {
+    const state = searchModeState();
+
+    expect(reducer(state, { type: 'SEARCH_KEY', op: 'up' }).search).toEqual(state.search);
+    expect(reducer(state, { type: 'SEARCH_KEY', op: 'down' }).search).toEqual(state.search);
+  });
+
+  it('preserves matches and the lingering last query while editing', () => {
+    const result = reducer(searchModeState({ matches: [1, 2], lastQuery: 'old' }), {
+      type: 'SEARCH_KEY',
+      op: 'insert',
+      insert: 'x',
+    });
+
+    expect(result.search.matches).toEqual([1, 2]);
+    expect(result.search.lastQuery).toBe('old');
   });
 });
 
@@ -413,7 +469,7 @@ describe('search persistence', () => {
     );
 
     expect(confirmed.mode).toBe('normal');
-    expect(confirmed.search).toEqual({ query: 'john', matches: [1], currentMatchIndex: 0, lastQuery: 'john' });
+    expect(confirmed.search).toEqual({ query: 'john', cursor: 0, matches: [1], currentMatchIndex: 0, lastQuery: 'john' });
   });
 });
 
@@ -480,7 +536,7 @@ describe('Panel-departure search clearing', () => {
     // panel — so no non-response maximized state can carry an active search.
     const entered = reducer(stateWithResponse('{"name":"John"}'), { type: 'ENTER_SEARCH' });
     const confirmed = reducer(
-      reducer(entered, { type: 'UPDATE_SEARCH_INPUT', value: 'john' }),
+      reducer(entered, { type: 'SEARCH_KEY', op: 'insert', insert: 'john' }),
       { type: 'CONFIRM_SEARCH' },
     );
     expect(isSearchActive(confirmed)).toBe(true);

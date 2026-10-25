@@ -80,7 +80,7 @@ describe('APPEND_REQUEST reducer', () => {
 
     const result = reducer(state, { type: 'APPEND_REQUEST', request: pastedRequest() });
 
-    expect(result.search).toEqual({ query: 'users', matches: [1, 3], currentMatchIndex: 1, lastQuery: 'users' });
+    expect(result.search).toEqual({ query: 'users', cursor: 0, matches: [1, 3], currentMatchIndex: 1, lastQuery: 'users' });
   });
 
   it('leaves the response untouched', () => {

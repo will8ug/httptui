@@ -211,18 +211,46 @@ describe('UPDATE_FILE_LOAD_INPUT reducer', () => {
   });
 });
 
-describe('MOVE_FILE_LOAD_CURSOR reducer', () => {
-  it('sets fileLoad cursor without modifying fileLoad input', () => {
+describe('FILE_LOAD_KEY reducer', () => {
+  it('applies the op to the cluster buffer', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'fileLoad',
       fileLoad: { ...INITIAL_FILE_LOAD, input: 'api.http', cursor: 2 },
     };
 
-    const result = reducer(state, { type: 'MOVE_FILE_LOAD_CURSOR', cursor: 5 });
+    const inserted = reducer(state, { type: 'FILE_LOAD_KEY', op: 'insert', insert: 'X' });
+    expect(inserted.fileLoad.input).toBe('apXi.http');
+    expect(inserted.fileLoad.cursor).toBe(3);
 
-    expect(result.fileLoad.cursor).toBe(5);
-    expect(result.fileLoad.input).toBe('api.http');
+    const moved = reducer(state, { type: 'FILE_LOAD_KEY', op: 'left' });
+    expect(moved.fileLoad.input).toBe('api.http');
+    expect(moved.fileLoad.cursor).toBe(1);
+  });
+
+  it('clears a lingering error on text-editing ops but not on cursor motions', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'api.htt', cursor: 7, error: 'File not found: api.htt' },
+    };
+
+    const moved = reducer(state, { type: 'FILE_LOAD_KEY', op: 'left' });
+    expect(moved.fileLoad.error).toBe('File not found: api.htt');
+
+    const edited = reducer(state, { type: 'FILE_LOAD_KEY', op: 'insert', insert: 'p' });
+    expect(edited.fileLoad.error).toBeNull();
+  });
+
+  it('clears the completion list on every key op', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'src/', cursor: 4, completions: ['src/app'] },
+    };
+
+    expect(reducer(state, { type: 'FILE_LOAD_KEY', op: 'left' }).fileLoad.completions).toBeNull();
+    expect(reducer(state, { type: 'FILE_LOAD_KEY', op: 'insert', insert: 'a' }).fileLoad.completions).toBeNull();
   });
 });
 

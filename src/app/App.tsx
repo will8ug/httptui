@@ -167,6 +167,7 @@ return (
           isSearchMode={state.mode === 'search'}
           lastSearchQuery={state.search.lastQuery}
           searchQuery={state.search.query}
+          searchCursor={state.search.cursor}
           fullscreen={state.maximizedPanel === 'response'}
         />
       }

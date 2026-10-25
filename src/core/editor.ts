@@ -1,3 +1,5 @@
+import type { Key } from 'ink';
+
 import type { EditOp } from './types.js';
 
 export interface EditorBuffer {
@@ -107,4 +109,58 @@ export function applyEditOp(buffer: EditorBuffer, op: EditOp, insert?: string): 
     case 'lineEnd':
       return moveLineEnd(buffer);
   }
+}
+
+export interface EditOpIntent {
+  op: EditOp;
+  insert?: string;
+}
+
+const TEXT_OPS: ReadonlySet<EditOp> = new Set<EditOp>(['insert', 'deleteBackward', 'deleteForward']);
+
+/** True for ops that edit buffer text; false for cursor-only motions. */
+export function mutatesText(op: EditOp): boolean {
+  return TEXT_OPS.has(op);
+}
+
+/**
+ * The one key-event-to-edit-op mapping behind every text input. Contract:
+ * callers intercept their own mode-control keys (Escape, Enter, Tab where it
+ * completes or switches, Ctrl shortcuts) before consulting it; Enter and
+ * Escape are rejected here so their raw input bytes can never become insert
+ * text. `up`/`down` are emitted for multi-line callers; single-line callers
+ * skip them.
+ */
+export function resolveEditOp(input: string, key: Key): EditOpIntent | null {
+  if (key.return || key.escape) {
+    return null;
+  }
+  if (key.home || (key.ctrl && input === 'a')) {
+    return { op: 'lineStart' };
+  }
+  if (key.end || (key.ctrl && input === 'e')) {
+    return { op: 'lineEnd' };
+  }
+  if (key.backspace) {
+    return { op: 'deleteBackward' };
+  }
+  if (key.delete) {
+    return { op: 'deleteForward' };
+  }
+  if (key.leftArrow) {
+    return { op: 'left' };
+  }
+  if (key.rightArrow) {
+    return { op: 'right' };
+  }
+  if (key.upArrow) {
+    return { op: 'up' };
+  }
+  if (key.downArrow) {
+    return { op: 'down' };
+  }
+  if (input && !key.ctrl && !key.meta) {
+    return { op: 'insert', insert: input };
+  }
+  return null;
 }

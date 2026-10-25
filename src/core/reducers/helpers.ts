@@ -172,6 +172,7 @@ export function clampScrollOffsetToCursor(selectedIndex: number, currentOffset: 
 
 export const INITIAL_SEARCH: SearchState = {
   query: '',
+  cursor: 0,
   matches: [],
   currentMatchIndex: 0,
   lastQuery: '',

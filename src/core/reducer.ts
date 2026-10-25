@@ -63,7 +63,7 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'ENTER_FILE_LOAD':
     case 'UPDATE_FILE_LOAD_INPUT':
-    case 'MOVE_FILE_LOAD_CURSOR':
+    case 'FILE_LOAD_KEY':
     case 'SET_FILE_LOAD_ERROR':
     case 'SET_FILE_LOAD_COMPLETIONS':
     case 'LOAD_FILE':
@@ -71,16 +71,14 @@ export function reducer(state: AppState, action: Action): AppState {
       return reduceFileLoad(state, action);
 
     case 'ENTER_SAVE':
-    case 'UPDATE_SAVE_INPUT':
-    case 'MOVE_SAVE_CURSOR':
+    case 'SAVE_KEY':
     case 'SET_SAVE_ERROR':
     case 'SAVE_FILE':
     case 'CANCEL_SAVE':
       return reduceSaveLoad(state, action);
 
     case 'ENTER_RESPONSE_SAVE':
-    case 'UPDATE_RESPONSE_SAVE_INPUT':
-    case 'MOVE_RESPONSE_SAVE_CURSOR':
+    case 'RESPONSE_SAVE_KEY':
     case 'SET_RESPONSE_SAVE_ERROR':
     case 'SAVE_RESPONSE_FILE':
     case 'CANCEL_RESPONSE_SAVE':
@@ -95,7 +93,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return reduceEnvSelect(state, action);
 
     case 'ENTER_SEARCH':
-    case 'UPDATE_SEARCH_INPUT':
+    case 'SEARCH_KEY':
     case 'CONFIRM_SEARCH':
     case 'CANCEL_SEARCH':
     case 'NEXT_MATCH':

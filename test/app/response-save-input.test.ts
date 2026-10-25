@@ -52,6 +52,20 @@ describe('handleResponseSaveInput', () => {
       rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('up and down arrows dispatch nothing on the single-line path', () => {
+    const state = createInitialState({
+      mode: 'responseSave',
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'resp.txt', cursor: 'resp.txt'.length },
+      response: createMockResponse({ body: 'body', rawBody: 'body' }),
+    });
+    const dispatch = vi.fn();
+
+    handleResponseSaveInput({ state, input: '', key: makeKey({ upArrow: true }), dispatch });
+    handleResponseSaveInput({ state, input: '', key: makeKey({ downArrow: true }), dispatch });
+
+    expect(dispatch).not.toHaveBeenCalled();
+  });
 });
 
 describe('handleNormalInput s guard', () => {
@@ -102,7 +116,7 @@ describe('s-key mode isolation', () => {
       dispatch: (action) => dispatched.push(action),
     });
 
-    expect(dispatched).toEqual([{ type: 'UPDATE_SAVE_INPUT', value: 'api.https', cursor: 9 }]);
+    expect(dispatched).toEqual([{ type: 'SAVE_KEY', op: 'insert', insert: 's' }]);
   });
 
   it('s while the response-save overlay is open inserts the character into the path', () => {
@@ -120,7 +134,7 @@ describe('s-key mode isolation', () => {
       dispatch: (action) => dispatched.push(action),
     });
 
-    expect(dispatched).toEqual([{ type: 'UPDATE_RESPONSE_SAVE_INPUT', value: 'Get Users.jsons', cursor: 15 }]);
+    expect(dispatched).toEqual([{ type: 'RESPONSE_SAVE_KEY', op: 'insert', insert: 's' }]);
   });
 });
 

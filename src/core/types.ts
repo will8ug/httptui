@@ -160,6 +160,7 @@ export interface ConfirmState {
 
 export interface SearchState {
   query: string;
+  cursor: number;
   matches: number[];
   currentMatchIndex: number;
   lastQuery: string;
@@ -249,8 +250,9 @@ export type Action =
   | { type: 'SET_TRANSIENT_ERROR'; error: string }
   | { type: 'CLEAR_TRANSIENT_MESSAGE' }
   | { type: 'ENTER_FILE_LOAD' }
+  // Programmatic value+cursor sets only (path completion); keystrokes go through FILE_LOAD_KEY.
   | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string; cursor: number }
-  | { type: 'MOVE_FILE_LOAD_CURSOR'; cursor: number }
+  | { type: 'FILE_LOAD_KEY'; op: EditOp; insert?: string }
   | { type: 'SET_FILE_LOAD_ERROR'; error: string }
   | { type: 'SET_FILE_LOAD_COMPLETIONS'; completions: string[] | null }
   | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string; executorConfig?: ExecutorConfig }
@@ -261,7 +263,7 @@ export type Action =
   | { type: 'JUMP_VERTICAL'; direction: 'start' | 'end' }
   | { type: 'JUMP_HORIZONTAL'; direction: 'start' | 'end' }
   | { type: 'ENTER_SEARCH' }
-  | { type: 'UPDATE_SEARCH_INPUT'; value: string }
+  | { type: 'SEARCH_KEY'; op: EditOp; insert?: string }
   | { type: 'CONFIRM_SEARCH'; firstMatchVisualIndex?: number }
   | { type: 'CANCEL_SEARCH' }
   | { type: 'NEXT_MATCH'; targetVisualIndex: number }
@@ -274,14 +276,12 @@ export type Action =
   | { type: 'CANCEL_ENV_SELECT' }
   | { type: 'SET_ENV_SELECT_ERROR'; error: string }
   | { type: 'ENTER_SAVE' }
-  | { type: 'UPDATE_SAVE_INPUT'; value: string; cursor: number }
-  | { type: 'MOVE_SAVE_CURSOR'; cursor: number }
+  | { type: 'SAVE_KEY'; op: EditOp; insert?: string }
   | { type: 'SAVE_FILE'; message: string; filePath: string }
   | { type: 'SET_SAVE_ERROR'; error: string }
   | { type: 'CANCEL_SAVE' }
   | { type: 'ENTER_RESPONSE_SAVE' }
-  | { type: 'UPDATE_RESPONSE_SAVE_INPUT'; value: string; cursor: number }
-  | { type: 'MOVE_RESPONSE_SAVE_CURSOR'; cursor: number }
+  | { type: 'RESPONSE_SAVE_KEY'; op: EditOp; insert?: string }
   | { type: 'SET_RESPONSE_SAVE_ERROR'; error: string }
   | { type: 'SAVE_RESPONSE_FILE'; message: string }
   | { type: 'CANCEL_RESPONSE_SAVE' }
