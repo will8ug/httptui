@@ -6,7 +6,7 @@ import { reduceEdit } from './reducers/edit';
 import { reduceEnvSelect } from './reducers/env-select';
 import { reduceFileLoad } from './reducers/file-load';
 import { reduceGeometry } from './reducers/geometry';
-import { INITIAL_CONFIRM, INITIAL_EDIT, INITIAL_ENV_SELECT, INITIAL_FILE_LOAD, INITIAL_RESPONSE_SAVE, INITIAL_SAVE_LOAD } from './reducers/helpers';
+import { INITIAL_CONFIRM, INITIAL_EDIT, INITIAL_ENV_SELECT, INITIAL_FILE_LOAD, INITIAL_RESPONSE_SAVE, INITIAL_SAVE_LOAD, INITIAL_SEARCH } from './reducers/helpers';
 import { reduceRequestLifecycle } from './reducers/lifecycle';
 import { reduceNavigation } from './reducers/navigation';
 import { reduceResponseSave } from './reducers/response-save';
@@ -18,7 +18,6 @@ import { reduceTransient } from './reducers/transient';
 export {
   clamp,
   clampScrollOffsetToCursor,
-  CLEAR_SEARCH_STATE,
   computeSearchScrollOffset,
   isSearchActive,
   responseViewportFromState,
@@ -163,10 +162,7 @@ export function createInitialState(props: AppProps): AppState {
     wrapMode: 'nowrap',
     showRequestDetails: false,
     rawMode: false,
-    searchQuery: '',
-    searchMatches: [],
-    currentMatchIndex: 0,
-    lastSearchQuery: '',
+    search: INITIAL_SEARCH,
     maximizedPanel: null,
     certificates: props.executorConfig.certificates,
     editor: props.executorConfig.editor,

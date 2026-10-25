@@ -47,11 +47,11 @@ function buildMatchNavigationAction(
   direction: 'next' | 'prev',
 ): Extract<Action, { type: 'NEXT_MATCH' | 'PREV_MATCH' }> {
   const bodyVisualStart = getBodyVisualStart(state);
-  const matchCount = state.searchMatches.length;
+  const matchCount = state.search.matches.length;
   const targetIndex = direction === 'next'
-    ? (state.currentMatchIndex + 1) % matchCount
-    : (state.currentMatchIndex - 1 + matchCount) % matchCount;
-  const targetRawIndex = state.searchMatches[targetIndex];
+    ? (state.search.currentMatchIndex + 1) % matchCount
+    : (state.search.currentMatchIndex - 1 + matchCount) % matchCount;
+  const targetRawIndex = state.search.matches[targetIndex];
   const targetVisualIndex = bodyVisualStart ? bodyVisualStart[targetRawIndex] : targetRawIndex;
   return direction === 'next'
     ? { type: 'NEXT_MATCH', targetVisualIndex }
@@ -213,8 +213,8 @@ export function handleSearchInput({ state, input, key, dispatch }: {
 
   if (key.return) {
     let firstMatchVisualIndex: number | undefined;
-    if (state.response && state.searchQuery) {
-      const matches = findMatchIndices(state.response, state.rawMode, state.searchQuery);
+    if (state.response && state.search.query) {
+      const matches = findMatchIndices(state.response, state.rawMode, state.search.query);
       if (matches.length > 0) {
         const bodyVisualStart = getBodyVisualStart(state);
         if (bodyVisualStart) {
@@ -227,12 +227,12 @@ export function handleSearchInput({ state, input, key, dispatch }: {
   }
 
   if (key.backspace) {
-    dispatch({ type: 'UPDATE_SEARCH_INPUT', value: state.searchQuery.slice(0, -1) });
+    dispatch({ type: 'UPDATE_SEARCH_INPUT', value: state.search.query.slice(0, -1) });
     return;
   }
 
   if (input && !key.ctrl && !key.meta) {
-    dispatch({ type: 'UPDATE_SEARCH_INPUT', value: state.searchQuery + input });
+    dispatch({ type: 'UPDATE_SEARCH_INPUT', value: state.search.query + input });
   }
 }
 
@@ -785,12 +785,12 @@ export function handleNormalInput({
   }
 
   if (responseVisible(state)) {
-    if (input === 'n' && state.searchMatches.length > 0) {
+    if (input === 'n' && state.search.matches.length > 0) {
       dispatch(buildMatchNavigationAction(state, 'next'));
       return;
     }
 
-    if (input === 'N' && state.searchMatches.length > 0) {
+    if (input === 'N' && state.search.matches.length > 0) {
       dispatch(buildMatchNavigationAction(state, 'prev'));
       return;
     }

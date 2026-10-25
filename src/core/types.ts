@@ -158,6 +158,13 @@ export interface ConfirmState {
   pendingDiscardAction: PendingDiscardAction | null;
 }
 
+export interface SearchState {
+  query: string;
+  matches: number[];
+  currentMatchIndex: number;
+  lastQuery: string;
+}
+
 export interface AppState {
   geometry: TerminalGeometry;
   requests: ParsedRequest[];
@@ -197,10 +204,9 @@ export interface AppState {
   wrapMode: WrapMode;
   showRequestDetails: boolean;
   rawMode: boolean;
-  searchQuery: string;
-  searchMatches: number[];
-  currentMatchIndex: number;
-  lastSearchQuery: string;
+  // Clears on response changes, focus leaving the response panel, raw reformat,
+  // and its own dismissal paths; it otherwise persists across modes.
+  search: SearchState;
   // Invariant: when non-null, equals focusedPanel — fullscreen entry maximizes
   // the focused panel, and nothing reachable while maximized changes focus
   // (Tab is dead there; ENTER_SEARCH re-focuses the already-maximized response).

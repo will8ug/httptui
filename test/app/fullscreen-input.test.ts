@@ -2,19 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Key } from 'ink';
 
 import { handleHelpInput } from '../../src/app/input-handlers';
-import type { Action, AppState } from '../../src/core/types';
+import { INITIAL_SEARCH } from '../../src/core/reducers/helpers';
+import type { Action, AppState, SearchState } from '../../src/core/types';
 import { panelState, populatedPanelState, pressKey, runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
 import { createInitialState, reducer } from '../helpers/state';
 
 describe('fullscreen match navigation', () => {
-  const matchState = (overrides: Partial<AppState> = {}): AppState =>
+  const matchState = (overrides: Partial<SearchState> = {}): AppState =>
     panelState('response', {
-      searchMatches: [3, 7, 11],
-      currentMatchIndex: 0,
-      lastSearchQuery: 'needle',
-      ...overrides,
+      search: { ...INITIAL_SEARCH, matches: [3, 7, 11], currentMatchIndex: 0, lastQuery: 'needle', ...overrides },
     });
 
   it('n dispatches NEXT_MATCH with the next raw match index', () => {
@@ -36,13 +34,13 @@ describe('fullscreen match navigation', () => {
   });
 
   it('n is a no-op while the requests panel is maximized', () => {
-    const actions = pressKey(panelState('requests', { searchMatches: [3, 7, 11], currentMatchIndex: 0 }), 'n');
+    const actions = pressKey(panelState('requests', { search: { ...INITIAL_SEARCH, matches: [3, 7, 11] } }), 'n');
 
     expect(actions).toEqual([]);
   });
 
   it('N is a no-op while the requests panel is maximized', () => {
-    const actions = pressKey(panelState('requests', { searchMatches: [3, 7, 11], currentMatchIndex: 0 }), 'N');
+    const actions = pressKey(panelState('requests', { search: { ...INITIAL_SEARCH, matches: [3, 7, 11] } }), 'N');
 
     expect(actions).toEqual([]);
   });
@@ -90,7 +88,7 @@ describe('quit-key divergence: q never quits from fullscreen, Ctrl+C always exit
 
   it('q while the response is maximized with active search results dismisses the search', () => {
     const result = runNormalInput(
-      panelState('response', { searchMatches: [3, 7], currentMatchIndex: 0, lastSearchQuery: 'needle' }),
+      panelState('response', { search: { ...INITIAL_SEARCH, matches: [3, 7], lastQuery: 'needle' } }),
       'q',
     );
 
@@ -122,7 +120,7 @@ describe('quit-key divergence: q never quits from fullscreen, Ctrl+C always exit
 
 describe('escape priority in fullscreen: search first, fullscreen exit second', () => {
   const searchActiveState = (panel: 'requests' | 'response' | 'details'): AppState =>
-    panelState(panel, { searchMatches: [3, 7], currentMatchIndex: 0, lastSearchQuery: 'needle' });
+    panelState(panel, { search: { ...INITIAL_SEARCH, matches: [3, 7], lastQuery: 'needle' } });
 
   it('Escape while the response is maximized with active search results dismisses the search', () => {
     const result = runNormalInput(searchActiveState('response'), '', makeKey({ escape: true }));
@@ -242,9 +240,7 @@ describe('q with active search in normal mode', () => {
     const result = runNormalInput(
       createInitialState({
         requests: [createRequest()],
-        searchMatches: [3, 7],
-        currentMatchIndex: 0,
-        lastSearchQuery: 'needle',
+        search: { ...INITIAL_SEARCH, matches: [3, 7], lastQuery: 'needle' },
       }),
       'q',
     );
@@ -257,8 +253,7 @@ describe('q with active search in normal mode', () => {
     const result = runNormalInput(
       createInitialState({
         requests: [createRequest()],
-        lastSearchQuery: 'zzz-absent',
-        searchMatches: [],
+        search: { ...INITIAL_SEARCH, lastQuery: 'zzz-absent' },
       }),
       'q',
     );
@@ -270,9 +265,7 @@ describe('q with active search in normal mode', () => {
   it('a second q after the dismissal exits the application', () => {
     const searchActive = createInitialState({
       requests: [createRequest()],
-      searchMatches: [3, 7],
-      currentMatchIndex: 0,
-      lastSearchQuery: 'needle',
+      search: { ...INITIAL_SEARCH, matches: [3, 7], lastQuery: 'needle' },
     });
     const first = runNormalInput(searchActive, 'q');
 
@@ -303,9 +296,7 @@ describe('normal mode escape', () => {
     const result = runNormalInput(
       createInitialState({
         requests: [createRequest()],
-        searchMatches: [3, 7],
-        currentMatchIndex: 0,
-        lastSearchQuery: 'needle',
+        search: { ...INITIAL_SEARCH, matches: [3, 7], lastQuery: 'needle' },
       }),
       '',
       makeKey({ escape: true }),

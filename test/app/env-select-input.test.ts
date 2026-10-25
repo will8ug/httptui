@@ -97,7 +97,7 @@ describe('E is ignored in non-normal handlers', () => {
   it('handleSearchInput treats E as query input rather than env select', () => {
     const dispatched: Action[] = [];
     handleSearchInput({
-      state: createInitialState({ mode: 'search', searchQuery: '' }),
+      state: createInitialState({ mode: 'search' }),
       input: 'E',
       key: makeKey(),
       dispatch: (action) => dispatched.push(action),

@@ -1,5 +1,5 @@
 import type { Action, AppState } from '../types';
-import { CLEAR_SEARCH_STATE } from './helpers';
+import { INITIAL_SEARCH } from './helpers';
 
 type TogglesAction = Extract<Action, { type: 'TOGGLE_VERBOSE' | 'TOGGLE_HELP' | 'CLOSE_HELP' | 'TOGGLE_WRAP' | 'TOGGLE_RAW' | 'TOGGLE_REQUEST_DETAILS' | 'TOGGLE_FULLSCREEN' }>;
 
@@ -35,7 +35,7 @@ export function reduceToggles(state: AppState, action: TogglesAction): AppState 
       return {
         ...state,
         rawMode: !state.rawMode,
-        ...CLEAR_SEARCH_STATE,
+        search: INITIAL_SEARCH,
       };
 
     case 'TOGGLE_REQUEST_DETAILS': {

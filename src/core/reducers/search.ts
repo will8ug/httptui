@@ -1,6 +1,6 @@
 import { formatResponseBody } from '../formatter';
 import type { Action, AppState } from '../types';
-import { CLEAR_SEARCH_STATE, computeSearchScrollOffset, responseVerticalMaxOffset } from './helpers';
+import { INITIAL_SEARCH, computeSearchScrollOffset, responseVerticalMaxOffset } from './helpers';
 
 type SearchAction = Extract<Action, { type: 'ENTER_SEARCH' | 'UPDATE_SEARCH_INPUT' | 'CONFIRM_SEARCH' | 'CANCEL_SEARCH' | 'NEXT_MATCH' | 'PREV_MATCH' }>;
 
@@ -8,7 +8,7 @@ function leaveSearch(state: AppState): AppState {
   const next: AppState = {
     ...state,
     mode: 'normal',
-    ...CLEAR_SEARCH_STATE,
+    search: INITIAL_SEARCH,
   };
   return {
     ...next,
@@ -26,26 +26,24 @@ export function reduceSearch(state: AppState, action: SearchAction): AppState {
         ...state,
         mode: 'search',
         focusedPanel: 'response',
-        searchQuery: '',
-        searchMatches: [],
-        currentMatchIndex: 0,
+        search: { ...INITIAL_SEARCH, lastQuery: state.search.lastQuery },
       };
     }
 
     case 'UPDATE_SEARCH_INPUT':
       return {
         ...state,
-        searchQuery: action.value,
+        search: { ...state.search, query: action.value },
       };
 
     case 'CONFIRM_SEARCH': {
-      if (!state.searchQuery || !state.response) {
+      if (!state.search.query || !state.response) {
         return leaveSearch(state);
       }
 
       const formattedBody = formatResponseBody(state.response.body, state.rawMode);
       const bodyLines = formattedBody.split('\n');
-      const queryLower = state.searchQuery.toLowerCase();
+      const queryLower = state.search.query.toLowerCase();
       const matches: number[] = [];
 
       for (let i = 0; i < bodyLines.length; i++) {
@@ -61,9 +59,7 @@ export function reduceSearch(state: AppState, action: SearchAction): AppState {
       return {
         ...state,
         mode: 'normal',
-        searchMatches: matches,
-        currentMatchIndex: 0,
-        lastSearchQuery: state.searchQuery,
+        search: { ...state.search, matches, currentMatchIndex: 0, lastQuery: state.search.query },
         responseScrollOffset: scrollOffset,
       };
     }
@@ -72,27 +68,27 @@ export function reduceSearch(state: AppState, action: SearchAction): AppState {
       return leaveSearch(state);
 
     case 'NEXT_MATCH': {
-      if (state.searchMatches.length === 0) {
+      if (state.search.matches.length === 0) {
         return state;
       }
-      const nextIndex = (state.currentMatchIndex + 1) % state.searchMatches.length;
+      const nextIndex = (state.search.currentMatchIndex + 1) % state.search.matches.length;
       const scrollOffset = computeSearchScrollOffset(action.targetVisualIndex, responseVerticalMaxOffset(state));
       return {
         ...state,
-        currentMatchIndex: nextIndex,
+        search: { ...state.search, currentMatchIndex: nextIndex },
         responseScrollOffset: scrollOffset,
       };
     }
 
     case 'PREV_MATCH': {
-      if (state.searchMatches.length === 0) {
+      if (state.search.matches.length === 0) {
         return state;
       }
-      const prevIndex = (state.currentMatchIndex - 1 + state.searchMatches.length) % state.searchMatches.length;
+      const prevIndex = (state.search.currentMatchIndex - 1 + state.search.matches.length) % state.search.matches.length;
       const scrollOffset = computeSearchScrollOffset(action.targetVisualIndex, responseVerticalMaxOffset(state));
       return {
         ...state,
-        currentMatchIndex: prevIndex,
+        search: { ...state.search, currentMatchIndex: prevIndex },
         responseScrollOffset: scrollOffset,
       };
     }

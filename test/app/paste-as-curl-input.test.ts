@@ -113,7 +113,7 @@ describe('p is ignored in non-normal handlers', () => {
     const dispatched: Action[] = [];
 
     handleSearchInput({
-      state: createInitialState({ mode: 'search', searchQuery: '' }),
+      state: createInitialState({ mode: 'search' }),
       input: 'p',
       key: makeKey(),
       dispatch: (action) => dispatched.push(action),

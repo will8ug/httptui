@@ -161,12 +161,12 @@ return (
           wrapMode={state.wrapMode}
           rawMode={state.rawMode}
           availableHeight={effectiveResponseHeight}
-          searchMatches={state.searchMatches}
-          currentMatchIndex={state.currentMatchIndex}
+          searchMatches={state.search.matches}
+          currentMatchIndex={state.search.currentMatchIndex}
           searchVisible={isSearchActive(state)}
           isSearchMode={state.mode === 'search'}
-          lastSearchQuery={state.lastSearchQuery}
-          searchQuery={state.searchQuery}
+          lastSearchQuery={state.search.lastQuery}
+          searchQuery={state.search.query}
           fullscreen={state.maximizedPanel === 'response'}
         />
       }

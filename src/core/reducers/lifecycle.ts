@@ -1,6 +1,6 @@
 import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
-import { CLEAR_SEARCH_STATE, setTransient } from './helpers';
+import { INITIAL_SEARCH, setTransient } from './helpers';
 
 type RequestLifecycleAction = Extract<Action, { type: 'SEND_REQUEST' | 'RECEIVE_RESPONSE' | 'REQUEST_ERROR' | 'REQUEST_CANCEL' | 'RELOAD_FILE' }>;
 
@@ -14,7 +14,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         requestError: null,
         responseScrollOffset: 0,
         responseHorizontalOffset: 0,
-        ...CLEAR_SEARCH_STATE,
+        search: INITIAL_SEARCH,
       };
 
     case 'RECEIVE_RESPONSE':
@@ -24,7 +24,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         requestError: null,
         isLoading: false,
         responseScrollOffset: 0,
-        ...CLEAR_SEARCH_STATE,
+        search: INITIAL_SEARCH,
       };
 
     case 'REQUEST_ERROR':
@@ -34,7 +34,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         requestError: action.error,
         isLoading: false,
         responseScrollOffset: 0,
-        ...CLEAR_SEARCH_STATE,
+        search: INITIAL_SEARCH,
       };
 
     case 'REQUEST_CANCEL':
@@ -63,7 +63,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
         ...setTransient({ message: 'Reloaded' }),
-        ...CLEAR_SEARCH_STATE,
+        search: INITIAL_SEARCH,
       };
     }
   }
