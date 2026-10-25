@@ -146,6 +146,14 @@ export interface EnvSelectState {
   error: string | null;
 }
 
+export interface EditState {
+  target: EditTarget;
+  buffers: Record<EditTarget, { text: string; cursor: number }>;
+  scrollOffset: number;
+  horizontalOffset: number;
+  escapeArmedAt: number | null;
+}
+
 export interface AppState {
   geometry: TerminalGeometry;
   requests: ParsedRequest[];
@@ -177,6 +185,7 @@ export interface AppState {
   saveLoad: TextEntryState;
   responseSave: TextEntryState;
   envSelect: EnvSelectState;
+  edit: EditState;
   fileVariables: FileVariable[];
   activeEnvName: string | null;
   availableEnvironments: EnvOption[];
@@ -191,11 +200,6 @@ export interface AppState {
   // the focused panel, and nothing reachable while maximized changes focus
   // (Tab is dead there; ENTER_SEARCH re-focuses the already-maximized response).
   maximizedPanel: FocusedPanel | null;
-  editTarget: EditTarget;
-  editBuffers: Record<EditTarget, { text: string; cursor: number }>;
-  editScrollOffset: number;
-  editHorizontalOffset: number;
-  editEscapeArmedAt: number | null;
   pendingDiscardAction: PendingDiscardAction | null;
   certificates?: Record<string, CertEntry>;
   editor?: string;

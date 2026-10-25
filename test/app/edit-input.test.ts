@@ -3,7 +3,8 @@ import type { Key } from 'ink';
 
 import { handleEditInput } from '../../src/app/input-handlers';
 import { headersToText } from '../../src/core/headers';
-import type { Action, AppState, ParsedRequest } from '../../src/core/types';
+import { INITIAL_EDIT } from '../../src/core/reducers/helpers';
+import type { Action, AppState, EditState, ParsedRequest } from '../../src/core/types';
 import { EDIT_CANCEL_WINDOW_MS } from '../../src/utils/timing';
 import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
@@ -12,16 +13,15 @@ import { createEditState, createInitialState, reducer } from '../helpers/state';
 
 const NOW = 1_700_000_000_000;
 
-function editState(request: ParsedRequest, buffers: AppState['editBuffers'], overrides: Partial<AppState> = {}): AppState {
+function editState(request: ParsedRequest, buffers: EditState['buffers'], overrides: Partial<EditState> = {}): AppState {
   return createEditState({
     requests: [request],
     selectedIndex: 0,
-    editBuffers: buffers,
-    ...overrides,
+    edit: { ...INITIAL_EDIT, buffers, ...overrides },
   });
 }
 
-function matchingBuffers(request: ParsedRequest): AppState['editBuffers'] {
+function matchingBuffers(request: ParsedRequest): EditState['buffers'] {
   const body = request.body ?? '';
   return {
     url: { text: request.url, cursor: request.url.length },
@@ -66,7 +66,7 @@ describe('handleEditInput Escape cancel window', () => {
 
     const next = reducer(state, actions[0]);
     expect(next.mode).toBe('edit');
-    expect(next.editEscapeArmedAt).toBe(NOW);
+    expect(next.edit.escapeArmedAt).toBe(NOW);
     expect(next.transientMessage).toBe('Press Esc again to discard changes');
   });
 
@@ -89,7 +89,7 @@ describe('handleEditInput Escape cancel window', () => {
       url: { text: request.url, cursor: request.url.length },
       body: { text: 'changed', cursor: 7 },
       headers: { text: '', cursor: 0 },
-    }, { editEscapeArmedAt: NOW });
+    }, { escapeArmedAt: NOW });
 
     vi.setSystemTime(NOW + EDIT_CANCEL_WINDOW_MS);
 
@@ -104,7 +104,7 @@ describe('handleEditInput Escape cancel window', () => {
       url: { text: request.url, cursor: request.url.length },
       body: { text: 'changed', cursor: 7 },
       headers: { text: '', cursor: 0 },
-    }, { editEscapeArmedAt: NOW });
+    }, { escapeArmedAt: NOW });
 
     const expiredAt = NOW + EDIT_CANCEL_WINDOW_MS + 1;
     vi.setSystemTime(expiredAt);
@@ -115,7 +115,7 @@ describe('handleEditInput Escape cancel window', () => {
 
     const next = reducer(state, actions[0]);
     expect(next.mode).toBe('edit');
-    expect(next.editEscapeArmedAt).toBe(expiredAt);
+    expect(next.edit.escapeArmedAt).toBe(expiredAt);
     expect(next.transientMessage).toBe('Press Esc again to discard changes');
   });
 });
@@ -136,7 +136,7 @@ describe('handleEditInput body insert', () => {
       url: { text: request.url, cursor: request.url.length },
       body: { text: '', cursor: 0 },
       headers: { text: '', cursor: 0 },
-    }, { editTarget: 'body' });
+    }, { target: 'body' });
 
     const pasted = '{"a":1,\n"b":2}';
     const actions = pressEditKey(state, pasted);
@@ -148,8 +148,8 @@ describe('handleEditInput body insert', () => {
     }]);
 
     const next = reducer(state, actions[0]);
-    expect(next.editBuffers.body.text).toBe(pasted);
-    expect(next.editBuffers.body.cursor).toBe(pasted.length);
+    expect(next.edit.buffers.body.text).toBe(pasted);
+    expect(next.edit.buffers.body.cursor).toBe(pasted.length);
   });
 });
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { hasUnsavedChanges } from '../../../src/utils/request';
+import { INITIAL_EDIT } from '../../../src/core/reducers/helpers';
 import { createRequest } from '../../helpers/requests';
 import { createInitialState, createEditState, reducer } from '../../helpers/state';
 
@@ -10,10 +11,13 @@ describe('per-request dirty markers', () => {
     const state = createEditState({
       requests: [request],
       selectedIndex: 0,
-      editBuffers: {
-        url: { text: 'https://same.com', cursor: 15 },
-        body: { text: 'changed', cursor: 7 },
-        headers: { text: '', cursor: 0 },
+      edit: {
+        ...INITIAL_EDIT,
+        buffers: {
+          url: { text: 'https://same.com', cursor: 15 },
+          body: { text: 'changed', cursor: 7 },
+          headers: { text: '', cursor: 0 },
+        },
       },
     });
 
@@ -28,10 +32,13 @@ describe('per-request dirty markers', () => {
     const state = createEditState({
       requests: [request],
       selectedIndex: 0,
-      editBuffers: {
-        url: { text: 'https://same.com', cursor: 15 },
-        body: { text: 'same', cursor: 4 },
-        headers: { text: '', cursor: 0 },
+      edit: {
+        ...INITIAL_EDIT,
+        buffers: {
+          url: { text: 'https://same.com', cursor: 15 },
+          body: { text: 'same', cursor: 4 },
+          headers: { text: '', cursor: 0 },
+        },
       },
     });
 
@@ -46,10 +53,13 @@ describe('per-request dirty markers', () => {
     const state = createEditState({
       requests: [request],
       selectedIndex: 0,
-      editBuffers: {
-        url: { text: 'https://same.com', cursor: 15 },
-        body: { text: 'original', cursor: 8 },
-        headers: { text: '', cursor: 0 },
+      edit: {
+        ...INITIAL_EDIT,
+        buffers: {
+          url: { text: 'https://same.com', cursor: 15 },
+          body: { text: 'original', cursor: 8 },
+          headers: { text: '', cursor: 0 },
+        },
       },
     });
 
@@ -65,10 +75,13 @@ describe('per-request dirty markers', () => {
     const state = createEditState({
       requests: [first, second],
       selectedIndex: 0,
-      editBuffers: {
-        url: { text: 'https://same.com', cursor: 15 },
-        body: { text: 'changed', cursor: 7 },
-        headers: { text: '', cursor: 0 },
+      edit: {
+        ...INITIAL_EDIT,
+        buffers: {
+          url: { text: 'https://same.com', cursor: 15 },
+          body: { text: 'changed', cursor: 7 },
+          headers: { text: '', cursor: 0 },
+        },
       },
     });
 
@@ -84,10 +97,13 @@ describe('per-request dirty markers', () => {
     const state = createEditState({
       requests: [request],
       selectedIndex: 0,
-      editBuffers: {
-        url: { text: 'https://same.com', cursor: 15 },
-        body: { text: 'changed', cursor: 7 },
-        headers: { text: '', cursor: 0 },
+      edit: {
+        ...INITIAL_EDIT,
+        buffers: {
+          url: { text: 'https://same.com', cursor: 15 },
+          body: { text: 'changed', cursor: 7 },
+          headers: { text: '', cursor: 0 },
+        },
       },
     });
 
@@ -96,7 +112,7 @@ describe('per-request dirty markers', () => {
     expect(hasUnsavedChanges(first.requests)).toBe(true);
 
     const second = reducer(
-      { ...first, mode: 'edit', editBuffers: { url: { text: 'https://same.com', cursor: 15 }, body: { text: 'original', cursor: 8 }, headers: { text: '', cursor: 0 } } },
+      { ...first, mode: 'edit', edit: { ...INITIAL_EDIT, buffers: { url: { text: 'https://same.com', cursor: 15 }, body: { text: 'original', cursor: 8 }, headers: { text: '', cursor: 0 } } } },
       { type: 'COMMIT_EDIT' },
     );
 

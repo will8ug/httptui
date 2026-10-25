@@ -6,7 +6,7 @@ import { getRequestTarget, resolveRequestDetails } from '../../utils/request';
 import { cellWidth } from '../../utils/text';
 import { computeResponseViewport } from '../response-viewport';
 import type { ResponseViewportModel } from '../response-viewport';
-import type { AppState, EnvSelectState, FileLoadState, FileVariable, ParsedRequest, TextEntryState } from '../types';
+import type { AppState, EditState, EnvSelectState, FileLoadState, FileVariable, ParsedRequest, TextEntryState } from '../types';
 import { resolveVariables } from '../variables';
 
 export function clamp(value: number, min: number, max: number): number {
@@ -202,10 +202,18 @@ export const INITIAL_ENV_SELECT: EnvSelectState = {
   error: null,
 };
 
-export const EMPTY_EDIT_BUFFERS = {
+const EMPTY_EDIT_BUFFERS = {
   body: { text: '', cursor: 0 },
   headers: { text: '', cursor: 0 },
   url: { text: '', cursor: 0 },
+};
+
+export const INITIAL_EDIT: EditState = {
+  target: 'url',
+  buffers: EMPTY_EDIT_BUFFERS,
+  scrollOffset: 0,
+  horizontalOffset: 0,
+  escapeArmedAt: null,
 };
 
 export function setTransient(

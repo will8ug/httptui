@@ -6,7 +6,7 @@ import { reduceEdit } from './reducers/edit';
 import { reduceEnvSelect } from './reducers/env-select';
 import { reduceFileLoad } from './reducers/file-load';
 import { reduceGeometry } from './reducers/geometry';
-import { EMPTY_EDIT_BUFFERS, INITIAL_ENV_SELECT, INITIAL_FILE_LOAD, INITIAL_RESPONSE_SAVE, INITIAL_SAVE_LOAD } from './reducers/helpers';
+import { INITIAL_EDIT, INITIAL_ENV_SELECT, INITIAL_FILE_LOAD, INITIAL_RESPONSE_SAVE, INITIAL_SAVE_LOAD } from './reducers/helpers';
 import { reduceRequestLifecycle } from './reducers/lifecycle';
 import { reduceNavigation } from './reducers/navigation';
 import { reduceResponseSave } from './reducers/response-save';
@@ -158,6 +158,7 @@ export function createInitialState(props: AppProps): AppState {
     saveLoad: INITIAL_SAVE_LOAD,
     responseSave: INITIAL_RESPONSE_SAVE,
     envSelect: INITIAL_ENV_SELECT,
+    edit: INITIAL_EDIT,
     wrapMode: 'nowrap',
     showRequestDetails: false,
     rawMode: false,
@@ -168,11 +169,6 @@ export function createInitialState(props: AppProps): AppState {
     maximizedPanel: null,
     certificates: props.executorConfig.certificates,
     editor: props.executorConfig.editor,
-    editTarget: 'url',
-    editBuffers: EMPTY_EDIT_BUFFERS,
-    editScrollOffset: 0,
-    editHorizontalOffset: 0,
-    editEscapeArmedAt: null,
     pendingDiscardAction: null,
   };
 }

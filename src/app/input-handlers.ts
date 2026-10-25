@@ -411,9 +411,9 @@ export function handleEditInput({ state, selectedRequest, input, key, dispatch }
     }
 
     const isEditorDirty =
-      state.editBuffers.url.text !== selectedRequest.url ||
-      state.editBuffers.body.text !== (selectedRequest.body ?? '') ||
-      state.editBuffers.headers.text !== headersToText(selectedRequest.headers);
+      state.edit.buffers.url.text !== selectedRequest.url ||
+      state.edit.buffers.body.text !== (selectedRequest.body ?? '') ||
+      state.edit.buffers.headers.text !== headersToText(selectedRequest.headers);
 
     if (!isEditorDirty) {
       dispatch({ type: 'CANCEL_EDIT' });
@@ -421,8 +421,8 @@ export function handleEditInput({ state, selectedRequest, input, key, dispatch }
     }
 
     if (
-      state.editEscapeArmedAt !== null &&
-      Date.now() - state.editEscapeArmedAt <= EDIT_CANCEL_WINDOW_MS
+      state.edit.escapeArmedAt !== null &&
+      Date.now() - state.edit.escapeArmedAt <= EDIT_CANCEL_WINDOW_MS
     ) {
       dispatch({ type: 'CANCEL_EDIT' });
     } else {
@@ -482,7 +482,7 @@ export function handleEditInput({ state, selectedRequest, input, key, dispatch }
   }
 
   if (key.tab && key.shift) {
-    const nextTarget = EDIT_TAB_ORDER[(EDIT_TAB_ORDER.indexOf(state.editTarget) + 1) % EDIT_TAB_ORDER.length];
+    const nextTarget = EDIT_TAB_ORDER[(EDIT_TAB_ORDER.indexOf(state.edit.target) + 1) % EDIT_TAB_ORDER.length];
     dispatch({ type: 'SWITCH_EDIT_TAB', target: nextTarget });
     return;
   }
