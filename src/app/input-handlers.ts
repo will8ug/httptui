@@ -122,7 +122,7 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
   }
 
   if (key.return) {
-    const inputPath = state.fileLoadInput.trim();
+    const inputPath = state.fileLoad.input.trim();
     if (!inputPath) {
       dispatch({ type: 'SET_FILE_LOAD_ERROR', error: 'Please enter a file path' });
       return;
@@ -177,9 +177,9 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
       }
     };
 
-    const completed = completePath({ text: state.fileLoadInput, cursor: state.fileLoadCursor }, listDir);
+    const completed = completePath({ text: state.fileLoad.input, cursor: state.fileLoad.cursor }, listDir);
 
-    if (completed.text !== state.fileLoadInput) {
+    if (completed.text !== state.fileLoad.input) {
       dispatch({ type: 'UPDATE_FILE_LOAD_INPUT', value: completed.text, cursor: completed.cursor });
     }
 
@@ -188,7 +188,7 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
   }
 
   applyLineEdit(
-    { text: state.fileLoadInput, cursor: state.fileLoadCursor },
+    { text: state.fileLoad.input, cursor: state.fileLoad.cursor },
     input,
     key,
     (cursor) => {

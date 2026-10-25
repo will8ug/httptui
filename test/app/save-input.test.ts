@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Key } from 'ink';
 
 import { handleFileLoadInput, handleSaveInput } from '../../src/app/input-handlers';
+import { INITIAL_FILE_LOAD } from '../../src/core/reducers/helpers';
 import type { Action, AppState } from '../../src/core/types';
 import { pressKey } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
@@ -42,8 +43,7 @@ describe('S-key mode isolation', () => {
     handleFileLoadInput({
       state: createInitialState({
         mode: 'fileLoad',
-        fileLoadInput: 'api.http',
-        fileLoadCursor: 'api.http'.length,
+        fileLoad: { ...INITIAL_FILE_LOAD, input: 'api.http', cursor: 'api.http'.length },
       }),
       input: 'S',
       key: makeKey(),

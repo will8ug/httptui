@@ -6,7 +6,7 @@ import { reduceEdit } from './reducers/edit';
 import { reduceEnvSelect } from './reducers/env-select';
 import { reduceFileLoad } from './reducers/file-load';
 import { reduceGeometry } from './reducers/geometry';
-import { EMPTY_EDIT_BUFFERS } from './reducers/helpers';
+import { EMPTY_EDIT_BUFFERS, INITIAL_FILE_LOAD } from './reducers/helpers';
 import { reduceRequestLifecycle } from './reducers/lifecycle';
 import { reduceNavigation } from './reducers/navigation';
 import { reduceResponseSave } from './reducers/response-save';
@@ -157,10 +157,7 @@ export function createInitialState(props: AppProps): AppState {
     transientError: null,
     transientWarning: null,
     mode: 'normal',
-    fileLoadInput: '',
-    fileLoadCursor: 0,
-    fileLoadError: null,
-    fileLoadCompletions: null,
+    fileLoad: INITIAL_FILE_LOAD,
     saveInput: '',
     saveCursor: 0,
     saveError: null,

@@ -202,7 +202,7 @@ return (
       }
       overlay={
         state.showHelp ? <HelpOverlay visible={state.showHelp} /> :
-        state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoadInput} cursor={state.fileLoadCursor} error={state.fileLoadError} completions={state.fileLoadCompletions} /> :
+        state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoad.input} cursor={state.fileLoad.cursor} error={state.fileLoad.error} completions={state.fileLoad.completions} /> :
         state.mode === 'saveLoad' ? <SaveOverlay value={state.saveInput} cursor={state.saveCursor} error={state.saveError} /> :
         state.mode === 'responseSave' ? <SaveOverlay title="Save response" value={state.responseSaveInput} cursor={state.responseSaveCursor} error={state.responseSaveError} /> :
         state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} scrollOffset={state.envSelectScrollOffset} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :

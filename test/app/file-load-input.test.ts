@@ -2,17 +2,16 @@ import { describe, expect, it } from 'vitest';
 import type { Key } from 'ink';
 
 import { handleFileLoadInput } from '../../src/app/input-handlers';
-import type { Action, AppState } from '../../src/core/types';
+import { INITIAL_FILE_LOAD } from '../../src/core/reducers/helpers';
+import type { Action, AppState, FileLoadState } from '../../src/core/types';
 import { pressKey } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createInitialState } from '../helpers/state';
 
-function fileLoadState(overrides: Partial<AppState> = {}): AppState {
+function fileLoadState(overrides: Partial<FileLoadState> = {}): AppState {
   return createInitialState({
     mode: 'fileLoad',
-    fileLoadInput: 'api.http',
-    fileLoadCursor: 'api.http'.length,
-    ...overrides,
+    fileLoad: { ...INITIAL_FILE_LOAD, input: 'api.http', cursor: 'api.http'.length, ...overrides },
   });
 }
 
@@ -38,14 +37,14 @@ describe('handleNormalInput o', () => {
 
 describe('handleFileLoadInput typing and cursor', () => {
   it('typing a character inserts it at the cursor', () => {
-    const actions = pressFileLoadKey(fileLoadState({ fileLoadInput: '', fileLoadCursor: 0 }), 'a');
+    const actions = pressFileLoadKey(fileLoadState({ input: '', cursor: 0 }), 'a');
 
     expect(actions).toEqual([{ type: 'UPDATE_FILE_LOAD_INPUT', value: 'a', cursor: 1 }]);
   });
 
   it('Backspace deletes the character before the cursor', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: 'abcdef', fileLoadCursor: 3 }),
+      fileLoadState({ input: 'abcdef', cursor: 3 }),
       '',
       makeKey({ backspace: true }),
     );
@@ -55,7 +54,7 @@ describe('handleFileLoadInput typing and cursor', () => {
 
   it('Delete removes the character after the cursor', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: 'abcdef', fileLoadCursor: 3 }),
+      fileLoadState({ input: 'abcdef', cursor: 3 }),
       '',
       makeKey({ delete: true }),
     );
@@ -71,7 +70,7 @@ describe('handleFileLoadInput typing and cursor', () => {
 
   it('right arrow moves the cursor right', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: 'api.http', fileLoadCursor: 2 }),
+      fileLoadState({ input: 'api.http', cursor: 2 }),
       '',
       makeKey({ rightArrow: true }),
     );
@@ -87,7 +86,7 @@ describe('handleFileLoadInput typing and cursor', () => {
 
   it('End moves the cursor to the end', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: 'api.http', fileLoadCursor: 2 }),
+      fileLoadState({ input: 'api.http', cursor: 2 }),
       '',
       makeKey({ end: true }),
     );
@@ -103,7 +102,7 @@ describe('handleFileLoadInput typing and cursor', () => {
 
   it('Ctrl+E aliases End', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: 'api.http', fileLoadCursor: 2 }),
+      fileLoadState({ input: 'api.http', cursor: 2 }),
       'e',
       makeKey({ ctrl: true }),
     );
@@ -113,7 +112,7 @@ describe('handleFileLoadInput typing and cursor', () => {
 
   it('Enter with empty input sets the file-load error', () => {
     const actions = pressFileLoadKey(
-      fileLoadState({ fileLoadInput: '   ', fileLoadCursor: 3 }),
+      fileLoadState({ input: '   ', cursor: 3 }),
       '',
       makeKey({ return: true }),
     );

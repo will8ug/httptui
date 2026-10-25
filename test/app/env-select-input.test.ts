@@ -7,6 +7,7 @@ import {
   handleHelpInput,
   handleSearchInput,
 } from '../../src/app/input-handlers';
+import { INITIAL_FILE_LOAD } from '../../src/core/reducers/helpers';
 import type { Action, AppState, EnvOption } from '../../src/core/types';
 import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
@@ -82,8 +83,7 @@ describe('E is ignored in non-normal handlers', () => {
     handleFileLoadInput({
       state: createInitialState({
         mode: 'fileLoad',
-        fileLoadInput: '',
-        fileLoadCursor: 0,
+        fileLoad: INITIAL_FILE_LOAD,
       }),
       input: 'E',
       key: makeKey(),

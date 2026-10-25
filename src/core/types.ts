@@ -130,6 +130,16 @@ export type EditOp =
   | 'lineStart'
   | 'lineEnd';
 
+export interface TextEntryState {
+  input: string;
+  cursor: number;
+  error: string | null;
+}
+
+export interface FileLoadState extends TextEntryState {
+  completions: string[] | null;
+}
+
 export interface AppState {
   geometry: TerminalGeometry;
   requests: ParsedRequest[];
@@ -154,10 +164,10 @@ export interface AppState {
   transientError: string | null;
   transientWarning: string | null;
   mode: AppMode;
-  fileLoadInput: string;
-  fileLoadCursor: number;
-  fileLoadError: string | null;
-  fileLoadCompletions: string[] | null;
+  // Dormancy invariant: each overlay cluster equals its initial object whenever
+  // `mode` is not that overlay's mode — the owning reducer resets it on exit and
+  // commit. Search is the documented exception and lives outside this invariant.
+  fileLoad: FileLoadState;
   saveInput: string;
   saveCursor: number;
   saveError: string | null;

@@ -1,6 +1,6 @@
 import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
-import { CLEAR_SEARCH_STATE, setTransient } from './helpers';
+import { CLEAR_SEARCH_STATE, INITIAL_FILE_LOAD, setTransient } from './helpers';
 
 type FileLoadAction = Extract<Action, { type: 'ENTER_FILE_LOAD' | 'UPDATE_FILE_LOAD_INPUT' | 'MOVE_FILE_LOAD_CURSOR' | 'SET_FILE_LOAD_ERROR' | 'SET_FILE_LOAD_COMPLETIONS' | 'LOAD_FILE' | 'CANCEL_FILE_LOAD' }>;
 
@@ -10,37 +10,47 @@ export function reduceFileLoad(state: AppState, action: FileLoadAction): AppStat
       return {
         ...state,
         mode: 'fileLoad',
-        fileLoadInput: '',
-        fileLoadCursor: 0,
-        fileLoadError: null,
-        fileLoadCompletions: null,
+        fileLoad: INITIAL_FILE_LOAD,
       };
 
     case 'UPDATE_FILE_LOAD_INPUT':
       return {
         ...state,
-        fileLoadInput: action.value,
-        fileLoadCursor: action.cursor,
-        fileLoadCompletions: null,
+        fileLoad: {
+          ...state.fileLoad,
+          input: action.value,
+          cursor: action.cursor,
+          error: null,
+          completions: null,
+        },
       };
 
     case 'MOVE_FILE_LOAD_CURSOR':
       return {
         ...state,
-        fileLoadCursor: action.cursor,
-        fileLoadCompletions: null,
+        fileLoad: {
+          ...state.fileLoad,
+          cursor: action.cursor,
+          completions: null,
+        },
       };
 
     case 'SET_FILE_LOAD_ERROR':
       return {
         ...state,
-        fileLoadError: action.error,
+        fileLoad: {
+          ...state.fileLoad,
+          error: action.error,
+        },
       };
 
     case 'SET_FILE_LOAD_COMPLETIONS':
       return {
         ...state,
-        fileLoadCompletions: action.completions,
+        fileLoad: {
+          ...state.fileLoad,
+          completions: action.completions,
+        },
       };
 
     case 'LOAD_FILE': {
@@ -63,10 +73,7 @@ export function reduceFileLoad(state: AppState, action: FileLoadAction): AppStat
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
         mode: 'normal',
-        fileLoadInput: '',
-        fileLoadCursor: 0,
-        fileLoadError: null,
-        fileLoadCompletions: null,
+        fileLoad: INITIAL_FILE_LOAD,
         ...setTransient({ message: `Loaded: ${action.filePath.split('/').pop() ?? ''}` }),
         ...(action.executorConfig && {
           certificates: action.executorConfig.certificates,
@@ -80,10 +87,7 @@ export function reduceFileLoad(state: AppState, action: FileLoadAction): AppStat
       return {
         ...state,
         mode: 'normal',
-        fileLoadInput: '',
-        fileLoadCursor: 0,
-        fileLoadError: null,
-        fileLoadCompletions: null,
+        fileLoad: INITIAL_FILE_LOAD,
       };
   }
 }
