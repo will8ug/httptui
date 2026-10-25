@@ -7,8 +7,8 @@ import {
   handleHelpInput,
   handleSearchInput,
 } from '../../src/app/input-handlers';
-import { INITIAL_FILE_LOAD } from '../../src/core/reducers/helpers';
-import type { Action, AppState, EnvOption } from '../../src/core/types';
+import { INITIAL_ENV_SELECT, INITIAL_FILE_LOAD } from '../../src/core/reducers/helpers';
+import type { Action, AppState, EnvOption, EnvSelectState } from '../../src/core/types';
 import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
@@ -31,14 +31,13 @@ function pressEnvKey(state: AppState, input: string, key: Key = makeKey()): Acti
   return dispatched;
 }
 
-function envSelectState(overrides: Partial<AppState> = {}): AppState {
+function envSelectState(overrides: Partial<EnvSelectState> = {}): AppState {
   return createInitialState({
     mode: 'envSelect',
     requests: [createRequest()],
     selectedIndex: 0,
     availableEnvironments: environments,
-    envSelectIndex: 0,
-    ...overrides,
+    envSelect: { ...INITIAL_ENV_SELECT, ...overrides },
   });
 }
 
@@ -115,7 +114,7 @@ describe('handleEnvSelectInput', () => {
   });
 
   it('k moves the selection up', () => {
-    expect(pressEnvKey(envSelectState({ envSelectIndex: 1 }), 'k')).toEqual([
+    expect(pressEnvKey(envSelectState({ selectedIndex: 1 }), 'k')).toEqual([
       { type: 'MOVE_ENV_SELECTION', direction: 'up' },
     ]);
   });
@@ -124,7 +123,7 @@ describe('handleEnvSelectInput', () => {
     expect(pressEnvKey(envSelectState(), '', makeKey({ downArrow: true }))).toEqual([
       { type: 'MOVE_ENV_SELECTION', direction: 'down' },
     ]);
-    expect(pressEnvKey(envSelectState({ envSelectIndex: 1 }), '', makeKey({ upArrow: true }))).toEqual([
+    expect(pressEnvKey(envSelectState({ selectedIndex: 1 }), '', makeKey({ upArrow: true }))).toEqual([
       { type: 'MOVE_ENV_SELECTION', direction: 'up' },
     ]);
   });
@@ -134,14 +133,14 @@ describe('handleEnvSelectInput', () => {
   });
 
   it('g jumps to the top and G jumps to the bottom', () => {
-    expect(pressEnvKey(envSelectState({ envSelectIndex: 2 }), 'g')).toEqual([
+    expect(pressEnvKey(envSelectState({ selectedIndex: 2 }), 'g')).toEqual([
       { type: 'JUMP_ENV_SELECTION', target: 'top' },
     ]);
     expect(pressEnvKey(envSelectState(), 'G')).toEqual([{ type: 'JUMP_ENV_SELECTION', target: 'bottom' }]);
   });
 
   it('Enter on (none) switches to a cleared environment', () => {
-    expect(pressEnvKey(envSelectState({ envSelectIndex: 0 }), '', makeKey({ return: true }))).toEqual([
+    expect(pressEnvKey(envSelectState(), '', makeKey({ return: true }))).toEqual([
       { type: 'SWITCH_ENV', environmentVariables: [], envName: null },
     ]);
   });

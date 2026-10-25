@@ -205,7 +205,7 @@ return (
         state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoad.input} cursor={state.fileLoad.cursor} error={state.fileLoad.error} completions={state.fileLoad.completions} /> :
         state.mode === 'saveLoad' ? <SaveOverlay value={state.saveLoad.input} cursor={state.saveLoad.cursor} error={state.saveLoad.error} /> :
         state.mode === 'responseSave' ? <SaveOverlay title="Save response" value={state.responseSave.input} cursor={state.responseSave.cursor} error={state.responseSave.error} /> :
-        state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelectIndex} scrollOffset={state.envSelectScrollOffset} activeEnvName={state.activeEnvName} error={state.envSelectError} /> :
+        state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelect.selectedIndex} scrollOffset={state.envSelect.scrollOffset} activeEnvName={state.activeEnvName} error={state.envSelect.error} /> :
         state.mode === 'edit' ? <EditOverlay title="Edit Request" tabs={EDIT_TAB_ORDER} activeTab={state.editTarget} buffer={state.editBuffers[state.editTarget].text} cursor={state.editBuffers[state.editTarget].cursor} scrollOffset={state.editScrollOffset} horizontalOffset={state.editHorizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
         state.mode === 'confirmDiscard' && state.pendingDiscardAction !== null ? <ConfirmDiscardOverlay pendingAction={state.pendingDiscardAction} /> :
         state.mode === 'confirmInPlaceSave' ? <ConfirmInPlaceSaveOverlay fileName={basename(state.filePath)} markedCount={state.requests.filter(r => r.isDirty).length} /> :

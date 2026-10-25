@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState as realCreateInitialState, reducer } from '../../../src/core/reducer';
 import { mergeVariables } from '../../../src/core/variables';
 import type { Action, AppState, EnvOption, FileVariable } from '../../../src/core/types';
+import { INITIAL_ENV_SELECT } from '../../../src/core/reducers/helpers';
 import { createInitialState, defaultAppProps } from '../../helpers/state';
 
 const fileVariables: FileVariable[] = [
@@ -68,8 +69,6 @@ function makeInitialState(overrides: Partial<AppState> = {}): AppState {
     environmentVariables: [],
     activeEnvName: null,
     availableEnvironments,
-    envSelectIndex: 0,
-    envSelectError: null,
     ...overrides,
   });
 }
@@ -115,8 +114,7 @@ describe('createInitialState env fields', () => {
       { name: '(none)', file: null },
       { name: 'Development', file: 'env/dev.json' },
     ]);
-    expect(result.envSelectIndex).toBe(0);
-    expect(result.envSelectError).toBeNull();
+    expect(result.envSelect).toEqual(INITIAL_ENV_SELECT);
   });
 });
 
@@ -183,63 +181,63 @@ describe('RELOAD_FILE with no active environment', () => {
 });
 
 describe('ENTER_ENV_SELECT reducer', () => {
-  it('sets mode to envSelect and clears envSelectError', () => {
-    const state = makeInitialState({ envSelectError: 'old error' });
+  it('sets mode to envSelect and clears the envSelect error', () => {
+    const state = makeInitialState({ envSelect: { ...INITIAL_ENV_SELECT, error: 'old error' } });
     const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
 
     expect(result.mode).toBe('envSelect');
-    expect(result.envSelectError).toBeNull();
+    expect(result.envSelect.error).toBeNull();
   });
 
-  it('initializes envSelectIndex to the active environment option index', () => {
+  it('initializes the envSelect index to the active environment option index', () => {
     const state = makeInitialState({ activeEnvName: 'Staging' });
     const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
 
-    expect(result.envSelectIndex).toBe(STAGING_INDEX);
+    expect(result.envSelect.selectedIndex).toBe(STAGING_INDEX);
   });
 
-  it('initializes envSelectIndex to (none) when no environment is active', () => {
+  it('initializes the envSelect index to (none) when no environment is active', () => {
     const state = makeInitialState({ activeEnvName: null });
     const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
 
-    expect(result.envSelectIndex).toBe(NONE_INDEX);
+    expect(result.envSelect.selectedIndex).toBe(NONE_INDEX);
   });
 
   it('falls back to (none) when activeEnvName is not in availableEnvironments', () => {
     const state = makeInitialState({ activeEnvName: 'Unknown' });
     const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
 
-    expect(result.envSelectIndex).toBe(NONE_INDEX);
+    expect(result.envSelect.selectedIndex).toBe(NONE_INDEX);
   });
 });
 
 describe('MOVE_ENV_SELECTION reducer', () => {
-  it('moves envSelectIndex down within bounds', () => {
-    const state = makeInitialState({ envSelectIndex: DEV_INDEX });
+  it('moves the envSelect index down within bounds', () => {
+    const state = makeInitialState({ envSelect: { ...INITIAL_ENV_SELECT, selectedIndex: DEV_INDEX } });
     const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'down' });
 
-    expect(result.envSelectIndex).toBe(STAGING_INDEX);
+    expect(result.envSelect.selectedIndex).toBe(STAGING_INDEX);
   });
 
-  it('moves envSelectIndex up within bounds', () => {
-    const state = makeInitialState({ envSelectIndex: STAGING_INDEX });
+  it('moves the envSelect index up within bounds', () => {
+    const state = makeInitialState({ envSelect: { ...INITIAL_ENV_SELECT, selectedIndex: STAGING_INDEX } });
     const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'up' });
 
-    expect(result.envSelectIndex).toBe(DEV_INDEX);
+    expect(result.envSelect.selectedIndex).toBe(DEV_INDEX);
   });
 
   it('clamps to first option when moving up at first option (no wrap)', () => {
-    const state = makeInitialState({ envSelectIndex: NONE_INDEX });
+    const state = makeInitialState({ envSelect: { ...INITIAL_ENV_SELECT, selectedIndex: NONE_INDEX } });
     const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'up' });
 
-    expect(result.envSelectIndex).toBe(NONE_INDEX);
+    expect(result.envSelect.selectedIndex).toBe(NONE_INDEX);
   });
 
   it('clamps to last option when moving down at last option (no wrap)', () => {
-    const state = makeInitialState({ envSelectIndex: PROD_INDEX });
+    const state = makeInitialState({ envSelect: { ...INITIAL_ENV_SELECT, selectedIndex: PROD_INDEX } });
     const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'down' });
 
-    expect(result.envSelectIndex).toBe(PROD_INDEX);
+    expect(result.envSelect.selectedIndex).toBe(PROD_INDEX);
   });
 
   it('is a no-op when availableEnvironments is empty', () => {
@@ -354,8 +352,8 @@ describe('SWITCH_ENV reducer', () => {
     expect(result.requestHorizontalOffset).toBe(0);
   });
 
-  it('returns to normal mode and clears envSelectError', () => {
-    const state = makeInitialState({ mode: 'envSelect', envSelectError: 'old error' });
+  it('returns to normal mode and clears the envSelect error', () => {
+    const state = makeInitialState({ mode: 'envSelect', envSelect: { ...INITIAL_ENV_SELECT, error: 'old error' } });
     const result = reducer(state, {
       type: 'SWITCH_ENV',
       environmentVariables: devEnvVariables,
@@ -363,27 +361,27 @@ describe('SWITCH_ENV reducer', () => {
     });
 
     expect(result.mode).toBe('normal');
-    expect(result.envSelectError).toBeNull();
+    expect(result.envSelect.error).toBeNull();
   });
 });
 
 describe('CANCEL_ENV_SELECT reducer', () => {
-  it('returns to normal mode and clears envSelectError', () => {
+  it('returns to normal mode and clears the envSelect error', () => {
     const state = makeInitialState({
       mode: 'envSelect',
-      envSelectError: 'some error',
+      envSelect: { ...INITIAL_ENV_SELECT, error: 'some error' },
       activeEnvName: 'Staging',
     });
     const result = reducer(state, { type: 'CANCEL_ENV_SELECT' });
 
     expect(result.mode).toBe('normal');
-    expect(result.envSelectError).toBeNull();
+    expect(result.envSelect.error).toBeNull();
   });
 
   it('preserves active env state and variables by reference', () => {
     const state = makeInitialState({
       mode: 'envSelect',
-      envSelectError: 'some error',
+      envSelect: { ...INITIAL_ENV_SELECT, error: 'some error' },
       activeEnvName: 'Staging',
       environmentVariables: stagingEnvVariables,
       variables: [
@@ -401,41 +399,41 @@ describe('CANCEL_ENV_SELECT reducer', () => {
 });
 
 describe('SET_ENV_SELECT_ERROR reducer', () => {
-  it('sets envSelectError and keeps mode as envSelect', () => {
-    const state = makeInitialState({ mode: 'envSelect', envSelectError: null });
+  it('sets the envSelect error and keeps mode as envSelect', () => {
+    const state = makeInitialState({ mode: 'envSelect' });
     const result = reducer(state, {
       type: 'SET_ENV_SELECT_ERROR',
       error: 'File not found: env/dev.json',
     });
 
-    expect(result.envSelectError).toBe('File not found: env/dev.json');
+    expect(result.envSelect.error).toBe('File not found: env/dev.json');
     expect(result.mode).toBe('envSelect');
   });
 });
 
 describe('MOVE_ENV_SELECTION scroll offset', () => {
   it('advances offset when cursor moves past the bottom of the visible window', () => {
-    const state = makeManyEnvState({ envSelectIndex: 7, envSelectScrollOffset: 0 });
+    const state = makeManyEnvState({ envSelect: { ...INITIAL_ENV_SELECT, selectedIndex: 7 } });
     const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'down' });
 
-    expect(result.envSelectIndex).toBe(8);
-    expect(result.envSelectScrollOffset).toBe(1);
+    expect(result.envSelect.selectedIndex).toBe(8);
+    expect(result.envSelect.scrollOffset).toBe(1);
   });
 
   it('retreats offset when cursor moves above the visible window', () => {
-    const state = makeManyEnvState({ envSelectIndex: 4, envSelectScrollOffset: 4 });
+    const state = makeManyEnvState({ envSelect: { ...INITIAL_ENV_SELECT, selectedIndex: 4, scrollOffset: 4 } });
     const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'up' });
 
-    expect(result.envSelectIndex).toBe(3);
-    expect(result.envSelectScrollOffset).toBe(3);
+    expect(result.envSelect.selectedIndex).toBe(3);
+    expect(result.envSelect.scrollOffset).toBe(3);
   });
 
   it('keeps offset stable when cursor moves within the visible window', () => {
-    const state = makeManyEnvState({ envSelectIndex: 3, envSelectScrollOffset: 0 });
+    const state = makeManyEnvState({ envSelect: { ...INITIAL_ENV_SELECT, selectedIndex: 3 } });
     const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'down' });
 
-    expect(result.envSelectIndex).toBe(4);
-    expect(result.envSelectScrollOffset).toBe(0);
+    expect(result.envSelect.selectedIndex).toBe(4);
+    expect(result.envSelect.scrollOffset).toBe(0);
   });
 
   it('derives the picker window from the state geometry', () => {
@@ -443,32 +441,31 @@ describe('MOVE_ENV_SELECTION scroll offset', () => {
     // index 4 scrolls to 4 - 4 + 1 = 1; the 8-row window of a 24-row
     // terminal would keep the offset at 0.
     const state = makeManyEnvState({
-      envSelectIndex: 3,
-      envSelectScrollOffset: 0,
+      envSelect: { ...INITIAL_ENV_SELECT, selectedIndex: 3 },
       geometry: { rows: 12, columns: 80 },
     });
     const result = reducer(state, { type: 'MOVE_ENV_SELECTION', direction: 'down' });
 
-    expect(result.envSelectIndex).toBe(4);
-    expect(result.envSelectScrollOffset).toBe(1);
+    expect(result.envSelect.selectedIndex).toBe(4);
+    expect(result.envSelect.scrollOffset).toBe(1);
   });
 });
 
 describe('JUMP_ENV_SELECTION reducer', () => {
   it('jump to top sets index to 0 and offset to 0', () => {
-    const state = makeManyEnvState({ envSelectIndex: 11, envSelectScrollOffset: 4 });
+    const state = makeManyEnvState({ envSelect: { ...INITIAL_ENV_SELECT, selectedIndex: 11, scrollOffset: 4 } });
     const result = reducer(state, { type: 'JUMP_ENV_SELECTION', target: 'top' });
 
-    expect(result.envSelectIndex).toBe(0);
-    expect(result.envSelectScrollOffset).toBe(0);
+    expect(result.envSelect.selectedIndex).toBe(0);
+    expect(result.envSelect.scrollOffset).toBe(0);
   });
 
   it('jump to bottom sets index to last and syncs offset', () => {
-    const state = makeManyEnvState({ envSelectIndex: 0, envSelectScrollOffset: 0 });
+    const state = makeManyEnvState({ envSelect: { ...INITIAL_ENV_SELECT, selectedIndex: 0, scrollOffset: 0 } });
     const result = reducer(state, { type: 'JUMP_ENV_SELECTION', target: 'bottom' });
 
-    expect(result.envSelectIndex).toBe(11);
-    expect(result.envSelectScrollOffset).toBe(4);
+    expect(result.envSelect.selectedIndex).toBe(11);
+    expect(result.envSelect.scrollOffset).toBe(4);
   });
 
   it('is a no-op when availableEnvironments is empty', () => {
@@ -481,45 +478,57 @@ describe('JUMP_ENV_SELECTION reducer', () => {
 
 describe('ENTER_ENV_SELECT scroll offset', () => {
   it('computes offset to show active env when it is below the visible window', () => {
-    const state = makeManyEnvState({ activeEnvName: 'Demo', envSelectScrollOffset: 0 });
+    const state = makeManyEnvState({ activeEnvName: 'Demo' });
     const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
 
-    expect(result.envSelectIndex).toBe(11);
-    expect(result.envSelectScrollOffset).toBe(4);
+    expect(result.envSelect.selectedIndex).toBe(11);
+    expect(result.envSelect.scrollOffset).toBe(4);
   });
 
   it('preserves offset when active env is already visible', () => {
-    const state = makeManyEnvState({ activeEnvName: 'QA', envSelectScrollOffset: 0 });
+    const state = makeManyEnvState({ activeEnvName: 'QA' });
     const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
 
-    expect(result.envSelectIndex).toBe(3);
-    expect(result.envSelectScrollOffset).toBe(0);
+    expect(result.envSelect.selectedIndex).toBe(3);
+    expect(result.envSelect.scrollOffset).toBe(0);
   });
 
-  it('preserves persisted offset when active env is visible in it', () => {
-    const state = makeManyEnvState({ activeEnvName: 'Demo', envSelectScrollOffset: 4 });
+  // Pure reducer semantics: app entry always starts from an offset of 0
+  // because exit and commit reset the cluster.
+  it('keeps a compatible offset when entering with the selected index already visible', () => {
+    const state = makeManyEnvState({ activeEnvName: 'Demo', envSelect: { ...INITIAL_ENV_SELECT, scrollOffset: 4 } });
     const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
 
-    expect(result.envSelectIndex).toBe(11);
-    expect(result.envSelectScrollOffset).toBe(4);
+    expect(result.envSelect.selectedIndex).toBe(11);
+    expect(result.envSelect.scrollOffset).toBe(4);
   });
 
-  it('corrects stale offset when active env is outside persisted window', () => {
-    const state = makeManyEnvState({ activeEnvName: 'Dev', envSelectScrollOffset: 8 });
+  it('corrects an offset that hides the selected index on entry', () => {
+    const state = makeManyEnvState({ activeEnvName: 'Dev', envSelect: { ...INITIAL_ENV_SELECT, scrollOffset: 8 } });
     const result = reducer(state, { type: 'ENTER_ENV_SELECT' });
 
-    expect(result.envSelectIndex).toBe(1);
-    expect(result.envSelectScrollOffset).toBe(1);
+    expect(result.envSelect.selectedIndex).toBe(1);
+    expect(result.envSelect.scrollOffset).toBe(1);
   });
 });
 
-describe('CANCEL_ENV_SELECT preserves scroll offset', () => {
-  it('preserves envSelectScrollOffset on cancel', () => {
-    const state = makeManyEnvState({ mode: 'envSelect', envSelectScrollOffset: 3, envSelectError: 'some error' });
-    const result = reducer(state, { type: 'CANCEL_ENV_SELECT' });
+describe('envSelect dormancy invariant', () => {
+  // Characterization pin: the exit and commit resets already enforce dormancy.
+  // scrollOffset derives from selectedIndex clamping; the whole-object reset
+  // drops it with the index.
+  it('cluster deep-equals INITIAL_ENV_SELECT after every exit/commit action', () => {
+    const dirty = makeManyEnvState({ mode: 'envSelect', envSelect: { selectedIndex: 3, scrollOffset: 3, error: 'some error' } });
 
-    expect(result.envSelectScrollOffset).toBe(3);
-    expect(result.mode).toBe('normal');
-    expect(result.envSelectError).toBeNull();
+    const afterCancel = reducer(dirty, { type: 'CANCEL_ENV_SELECT' });
+    expect(afterCancel.mode).toBe('normal');
+    expect(afterCancel.envSelect).toEqual(INITIAL_ENV_SELECT);
+
+    const afterSwitch = reducer(dirty, {
+      type: 'SWITCH_ENV',
+      environmentVariables: devEnvVariables,
+      envName: 'Development',
+    });
+    expect(afterSwitch.mode).toBe('normal');
+    expect(afterSwitch.envSelect).toEqual(INITIAL_ENV_SELECT);
   });
 });

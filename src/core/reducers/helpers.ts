@@ -6,7 +6,7 @@ import { getRequestTarget, resolveRequestDetails } from '../../utils/request';
 import { cellWidth } from '../../utils/text';
 import { computeResponseViewport } from '../response-viewport';
 import type { ResponseViewportModel } from '../response-viewport';
-import type { AppState, FileLoadState, FileVariable, ParsedRequest, TextEntryState } from '../types';
+import type { AppState, EnvSelectState, FileLoadState, FileVariable, ParsedRequest, TextEntryState } from '../types';
 import { resolveVariables } from '../variables';
 
 export function clamp(value: number, min: number, max: number): number {
@@ -193,6 +193,12 @@ export const INITIAL_SAVE_LOAD: TextEntryState = {
 export const INITIAL_RESPONSE_SAVE: TextEntryState = {
   input: '',
   cursor: 0,
+  error: null,
+};
+
+export const INITIAL_ENV_SELECT: EnvSelectState = {
+  selectedIndex: 0,
+  scrollOffset: 0,
   error: null,
 };
 

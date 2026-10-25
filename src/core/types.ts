@@ -140,6 +140,12 @@ export interface FileLoadState extends TextEntryState {
   completions: string[] | null;
 }
 
+export interface EnvSelectState {
+  selectedIndex: number;
+  scrollOffset: number;
+  error: string | null;
+}
+
 export interface AppState {
   geometry: TerminalGeometry;
   requests: ParsedRequest[];
@@ -170,12 +176,10 @@ export interface AppState {
   fileLoad: FileLoadState;
   saveLoad: TextEntryState;
   responseSave: TextEntryState;
+  envSelect: EnvSelectState;
   fileVariables: FileVariable[];
   activeEnvName: string | null;
   availableEnvironments: EnvOption[];
-  envSelectIndex: number;
-  envSelectScrollOffset: number;
-  envSelectError: string | null;
   wrapMode: WrapMode;
   showRequestDetails: boolean;
   rawMode: boolean;

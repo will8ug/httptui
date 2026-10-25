@@ -1,7 +1,7 @@
 import { getEnvPickerVisibleHeight } from '../../utils/layout';
 import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
-import { clamp, clampScrollOffsetToCursor, CLEAR_SEARCH_STATE } from './helpers';
+import { clamp, clampScrollOffsetToCursor, CLEAR_SEARCH_STATE, INITIAL_ENV_SELECT } from './helpers';
 
 type EnvSelectAction = Extract<Action, { type: 'ENTER_ENV_SELECT' | 'MOVE_ENV_SELECTION' | 'JUMP_ENV_SELECTION' | 'SWITCH_ENV' | 'CANCEL_ENV_SELECT' | 'SET_ENV_SELECT_ERROR' }>;
 
@@ -22,9 +22,11 @@ export function reduceEnvSelect(state: AppState, action: EnvSelectAction): AppSt
       return {
         ...state,
         mode: 'envSelect',
-        envSelectIndex: initialIndex,
-        envSelectScrollOffset: clampScrollOffsetToCursor(initialIndex, state.envSelectScrollOffset, visibleCount),
-        envSelectError: null,
+        envSelect: {
+          ...INITIAL_ENV_SELECT,
+          selectedIndex: initialIndex,
+          scrollOffset: clampScrollOffsetToCursor(initialIndex, state.envSelect.scrollOffset, visibleCount),
+        },
       };
     }
 
@@ -34,12 +36,15 @@ export function reduceEnvSelect(state: AppState, action: EnvSelectAction): AppSt
         return state;
       }
       const delta = action.direction === 'up' ? -1 : 1;
-      const nextIndex = clamp(state.envSelectIndex + delta, 0, optionCount - 1);
+      const nextIndex = clamp(state.envSelect.selectedIndex + delta, 0, optionCount - 1);
       const visibleCount = getEnvPickerVisibleHeight(state.geometry.rows);
       return {
         ...state,
-        envSelectIndex: nextIndex,
-        envSelectScrollOffset: clampScrollOffsetToCursor(nextIndex, state.envSelectScrollOffset, visibleCount),
+        envSelect: {
+          ...state.envSelect,
+          selectedIndex: nextIndex,
+          scrollOffset: clampScrollOffsetToCursor(nextIndex, state.envSelect.scrollOffset, visibleCount),
+        },
       };
     }
 
@@ -52,8 +57,11 @@ export function reduceEnvSelect(state: AppState, action: EnvSelectAction): AppSt
       const visibleCount = getEnvPickerVisibleHeight(state.geometry.rows);
       return {
         ...state,
-        envSelectIndex: nextIndex,
-        envSelectScrollOffset: clampScrollOffsetToCursor(nextIndex, state.envSelectScrollOffset, visibleCount),
+        envSelect: {
+          ...state.envSelect,
+          selectedIndex: nextIndex,
+          scrollOffset: clampScrollOffsetToCursor(nextIndex, state.envSelect.scrollOffset, visibleCount),
+        },
       };
     }
 
@@ -72,7 +80,7 @@ export function reduceEnvSelect(state: AppState, action: EnvSelectAction): AppSt
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
         mode: 'normal',
-        envSelectError: null,
+        envSelect: INITIAL_ENV_SELECT,
         ...CLEAR_SEARCH_STATE,
       };
 
@@ -80,13 +88,16 @@ export function reduceEnvSelect(state: AppState, action: EnvSelectAction): AppSt
       return {
         ...state,
         mode: 'normal',
-        envSelectError: null,
+        envSelect: INITIAL_ENV_SELECT,
       };
 
     case 'SET_ENV_SELECT_ERROR':
       return {
         ...state,
-        envSelectError: action.error,
+        envSelect: {
+          ...state.envSelect,
+          error: action.error,
+        },
       };
   }
 }

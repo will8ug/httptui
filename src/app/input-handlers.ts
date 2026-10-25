@@ -248,7 +248,7 @@ export function handleEnvSelectInput({ state, input, key, dispatch }: {
   }
 
   if (key.return) {
-    const option = state.availableEnvironments[state.envSelectIndex];
+    const option = state.availableEnvironments[state.envSelect.selectedIndex];
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for out-of-bounds env option access
     if (!option) {
       return;
