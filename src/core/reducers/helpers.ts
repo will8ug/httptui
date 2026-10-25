@@ -6,7 +6,7 @@ import { getRequestTarget, resolveRequestDetails } from '../../utils/request';
 import { cellWidth } from '../../utils/text';
 import { computeResponseViewport } from '../response-viewport';
 import type { ResponseViewportModel } from '../response-viewport';
-import type { AppState, EditState, EnvSelectState, FileLoadState, FileVariable, ParsedRequest, TextEntryState } from '../types';
+import type { AppState, ConfirmState, EditState, EnvSelectState, FileLoadState, FileVariable, ParsedRequest, TextEntryState } from '../types';
 import { resolveVariables } from '../variables';
 
 export function clamp(value: number, min: number, max: number): number {
@@ -214,6 +214,10 @@ export const INITIAL_EDIT: EditState = {
   scrollOffset: 0,
   horizontalOffset: 0,
   escapeArmedAt: null,
+};
+
+export const INITIAL_CONFIRM: ConfirmState = {
+  pendingDiscardAction: null,
 };
 
 export function setTransient(

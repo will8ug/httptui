@@ -501,7 +501,7 @@ export function handleConfirmDiscardInput({ state, exit, suspend, input, key, di
   dispatch: Dispatch<Action>;
 }): void {
   if (input === 'y') {
-    const pendingAction = state.pendingDiscardAction;
+    const pendingAction = state.confirm.pendingDiscardAction;
     dispatch({ type: 'CONFIRM_DISCARD' });
     switch (pendingAction) {
       case 'reload':

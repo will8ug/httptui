@@ -154,6 +154,10 @@ export interface EditState {
   escapeArmedAt: number | null;
 }
 
+export interface ConfirmState {
+  pendingDiscardAction: PendingDiscardAction | null;
+}
+
 export interface AppState {
   geometry: TerminalGeometry;
   requests: ParsedRequest[];
@@ -186,6 +190,7 @@ export interface AppState {
   responseSave: TextEntryState;
   envSelect: EnvSelectState;
   edit: EditState;
+  confirm: ConfirmState;
   fileVariables: FileVariable[];
   activeEnvName: string | null;
   availableEnvironments: EnvOption[];
@@ -200,7 +205,6 @@ export interface AppState {
   // the focused panel, and nothing reachable while maximized changes focus
   // (Tab is dead there; ENTER_SEARCH re-focuses the already-maximized response).
   maximizedPanel: FocusedPanel | null;
-  pendingDiscardAction: PendingDiscardAction | null;
   certificates?: Record<string, CertEntry>;
   editor?: string;
 }

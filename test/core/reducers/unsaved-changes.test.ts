@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { hasUnsavedChanges } from '../../../src/utils/request';
-import { INITIAL_EDIT } from '../../../src/core/reducers/helpers';
+import { INITIAL_CONFIRM, INITIAL_EDIT } from '../../../src/core/reducers/helpers';
 import { createRequest } from '../../helpers/requests';
 import { createInitialState, createEditState, reducer } from '../../helpers/state';
 
@@ -177,7 +177,7 @@ describe('per-request dirty markers', () => {
       requests: [dirty],
       selectedIndex: 0,
       mode: 'confirmDiscard',
-      pendingDiscardAction: 'quit',
+      confirm: { ...INITIAL_CONFIRM, pendingDiscardAction: 'quit' },
     });
 
     const result = reducer(state, { type: 'CONFIRM_DISCARD' });
@@ -185,7 +185,7 @@ describe('per-request dirty markers', () => {
     expect(result.requests[0].isDirty).toBe(true);
     expect(hasUnsavedChanges(result.requests)).toBe(true);
     expect(result.mode).toBe('normal');
-    expect(result.pendingDiscardAction).toBeNull();
+    expect(result.confirm.pendingDiscardAction).toBeNull();
   });
 
   it('is preserved by CANCEL_DISCARD', () => {
@@ -194,7 +194,7 @@ describe('per-request dirty markers', () => {
       requests: [dirty],
       selectedIndex: 0,
       mode: 'confirmDiscard',
-      pendingDiscardAction: 'reload',
+      confirm: { ...INITIAL_CONFIRM, pendingDiscardAction: 'reload' },
     });
 
     const result = reducer(state, { type: 'CANCEL_DISCARD' });
@@ -202,7 +202,7 @@ describe('per-request dirty markers', () => {
     expect(result.requests[0].isDirty).toBe(true);
     expect(hasUnsavedChanges(result.requests)).toBe(true);
     expect(result.mode).toBe('normal');
-    expect(result.pendingDiscardAction).toBeNull();
+    expect(result.confirm.pendingDiscardAction).toBeNull();
   });
 
   it('file-level flag is set when any request is marked', () => {
@@ -234,7 +234,7 @@ describe('pendingDiscardAction', () => {
     const result = reducer(state, { type: 'REQUEST_DISCARD_CONFIRM', action: 'reload' });
 
     expect(result.mode).toBe('confirmDiscard');
-    expect(result.pendingDiscardAction).toBe('reload');
+    expect(result.confirm.pendingDiscardAction).toBe('reload');
   });
 
   it('is set by REQUEST_DISCARD_CONFIRM for fileLoad', () => {
@@ -246,7 +246,7 @@ describe('pendingDiscardAction', () => {
     const result = reducer(state, { type: 'REQUEST_DISCARD_CONFIRM', action: 'fileLoad' });
 
     expect(result.mode).toBe('confirmDiscard');
-    expect(result.pendingDiscardAction).toBe('fileLoad');
+    expect(result.confirm.pendingDiscardAction).toBe('fileLoad');
   });
 
   it('is set by REQUEST_DISCARD_CONFIRM for quit', () => {
@@ -258,7 +258,7 @@ describe('pendingDiscardAction', () => {
     const result = reducer(state, { type: 'REQUEST_DISCARD_CONFIRM', action: 'quit' });
 
     expect(result.mode).toBe('confirmDiscard');
-    expect(result.pendingDiscardAction).toBe('quit');
+    expect(result.confirm.pendingDiscardAction).toBe('quit');
   });
 
   it('is cleared by CONFIRM_DISCARD', () => {
@@ -266,12 +266,12 @@ describe('pendingDiscardAction', () => {
       requests: [createRequest({ isDirty: true })],
       selectedIndex: 0,
       mode: 'confirmDiscard',
-      pendingDiscardAction: 'quit',
+      confirm: { ...INITIAL_CONFIRM, pendingDiscardAction: 'quit' },
     });
 
     const result = reducer(state, { type: 'CONFIRM_DISCARD' });
 
-    expect(result.pendingDiscardAction).toBeNull();
+    expect(result.confirm.pendingDiscardAction).toBeNull();
     expect(result.mode).toBe('normal');
   });
 
@@ -280,12 +280,40 @@ describe('pendingDiscardAction', () => {
       requests: [createRequest({ isDirty: true })],
       selectedIndex: 0,
       mode: 'confirmDiscard',
-      pendingDiscardAction: 'fileLoad',
+      confirm: { ...INITIAL_CONFIRM, pendingDiscardAction: 'fileLoad' },
     });
 
     const result = reducer(state, { type: 'CANCEL_DISCARD' });
 
-    expect(result.pendingDiscardAction).toBeNull();
+    expect(result.confirm.pendingDiscardAction).toBeNull();
     expect(result.mode).toBe('normal');
+  });
+});
+
+describe('confirm dormancy invariant', () => {
+  // Characterization pin: the exit resets already enforce dormancy. All four confirm exits share the reset.
+  it('cluster deep-equals INITIAL_CONFIRM after every exit action', () => {
+    const dirty = createInitialState({
+      requests: [createRequest({ isDirty: true })],
+      selectedIndex: 0,
+      mode: 'confirmDiscard',
+      confirm: { ...INITIAL_CONFIRM, pendingDiscardAction: 'quit' },
+    });
+
+    const afterConfirm = reducer(dirty, { type: 'CONFIRM_DISCARD' });
+    expect(afterConfirm.mode).toBe('normal');
+    expect(afterConfirm.confirm).toEqual(INITIAL_CONFIRM);
+
+    const afterCancel = reducer(dirty, { type: 'CANCEL_DISCARD' });
+    expect(afterCancel.mode).toBe('normal');
+    expect(afterCancel.confirm).toEqual(INITIAL_CONFIRM);
+
+    const afterInPlaceConfirm = reducer(dirty, { type: 'CONFIRM_IN_PLACE_SAVE' });
+    expect(afterInPlaceConfirm.mode).toBe('normal');
+    expect(afterInPlaceConfirm.confirm).toEqual(INITIAL_CONFIRM);
+
+    const afterInPlaceCancel = reducer(dirty, { type: 'CANCEL_IN_PLACE_SAVE' });
+    expect(afterInPlaceCancel.mode).toBe('normal');
+    expect(afterInPlaceCancel.confirm).toEqual(INITIAL_CONFIRM);
   });
 });

@@ -1,6 +1,15 @@
 import type { Action, AppState } from '../types';
+import { INITIAL_CONFIRM } from './helpers';
 
 type ConfirmDiscardAction = Extract<Action, { type: 'REQUEST_DISCARD_CONFIRM' | 'CONFIRM_DISCARD' | 'CANCEL_DISCARD' }>;
+
+function exitConfirm(state: AppState): AppState {
+  return {
+    ...state,
+    mode: 'normal',
+    confirm: INITIAL_CONFIRM,
+  };
+}
 
 export function reduceConfirmDiscard(state: AppState, action: ConfirmDiscardAction): AppState {
   switch (action.type) {
@@ -8,22 +17,12 @@ export function reduceConfirmDiscard(state: AppState, action: ConfirmDiscardActi
       return {
         ...state,
         mode: 'confirmDiscard',
-        pendingDiscardAction: action.action,
+        confirm: { ...INITIAL_CONFIRM, pendingDiscardAction: action.action },
       };
 
     case 'CONFIRM_DISCARD':
-      return {
-        ...state,
-        mode: 'normal',
-        pendingDiscardAction: null,
-      };
-
     case 'CANCEL_DISCARD':
-      return {
-        ...state,
-        mode: 'normal',
-        pendingDiscardAction: null,
-      };
+      return exitConfirm(state);
   }
 }
 
@@ -38,15 +37,7 @@ export function reduceConfirmInPlaceSave(state: AppState, action: ConfirmInPlace
       };
 
     case 'CONFIRM_IN_PLACE_SAVE':
-      return {
-        ...state,
-        mode: 'normal',
-      };
-
     case 'CANCEL_IN_PLACE_SAVE':
-      return {
-        ...state,
-        mode: 'normal',
-      };
+      return exitConfirm(state);
   }
 }
