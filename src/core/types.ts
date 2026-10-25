@@ -191,7 +191,7 @@ export interface AppState {
   transientWarning: string | null;
   mode: AppMode;
   // Dormancy invariant: each overlay cluster equals its initial object whenever
-  // `mode` is not that overlay's mode — the owning reducer resets it on exit and
+  // `mode` is not that overlay's mode: the owning reducer resets it on exit and
   // commit. Search is the documented exception and lives outside this invariant.
   fileLoad: FileLoadState;
   saveLoad: TextEntryState;
@@ -208,7 +208,7 @@ export interface AppState {
   // Clears on response changes, focus leaving the response panel, raw reformat,
   // and its own dismissal paths; it otherwise persists across modes.
   search: SearchState;
-  // Invariant: when non-null, equals focusedPanel — fullscreen entry maximizes
+  // Invariant: when non-null, equals focusedPanel. Fullscreen entry maximizes
   // the focused panel, and nothing reachable while maximized changes focus
   // (Tab is dead there; ENTER_SEARCH re-focuses the already-maximized response).
   maximizedPanel: FocusedPanel | null;

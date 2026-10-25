@@ -533,7 +533,7 @@ describe('Panel-departure search clearing', () => {
   it('a confirmed search cannot survive into a non-response maximized state', () => {
     // Confirming pins focus to the response, Tab is the only focus-departure
     // mechanism and clears the search, and fullscreen maximizes the focused
-    // panel — so no non-response maximized state can carry an active search.
+    // panel, so no non-response maximized state can carry an active search.
     const entered = reducer(stateWithResponse('{"name":"John"}'), { type: 'ENTER_SEARCH' });
     const confirmed = reducer(
       reducer(entered, { type: 'SEARCH_KEY', op: 'insert', insert: 'john' }),
