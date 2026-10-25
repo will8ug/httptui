@@ -1,14 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { Key } from 'ink';
 
 import {
   handleEnvSelectInput,
   handleFileLoadInput,
   handleHelpInput,
-  handleNormalInput,
   handleSearchInput,
 } from '../../src/app/input-handlers';
 import type { Action, AppState, EnvOption } from '../../src/core/types';
+import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
 import { createInitialState } from '../helpers/state';
@@ -18,24 +18,6 @@ const environments: EnvOption[] = [
   { name: 'Development', file: '/does-not-matter/dev.json' },
   { name: 'Staging', file: '/does-not-matter/staging.json' },
 ];
-
-function runNormalInput(state: AppState, input: string, key: Key = makeKey()) {
-  const dispatched: Action[] = [];
-  handleNormalInput({
-    state,
-    selectedRequest: state.requests[state.selectedIndex],
-    exit: vi.fn(),
-    suspend: vi.fn(),
-    executorConfig: { insecure: false },
-    clipboardRunner: vi.fn(async () => ''),
-    clipboardReadRunner: vi.fn(async () => ''),
-    abortControllerRef: { current: null },
-    input,
-    key,
-    dispatch: (action) => dispatched.push(action),
-  });
-  return dispatched;
-}
 
 function pressEnvKey(state: AppState, input: string, key: Key = makeKey()): Action[] {
   const dispatched: Action[] = [];
@@ -61,7 +43,7 @@ function envSelectState(overrides: Partial<AppState> = {}): AppState {
 
 describe('handleNormalInput E', () => {
   it('E with environments available dispatches ENTER_ENV_SELECT', () => {
-    const actions = runNormalInput(
+    const { actions } = runNormalInput(
       createInitialState({
         requests: [createRequest()],
         selectedIndex: 0,
@@ -74,7 +56,7 @@ describe('handleNormalInput E', () => {
   });
 
   it('E with only (none) available reports that no environments are configured', () => {
-    const actions = runNormalInput(
+    const { actions } = runNormalInput(
       createInitialState({
         requests: [createRequest()],
         selectedIndex: 0,

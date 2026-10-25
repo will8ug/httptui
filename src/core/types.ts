@@ -177,6 +177,9 @@ export interface AppState {
   searchMatches: number[];
   currentMatchIndex: number;
   lastSearchQuery: string;
+  // Invariant: when non-null, equals focusedPanel — fullscreen entry maximizes
+  // the focused panel, and nothing reachable while maximized changes focus
+  // (Tab is dead there; ENTER_SEARCH re-focuses the already-maximized response).
   maximizedPanel: FocusedPanel | null;
   editTarget: EditTarget;
   editBuffers: Record<EditTarget, { text: string; cursor: number }>;

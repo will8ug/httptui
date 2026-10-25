@@ -63,6 +63,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
         ...setTransient({ message: 'Reloaded' }),
+        ...CLEAR_SEARCH_STATE,
       };
     }
   }

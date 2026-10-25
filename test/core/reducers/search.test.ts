@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { createInitialState } from '../../helpers/state';
+import { createRequest } from '../../helpers/requests';
 import { createMockResponse } from '../../helpers/responses';
 import { formatResponseBody } from '../../../src/core/formatter';
-import { reducer, CLEAR_SEARCH_STATE, computeSearchScrollOffset } from '../../../src/core/reducer';
+import { reducer, CLEAR_SEARCH_STATE, computeSearchScrollOffset, isSearchActive } from '../../../src/core/reducer';
 import { computeResponseLayout } from '../../../src/core/response-layout';
 import type { Action, AppState, ResponseData } from '../../../src/core/types';
 
@@ -41,6 +42,20 @@ function expectClearedSearchState(state: AppState): void {
     currentMatchIndex: state.currentMatchIndex,
     lastSearchQuery: state.lastSearchQuery,
   }).toEqual(CLEAR_SEARCH_STATE);
+}
+
+function expectSearchStatePreserved(before: AppState, after: AppState): void {
+  expect({
+    searchQuery: after.searchQuery,
+    searchMatches: after.searchMatches,
+    currentMatchIndex: after.currentMatchIndex,
+    lastSearchQuery: after.lastSearchQuery,
+  }).toEqual({
+    searchQuery: before.searchQuery,
+    searchMatches: before.searchMatches,
+    currentMatchIndex: before.currentMatchIndex,
+    lastSearchQuery: before.lastSearchQuery,
+  });
 }
 
 describe('ENTER_SEARCH reducer', () => {
@@ -349,19 +364,131 @@ describe('Search state clearing reducer cases', () => {
     expectClearedSearchState(result);
   });
 
-  it('SELECT_REQUEST clears all search state', () => {
-    const result = reducer(stateWithActiveSearch(), { type: 'SELECT_REQUEST', index: 1 });
-    expectClearedSearchState(result);
-  });
+  it('SWITCH_PANEL leaving the response panel clears all search state', () => {
+    const state: AppState = { ...stateWithActiveSearch(), focusedPanel: 'response' };
 
-  it('MOVE_SELECTION clears all search state', () => {
-    const result = reducer(stateWithActiveSearch(), { type: 'MOVE_SELECTION', direction: 'down' });
+    const result = reducer(state, { type: 'SWITCH_PANEL' });
+
+    expect(result.focusedPanel).toBe('requests');
     expectClearedSearchState(result);
   });
 
   it('TOGGLE_RAW clears all search state', () => {
     const result = reducer(stateWithActiveSearch(), { type: 'TOGGLE_RAW' });
     expectClearedSearchState(result);
+  });
+
+  it('LOAD_FILE clears all search state', () => {
+    const result = reducer(stateWithActiveSearch(), {
+      type: 'LOAD_FILE',
+      requests: [],
+      variables: [],
+      filePath: 'other.http',
+    });
+
+    expect(result.response).toBeNull();
+    expectClearedSearchState(result);
+  });
+
+  it('RELOAD_FILE clears all search state', () => {
+    const result = reducer(stateWithActiveSearch(), {
+      type: 'RELOAD_FILE',
+      requests: [],
+      variables: [],
+    });
+
+    expect(result.response).toBeNull();
+    expectClearedSearchState(result);
+  });
+
+  it('SWITCH_ENV clears all search state', () => {
+    const result = reducer(stateWithActiveSearch(), {
+      type: 'SWITCH_ENV',
+      environmentVariables: [],
+      envName: null,
+    });
+
+    expect(result.response).toBeNull();
+    expectClearedSearchState(result);
+  });
+});
+
+describe('Selection movement preserves search state', () => {
+  const stateWithRequests = (): AppState => ({
+    ...stateWithActiveSearch(),
+    requests: [createRequest({ name: 'first' }), createRequest({ name: 'second' })],
+  });
+
+  it('SELECT_REQUEST keeps the search on the still-displayed response', () => {
+    const state = stateWithRequests();
+
+    const result = reducer(state, { type: 'SELECT_REQUEST', index: 1 });
+
+    expect(result.selectedIndex).toBe(1);
+    expectSearchStatePreserved(state, result);
+  });
+
+  it('MOVE_SELECTION keeps the search on the still-displayed response', () => {
+    const state = stateWithRequests();
+
+    const result = reducer(state, { type: 'MOVE_SELECTION', direction: 'down' });
+
+    expect(result.selectedIndex).toBe(1);
+    expectSearchStatePreserved(state, result);
+  });
+});
+
+describe('Panel-departure search clearing', () => {
+  it('SWITCH_PANEL from requests to response preserves search state', () => {
+    const state: AppState = { ...stateWithActiveSearch(), focusedPanel: 'requests' };
+
+    const result = reducer(state, { type: 'SWITCH_PANEL' });
+
+    expect(result.focusedPanel).toBe('response');
+    expectSearchStatePreserved(state, result);
+  });
+
+  it('SWITCH_PANEL from requests to details preserves search state', () => {
+    const state: AppState = {
+      ...stateWithActiveSearch(),
+      focusedPanel: 'requests',
+      showRequestDetails: true,
+    };
+
+    const result = reducer(state, { type: 'SWITCH_PANEL' });
+
+    expect(result.focusedPanel).toBe('details');
+    expectSearchStatePreserved(state, result);
+  });
+
+  it('SWITCH_PANEL from details to response preserves search state', () => {
+    const state: AppState = { ...stateWithActiveSearch(), focusedPanel: 'details' };
+
+    const result = reducer(state, { type: 'SWITCH_PANEL' });
+
+    expect(result.focusedPanel).toBe('response');
+    expectSearchStatePreserved(state, result);
+  });
+
+  it('a confirmed search cannot survive into a non-response maximized state', () => {
+    // Confirming pins focus to the response, Tab is the only focus-departure
+    // mechanism and clears the search, and fullscreen maximizes the focused
+    // panel — so no non-response maximized state can carry an active search.
+    const entered = reducer(stateWithResponse('{"name":"John"}'), { type: 'ENTER_SEARCH' });
+    const confirmed = reducer(
+      reducer(entered, { type: 'UPDATE_SEARCH_INPUT', value: 'john' }),
+      { type: 'CONFIRM_SEARCH' },
+    );
+    expect(isSearchActive(confirmed)).toBe(true);
+    expect(confirmed.focusedPanel).toBe('response');
+
+    const maximized = reducer(
+      reducer(confirmed, { type: 'SWITCH_PANEL' }),
+      { type: 'TOGGLE_FULLSCREEN' },
+    );
+
+    expect(maximized.maximizedPanel).toBe('requests');
+    expect(isSearchActive(maximized)).toBe(false);
   });
 });
 
@@ -388,6 +515,47 @@ describe('Dismissing active search results in normal mode', () => {
     const result = reducer(state, { type: 'CANCEL_SEARCH' });
 
     expectClearedSearchState(result);
+  });
+});
+
+describe('isSearchActive predicate', () => {
+  function confirmSearch(query: string): AppState {
+    return reducer(
+      { ...stateWithResponse('{"name":"John"}'), mode: 'search', searchQuery: query },
+      { type: 'CONFIRM_SEARCH' },
+    );
+  }
+
+  it('is inactive in a fresh state', () => {
+    expect(isSearchActive(createInitialState())).toBe(false);
+  });
+
+  it('is active while the search bar is open before any query is confirmed', () => {
+    const entered = reducer(stateWithResponse('{"name":"John"}'), { type: 'ENTER_SEARCH' });
+
+    expect(entered.mode).toBe('search');
+    expect(entered.lastSearchQuery).toBe('');
+    expect(isSearchActive(entered)).toBe(true);
+  });
+
+  it('is active for a confirmed query with matches', () => {
+    const confirmed = confirmSearch('john');
+
+    expect(confirmed.searchMatches.length).toBeGreaterThan(0);
+    expect(isSearchActive(confirmed)).toBe(true);
+  });
+
+  it('is active for a confirmed query with no matches', () => {
+    const confirmed = confirmSearch('alice');
+
+    expect(confirmed.searchMatches).toEqual([]);
+    expect(isSearchActive(confirmed)).toBe(true);
+  });
+
+  it('is inactive after the confirmed search is dismissed', () => {
+    const dismissed = reducer(confirmSearch('john'), { type: 'CANCEL_SEARCH' });
+
+    expect(isSearchActive(dismissed)).toBe(false);
   });
 });
 

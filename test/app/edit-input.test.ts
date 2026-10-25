@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Key } from 'ink';
 
-import { handleEditInput, handleNormalInput } from '../../src/app/input-handlers';
+import { handleEditInput } from '../../src/app/input-handlers';
 import { headersToText } from '../../src/core/headers';
 import type { Action, AppState, ParsedRequest } from '../../src/core/types';
 import { EDIT_CANCEL_WINDOW_MS } from '../../src/utils/timing';
+import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
 import { createEditState, createInitialState, reducer } from '../helpers/state';
@@ -157,20 +158,7 @@ describe('handleNormalInput e', () => {
     const headers = { Accept: 'application/json', Authorization: 'Bearer {{token}}' };
     const request = createRequest({ headers });
     const state = createInitialState({ requests: [request], selectedIndex: 0 });
-    const dispatched: Action[] = [];
-    handleNormalInput({
-      state,
-      selectedRequest: request,
-      exit: () => {},
-      suspend: vi.fn(),
-      executorConfig: { insecure: false },
-      clipboardRunner: undefined,
-      clipboardReadRunner: undefined,
-      abortControllerRef: { current: null },
-      input: 'e',
-      key: makeKey(),
-      dispatch: (action) => dispatched.push(action),
-    });
+    const dispatched = runNormalInput(state, 'e').actions;
 
     const headersText = headersToText(headers);
     expect(headersText).toContain('{{token}}');

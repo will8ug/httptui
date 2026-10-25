@@ -1,41 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Key } from 'ink';
 
-import { handleEditInput, handleNormalInput } from '../../src/app/input-handlers';
+import { handleEditInput } from '../../src/app/input-handlers';
 import { ClipboardError } from '../../src/core/clipboard';
 import type { ClipboardRunner } from '../../src/core/clipboard';
 import type { Action, AppState } from '../../src/core/types';
+import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
 import { createEditState, createInitialState } from '../helpers/state';
-
-function runNormalInput(
-  state: AppState,
-  input: string,
-  options: {
-    key?: Key;
-    clipboardRunner?: ClipboardRunner;
-    clipboardReadRunner?: ClipboardRunner;
-  } = {},
-) {
-  const dispatched: Action[] = [];
-  const clipboardRunner = options.clipboardRunner ?? vi.fn(async () => '');
-  const clipboardReadRunner = options.clipboardReadRunner ?? vi.fn(async () => '');
-  handleNormalInput({
-    state,
-    selectedRequest: state.requests[state.selectedIndex],
-    exit: vi.fn(),
-    suspend: vi.fn(),
-    executorConfig: { insecure: false },
-    clipboardRunner,
-    clipboardReadRunner,
-    abortControllerRef: { current: null },
-    input,
-    key: options.key ?? makeKey(),
-    dispatch: (action) => dispatched.push(action),
-  });
-  return { actions: dispatched, clipboardRunner, clipboardReadRunner };
-}
 
 function variableRequestState(): AppState {
   return createInitialState({

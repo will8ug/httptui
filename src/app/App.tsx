@@ -15,7 +15,7 @@ import { RequestDetailsView } from '../components/RequestDetailsView';
 import { ResponseView } from '../components/ResponseView';
 import { StatusBar } from '../components/StatusBar';
 import { EnvSelectOverlay } from '../components/EnvSelectOverlay';
-import { createInitialState, reducer } from '../core/reducer';
+import { createInitialState, isSearchActive, reducer } from '../core/reducer';
 import type { AppProps, TerminalGeometry } from '../core/types';
 import { EDIT_TAB_ORDER } from '../core/types';
 import { DEFAULT_TERMINAL_COLUMNS, DEFAULT_TERMINAL_ROWS } from '../utils/layout';
@@ -163,6 +163,7 @@ return (
           availableHeight={effectiveResponseHeight}
           searchMatches={state.searchMatches}
           currentMatchIndex={state.currentMatchIndex}
+          searchVisible={isSearchActive(state)}
           isSearchMode={state.mode === 'search'}
           lastSearchQuery={state.lastSearchQuery}
           searchQuery={state.searchQuery}
@@ -191,7 +192,7 @@ return (
               columns,
               availableHeight: effectiveResponseHeight,
               fullscreen: state.maximizedPanel === 'response',
-              searchVisible: state.mode === 'search' || state.lastSearchQuery !== '',
+              searchVisible: isSearchActive(state),
             },
           }).totalVisualLines : 0}
           hasResponse={!!state.response}

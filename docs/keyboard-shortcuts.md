@@ -7,7 +7,7 @@ While a panel is fullscreen (`f`), only navigation and keys relevant to the visi
 | Key | Action |
 |-----|--------|
 | `?` | Toggle help overlay |
-| `Escape` | Close current overlay / Cancel in-flight request / Dismiss search results / Exit fullscreen (when the response panel is fullscreen with active search results, clear the search first, then press Escape again to exit) |
+| `Escape` | Close current overlay / Cancel in-flight request / Dismiss search results / Exit fullscreen (an active search is dismissed first in split view or with any panel fullscreen; with no search active, exits fullscreen) |
 | `q` | Dismiss search results when shown, otherwise quit application (while fullscreen, quit is disabled; leave fullscreen or use `Ctrl+C` to exit) |
 
 ## Navigation

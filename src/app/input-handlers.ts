@@ -9,7 +9,7 @@ import type { EditorBuffer } from '../core/editor';
 import { toErrorInfo } from '../core/executor';
 import { formatResponseBody } from '../core/formatter';
 import { headersToText } from '../core/headers';
-import { responseViewportFromState } from '../core/reducer';
+import { isSearchActive, responseViewportFromState, responseVisible } from '../core/reducer';
 import { serializeHttpFile } from '../core/http-serializer';
 import { buildInPlaceContent } from '../core/in-place-save';
 import { detectFormat, parseAnyFormat } from '../core/format-detector';
@@ -23,6 +23,7 @@ import type { Action, AppState, ExecutorConfig, ParsedRequest, ResponseData } fr
 import type { ClipboardRunner } from '../core/clipboard';
 import { EDIT_TAB_ORDER } from '../core/types';
 import { copySelectedAsCurl, pasteFromClipboard, performEditorHandoff, sendSelectedRequest } from './commands';
+import { normalizeKeyName, resolveKeyAction } from './key-table';
 
 function findMatchIndices(response: ResponseData, rawMode: boolean, query: string): number[] {
   const formattedBody = formatResponseBody(response.body, rawMode);
@@ -567,129 +568,6 @@ export function handleConfirmInPlaceSaveInput({ state, input, key, dispatch }: {
   }
 }
 
-function handleFullscreenInput({
-  state,
-  exit,
-  abortControllerRef,
-  input,
-  key,
-  dispatch,
-}: {
-  state: AppState;
-  exit: () => void;
-  abortControllerRef: { current: AbortController | null };
-  input: string;
-  key: Key;
-  dispatch: Dispatch<Action>;
-}): void {
-  if (key.escape && state.isLoading) {
-    abortControllerRef.current?.abort();
-    dispatch({ type: 'REQUEST_CANCEL', warning: 'Request canceled' });
-    return;
-  }
-
-  if (key.escape && state.maximizedPanel === 'response' && (state.searchMatches.length > 0 || state.lastSearchQuery)) {
-    dispatch({ type: 'CANCEL_SEARCH' });
-    return;
-  }
-
-  if (key.escape) {
-    dispatch({ type: 'TOGGLE_FULLSCREEN' });
-    return;
-  }
-
-  if (key.ctrl && input === 'c') {
-    exit();
-    return;
-  }
-
-  if (input === 'f') {
-    dispatch({ type: 'TOGGLE_FULLSCREEN' });
-    return;
-  }
-
-  if (input === '?') {
-    dispatch({ type: 'TOGGLE_HELP' });
-    return;
-  }
-
-  if (input === 'g') {
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'start' });
-    return;
-  }
-
-  if (input === 'G') {
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'end' });
-    return;
-  }
-
-  if (input === '0') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'start' });
-    return;
-  }
-
-  if (input === '$') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'end' });
-    return;
-  }
-
-  const isUp = input === 'k' || key.upArrow;
-  const isDown = input === 'j' || key.downArrow;
-  const isLeft = input === 'h' || key.leftArrow;
-  const isRight = input === 'l' || key.rightArrow;
-
-  if (isLeft || isRight) {
-    dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right' });
-    return;
-  }
-
-  if (isUp || isDown) {
-    if (state.maximizedPanel === 'requests') {
-      dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down' });
-      return;
-    }
-
-    dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down' });
-    return;
-  }
-
-  if (state.maximizedPanel === 'response') {
-    if (input === 'v') {
-      dispatch({ type: 'TOGGLE_VERBOSE' });
-      return;
-    }
-
-    if (input === 'w') {
-      dispatch({ type: 'TOGGLE_WRAP' });
-      return;
-    }
-
-    if (input === 'r') {
-      dispatch({ type: 'TOGGLE_RAW' });
-      return;
-    }
-
-    if (input === '/') {
-      dispatch({ type: 'ENTER_SEARCH' });
-      return;
-    }
-
-    if (input === 'n' && state.searchMatches.length > 0) {
-      dispatch(buildMatchNavigationAction(state, 'next'));
-      return;
-    }
-
-    if (input === 'N' && state.searchMatches.length > 0) {
-      dispatch(buildMatchNavigationAction(state, 'prev'));
-      return;
-    }
-  }
-
-  if (input === 'q' && (state.searchMatches.length > 0 || state.lastSearchQuery)) {
-    dispatch({ type: 'CANCEL_SEARCH' });
-  }
-}
-
 export function handleNormalInput({
   state,
   selectedRequest,
@@ -715,17 +593,7 @@ export function handleNormalInput({
   key: Key;
   dispatch: Dispatch<Action>;
 }): void {
-  if (state.maximizedPanel !== null) {
-    handleFullscreenInput({
-      state,
-      exit,
-      abortControllerRef,
-      input,
-      key,
-      dispatch,
-    });
-    return;
-  }
+  const isFullscreen = state.maximizedPanel !== null;
 
   if (key.escape && state.isLoading) {
     abortControllerRef.current?.abort();
@@ -733,8 +601,16 @@ export function handleNormalInput({
     return;
   }
 
-  if (key.escape && (state.searchMatches.length > 0 || state.lastSearchQuery)) {
-    dispatch({ type: 'CANCEL_SEARCH' });
+  if (key.escape) {
+    // Back up one level at a time: an active search is dismissed first in
+    // every panel state; exiting fullscreen remains only once none is left.
+    if (isSearchActive(state)) {
+      dispatch({ type: 'CANCEL_SEARCH' });
+      return;
+    }
+    if (isFullscreen) {
+      dispatch({ type: 'TOGGLE_FULLSCREEN' });
+    }
     return;
   }
 
@@ -743,74 +619,10 @@ export function handleNormalInput({
     return;
   }
 
-  if (input === 'q') {
-    if (state.searchMatches.length > 0 || state.lastSearchQuery) {
-      dispatch({ type: 'CANCEL_SEARCH' });
-      return;
-    }
-
-    if (hasUnsavedChanges(state.requests)) {
-      dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'quit' });
-    } else {
-      exit();
-    }
-    return;
-  }
-
-  if (input === '?') {
-    dispatch({ type: 'TOGGLE_HELP' });
-    return;
-  }
-
-  if (key.tab) {
-    dispatch({ type: 'SWITCH_PANEL' });
-    return;
-  }
-
-  if (input === 'v') {
-    dispatch({ type: 'TOGGLE_VERBOSE' });
-    return;
-  }
-
-  if (input === 'w') {
-    dispatch({ type: 'TOGGLE_WRAP' });
-    return;
-  }
-
-  if (input === 'r') {
-    dispatch({ type: 'TOGGLE_RAW' });
-    return;
-  }
-
-  if (input === 'd') {
-    dispatch({ type: 'TOGGLE_REQUEST_DETAILS' });
-    return;
-  }
-
-  if (input === 'f') {
-    dispatch({ type: 'TOGGLE_FULLSCREEN' });
-    return;
-  }
-
-  if (input === 'o') {
-    if (hasUnsavedChanges(state.requests)) {
-      dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'fileLoad' });
-    } else {
-      dispatch({ type: 'ENTER_FILE_LOAD' });
-    }
-    return;
-  }
-
-  if (input === 'E') {
-    if (state.availableEnvironments.length > 1) {
-      dispatch({ type: 'ENTER_ENV_SELECT' });
-    } else {
-      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No environments configured' });
-    }
-    return;
-  }
-
-  if (key.ctrl && input === 's') {
+  // Ctrl+S and Ctrl+G are normal-mode intercepts ahead of the key-table
+  // lookup: bare 'g' resolves to a jump, which fullscreen keeps on Ctrl+G
+  // (pinned by test).
+  if (!isFullscreen && key.ctrl && input === 's') {
     if (!hasUnsavedChanges(state.requests)) {
       dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No changes to save' });
       return;
@@ -831,7 +643,7 @@ export function handleNormalInput({
     return;
   }
 
-  if (key.ctrl && input === 'g') {
+  if (!isFullscreen && key.ctrl && input === 'g') {
     try {
       const content = readFileSync(state.filePath, 'utf8');
       if (detectFormat(state.filePath, content) !== 'http') {
@@ -852,124 +664,145 @@ export function handleNormalInput({
     return;
   }
 
-  if (input === 'S') {
-    dispatch({ type: 'ENTER_SAVE' });
+  const keyName = normalizeKeyName(input, key);
+
+  const tableAction = resolveKeyAction(keyName, state);
+  if (tableAction) {
+    dispatch(tableAction);
     return;
   }
 
-  if (input === 's') {
-    if (state.response === null) {
-      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response to save' });
+  if (input === 'q') {
+    if (isSearchActive(state)) {
+      dispatch({ type: 'CANCEL_SEARCH' });
       return;
     }
-    if (state.response.rawBody === '') {
-      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response body to save' });
+
+    // q never quits from fullscreen; Escape backs up a level there.
+    if (!isFullscreen) {
+      if (hasUnsavedChanges(state.requests)) {
+        dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'quit' });
+      } else {
+        exit();
+      }
+    }
+    return;
+  }
+
+  if (!isFullscreen) {
+    if (key.tab) {
+      dispatch({ type: 'SWITCH_PANEL' });
       return;
     }
-    dispatch({ type: 'ENTER_RESPONSE_SAVE' });
-    return;
-  }
 
-  if (input === 'y') {
-    void copySelectedAsCurl({
-      request: selectedRequest,
-      variables: state.variables,
-      baseDir: dirname(state.filePath),
-      certificates: state.certificates,
-      insecure: state.insecure,
-      clipboardRunner,
-      dispatch,
-    });
-    return;
-  }
-
-  if (input === 'p') {
-    void pasteFromClipboard({ clipboardReadRunner, dispatch });
-    return;
-  }
-
-  if (input === 'e') {
-    if (!selectedRequest) {
+    if (input === 'd') {
+      dispatch({ type: 'TOGGLE_REQUEST_DETAILS' });
       return;
     }
-    dispatch({ type: 'ENTER_EDIT', buffers: { url: selectedRequest.url, body: selectedRequest.body ?? '', headers: headersToText(selectedRequest.headers) } });
-    return;
-  }
 
-  if (input === '/') {
-    dispatch({ type: 'ENTER_SEARCH' });
-    return;
-  }
-
-  if (input === 'n' && state.searchMatches.length > 0) {
-    dispatch(buildMatchNavigationAction(state, 'next'));
-    return;
-  }
-
-  if (input === 'N' && state.searchMatches.length > 0) {
-    dispatch(buildMatchNavigationAction(state, 'prev'));
-    return;
-  }
-
-  if (input === 'R') {
-    if (hasUnsavedChanges(state.requests)) {
-      dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'reload' });
+    if (input === 'o') {
+      if (hasUnsavedChanges(state.requests)) {
+        dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'fileLoad' });
+      } else {
+        dispatch({ type: 'ENTER_FILE_LOAD' });
+      }
       return;
     }
-    try {
-      const content = readFileSync(state.filePath, 'utf8');
-      const parseResult = parseAnyFormat(state.filePath, content);
-      dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
-    } catch (error) {
-      dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
+
+    if (input === 'E') {
+      if (state.availableEnvironments.length > 1) {
+        dispatch({ type: 'ENTER_ENV_SELECT' });
+      } else {
+        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No environments configured' });
+      }
+      return;
     }
 
-    return;
+    if (input === 'S') {
+      dispatch({ type: 'ENTER_SAVE' });
+      return;
+    }
+
+    if (input === 's') {
+      if (state.response === null) {
+        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response to save' });
+        return;
+      }
+      if (state.response.rawBody === '') {
+        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response body to save' });
+        return;
+      }
+      dispatch({ type: 'ENTER_RESPONSE_SAVE' });
+      return;
+    }
+
+    if (input === 'y') {
+      void copySelectedAsCurl({
+        request: selectedRequest,
+        variables: state.variables,
+        baseDir: dirname(state.filePath),
+        certificates: state.certificates,
+        insecure: state.insecure,
+        clipboardRunner,
+        dispatch,
+      });
+      return;
+    }
+
+    if (input === 'p') {
+      void pasteFromClipboard({ clipboardReadRunner, dispatch });
+      return;
+    }
+
+    if (input === 'e') {
+      if (!selectedRequest) {
+        return;
+      }
+      dispatch({ type: 'ENTER_EDIT', buffers: { url: selectedRequest.url, body: selectedRequest.body ?? '', headers: headersToText(selectedRequest.headers) } });
+      return;
+    }
+
+    if (input === 'R') {
+      if (hasUnsavedChanges(state.requests)) {
+        dispatch({ type: 'REQUEST_DISCARD_CONFIRM', action: 'reload' });
+        return;
+      }
+      try {
+        const content = readFileSync(state.filePath, 'utf8');
+        const parseResult = parseAnyFormat(state.filePath, content);
+        dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
+      } catch (error) {
+        dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
+      }
+
+      return;
+    }
+
+    if (key.return) {
+      void sendSelectedRequest({ state, executorConfig, abortControllerRef, dispatch });
+      return;
+    }
   }
 
-  if (key.return) {
-    void sendSelectedRequest({ state, executorConfig, abortControllerRef, dispatch });
-    return;
+  if (responseVisible(state)) {
+    if (input === 'n' && state.searchMatches.length > 0) {
+      dispatch(buildMatchNavigationAction(state, 'next'));
+      return;
+    }
+
+    if (input === 'N' && state.searchMatches.length > 0) {
+      dispatch(buildMatchNavigationAction(state, 'prev'));
+      return;
+    }
   }
 
-  if (input === 'g') {
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'start' });
-    return;
+  if (keyName === 'up' || keyName === 'down') {
+    // Safe to read focusedPanel while maximized: maximizedPanel, when set,
+    // always equals focusedPanel (see the invariant in core/types.ts).
+    if (state.focusedPanel === 'requests') {
+      dispatch({ type: 'MOVE_SELECTION', direction: keyName });
+    } else {
+      dispatch({ type: 'SCROLL', direction: keyName });
+    }
   }
-
-  if (input === 'G') {
-    dispatch({ type: 'JUMP_VERTICAL', direction: 'end' });
-    return;
-  }
-
-  if (input === '0') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'start' });
-    return;
-  }
-
-  if (input === '$') {
-    dispatch({ type: 'JUMP_HORIZONTAL', direction: 'end' });
-    return;
-  }
-
-  const isUp = input === 'k' || key.upArrow;
-  const isDown = input === 'j' || key.downArrow;
-  const isLeft = input === 'h' || key.leftArrow;
-  const isRight = input === 'l' || key.rightArrow;
-
-  if (isLeft || isRight) {
-    dispatch({ type: 'SCROLL_HORIZONTAL', direction: isLeft ? 'left' : 'right' });
-    return;
-  }
-
-  if (!isUp && !isDown) {
-    return;
-  }
-
-  if (state.focusedPanel === 'requests') {
-    dispatch({ type: 'MOVE_SELECTION', direction: isUp ? 'up' : 'down' });
-    return;
-  }
-
-  dispatch({ type: 'SCROLL', direction: isUp ? 'up' : 'down' });
 }

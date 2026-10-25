@@ -70,9 +70,10 @@ describe('APPEND_REQUEST reducer', () => {
     expect(result.detailsHorizontalOffset).toBe(0);
   });
 
-  it('clears search state', () => {
+  it('preserves search state — the append moves the selection but leaves the response alone', () => {
     const state = createInitialState({
       requests: makeRequests(3),
+      response: createMockResponse({ body: '{"ok":true}' }),
       searchQuery: 'users',
       searchMatches: [1, 3],
       currentMatchIndex: 1,
@@ -81,10 +82,10 @@ describe('APPEND_REQUEST reducer', () => {
 
     const result = reducer(state, { type: 'APPEND_REQUEST', request: pastedRequest() });
 
-    expect(result.searchQuery).toBe('');
-    expect(result.searchMatches).toEqual([]);
-    expect(result.currentMatchIndex).toBe(0);
-    expect(result.lastSearchQuery).toBe('');
+    expect(result.searchQuery).toBe('users');
+    expect(result.searchMatches).toEqual([1, 3]);
+    expect(result.currentMatchIndex).toBe(1);
+    expect(result.lastSearchQuery).toBe('users');
   });
 
   it('leaves the response untouched', () => {

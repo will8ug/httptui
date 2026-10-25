@@ -3,28 +3,13 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { handleNormalInput, handleResponseSaveInput, handleSaveInput } from '../../src/app/input-handlers';
-import type { Action, AppState } from '../../src/core/types';
+import { handleResponseSaveInput, handleSaveInput } from '../../src/app/input-handlers';
+import type { Action } from '../../src/core/types';
+import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createMockResponse } from '../helpers/responses';
 import { createRequest } from '../helpers/requests';
 import { createInitialState } from '../helpers/state';
-
-function pressNormalS(state: AppState, dispatch: (action: Action) => void): void {
-  handleNormalInput({
-    state,
-    selectedRequest: undefined,
-    exit: () => {},
-    suspend: vi.fn(),
-    executorConfig: { insecure: false },
-    clipboardRunner: undefined,
-    clipboardReadRunner: undefined,
-    abortControllerRef: { current: null },
-    input: 's',
-    key: makeKey(),
-    dispatch,
-  });
-}
 
 describe('handleResponseSaveInput', () => {
   it('writes the raw body with the original CRLF line endings, not the normalized body', () => {
@@ -76,9 +61,7 @@ describe('handleNormalInput s guard', () => {
       requests: [createRequest({ name: 'Head Users' })],
       response: createMockResponse({ statusCode: 204, body: '', rawBody: '' }),
     });
-    const dispatch = vi.fn();
-
-    pressNormalS(state, dispatch);
+    const { dispatch } = runNormalInput(state, 's');
 
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response body to save' });
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'ENTER_RESPONSE_SAVE' });
@@ -86,9 +69,7 @@ describe('handleNormalInput s guard', () => {
 
   it('still reports No response to save when no response is displayed', () => {
     const state = createInitialState({ response: null });
-    const dispatch = vi.fn();
-
-    pressNormalS(state, dispatch);
+    const { dispatch } = runNormalInput(state, 's');
 
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response to save' });
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'ENTER_RESPONSE_SAVE' });
@@ -99,9 +80,7 @@ describe('handleNormalInput s guard', () => {
       requests: [createRequest({ name: 'Get Users' })],
       response: createMockResponse({ body: '{"a":1}', rawBody: '{"a":1}' }),
     });
-    const dispatch = vi.fn();
-
-    pressNormalS(state, dispatch);
+    const { dispatch } = runNormalInput(state, 's');
 
     expect(dispatch).toHaveBeenCalledWith({ type: 'ENTER_RESPONSE_SAVE' });
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_TRANSIENT_MESSAGE' }));

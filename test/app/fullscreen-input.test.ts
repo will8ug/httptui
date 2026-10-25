@@ -1,116 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Key } from 'ink';
 
-import { handleHelpInput, handleNormalInput } from '../../src/app/input-handlers';
+import { handleHelpInput } from '../../src/app/input-handlers';
 import type { Action, AppState } from '../../src/core/types';
+import { panelState, populatedPanelState, pressKey, runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
-import { createMockResponse } from '../helpers/responses';
 import { createInitialState, reducer } from '../helpers/state';
-
-function fullscreenState(panel: 'requests' | 'response' | 'details', overrides: Partial<AppState> = {}): AppState {
-  return createInitialState({ maximizedPanel: panel, ...overrides });
-}
-
-function pressKey(state: AppState, input: string, key: Key = makeKey()): Action[] {
-  return runNormalInput(state, input, key).actions;
-}
-
-function runNormalInput(
-  state: AppState,
-  input: string,
-  key: Key = makeKey(),
-  abortControllerRef: { current: AbortController | null } = { current: null },
-) {
-  const dispatched: Action[] = [];
-  const exit = vi.fn();
-  const suspend = vi.fn();
-  const clipboardRunner = vi.fn(async () => '');
-  const clipboardReadRunner = vi.fn(async () => '');
-  handleNormalInput({
-    state,
-    selectedRequest: state.requests[state.selectedIndex],
-    exit,
-    suspend,
-    executorConfig: { insecure: false },
-    clipboardRunner,
-    clipboardReadRunner,
-    abortControllerRef,
-    input,
-    key,
-    dispatch: (action) => dispatched.push(action),
-  });
-  return { actions: dispatched, exit, suspend, clipboardRunner, clipboardReadRunner };
-}
-
-function actionNoopState(panel: 'requests' | 'response' | 'details' = 'response'): AppState {
-  return fullscreenState(panel, {
-    focusedPanel: panel,
-    requests: [createRequest({ name: 'Get Users', body: 'payload', isDirty: true })],
-    selectedIndex: 0,
-    response: createMockResponse({ body: '{"a":1}', rawBody: '{"a":1}' }),
-    availableEnvironments: [
-      { name: '(none)', file: null },
-      { name: 'Dev', file: 'dev.json' },
-    ],
-    showRequestDetails: panel === 'details',
-  });
-}
-
-describe('fullscreen vertical jumps', () => {
-  it('g dispatches JUMP_VERTICAL to the start', () => {
-    const actions = pressKey(fullscreenState('response'), 'g');
-
-    expect(actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'start' }]);
-  });
-
-  it('G dispatches JUMP_VERTICAL to the end regardless of the maximized panel', () => {
-    expect(pressKey(fullscreenState('response'), 'G')).toEqual([
-      { type: 'JUMP_VERTICAL', direction: 'end' },
-    ]);
-    expect(pressKey(fullscreenState('requests'), 'G')).toEqual([
-      { type: 'JUMP_VERTICAL', direction: 'end' },
-    ]);
-  });
-});
-
-describe('fullscreen horizontal navigation', () => {
-  it('0 dispatches JUMP_HORIZONTAL to the start', () => {
-    const actions = pressKey(fullscreenState('response'), '0');
-
-    expect(actions).toEqual([{ type: 'JUMP_HORIZONTAL', direction: 'start' }]);
-  });
-
-  it('$ dispatches JUMP_HORIZONTAL to the end', () => {
-    const actions = pressKey(fullscreenState('response'), '$');
-
-    expect(actions).toEqual([{ type: 'JUMP_HORIZONTAL', direction: 'end' }]);
-  });
-
-  it('h dispatches SCROLL_HORIZONTAL to the left', () => {
-    const actions = pressKey(fullscreenState('response'), 'h');
-
-    expect(actions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'left' }]);
-  });
-
-  it('l dispatches SCROLL_HORIZONTAL to the right', () => {
-    const actions = pressKey(fullscreenState('response'), 'l');
-
-    expect(actions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'right' }]);
-  });
-
-  it('arrow keys scroll horizontally the same as h and l', () => {
-    const leftActions = pressKey(fullscreenState('response'), '', makeKey({ leftArrow: true }));
-    const rightActions = pressKey(fullscreenState('response'), '', makeKey({ rightArrow: true }));
-
-    expect(leftActions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'left' }]);
-    expect(rightActions).toEqual([{ type: 'SCROLL_HORIZONTAL', direction: 'right' }]);
-  });
-});
 
 describe('fullscreen match navigation', () => {
   const matchState = (overrides: Partial<AppState> = {}): AppState =>
-    fullscreenState('response', {
+    panelState('response', {
       searchMatches: [3, 7, 11],
       currentMatchIndex: 0,
       lastSearchQuery: 'needle',
@@ -136,19 +36,19 @@ describe('fullscreen match navigation', () => {
   });
 
   it('n is a no-op while the requests panel is maximized', () => {
-    const actions = pressKey(fullscreenState('requests', { searchMatches: [3, 7, 11], currentMatchIndex: 0 }), 'n');
+    const actions = pressKey(panelState('requests', { searchMatches: [3, 7, 11], currentMatchIndex: 0 }), 'n');
 
     expect(actions).toEqual([]);
   });
 
   it('N is a no-op while the requests panel is maximized', () => {
-    const actions = pressKey(fullscreenState('requests', { searchMatches: [3, 7, 11], currentMatchIndex: 0 }), 'N');
+    const actions = pressKey(panelState('requests', { searchMatches: [3, 7, 11], currentMatchIndex: 0 }), 'N');
 
     expect(actions).toEqual([]);
   });
 
   it('n is a no-op when there are no matches', () => {
-    const actions = pressKey(fullscreenState('response'), 'n');
+    const actions = pressKey(panelState('response'), 'n');
 
     expect(actions).toEqual([]);
   });
@@ -156,40 +56,33 @@ describe('fullscreen match navigation', () => {
 
 describe('fullscreen panel-dependent vertical keys', () => {
   it('j moves the selection down while the requests panel is maximized', () => {
-    const actions = pressKey(fullscreenState('requests'), 'j');
+    const actions = pressKey(panelState('requests'), 'j');
 
     expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'down' }]);
   });
 
   it('k moves the selection up while the requests panel is maximized', () => {
-    const actions = pressKey(fullscreenState('requests'), 'k');
+    const actions = pressKey(panelState('requests'), 'k');
 
     expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'up' }]);
   });
 
   it('down arrow moves the selection while the requests panel is maximized', () => {
-    const actions = pressKey(fullscreenState('requests'), '', makeKey({ downArrow: true }));
+    const actions = pressKey(panelState('requests'), '', makeKey({ downArrow: true }));
 
     expect(actions).toEqual([{ type: 'MOVE_SELECTION', direction: 'down' }]);
   });
 
   it('j scrolls the response down while the response is maximized', () => {
-    const actions = pressKey(fullscreenState('response'), 'j');
+    const actions = pressKey(panelState('response'), 'j');
 
     expect(actions).toEqual([{ type: 'SCROLL', direction: 'down' }]);
   });
 });
 
-describe('fullscreen help and quit', () => {
-  it('? while maximized dispatches TOGGLE_HELP', () => {
-    const result = runNormalInput(fullscreenState('response'), '?');
-
-    expect(result.actions).toEqual([{ type: 'TOGGLE_HELP' }]);
-    expect(result.exit).not.toHaveBeenCalled();
-  });
-
+describe('quit-key divergence: q never quits from fullscreen, Ctrl+C always exits', () => {
   it('Ctrl+C while maximized calls exit', () => {
-    const result = runNormalInput(fullscreenState('response'), 'c', makeKey({ ctrl: true }));
+    const result = runNormalInput(panelState('response'), 'c', makeKey({ ctrl: true }));
 
     expect(result.exit).toHaveBeenCalledOnce();
     expect(result.actions).toEqual([]);
@@ -197,7 +90,7 @@ describe('fullscreen help and quit', () => {
 
   it('q while the response is maximized with active search results dismisses the search', () => {
     const result = runNormalInput(
-      fullscreenState('response', { searchMatches: [3, 7], currentMatchIndex: 0, lastSearchQuery: 'needle' }),
+      panelState('response', { searchMatches: [3, 7], currentMatchIndex: 0, lastSearchQuery: 'needle' }),
       'q',
     );
 
@@ -206,14 +99,14 @@ describe('fullscreen help and quit', () => {
   });
 
   it('q without search results does not exit while maximized', () => {
-    const result = runNormalInput(fullscreenState('requests'), 'q');
+    const result = runNormalInput(panelState('requests'), 'q');
 
     expect(result.actions).toEqual([]);
     expect(result.exit).not.toHaveBeenCalled();
   });
 
   it('q with unsaved edits does not request discard confirmation while maximized', () => {
-    const result = runNormalInput(actionNoopState('requests'), 'q');
+    const result = runNormalInput(populatedPanelState('requests'), 'q');
 
     expect(result.actions).toEqual([]);
     expect(result.exit).not.toHaveBeenCalled();
@@ -227,36 +120,50 @@ describe('fullscreen help and quit', () => {
   });
 });
 
-describe('fullscreen search entry', () => {
-  it('/ while the response is maximized enters search mode', () => {
-    const actions = pressKey(fullscreenState('response'), '/');
+describe('escape priority in fullscreen: search first, fullscreen exit second', () => {
+  const searchActiveState = (panel: 'requests' | 'response' | 'details'): AppState =>
+    panelState(panel, { searchMatches: [3, 7], currentMatchIndex: 0, lastSearchQuery: 'needle' });
 
-    expect(actions).toEqual([{ type: 'ENTER_SEARCH' }]);
+  it('Escape while the response is maximized with active search results dismisses the search', () => {
+    const result = runNormalInput(searchActiveState('response'), '', makeKey({ escape: true }));
+
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
   });
 
-  it('/ while the requests panel is maximized dispatches nothing', () => {
-    const actions = pressKey(fullscreenState('requests'), '/');
+  it('Escape while the requests panel is maximized with active search results dismisses the search', () => {
+    const result = runNormalInput(searchActiveState('requests'), '', makeKey({ escape: true }));
 
-    expect(actions).toEqual([]);
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
   });
 
-  it('/ while the details panel is maximized dispatches nothing', () => {
-    const actions = pressKey(fullscreenState('details'), '/');
+  it('Escape while the details panel is maximized with active search results dismisses the search', () => {
+    const result = runNormalInput(searchActiveState('details'), '', makeKey({ escape: true }));
 
-    expect(actions).toEqual([]);
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
   });
-});
 
-describe('fullscreen display toggles', () => {
-  it('w while the response is maximized dispatches TOGGLE_WRAP', () => {
-    const actions = pressKey(fullscreenState('response'), 'w');
+  it('a second Escape after the dismissal exits fullscreen', () => {
+    const searchActive = searchActiveState('requests');
+    const first = runNormalInput(searchActive, '', makeKey({ escape: true }));
 
-    expect(actions).toEqual([{ type: 'TOGGLE_WRAP' }]);
+    expect(first.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
+
+    const dismissed = reducer(searchActive, { type: 'CANCEL_SEARCH' });
+    const second = runNormalInput(dismissed, '', makeKey({ escape: true }));
+
+    expect(second.actions).toEqual([{ type: 'TOGGLE_FULLSCREEN' }]);
+  });
+
+  it('Escape without search results exits fullscreen', () => {
+    const result = runNormalInput(panelState('requests'), '', makeKey({ escape: true }));
+
+    expect(result.actions).toEqual([{ type: 'TOGGLE_FULLSCREEN' }]);
   });
 });
 
 describe('fullscreen action keys are no-ops', () => {
   const noopKeys: Array<{ label: string; input: string; key?: Key }> = [
+    { label: 'Tab', input: '', key: makeKey({ tab: true }) },
     { label: 'Enter', input: '', key: makeKey({ return: true }) },
     { label: 'o', input: 'o' },
     { label: 'Ctrl+G', input: 'g', key: makeKey({ ctrl: true }) },
@@ -272,7 +179,7 @@ describe('fullscreen action keys are no-ops', () => {
   ];
 
   it.each(noopKeys)('$label does not run its normal-mode action while maximized', ({ label, input, key }) => {
-    const result = runNormalInput(actionNoopState('response'), input, key ?? makeKey());
+    const result = runNormalInput(populatedPanelState('response'), input, key ?? makeKey());
 
     if (label === 'Ctrl+G') {
       expect(result.actions).toEqual([{ type: 'JUMP_VERTICAL', direction: 'start' }]);
@@ -283,22 +190,6 @@ describe('fullscreen action keys are no-ops', () => {
     expect(result.suspend).not.toHaveBeenCalled();
     expect(result.clipboardRunner).not.toHaveBeenCalled();
     expect(result.clipboardReadRunner).not.toHaveBeenCalled();
-  });
-
-  it.each(['v', 'r', 'w'] as const)('%s is a no-op while the requests panel is maximized', (input) => {
-    const result = runNormalInput(actionNoopState('requests'), input);
-
-    expect(result.actions).toEqual([]);
-    expect(result.exit).not.toHaveBeenCalled();
-    expect(result.suspend).not.toHaveBeenCalled();
-  });
-
-  it.each(['v', 'r', 'w'] as const)('%s is a no-op while the details panel is maximized', (input) => {
-    const result = runNormalInput(actionNoopState('details'), input);
-
-    expect(result.actions).toEqual([]);
-    expect(result.exit).not.toHaveBeenCalled();
-    expect(result.suspend).not.toHaveBeenCalled();
   });
 });
 
@@ -335,7 +226,7 @@ describe('escape while loading', () => {
     const abortController = new AbortController();
     const abort = vi.spyOn(abortController, 'abort');
     const result = runNormalInput(
-      fullscreenState('response', { isLoading: true }),
+      panelState('response', { isLoading: true }),
       '',
       makeKey({ escape: true }),
       { current: abortController },
@@ -396,13 +287,7 @@ describe('q with active search in normal mode', () => {
   });
 });
 
-describe('normal mode search and escape', () => {
-  it('/ with a null response dispatches ENTER_SEARCH', () => {
-    const actions = pressKey(createInitialState({ requests: [createRequest()], response: null }), '/');
-
-    expect(actions).toEqual([{ type: 'ENTER_SEARCH' }]);
-  });
-
+describe('normal mode escape', () => {
   it('Escape is a no-op in normal mode without search state', () => {
     const result = runNormalInput(
       createInitialState({ requests: [createRequest()] }),
@@ -411,6 +296,22 @@ describe('normal mode search and escape', () => {
     );
 
     expect(result.actions).toEqual([]);
+    expect(result.exit).not.toHaveBeenCalled();
+  });
+
+  it('Escape dismisses an active search in split view', () => {
+    const result = runNormalInput(
+      createInitialState({
+        requests: [createRequest()],
+        searchMatches: [3, 7],
+        currentMatchIndex: 0,
+        lastSearchQuery: 'needle',
+      }),
+      '',
+      makeKey({ escape: true }),
+    );
+
+    expect(result.actions).toEqual([{ type: 'CANCEL_SEARCH' }]);
     expect(result.exit).not.toHaveBeenCalled();
   });
 });

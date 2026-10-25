@@ -18,6 +18,28 @@ function selectedRequest(state: AppState): ParsedRequest | undefined {
 }
 
 /**
+ * Canonical search-active predicate: the search bar is open (mode) or a
+ * confirmed query lingers. searchMatches is deliberately not consulted: the
+ * reducers couple it to lastSearchQuery (set together, cleared together).
+ * Callers run only in normal mode (search mode is routed to the search input
+ * handler first), so the mode disjunct is unreachable at those sites.
+ */
+export function isSearchActive(state: AppState): boolean {
+  return state.mode === 'search' || state.lastSearchQuery !== '';
+}
+
+/**
+ * Canonical response-visible predicate: the response panel is rendered —
+ * always in split view (no panel maximized), and in fullscreen only when the
+ * response panel is the maximized one. Keys that operate on the response
+ * (display toggles, search entry) are gated on this; details-maximized counts
+ * as not visible, where those keys are no-ops.
+ */
+export function responseVisible(state: AppState): boolean {
+  return state.maximizedPanel === null || state.maximizedPanel === 'response';
+}
+
+/**
  * Builds the response viewport from state alone (geometry, panel visibility,
  * search-bar visibility), so reducer-derived bounds always match the model the
  * panel renders from. Returns null while no response is loaded.
@@ -41,7 +63,7 @@ export function responseViewportFromState(state: AppState): ResponseViewportMode
       columns: state.geometry.columns,
       availableHeight: effectiveResponseHeight,
       fullscreen: state.maximizedPanel === 'response',
-      searchVisible: state.mode === 'search' || state.lastSearchQuery !== '',
+      searchVisible: isSearchActive(state),
     },
   });
 }
