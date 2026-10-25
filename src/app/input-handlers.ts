@@ -303,7 +303,7 @@ export function handleSaveInput({ state, input, key, dispatch }: {
   }
 
   if (key.return) {
-    const inputPath = state.saveInput.trim();
+    const inputPath = state.saveLoad.input.trim();
     if (!inputPath) {
       dispatch({ type: 'SET_SAVE_ERROR', error: 'Please enter a file path' });
       return;
@@ -332,7 +332,7 @@ export function handleSaveInput({ state, input, key, dispatch }: {
   }
 
   applyLineEdit(
-    { text: state.saveInput, cursor: state.saveCursor },
+    { text: state.saveLoad.input, cursor: state.saveLoad.cursor },
     input,
     key,
     (cursor) => {
@@ -360,7 +360,7 @@ export function handleResponseSaveInput({ state, input, key, dispatch }: {
   }
 
   if (key.return) {
-    const inputPath = state.responseSaveInput.trim();
+    const inputPath = state.responseSave.input.trim();
     if (!inputPath) {
       dispatch({ type: 'SET_RESPONSE_SAVE_ERROR', error: 'Please enter a file path' });
       return;
@@ -385,7 +385,7 @@ export function handleResponseSaveInput({ state, input, key, dispatch }: {
   }
 
   applyLineEdit(
-    { text: state.responseSaveInput, cursor: state.responseSaveCursor },
+    { text: state.responseSave.input, cursor: state.responseSave.cursor },
     input,
     key,
     (cursor) => {

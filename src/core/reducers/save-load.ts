@@ -1,7 +1,7 @@
 import { basename, extname } from 'node:path';
 
 import type { Action, AppState } from '../types';
-import { setTransient } from './helpers';
+import { INITIAL_SAVE_LOAD, setTransient } from './helpers';
 
 type SaveLoadAction = Extract<Action, { type: 'ENTER_SAVE' | 'UPDATE_SAVE_INPUT' | 'MOVE_SAVE_CURSOR' | 'SET_SAVE_ERROR' | 'SAVE_FILE' | 'CANCEL_SAVE' }>;
 
@@ -12,30 +12,37 @@ export function reduceSaveLoad(state: AppState, action: SaveLoadAction): AppStat
       return {
         ...state,
         mode: 'saveLoad',
-        saveInput: defaultPath,
-        saveCursor: defaultPath.length,
-        saveError: null,
+        saveLoad: { ...INITIAL_SAVE_LOAD, input: defaultPath, cursor: defaultPath.length },
       };
     }
 
     case 'UPDATE_SAVE_INPUT':
       return {
         ...state,
-        saveInput: action.value,
-        saveCursor: action.cursor,
-        saveError: null,
+        saveLoad: {
+          ...state.saveLoad,
+          input: action.value,
+          cursor: action.cursor,
+          error: null,
+        },
       };
 
     case 'MOVE_SAVE_CURSOR':
       return {
         ...state,
-        saveCursor: action.cursor,
+        saveLoad: {
+          ...state.saveLoad,
+          cursor: action.cursor,
+        },
       };
 
     case 'SET_SAVE_ERROR':
       return {
         ...state,
-        saveError: action.error,
+        saveLoad: {
+          ...state.saveLoad,
+          error: action.error,
+        },
       };
 
     case 'SAVE_FILE':
@@ -44,9 +51,7 @@ export function reduceSaveLoad(state: AppState, action: SaveLoadAction): AppStat
         mode: 'normal',
         requests: state.requests.map(r => ({ ...r, isDirty: false })),
         filePath: action.filePath,
-        saveInput: '',
-        saveCursor: 0,
-        saveError: null,
+        saveLoad: INITIAL_SAVE_LOAD,
         ...setTransient({ message: action.message }),
       };
 
@@ -54,9 +59,7 @@ export function reduceSaveLoad(state: AppState, action: SaveLoadAction): AppStat
       return {
         ...state,
         mode: 'normal',
-        saveInput: '',
-        saveCursor: 0,
-        saveError: null,
+        saveLoad: INITIAL_SAVE_LOAD,
       };
   }
 }

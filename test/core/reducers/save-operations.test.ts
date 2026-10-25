@@ -2,21 +2,22 @@ import { describe, expect, it } from 'vitest';
 
 import { hasUnsavedChanges } from '../../../src/utils/request';
 import type { AppState } from '../../../src/core/types';
+import { INITIAL_SAVE_LOAD } from '../../../src/core/reducers/helpers';
 import { createRequest } from '../../helpers/requests';
 import { createInitialState, reducer } from '../../helpers/state';
 
 describe('ENTER_SAVE reducer', () => {
-  it('sets mode to saveLoad and clears saveError', () => {
+  it('sets mode to saveLoad and clears the error', () => {
     const state: AppState = {
       ...createInitialState(),
       filePath: '/home/user/collections/MyAPI.json',
-      saveError: 'previous error',
+      saveLoad: { ...INITIAL_SAVE_LOAD, error: 'previous error' },
     };
 
     const result = reducer(state, { type: 'ENTER_SAVE' });
 
     expect(result.mode).toBe('saveLoad');
-    expect(result.saveError).toBeNull();
+    expect(result.saveLoad.error).toBeNull();
   });
 
   it('computes default path by replacing extension with .http for .json files', () => {
@@ -27,8 +28,8 @@ describe('ENTER_SAVE reducer', () => {
 
     const result = reducer(state, { type: 'ENTER_SAVE' });
 
-    expect(result.saveInput).toBe('MyAPI.http');
-    expect(result.saveCursor).toBe('MyAPI.http'.length);
+    expect(result.saveLoad.input).toBe('MyAPI.http');
+    expect(result.saveLoad.cursor).toBe('MyAPI.http'.length);
   });
 
   it('keeps .http extension unchanged for .http files', () => {
@@ -39,7 +40,7 @@ describe('ENTER_SAVE reducer', () => {
 
     const result = reducer(state, { type: 'ENTER_SAVE' });
 
-    expect(result.saveInput).toBe('test.http');
+    expect(result.saveLoad.input).toBe('test.http');
   });
 
   it('replaces any extension with .http using only the file basename', () => {
@@ -50,7 +51,7 @@ describe('ENTER_SAVE reducer', () => {
 
     const result = reducer(state, { type: 'ENTER_SAVE' });
 
-    expect(result.saveInput).toBe('My Collection.http');
+    expect(result.saveLoad.input).toBe('My Collection.http');
   });
 
   it('strips directory components from the default save path', () => {
@@ -61,104 +62,121 @@ describe('ENTER_SAVE reducer', () => {
 
     const result = reducer(state, { type: 'ENTER_SAVE' });
 
-    expect(result.saveInput).toBe('basic.http');
+    expect(result.saveLoad.input).toBe('basic.http');
   });
 });
 
 describe('UPDATE_SAVE_INPUT reducer', () => {
-  it('updates saveInput, saveCursor, and clears saveError', () => {
+  it('updates saveLoad input and cursor and clears the error', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveInput: '/default.http',
-      saveError: 'some error',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: '/default.http', error: 'some error' },
     };
 
     const result = reducer(state, { type: 'UPDATE_SAVE_INPUT', value: '/custom/path.http', cursor: 17 });
 
-    expect(result.saveInput).toBe('/custom/path.http');
-    expect(result.saveCursor).toBe(17);
-    expect(result.saveError).toBeNull();
+    expect(result.saveLoad.input).toBe('/custom/path.http');
+    expect(result.saveLoad.cursor).toBe(17);
+    expect(result.saveLoad.error).toBeNull();
   });
 });
 
 describe('MOVE_SAVE_CURSOR reducer', () => {
-  it('sets saveCursor without modifying saveInput', () => {
+  it('sets saveLoad cursor without modifying saveLoad input', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveInput: '/tmp/output.http',
-      saveCursor: 5,
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: '/tmp/output.http', cursor: 5 },
     };
 
     const result = reducer(state, { type: 'MOVE_SAVE_CURSOR', cursor: 3 });
 
-    expect(result.saveCursor).toBe(3);
-    expect(result.saveInput).toBe('/tmp/output.http');
+    expect(result.saveLoad.cursor).toBe(3);
+    expect(result.saveLoad.input).toBe('/tmp/output.http');
   });
 
-  it('does not clear saveError', () => {
+  it('does not clear the error', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveInput: '/tmp/output.http',
-      saveCursor: 5,
-      saveError: 'Permission denied',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: '/tmp/output.http', cursor: 5, error: 'Permission denied' },
     };
 
     const result = reducer(state, { type: 'MOVE_SAVE_CURSOR', cursor: 0 });
 
-    expect(result.saveCursor).toBe(0);
-    expect(result.saveError).toBe('Permission denied');
+    expect(result.saveLoad.cursor).toBe(0);
+    expect(result.saveLoad.error).toBe('Permission denied');
   });
 });
 
 describe('SET_SAVE_ERROR reducer', () => {
-  it('sets saveError to the provided message', () => {
+  it('sets the error to the provided message', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveInput: '/tmp/output.http',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: '/tmp/output.http' },
     };
 
     const result = reducer(state, { type: 'SET_SAVE_ERROR', error: 'Permission denied' });
 
-    expect(result.saveError).toBe('Permission denied');
+    expect(result.saveLoad.error).toBe('Permission denied');
     expect(result.mode).toBe('saveLoad');
-    expect(result.saveInput).toBe('/tmp/output.http');
+    expect(result.saveLoad.input).toBe('/tmp/output.http');
+  });
+});
+
+describe('saveLoad dormancy invariant', () => {
+  // Characterization pin: the exit and commit resets already enforce dormancy.
+  it('cluster deep-equals INITIAL_SAVE_LOAD after every exit/commit action', () => {
+    const dirty: AppState = {
+      ...createInitialState(),
+      mode: 'saveLoad',
+      saveLoad: { input: 'stale.http', cursor: 4, error: 'Permission denied' },
+    };
+
+    const afterCancel = reducer(dirty, { type: 'CANCEL_SAVE' });
+    expect(afterCancel.mode).toBe('normal');
+    expect(afterCancel.saveLoad).toEqual(INITIAL_SAVE_LOAD);
+
+    const afterSave = reducer(dirty, {
+      type: 'SAVE_FILE',
+      message: 'Saved 5 requests to next.http',
+      filePath: 'next.http',
+    });
+    expect(afterSave.mode).toBe('normal');
+    expect(afterSave.saveLoad).toEqual(INITIAL_SAVE_LOAD);
   });
 });
 
 describe('SAVE_FILE reducer', () => {
-  it('resets mode to normal, clears saveInput and saveError, sets transientMessage', () => {
+  it('resets mode to normal, clears the input and error, sets transientMessage', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveInput: '/tmp/output.http',
-      saveError: null,
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: '/tmp/output.http', error: null },
     };
 
     const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 5 requests to /tmp/output.http', filePath: '/tmp/output.http' });
 
     expect(result.mode).toBe('normal');
-    expect(result.saveInput).toBe('');
-    expect(result.saveError).toBeNull();
+    expect(result.saveLoad.input).toBe('');
+    expect(result.saveLoad.error).toBeNull();
     expect(result.transientMessage).toBe('Saved 5 requests to /tmp/output.http');
     expect(result.filePath).toBe('/tmp/output.http');
   });
 
-  it('clears a previous saveError on successful save', () => {
+  it('clears a previous error on successful save', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveInput: '/tmp/output.http',
-      saveError: 'Permission denied',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: '/tmp/output.http', error: 'Permission denied' },
     };
 
     const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 3 requests to /tmp/api.http', filePath: '/tmp/api.http' });
 
     expect(result.mode).toBe('normal');
-    expect(result.saveError).toBeNull();
+    expect(result.saveLoad.error).toBeNull();
     expect(result.transientMessage).toBe('Saved 3 requests to /tmp/api.http');
     expect(result.filePath).toBe('/tmp/api.http');
   });
@@ -180,7 +198,7 @@ describe('SAVE_FILE reducer', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveInput: 'api.http',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: 'api.http' },
       filePath: 'api.http',
     };
 
@@ -196,7 +214,7 @@ describe('SAVE_FILE reducer', () => {
         requests: [createRequest({ isDirty: true }), createRequest({ isDirty: true })],
       }),
       mode: 'saveLoad',
-      saveInput: 'api.http',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: 'api.http' },
       filePath: 'api.http',
     };
 
@@ -208,26 +226,25 @@ describe('SAVE_FILE reducer', () => {
 });
 
 describe('CANCEL_SAVE reducer', () => {
-  it('resets mode to normal, clears saveInput and saveError', () => {
+  it('resets mode to normal, clears the input and error', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveInput: '/tmp/output.http',
-      saveError: 'some error',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: '/tmp/output.http', error: 'some error' },
     };
 
     const result = reducer(state, { type: 'CANCEL_SAVE' });
 
     expect(result.mode).toBe('normal');
-    expect(result.saveInput).toBe('');
-    expect(result.saveError).toBeNull();
+    expect(result.saveLoad.input).toBe('');
+    expect(result.saveLoad.error).toBeNull();
   });
 
   it('does not change other state fields', () => {
     const state: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveInput: '/tmp/output.http',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: '/tmp/output.http' },
       filePath: 'original.http',
     };
 

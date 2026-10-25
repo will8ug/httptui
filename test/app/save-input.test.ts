@@ -2,18 +2,16 @@ import { describe, expect, it } from 'vitest';
 import type { Key } from 'ink';
 
 import { handleFileLoadInput, handleSaveInput } from '../../src/app/input-handlers';
-import { INITIAL_FILE_LOAD } from '../../src/core/reducers/helpers';
-import type { Action, AppState } from '../../src/core/types';
+import { INITIAL_FILE_LOAD, INITIAL_SAVE_LOAD } from '../../src/core/reducers/helpers';
+import type { Action, AppState, TextEntryState } from '../../src/core/types';
 import { pressKey } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createInitialState } from '../helpers/state';
 
-function saveState(overrides: Partial<AppState> = {}): AppState {
+function saveState(overrides: Partial<TextEntryState> = {}): AppState {
   return createInitialState({
     mode: 'saveLoad',
-    saveInput: 'api.http',
-    saveCursor: 'api.http'.length,
-    ...overrides,
+    saveLoad: { ...INITIAL_SAVE_LOAD, input: 'api.http', cursor: 'api.http'.length, ...overrides },
   });
 }
 
@@ -72,7 +70,7 @@ describe('handleSaveInput', () => {
 
   it('Enter with empty input sets the save error', () => {
     const actions = pressSaveKey(
-      saveState({ saveInput: '   ', saveCursor: 3 }),
+      saveState({ input: '   ', cursor: 3 }),
       '',
       makeKey({ return: true }),
     );
@@ -81,14 +79,14 @@ describe('handleSaveInput', () => {
   });
 
   it('typing a character inserts it at the cursor', () => {
-    const actions = pressSaveKey(saveState({ saveInput: '', saveCursor: 0 }), 'a');
+    const actions = pressSaveKey(saveState({ input: '', cursor: 0 }), 'a');
 
     expect(actions).toEqual([{ type: 'UPDATE_SAVE_INPUT', value: 'a', cursor: 1 }]);
   });
 
   it('Backspace deletes the character before the cursor', () => {
     const actions = pressSaveKey(
-      saveState({ saveInput: 'abcdef', saveCursor: 3 }),
+      saveState({ input: 'abcdef', cursor: 3 }),
       '',
       makeKey({ backspace: true }),
     );

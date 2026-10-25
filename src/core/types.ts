@@ -168,12 +168,8 @@ export interface AppState {
   // `mode` is not that overlay's mode — the owning reducer resets it on exit and
   // commit. Search is the documented exception and lives outside this invariant.
   fileLoad: FileLoadState;
-  saveInput: string;
-  saveCursor: number;
-  saveError: string | null;
-  responseSaveInput: string;
-  responseSaveCursor: number;
-  responseSaveError: string | null;
+  saveLoad: TextEntryState;
+  responseSave: TextEntryState;
   fileVariables: FileVariable[];
   activeEnvName: string | null;
   availableEnvironments: EnvOption[];

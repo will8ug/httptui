@@ -6,7 +6,7 @@ import { getRequestTarget, resolveRequestDetails } from '../../utils/request';
 import { cellWidth } from '../../utils/text';
 import { computeResponseViewport } from '../response-viewport';
 import type { ResponseViewportModel } from '../response-viewport';
-import type { AppState, FileLoadState, FileVariable, ParsedRequest } from '../types';
+import type { AppState, FileLoadState, FileVariable, ParsedRequest, TextEntryState } from '../types';
 import { resolveVariables } from '../variables';
 
 export function clamp(value: number, min: number, max: number): number {
@@ -182,6 +182,18 @@ export const INITIAL_FILE_LOAD: FileLoadState = {
   cursor: 0,
   error: null,
   completions: null,
+};
+
+export const INITIAL_SAVE_LOAD: TextEntryState = {
+  input: '',
+  cursor: 0,
+  error: null,
+};
+
+export const INITIAL_RESPONSE_SAVE: TextEntryState = {
+  input: '',
+  cursor: 0,
+  error: null,
 };
 
 export const EMPTY_EDIT_BUFFERS = {

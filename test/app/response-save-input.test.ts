@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { handleResponseSaveInput, handleSaveInput } from '../../src/app/input-handlers';
+import { INITIAL_RESPONSE_SAVE, INITIAL_SAVE_LOAD } from '../../src/core/reducers/helpers';
 import type { Action } from '../../src/core/types';
 import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
@@ -18,8 +19,7 @@ describe('handleResponseSaveInput', () => {
       const state = createInitialState({
         filePath: join(tmpDir, 'api.http'),
         mode: 'responseSave',
-        responseSaveInput: 'resp.txt',
-        responseSaveCursor: 'resp.txt'.length,
+        responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'resp.txt', cursor: 'resp.txt'.length },
         response: createMockResponse({ body: 'line1\nline2', rawBody: 'line1\r\nline2' }),
       });
 
@@ -38,8 +38,7 @@ describe('handleResponseSaveInput', () => {
       const state = createInitialState({
         filePath: join(tmpDir, 'api.http'),
         mode: 'responseSave',
-        responseSaveInput: 'resp.txt',
-        responseSaveCursor: 'resp.txt'.length,
+        responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'resp.txt', cursor: 'resp.txt'.length },
         response: createMockResponse({ body: 'new body', rawBody: 'new body' }),
       });
       const dispatch = vi.fn();
@@ -91,8 +90,7 @@ describe('s-key mode isolation', () => {
   it('s while the save-as overlay is open types into the save path', () => {
     const state = createInitialState({
       mode: 'saveLoad',
-      saveInput: 'api.http',
-      saveCursor: 'api.http'.length,
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: 'api.http', cursor: 'api.http'.length },
       response: createMockResponse({ body: '{"a":1}', rawBody: '{"a":1}' }),
     });
     const dispatched: Action[] = [];
@@ -110,8 +108,7 @@ describe('s-key mode isolation', () => {
   it('s while the response-save overlay is open inserts the character into the path', () => {
     const state = createInitialState({
       mode: 'responseSave',
-      responseSaveInput: 'Get Users.json',
-      responseSaveCursor: 'Get Users.json'.length,
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get Users.json', cursor: 'Get Users.json'.length },
       response: createMockResponse({ body: '{"a":1}', rawBody: '{"a":1}' }),
     });
     const dispatched: Action[] = [];

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { INITIAL_RESPONSE_SAVE } from '../../../src/core/reducers/helpers';
 import { createMockResponse } from '../../helpers/responses';
 import { createRequest } from '../../helpers/requests';
 import { createInitialState, reducer } from '../../helpers/state';
@@ -9,15 +10,15 @@ describe('ENTER_RESPONSE_SAVE reducer', () => {
     const state = createInitialState({
       requests: [createRequest({ name: 'Get Users' })],
       response: createMockResponse({ body: '{"items":[]}' }),
-      responseSaveError: 'previous error',
+      responseSave: { ...INITIAL_RESPONSE_SAVE, error: 'previous error' },
     });
 
     const result = reducer(state, { type: 'ENTER_RESPONSE_SAVE' });
 
     expect(result.mode).toBe('responseSave');
-    expect(result.responseSaveInput).toBe('Get Users.json');
-    expect(result.responseSaveCursor).toBe('Get Users.json'.length);
-    expect(result.responseSaveError).toBeNull();
+    expect(result.responseSave.input).toBe('Get Users.json');
+    expect(result.responseSave.cursor).toBe('Get Users.json'.length);
+    expect(result.responseSave.error).toBeNull();
   });
 
   it('derives the filename from the selected request, not the first request', () => {
@@ -29,7 +30,7 @@ describe('ENTER_RESPONSE_SAVE reducer', () => {
 
     const result = reducer(state, { type: 'ENTER_RESPONSE_SAVE' });
 
-    expect(result.responseSaveInput).toBe('Get Page.txt');
+    expect(result.responseSave.input).toBe('Get Page.txt');
   });
 
   it('falls back to .txt when there is no response body', () => {
@@ -40,7 +41,7 @@ describe('ENTER_RESPONSE_SAVE reducer', () => {
 
     const result = reducer(state, { type: 'ENTER_RESPONSE_SAVE' });
 
-    expect(result.responseSaveInput).toBe('Get Users.txt');
+    expect(result.responseSave.input).toBe('Get Users.txt');
   });
 
   it('does not crash when the request list is empty', () => {
@@ -51,7 +52,7 @@ describe('ENTER_RESPONSE_SAVE reducer', () => {
 
     const result = reducer(state, { type: 'ENTER_RESPONSE_SAVE' });
 
-    expect(result.responseSaveInput).toBe('.json');
+    expect(result.responseSave.input).toBe('.json');
   });
 });
 
@@ -59,16 +60,19 @@ describe('MOVE_RESPONSE_SAVE_CURSOR reducer', () => {
   it('moves the cursor without clearing an existing error', () => {
     const state = createInitialState({
       mode: 'responseSave',
-      responseSaveInput: 'Get Users.json',
-      responseSaveCursor: 5,
-      responseSaveError: 'File exists: Get Users.json',
+      responseSave: {
+        ...INITIAL_RESPONSE_SAVE,
+        input: 'Get Users.json',
+        cursor: 5,
+        error: 'File exists: Get Users.json',
+      },
     });
 
     const result = reducer(state, { type: 'MOVE_RESPONSE_SAVE_CURSOR', cursor: 3 });
 
-    expect(result.responseSaveCursor).toBe(3);
-    expect(result.responseSaveInput).toBe('Get Users.json');
-    expect(result.responseSaveError).toBe('File exists: Get Users.json');
+    expect(result.responseSave.cursor).toBe(3);
+    expect(result.responseSave.input).toBe('Get Users.json');
+    expect(result.responseSave.error).toBe('File exists: Get Users.json');
   });
 });
 
@@ -76,17 +80,15 @@ describe('SAVE_RESPONSE_FILE reducer', () => {
   it('returns to normal mode, resets the response-save fields, and sets the transient message', () => {
     const state = createInitialState({
       mode: 'responseSave',
-      responseSaveInput: 'Get Users.json',
-      responseSaveCursor: 5,
-      responseSaveError: null,
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get Users.json', cursor: 5, error: null },
     });
 
     const result = reducer(state, { type: 'SAVE_RESPONSE_FILE', message: 'Saved response to Get Users.json' });
 
     expect(result.mode).toBe('normal');
-    expect(result.responseSaveInput).toBe('');
-    expect(result.responseSaveCursor).toBe(0);
-    expect(result.responseSaveError).toBeNull();
+    expect(result.responseSave.input).toBe('');
+    expect(result.responseSave.cursor).toBe(0);
+    expect(result.responseSave.error).toBeNull();
     expect(result.transientMessage).toBe('Saved response to Get Users.json');
   });
 
@@ -94,7 +96,7 @@ describe('SAVE_RESPONSE_FILE reducer', () => {
     const state = createInitialState({
       mode: 'responseSave',
       filePath: '/home/user/apis/api.http',
-      responseSaveInput: 'Get Users.json',
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get Users.json' },
       requests: [createRequest({ isDirty: true }), createRequest({ isDirty: false })],
     });
 
@@ -110,17 +112,38 @@ describe('CANCEL_RESPONSE_SAVE reducer', () => {
   it('returns to normal mode and resets the response-save fields', () => {
     const state = createInitialState({
       mode: 'responseSave',
-      responseSaveInput: 'Get Users.json',
-      responseSaveCursor: 5,
-      responseSaveError: 'File exists: Get Users.json',
+      responseSave: {
+        ...INITIAL_RESPONSE_SAVE,
+        input: 'Get Users.json',
+        cursor: 5,
+        error: 'File exists: Get Users.json',
+      },
     });
 
     const result = reducer(state, { type: 'CANCEL_RESPONSE_SAVE' });
 
     expect(result.mode).toBe('normal');
-    expect(result.responseSaveInput).toBe('');
-    expect(result.responseSaveCursor).toBe(0);
-    expect(result.responseSaveError).toBeNull();
+    expect(result.responseSave.input).toBe('');
+    expect(result.responseSave.cursor).toBe(0);
+    expect(result.responseSave.error).toBeNull();
+  });
+});
+
+describe('responseSave dormancy invariant', () => {
+  // Characterization pin: the exit and commit resets already enforce dormancy.
+  it('cluster deep-equals INITIAL_RESPONSE_SAVE after every exit/commit action', () => {
+    const dirty = createInitialState({
+      mode: 'responseSave',
+      responseSave: { input: 'stale.json', cursor: 4, error: 'File exists: stale.json' },
+    });
+
+    const afterCancel = reducer(dirty, { type: 'CANCEL_RESPONSE_SAVE' });
+    expect(afterCancel.mode).toBe('normal');
+    expect(afterCancel.responseSave).toEqual(INITIAL_RESPONSE_SAVE);
+
+    const afterSave = reducer(dirty, { type: 'SAVE_RESPONSE_FILE', message: 'Saved response to next.json' });
+    expect(afterSave.mode).toBe('normal');
+    expect(afterSave.responseSave).toEqual(INITIAL_RESPONSE_SAVE);
   });
 });
 
@@ -128,17 +151,16 @@ describe('SET_RESPONSE_SAVE_ERROR reducer', () => {
   it('persists the error until UPDATE_RESPONSE_SAVE_INPUT clears it', () => {
     const state = createInitialState({
       mode: 'responseSave',
-      responseSaveInput: 'Get Users.json',
-      responseSaveCursor: 5,
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get Users.json', cursor: 5 },
     });
 
     const errored = reducer(state, { type: 'SET_RESPONSE_SAVE_ERROR', error: 'File exists: Get Users.json' });
-    expect(errored.responseSaveError).toBe('File exists: Get Users.json');
-    expect(errored.responseSaveInput).toBe('Get Users.json');
+    expect(errored.responseSave.error).toBe('File exists: Get Users.json');
+    expect(errored.responseSave.input).toBe('Get Users.json');
 
     const edited = reducer(errored, { type: 'UPDATE_RESPONSE_SAVE_INPUT', value: 'Get Users 2.json', cursor: 15 });
-    expect(edited.responseSaveError).toBeNull();
-    expect(edited.responseSaveInput).toBe('Get Users 2.json');
-    expect(edited.responseSaveCursor).toBe(15);
+    expect(edited.responseSave.error).toBeNull();
+    expect(edited.responseSave.input).toBe('Get Users 2.json');
+    expect(edited.responseSave.cursor).toBe(15);
   });
 });
