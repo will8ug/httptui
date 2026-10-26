@@ -35,10 +35,6 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
             return 'requests';
         }
       })();
-      // The Tab cycle is the only focus-departure mechanism (maximized-panel
-      // changes go through focus — see the invariant in core/types.ts), so
-      // clearing here keeps a lingering search out of every non-response
-      // panel state, fullscreen included.
       const leavesResponse = state.focusedPanel === 'response' && nextPanel !== 'response';
       return {
         ...state,

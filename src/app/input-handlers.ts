@@ -705,8 +705,6 @@ export function handleNormalInput({
   }
 
   if (keyName === 'up' || keyName === 'down') {
-    // Safe to read focusedPanel while maximized: maximizedPanel, when set,
-    // always equals focusedPanel (see the invariant in core/types.ts).
     if (state.focusedPanel === 'requests') {
       dispatch({ type: 'MOVE_SELECTION', direction: keyName });
     } else {

@@ -15,9 +15,9 @@ Prefer self-documenting code over comments. Only add comments for knowledge that
 - **Self-document first.** Use clear test names, descriptive assertion values, and meaningful function names. A switch statement or an `expect().toBe(...)` is already its own documentation.
 - **Never restate what the code says.** If a comment describes what the next line does, the code already says that — remove the comment.
 - **Never reference change history.** Comments like `// After recursive-body-synthesis, ...` are git-history noise. The commit message already captures what changed. Explain the *current state*, not the transition.
-- **Reserve comments for non-obvious knowledge only:** gotchas that look correct but aren't (e.g., an em-dash resembling a hyphen), design decisions not evident from the code (e.g., bracket-notation encoding), and contract invariants a maintainer might unknowingly violate (e.g., "assumes document is already dereferenced").
+- **Reserve comments for non-obvious knowledge only:** gotchas that look correct but aren't (e.g., an em-dash resembling a hyphen), design decisions not evident from the code (e.g., bracket-notation encoding).
 
-Precedent: 9 restating comments and 3 verbose docstrings were cleaned up in the `recursive-body-synthesis` change, keeping only gotcha warnings and contract notes.
+Precedent: 9 restating comments and 3 verbose docstrings were cleaned up in the `recursive-body-synthesis` change, keeping only gotcha warnings and design-decision notes.
 
 ## Shortcut documentation
 

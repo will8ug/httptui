@@ -4,7 +4,7 @@ import { createInitialState } from '../../helpers/state';
 import { createRequest } from '../../helpers/requests';
 import { createMockResponse } from '../../helpers/responses';
 import { formatResponseBody } from '../../../src/core/formatter';
-import { reducer, computeSearchScrollOffset, isSearchActive } from '../../../src/core/reducer';
+import { reducer, computeSearchScrollOffset, isSearchActive, searchBarFromState } from '../../../src/core/reducer';
 import { INITIAL_SEARCH } from '../../../src/core/reducers/helpers';
 import { computeResponseLayout } from '../../../src/core/response-layout';
 import type { Action, AppState, ResponseData, SearchState } from '../../../src/core/types';
@@ -614,6 +614,48 @@ describe('isSearchActive predicate', () => {
     const dismissed = reducer(confirmSearch('john'), { type: 'CANCEL_SEARCH' });
 
     expect(isSearchActive(dismissed)).toBe(false);
+  });
+});
+
+describe('searchBarFromState', () => {
+  it('is hidden in a fresh state', () => {
+    expect(searchBarFromState(createInitialState())).toEqual({ kind: 'hidden' });
+  });
+
+  it('is active with the typed query and cursor while in search mode', () => {
+    const state: AppState = {
+      ...stateWithResponse('{"name":"John"}'),
+      mode: 'search',
+      search: { ...INITIAL_SEARCH, query: 'jo', cursor: 1 },
+    };
+
+    expect(searchBarFromState(state)).toEqual({ kind: 'active', query: 'jo', cursor: 1 });
+  });
+
+  it('stays active while re-editing even when a previous query lingers', () => {
+    const state: AppState = {
+      ...stateWithActiveSearch(),
+      mode: 'search',
+      search: { ...INITIAL_SEARCH, query: 'al', cursor: 2, lastQuery: 'john' },
+    };
+
+    expect(searchBarFromState(state)).toEqual({ kind: 'active', query: 'al', cursor: 2 });
+  });
+
+  it('lingers with the confirmed query in normal mode', () => {
+    expect(searchBarFromState(stateWithActiveSearch())).toEqual({ kind: 'lingering', lastQuery: 'john' });
+  });
+
+  it('lingers with the confirmed query even when it had no matches', () => {
+    const state = stateWithActiveSearch({ query: 'alice', matches: [], currentMatchIndex: 0, lastQuery: 'alice' });
+
+    expect(searchBarFromState(state)).toEqual({ kind: 'lingering', lastQuery: 'alice' });
+  });
+
+  it('is hidden after the confirmed search is dismissed', () => {
+    const dismissed = reducer(stateWithActiveSearch(), { type: 'CANCEL_SEARCH' });
+
+    expect(searchBarFromState(dismissed)).toEqual({ kind: 'hidden' });
   });
 });
 

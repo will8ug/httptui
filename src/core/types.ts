@@ -166,6 +166,11 @@ export interface SearchState {
   lastQuery: string;
 }
 
+export type SearchBar =
+  | { kind: 'hidden' }
+  | { kind: 'active'; query: string; cursor: number }
+  | { kind: 'lingering'; lastQuery: string };
+
 export interface AppState {
   geometry: TerminalGeometry;
   requests: ParsedRequest[];
@@ -190,9 +195,6 @@ export interface AppState {
   transientError: string | null;
   transientWarning: string | null;
   mode: AppMode;
-  // Dormancy invariant: each overlay cluster equals its initial object whenever
-  // `mode` is not that overlay's mode: the owning reducer resets it on exit and
-  // commit. Search is the documented exception and lives outside this invariant.
   fileLoad: FileLoadState;
   saveLoad: TextEntryState;
   responseSave: TextEntryState;
@@ -205,8 +207,6 @@ export interface AppState {
   wrapMode: WrapMode;
   showRequestDetails: boolean;
   rawMode: boolean;
-  // Clears on response changes, focus leaving the response panel, raw reformat,
-  // and its own dismissal paths; it otherwise persists across modes.
   search: SearchState;
   // Invariant: when non-null, equals focusedPanel. Fullscreen entry maximizes
   // the focused panel, and nothing reachable while maximized changes focus
@@ -250,7 +250,6 @@ export type Action =
   | { type: 'SET_TRANSIENT_ERROR'; error: string }
   | { type: 'CLEAR_TRANSIENT_MESSAGE' }
   | { type: 'ENTER_FILE_LOAD' }
-  // Programmatic value+cursor sets only (path completion); keystrokes go through FILE_LOAD_KEY.
   | { type: 'UPDATE_FILE_LOAD_INPUT'; value: string; cursor: number }
   | { type: 'FILE_LOAD_KEY'; op: EditOp; insert?: string }
   | { type: 'SET_FILE_LOAD_ERROR'; error: string }

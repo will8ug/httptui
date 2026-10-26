@@ -7,10 +7,16 @@ import {
   sliceVisibleLines,
 } from '../core/response-viewport';
 import type { ResponseViewportGeometry } from '../core/response-viewport';
-import type { ErrorInfo, ResponseData, WrapMode } from '../core/types';
+import type { ErrorInfo, ResponseData, SearchBar, WrapMode } from '../core/types';
 import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
 import { cellWidth, clampSegmentsToWidth, shiftText, truncateText } from '../utils/text';
 import type { ColorSegment } from '../utils/wrap';
+
+interface SearchViewProps {
+  matches: number[];
+  currentMatchIndex: number;
+  bar: SearchBar;
+}
 
 interface ResponseViewProps {
   response: ResponseData | null;
@@ -24,15 +30,7 @@ interface ResponseViewProps {
   rawMode: boolean;
   fullscreen: boolean;
   availableHeight: number;
-  searchMatches: number[];
-  currentMatchIndex: number;
-  /** Search-bar visibility per isSearchActive on the caller's state; isSearchMode/lastSearchQuery carry bar content only. */
-  searchVisible: boolean;
-  isSearchMode: boolean;
-  lastSearchQuery: string;
-  searchQuery: string;
-  /** Insertion point within searchQuery; rendered only while isSearchMode. */
-  searchCursor: number;
+  search: SearchViewProps;
 }
 
 type LineTransform =
@@ -109,13 +107,7 @@ export function ResponseView({
   rawMode,
   fullscreen,
   availableHeight,
-  searchMatches,
-  currentMatchIndex,
-  searchVisible,
-  isSearchMode,
-  lastSearchQuery,
-  searchQuery,
-  searchCursor,
+  search,
 }: ResponseViewProps): React.ReactElement {
   const { stdout } = useStdout();
   const columns = stdout.columns || DEFAULT_TERMINAL_COLUMNS;
@@ -123,7 +115,7 @@ export function ResponseView({
     columns,
     availableHeight,
     fullscreen,
-    searchVisible,
+    searchVisible: search.bar.kind !== 'hidden',
   };
 
   let content: React.ReactNode;
@@ -151,9 +143,9 @@ export function ResponseView({
           ? { kind: 'shift', offset: horizontalOffset }
           : { kind: 'truncate' };
 
-    const matchVisualIndices = new Set(searchMatches.map((i) => model.bodyVisualStart[i]));
-    const currentMatchVisualIndex = searchMatches.length > 0
-      ? model.bodyVisualStart[searchMatches[currentMatchIndex]]
+    const matchVisualIndices = new Set(search.matches.map((i) => model.bodyVisualStart[i]));
+    const currentMatchVisualIndex = search.matches.length > 0
+      ? model.bodyVisualStart[search.matches[search.currentMatchIndex]]
       : -1;
 
     content = sliceVisibleLines(model, scrollOffset, model.visibleHeight).map(
@@ -177,26 +169,30 @@ export function ResponseView({
   }
 
   let searchBar: React.ReactNode = null;
-  if (isSearchMode) {
-    searchBar = (
-      <Text color="cyanBright">
-        /{searchQuery.slice(0, searchCursor)}
-        <Text inverse>{searchQuery[searchCursor] ?? ' '}</Text>
-        {searchQuery.slice(searchCursor + 1)}
-        <Text color="gray">  (Esc to cancel)</Text>
-      </Text>
-    );
-  } else if (lastSearchQuery) {
-    const matchInfo = searchMatches.length > 0
-      ? `[${currentMatchIndex + 1}/${searchMatches.length}]`
-      : '[No matches]';
-    searchBar = (
-      <Text>
-        <Text color="gray">/{lastSearchQuery}</Text>
-        <Text color={searchMatches.length > 0 ? 'cyanBright' : 'yellow'}> {matchInfo}</Text>
-        <Text color="gray">  (Esc to dismiss)</Text>
-      </Text>
-    );
+  switch (search.bar.kind) {
+    case 'active':
+      searchBar = (
+        <Text color="cyanBright">
+          /{search.bar.query.slice(0, search.bar.cursor)}
+          <Text inverse>{search.bar.query[search.bar.cursor] ?? ' '}</Text>
+          {search.bar.query.slice(search.bar.cursor + 1)}
+          <Text color="gray">  (Esc to cancel)</Text>
+        </Text>
+      );
+      break;
+    case 'lingering': {
+      const matchInfo = search.matches.length > 0
+        ? `[${search.currentMatchIndex + 1}/${search.matches.length}]`
+        : '[No matches]';
+      searchBar = (
+        <Text>
+          <Text color="gray">/{search.bar.lastQuery}</Text>
+          <Text color={search.matches.length > 0 ? 'cyanBright' : 'yellow'}> {matchInfo}</Text>
+          <Text color="gray">  (Esc to dismiss)</Text>
+        </Text>
+      );
+      break;
+    }
   }
 
   return (

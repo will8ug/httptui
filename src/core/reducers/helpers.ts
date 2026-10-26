@@ -6,7 +6,7 @@ import { getRequestTarget, resolveRequestDetails } from '../../utils/request';
 import { cellWidth } from '../../utils/text';
 import { computeResponseViewport } from '../response-viewport';
 import type { ResponseViewportModel } from '../response-viewport';
-import type { AppState, ConfirmState, EditState, EnvSelectState, FileLoadState, FileVariable, ParsedRequest, SearchState, TextEntryState } from '../types';
+import type { AppState, ConfirmState, EditState, EnvSelectState, FileLoadState, FileVariable, ParsedRequest, SearchBar, SearchState, TextEntryState } from '../types';
 import { resolveVariables } from '../variables';
 
 export function clamp(value: number, min: number, max: number): number {
@@ -26,6 +26,15 @@ function selectedRequest(state: AppState): ParsedRequest | undefined {
  */
 export function isSearchActive(state: AppState): boolean {
   return state.mode === 'search' || state.search.lastQuery !== '';
+}
+
+export function searchBarFromState(state: AppState): SearchBar {
+  if (state.mode === 'search') {
+    return { kind: 'active', query: state.search.query, cursor: state.search.cursor };
+  }
+  return isSearchActive(state)
+    ? { kind: 'lingering', lastQuery: state.search.lastQuery }
+    : { kind: 'hidden' };
 }
 
 /**
