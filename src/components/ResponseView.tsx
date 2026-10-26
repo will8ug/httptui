@@ -12,14 +12,15 @@ import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
 import { cellWidth, clampSegmentsToWidth, shiftText, truncateText } from '../utils/text';
 import type { ColorSegment } from '../utils/wrap';
 
+type SearchBar =
+  | { kind: 'hidden' }
+  | { kind: 'active'; query: string; cursor: number }
+  | { kind: 'lingering'; lastQuery: string };
+
 interface SearchViewProps {
-  query: string;
-  cursor: number;
   matches: number[];
   currentMatchIndex: number;
-  lastQuery: string;
-  visible: boolean;
-  isSearchMode: boolean;
+  bar: SearchBar;
 }
 
 interface ResponseViewProps {
@@ -119,7 +120,7 @@ export function ResponseView({
     columns,
     availableHeight,
     fullscreen,
-    searchVisible: search.visible,
+    searchVisible: search.bar.kind !== 'hidden',
   };
 
   let content: React.ReactNode;
@@ -173,26 +174,30 @@ export function ResponseView({
   }
 
   let searchBar: React.ReactNode = null;
-  if (search.isSearchMode) {
-    searchBar = (
-      <Text color="cyanBright">
-        /{search.query.slice(0, search.cursor)}
-        <Text inverse>{search.query[search.cursor] ?? ' '}</Text>
-        {search.query.slice(search.cursor + 1)}
-        <Text color="gray">  (Esc to cancel)</Text>
-      </Text>
-    );
-  } else if (search.lastQuery) {
-    const matchInfo = search.matches.length > 0
-      ? `[${search.currentMatchIndex + 1}/${search.matches.length}]`
-      : '[No matches]';
-    searchBar = (
-      <Text>
-        <Text color="gray">/{search.lastQuery}</Text>
-        <Text color={search.matches.length > 0 ? 'cyanBright' : 'yellow'}> {matchInfo}</Text>
-        <Text color="gray">  (Esc to dismiss)</Text>
-      </Text>
-    );
+  switch (search.bar.kind) {
+    case 'active':
+      searchBar = (
+        <Text color="cyanBright">
+          /{search.bar.query.slice(0, search.bar.cursor)}
+          <Text inverse>{search.bar.query[search.bar.cursor] ?? ' '}</Text>
+          {search.bar.query.slice(search.bar.cursor + 1)}
+          <Text color="gray">  (Esc to cancel)</Text>
+        </Text>
+      );
+      break;
+    case 'lingering': {
+      const matchInfo = search.matches.length > 0
+        ? `[${search.currentMatchIndex + 1}/${search.matches.length}]`
+        : '[No matches]';
+      searchBar = (
+        <Text>
+          <Text color="gray">/{search.bar.lastQuery}</Text>
+          <Text color={search.matches.length > 0 ? 'cyanBright' : 'yellow'}> {matchInfo}</Text>
+          <Text color="gray">  (Esc to dismiss)</Text>
+        </Text>
+      );
+      break;
+    }
   }
 
   return (

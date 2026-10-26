@@ -30,13 +30,9 @@ const baseProps = {
   fullscreen: false as boolean,
   availableHeight: 20,
   search: {
-    query: '',
-    cursor: 0,
     matches: [] as number[],
     currentMatchIndex: 0,
-    lastQuery: '',
-    visible: false,
-    isSearchMode: false,
+    bar: { kind: 'hidden' } as const,
   },
 };
 
@@ -496,7 +492,7 @@ describe('search markers', () => {
         response={response}
         verbose={true}
         wrapMode={'wrap' as const}
-        search={{ ...baseProps.search, matches: [1], currentMatchIndex: 0, visible: true, lastQuery: 'needle' }}
+        search={{ ...baseProps.search, matches: [1], currentMatchIndex: 0, bar: { kind: 'lingering', lastQuery: 'needle' } }}
         availableHeight={40}
       />,
     );
@@ -514,7 +510,7 @@ describe('search markers', () => {
       <ResponseView
         {...baseProps}
         response={response}
-        search={{ ...baseProps.search, matches: [1], currentMatchIndex: 0, visible: true, lastQuery: 'needle' }}
+        search={{ ...baseProps.search, matches: [1], currentMatchIndex: 0, bar: { kind: 'lingering', lastQuery: 'needle' } }}
       />,
     );
 
@@ -563,12 +559,12 @@ describe('search markers', () => {
 
 describe('search bar', () => {
   it('shows / and the query while typing in search mode', () => {
-    // isSearchMode=true -> search bar renders "/{query}" followed by the
+    // Search bar 'active' -> renders "/{query}" followed by the
     // inverse insertion point at cursor, then "  (Esc to cancel)"
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
-        search={{ ...baseProps.search, visible: true, isSearchMode: true, query: 'world', cursor: 5 }}
+        search={{ ...baseProps.search, bar: { kind: 'active', query: 'world', cursor: 5 } }}
       />,
     );
     const frame = lastFrame() ?? '';
@@ -582,7 +578,7 @@ describe('search bar', () => {
       const { lastFrame } = render(
         <ResponseView
           {...baseProps}
-          search={{ ...baseProps.search, visible: true, isSearchMode: true, query: 'world', cursor: 2 }}
+          search={{ ...baseProps.search, bar: { kind: 'active', query: 'world', cursor: 2 } }}
         />,
       );
       const frame = lastFrame() ?? '';
@@ -602,7 +598,7 @@ describe('search bar', () => {
       const { lastFrame } = render(
         <ResponseView
           {...baseProps}
-          search={{ ...baseProps.search, visible: true, isSearchMode: true, query: 'world', cursor: 5 }}
+          search={{ ...baseProps.search, bar: { kind: 'active', query: 'world', cursor: 5 } }}
         />,
       );
       const frame = lastFrame() ?? '';
@@ -613,14 +609,14 @@ describe('search bar', () => {
   });
 
   it('shows the match position indicator after search', () => {
-    // isSearchMode=false, lastQuery="a", matches=[0,1,2], currentMatchIndex=0
+    // Search bar 'lingering' with lastQuery='a', matches=[0,1,2], currentMatchIndex=0
     // -> matchInfo = "[1/3]" (currentMatchIndex+1=1, matches.length=3)
     const response = createMockResponse({ body: 'apple\nbanana\ncherry' });
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
         response={response}
-        search={{ ...baseProps.search, visible: true, lastQuery: 'a', matches: [0, 1, 2], currentMatchIndex: 0 }}
+        search={{ ...baseProps.search, bar: { kind: 'lingering', lastQuery: 'a' }, matches: [0, 1, 2], currentMatchIndex: 0 }}
       />,
     );
     const frame = lastFrame() ?? '';
@@ -628,13 +624,13 @@ describe('search bar', () => {
   });
 
   it('indicates no matches when matches is empty', () => {
-    // lastQuery="xyz", matches=[] -> matchInfo = "[No matches]"
+    // Search bar 'lingering' with lastQuery='xyz', matches=[] -> matchInfo = "[No matches]"
     const response = createMockResponse({ body: 'apple\nbanana\ncherry' });
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
         response={response}
-        search={{ ...baseProps.search, visible: true, lastQuery: 'xyz', matches: [] }}
+        search={{ ...baseProps.search, bar: { kind: 'lingering', lastQuery: 'xyz' }, matches: [] }}
       />,
     );
     const frame = lastFrame() ?? '';
