@@ -166,6 +166,11 @@ export interface SearchState {
   lastQuery: string;
 }
 
+export type SearchBar =
+  | { kind: 'hidden' }
+  | { kind: 'active'; query: string; cursor: number }
+  | { kind: 'lingering'; lastQuery: string };
+
 export interface AppState {
   geometry: TerminalGeometry;
   requests: ParsedRequest[];

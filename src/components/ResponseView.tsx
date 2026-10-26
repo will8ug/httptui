@@ -7,15 +7,10 @@ import {
   sliceVisibleLines,
 } from '../core/response-viewport';
 import type { ResponseViewportGeometry } from '../core/response-viewport';
-import type { ErrorInfo, ResponseData, WrapMode } from '../core/types';
+import type { ErrorInfo, ResponseData, SearchBar, WrapMode } from '../core/types';
 import { DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
 import { cellWidth, clampSegmentsToWidth, shiftText, truncateText } from '../utils/text';
 import type { ColorSegment } from '../utils/wrap';
-
-type SearchBar =
-  | { kind: 'hidden' }
-  | { kind: 'active'; query: string; cursor: number }
-  | { kind: 'lingering'; lastQuery: string };
 
 interface SearchViewProps {
   matches: number[];

@@ -22,6 +22,7 @@ export {
   isSearchActive,
   responseViewportFromState,
   responseVisible,
+  searchBarFromState,
 } from './reducers/helpers';
 
 export function reducer(state: AppState, action: Action): AppState {
