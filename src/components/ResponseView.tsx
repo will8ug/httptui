@@ -18,7 +18,6 @@ interface SearchViewProps {
   matches: number[];
   currentMatchIndex: number;
   lastQuery: string;
-  /** Search-bar visibility per isSearchActive on the caller's state; isSearchMode/lastQuery carry bar content only. */
   visible: boolean;
   isSearchMode: boolean;
 }
