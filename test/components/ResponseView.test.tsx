@@ -29,13 +29,15 @@ const baseProps = {
   rawMode: false,
   fullscreen: false as boolean,
   availableHeight: 20,
-  searchMatches: [] as number[],
-  currentMatchIndex: 0,
-  searchVisible: false,
-  isSearchMode: false,
-  lastSearchQuery: '',
-  searchQuery: '',
-  searchCursor: 0,
+  search: {
+    query: '',
+    cursor: 0,
+    matches: [] as number[],
+    currentMatchIndex: 0,
+    lastQuery: '',
+    visible: false,
+    isSearchMode: false,
+  },
 };
 
 describe('content states', () => {
@@ -272,8 +274,7 @@ describe('wide-character content width', () => {
         {...baseProps}
         response={response}
         wrapMode={'wrap' as const}
-        searchMatches={[0]}
-        currentMatchIndex={0}
+        search={{ ...baseProps.search, matches: [0], currentMatchIndex: 0 }}
       />,
     );
     const frame = lastFrame() ?? '';
@@ -340,8 +341,7 @@ describe('wide-character content width', () => {
       <ResponseView
         {...baseProps}
         response={response}
-        searchMatches={[0]}
-        currentMatchIndex={0}
+        search={{ ...baseProps.search, matches: [0], currentMatchIndex: 0 }}
       />,
     );
     const frame = lastFrame() ?? '';
@@ -496,10 +496,7 @@ describe('search markers', () => {
         response={response}
         verbose={true}
         wrapMode={'wrap' as const}
-        searchMatches={[1]}
-        currentMatchIndex={0}
-        searchVisible={true}
-        lastSearchQuery="needle"
+        search={{ ...baseProps.search, matches: [1], currentMatchIndex: 0, visible: true, lastQuery: 'needle' }}
         availableHeight={40}
       />,
     );
@@ -517,10 +514,7 @@ describe('search markers', () => {
       <ResponseView
         {...baseProps}
         response={response}
-        searchMatches={[1]}
-        currentMatchIndex={0}
-        searchVisible={true}
-        lastSearchQuery="needle"
+        search={{ ...baseProps.search, matches: [1], currentMatchIndex: 0, visible: true, lastQuery: 'needle' }}
       />,
     );
 
@@ -533,7 +527,7 @@ describe('search markers', () => {
     // Body: 3 lines — apple, banana, cherry
     // Layout: VL0=status, VL1=separator, VL2=apple, VL3=banana, VL4=cherry
     // bodyVisualStart = [2, 3, 4]
-    // searchMatches=[0,2] -> matchVisualIndices={2,4}
+    // matches=[0,2] -> matchVisualIndices={2,4}
     // currentMatchIndex=0 -> currentMatchVisualIndex=bodyVisualStart[0]=2
     // VL2 is current -> ►, VL4 is non-current -> ·
     const response = createMockResponse({ body: 'apple\nbanana\ncherry' });
@@ -541,8 +535,7 @@ describe('search markers', () => {
       <ResponseView
         {...baseProps}
         response={response}
-        searchMatches={[0, 2]}
-        currentMatchIndex={0}
+        search={{ ...baseProps.search, matches: [0, 2], currentMatchIndex: 0 }}
       />,
     );
     const frame = lastFrame() ?? '';
@@ -550,7 +543,7 @@ describe('search markers', () => {
   });
 
   it('marks non-current search match lines with ·', () => {
-    // searchMatches=[0,1,2], currentMatchIndex=0 -> current at VL2
+    // matches=[0,1,2], currentMatchIndex=0 -> current at VL2
     // scrollOffset=3 -> slice starts at VL3 (banana), VL4 (cherry)
     // Both are non-current matches -> · marker, no ► in visible slice
     const response = createMockResponse({ body: 'apple\nbanana\ncherry' });
@@ -558,8 +551,7 @@ describe('search markers', () => {
       <ResponseView
         {...baseProps}
         response={response}
-        searchMatches={[0, 1, 2]}
-        currentMatchIndex={0}
+        search={{ ...baseProps.search, matches: [0, 1, 2], currentMatchIndex: 0 }}
         scrollOffset={3}
       />,
     );
@@ -571,10 +563,13 @@ describe('search markers', () => {
 
 describe('search bar', () => {
   it('shows / and the query while typing in search mode', () => {
-    // isSearchMode=true -> search bar renders "/{searchQuery}" followed by the
-    // inverse insertion point at searchCursor, then "  (Esc to cancel)"
+    // isSearchMode=true -> search bar renders "/{query}" followed by the
+    // inverse insertion point at cursor, then "  (Esc to cancel)"
     const { lastFrame } = render(
-      <ResponseView {...baseProps} searchVisible={true} isSearchMode={true} searchQuery="world" searchCursor={5} />,
+      <ResponseView
+        {...baseProps}
+        search={{ ...baseProps.search, visible: true, isSearchMode: true, query: 'world', cursor: 5 }}
+      />,
     );
     const frame = lastFrame() ?? '';
     expect(frame).toContain('/world');
@@ -585,7 +580,10 @@ describe('search bar', () => {
     chalk.level = 3;
     try {
       const { lastFrame } = render(
-        <ResponseView {...baseProps} searchVisible={true} isSearchMode={true} searchQuery="world" searchCursor={2} />,
+        <ResponseView
+          {...baseProps}
+          search={{ ...baseProps.search, visible: true, isSearchMode: true, query: 'world', cursor: 2 }}
+        />,
       );
       const frame = lastFrame() ?? '';
       expect(frame).toContain('/wo');
@@ -602,7 +600,10 @@ describe('search bar', () => {
     chalk.level = 3;
     try {
       const { lastFrame } = render(
-        <ResponseView {...baseProps} searchVisible={true} isSearchMode={true} searchQuery="world" searchCursor={5} />,
+        <ResponseView
+          {...baseProps}
+          search={{ ...baseProps.search, visible: true, isSearchMode: true, query: 'world', cursor: 5 }}
+        />,
       );
       const frame = lastFrame() ?? '';
       expect(frame).toContain(`${INVERSE_ON} ${INVERSE_OFF}`);
@@ -612,33 +613,28 @@ describe('search bar', () => {
   });
 
   it('shows the match position indicator after search', () => {
-    // isSearchMode=false, lastSearchQuery="a", searchMatches=[0,1,2], currentMatchIndex=0
-    // -> matchInfo = "[1/3]" (currentMatchIndex+1=1, searchMatches.length=3)
+    // isSearchMode=false, lastQuery="a", matches=[0,1,2], currentMatchIndex=0
+    // -> matchInfo = "[1/3]" (currentMatchIndex+1=1, matches.length=3)
     const response = createMockResponse({ body: 'apple\nbanana\ncherry' });
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
         response={response}
-        searchVisible={true}
-        lastSearchQuery="a"
-        searchMatches={[0, 1, 2]}
-        currentMatchIndex={0}
+        search={{ ...baseProps.search, visible: true, lastQuery: 'a', matches: [0, 1, 2], currentMatchIndex: 0 }}
       />,
     );
     const frame = lastFrame() ?? '';
     expect(frame).toContain('[1/3]');
   });
 
-  it('indicates no matches when searchMatches is empty', () => {
-    // lastSearchQuery="xyz", searchMatches=[] -> matchInfo = "[No matches]"
+  it('indicates no matches when matches is empty', () => {
+    // lastQuery="xyz", matches=[] -> matchInfo = "[No matches]"
     const response = createMockResponse({ body: 'apple\nbanana\ncherry' });
     const { lastFrame } = render(
       <ResponseView
         {...baseProps}
         response={response}
-        searchVisible={true}
-        lastSearchQuery="xyz"
-        searchMatches={[]}
+        search={{ ...baseProps.search, visible: true, lastQuery: 'xyz', matches: [] }}
       />,
     );
     const frame = lastFrame() ?? '';
