@@ -10,8 +10,8 @@ import type { CertConfig } from '../core/executor';
 import { matchCertificate, loadCertFiles } from '../core/certificates';
 import { copyToClipboard, readFromClipboard, type ClipboardRunner } from '../core/clipboard';
 import { toCurlCommand } from '../core/curl-serializer';
-import { parseCurlCommand } from '../core/curl-parser';
-import { parseAnyFormat } from '../core/format-detector';
+import { parseCurlCommand } from '../core/importers/curl';
+import { importContent } from '../core/importer';
 import { resolveVariables } from '../core/variables';
 import type { Action, AppState, CertEntry, ExecutorConfig, FileVariable, ParsedRequest } from '../core/types';
 
@@ -100,14 +100,19 @@ export async function performEditorHandoff({ filePath, editor, suspend, dispatch
     }
 
     const content = readFileSync(filePath, 'utf8');
-    const parseResult = parseAnyFormat(filePath, content);
+    const outcome = importContent(filePath, content);
 
-    if (parseResult.requests.length === 0) {
+    if (!outcome.ok) {
+      dispatch({ type: 'SET_TRANSIENT_ERROR', error: outcome.error });
+      return;
+    }
+
+    if (outcome.requests.length === 0) {
       dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: `No requests found in ${basename(filePath)}` });
       return;
     }
 
-    dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
+    dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables });
   } catch (error) {
     dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
   }
@@ -155,15 +160,15 @@ export async function pasteFromClipboard({ clipboardReadRunner, dispatch }: {
     return;
   }
 
-  const result = parseCurlCommand(text);
-  if (!result.ok) {
-    dispatch({ type: 'SET_TRANSIENT_ERROR', error: result.error });
+  const outcome = parseCurlCommand(text);
+  if (!outcome.ok) {
+    dispatch({ type: 'SET_TRANSIENT_ERROR', error: outcome.error });
     return;
   }
 
-  dispatch({ type: 'APPEND_REQUEST', request: result.request });
-  if (result.skipped) {
-    dispatch({ type: 'SET_TRANSIENT_WARNING', warning: 'Pasted request — some curl options were skipped' });
+  dispatch({ type: 'APPEND_REQUEST', request: outcome.requests[0] });
+  if (outcome.warnings.length > 0) {
+    dispatch({ type: 'SET_TRANSIENT_WARNING', warning: `Pasted request — ${outcome.warnings.join(', ')}` });
   } else {
     dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'Pasted request' });
   }

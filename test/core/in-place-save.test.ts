@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildInPlaceContent } from '../../src/core/in-place-save';
-import { parseHttpFile } from '../../src/core/parser';
+import { parseHttpFile } from '../../src/core/importers/http';
 import { createRequest } from '../helpers/requests';
 
 describe('buildInPlaceContent', () => {

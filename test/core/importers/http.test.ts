@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseHttpFile } from '../../src/core/parser';
+import { parseHttpFile } from '../../../src/core/importers/http';
 
 describe('parseHttpFile', () => {
   it('returns no requests for an empty file', () => {
     expect(parseHttpFile('')).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [],
       variables: [],
     });
@@ -14,6 +17,9 @@ describe('parseHttpFile', () => {
     const content = ['# comment', '// another comment', '', '  # spaced comment'].join('\n');
 
     expect(parseHttpFile(content)).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [],
       variables: [],
     });
@@ -21,6 +27,9 @@ describe('parseHttpFile', () => {
 
   it('parses a single GET request with no headers or body', () => {
     expect(parseHttpFile('get https://example.com')).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'Request 1',
@@ -48,6 +57,9 @@ describe('parseHttpFile', () => {
     ].join('\n');
 
     expect(parseHttpFile(content)).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'Request 1',
@@ -74,6 +86,9 @@ describe('parseHttpFile', () => {
     ].join('\n');
 
     expect(parseHttpFile(content)).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'Request 1',
@@ -102,6 +117,9 @@ describe('parseHttpFile', () => {
     const content = ['### My Request Name', '', 'HEAD https://example.com/status'].join('\n');
 
     expect(parseHttpFile(content)).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'My Request Name',
@@ -126,6 +144,9 @@ describe('parseHttpFile', () => {
     ].join('\n');
 
     expect(parseHttpFile(content)).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'Request 1',
@@ -154,6 +175,9 @@ describe('parseHttpFile', () => {
     ].join('\n');
 
     expect(parseHttpFile(content)).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'Request 1',
@@ -187,6 +211,9 @@ describe('parseHttpFile', () => {
     ].join('\n');
 
     expect(parseHttpFile(content)).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'Request 1',
@@ -207,6 +234,9 @@ describe('parseHttpFile', () => {
 
   it('parses a request with no headers and no body', () => {
     expect(parseHttpFile('PATCH /api/items/42')).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'Request 1',
@@ -236,6 +266,9 @@ describe('parseHttpFile', () => {
     ].join('\n');
 
     expect(parseHttpFile(content)).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'Request 1',
@@ -257,6 +290,9 @@ describe('parseHttpFile', () => {
     const content = ['GET /api/ok', '###'].join('\n');
 
     expect(parseHttpFile(content)).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'Request 1',
@@ -274,6 +310,9 @@ describe('parseHttpFile', () => {
 
   it('ignores an HTTP version suffix in the request line', () => {
     expect(parseHttpFile('GET /api HTTP/1.1')).toEqual({
+      ok: true,
+      format: 'http',
+      warnings: [],
       requests: [
         {
           name: 'Request 1',

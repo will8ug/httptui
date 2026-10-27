@@ -8,11 +8,11 @@ import { render } from 'ink';
 import { App } from './app/App';
 import { parseArgs } from './args';
 import { loadConfig, resolveCertPath } from './core/config';
-import { parseAnyFormat } from './core/format-detector';
+import { importContent } from './core/importer';
 import { parseEnvironmentFile } from './core/env-parser';
 import { aggregateEnvironments } from './core/env-aggregator';
 import { mergeVariables } from './core/variables';
-import type { FileVariable, ParseResult } from './core/types';
+import type { FileVariable } from './core/types';
 import { HELP_TEXT } from './help';
 import { version as releasedVersion } from './version';
 
@@ -47,11 +47,10 @@ if (envPath && envName) {
 
 const content = readFileSync(filePath, 'utf8');
 
-let parseResult: ParseResult;
-try {
-  parseResult = parseAnyFormat(filePath, content);
-} catch (error) {
-  exitWithError(error instanceof Error ? error.message : String(error));
+const parseResult = importContent(filePath, content);
+
+if (!parseResult.ok) {
+  exitWithError(parseResult.error);
 }
 
 if (parseResult.requests.length === 0) {

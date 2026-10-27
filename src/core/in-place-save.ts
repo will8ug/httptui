@@ -1,5 +1,5 @@
 import { serializeRequestBlock } from './http-serializer';
-import { parseHttpFile } from './parser';
+import { parseHttpFile } from './importers/http';
 import type { ParsedRequest } from './types';
 
 const SEPARATOR_RE = /^#{3,}/;

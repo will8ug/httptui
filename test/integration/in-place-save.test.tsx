@@ -4,8 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { parseHttpFile } from '../../src/core/parser';
-import { parseAnyFormat } from '../../src/core/format-detector';
+import { parseHttpFile } from '../../src/core/importers/http';
 import {
   CTRL_S,
   KEY_DELAY_MS,
@@ -14,6 +13,7 @@ import {
   press,
   renderApp,
 } from '../helpers/integration';
+import { importOk } from '../helpers/fixtures';
 import type { ParsedRequest } from '../../src/core/types';
 
 afterEach(() => {
@@ -80,8 +80,7 @@ function setupPostmanFile(): SetupResult {
   const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-inplace-postman-'));
   const filePath = join(tmpDir, 'collection.json');
   writeFileSync(filePath, POSTMAN_CONTENT, 'utf8');
-  const parsed = parseAnyFormat(filePath, POSTMAN_CONTENT);
-  return { tmpDir, filePath, requests: parsed.requests };
+  return { tmpDir, filePath, requests: importOk(filePath, POSTMAN_CONTENT).requests };
 }
 
 async function gotoCreateUser(stdin: { write: (data: string) => void }): Promise<void> {

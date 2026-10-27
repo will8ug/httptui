@@ -1,4 +1,5 @@
-import type { FileVariable, HttpMethod, ParseResult, ParsedRequest } from './types';
+import type { ImportSuccess } from '../importer';
+import type { FileVariable, HttpMethod, ParsedRequest } from '../types';
 
 type ParserState = 'IDLE' | 'HEADERS' | 'BODY';
 
@@ -152,7 +153,7 @@ function finalizeRequest(
   return nextCount;
 }
 
-export function parseHttpFile(content: string): ParseResult {
+export function parseHttpFile(content: string): ImportSuccess {
   const normalizedContent = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const lines = normalizedContent.split('\n');
   const requests: ParsedRequest[] = [];
@@ -241,7 +242,10 @@ export function parseHttpFile(content: string): ParseResult {
   finalizeRequest(requests, currentRequest, requestCount);
 
   return {
+    ok: true,
+    format: 'http',
     requests,
     variables,
+    warnings: [],
   };
 }

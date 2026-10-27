@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { serializeHttpFile, serializeRequestBlock } from '../../src/core/http-serializer';
-import { parseHttpFile } from '../../src/core/parser';
+import { parseHttpFile } from '../../src/core/importers/http';
 import type { FileVariable, FormDataParam, ParsedRequest } from '../../src/core/types';
 import { createRequest } from '../helpers/requests';
 

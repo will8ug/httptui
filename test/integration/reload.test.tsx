@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { cleanup } from 'ink-testing-library';
 
-import { parseHttpFile } from '../../src/core/parser';
+import { parseHttpFile } from '../../src/core/importers/http';
 import { CTRL_S, delay, KEY_DELAY_MS, press, renderApp } from '../helpers/integration';
 
 const INITIAL_HTTP_CONTENT = '### Test 1\nGET https://example.com/a\n\n### Test 2\nGET https://example.com/b\n';
