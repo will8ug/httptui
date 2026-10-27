@@ -55,6 +55,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         requests: action.requests,
         fileVariables: action.variables,
         variables: mergeVariables(action.variables, state.environmentVariables),
+        sourceFormat: action.format,
         selectedIndex: newIndex >= 0 ? newIndex : 0,
         response: null,
         requestError: null,

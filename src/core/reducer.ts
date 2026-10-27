@@ -141,6 +141,7 @@ export function createInitialState(props: AppProps): AppState {
     verbose: false,
     showHelp: false,
     filePath: props.filePath,
+    sourceFormat: props.sourceFormat,
     responseScrollOffset: 0,
     requestScrollOffset: 0,
     requestHorizontalOffset: 0,

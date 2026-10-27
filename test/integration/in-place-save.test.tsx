@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { parseHttpFile } from '../../src/core/importers/http';
+import type { ImportFormat } from '../../src/core/importer';
 import {
   CTRL_S,
   KEY_DELAY_MS,
@@ -66,6 +67,7 @@ interface SetupResult {
   tmpDir: string;
   filePath: string;
   requests: ParsedRequest[];
+  sourceFormat: ImportFormat;
 }
 
 function setupHttpFile(): SetupResult {
@@ -73,14 +75,15 @@ function setupHttpFile(): SetupResult {
   const filePath = join(tmpDir, 'collection.http');
   writeFileSync(filePath, HTTP_FILE_CONTENT, 'utf8');
   const parsed = parseHttpFile(HTTP_FILE_CONTENT);
-  return { tmpDir, filePath, requests: parsed.requests };
+  return { tmpDir, filePath, requests: parsed.requests, sourceFormat: 'http' };
 }
 
 function setupPostmanFile(): SetupResult {
   const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-inplace-postman-'));
   const filePath = join(tmpDir, 'collection.json');
   writeFileSync(filePath, POSTMAN_CONTENT, 'utf8');
-  return { tmpDir, filePath, requests: importOk(filePath, POSTMAN_CONTENT).requests };
+  const outcome = importOk(filePath, POSTMAN_CONTENT);
+  return { tmpDir, filePath, requests: outcome.requests, sourceFormat: outcome.format };
 }
 
 async function gotoCreateUser(stdin: { write: (data: string) => void }): Promise<void> {
@@ -97,9 +100,9 @@ async function commitDirtyEdit(stdin: { write: (data: string) => void }): Promis
 
 describe('in-place save integration', () => {
   it('y writes the edited body, preserves other blocks byte-identical, clears markers, keeps the original file name', async () => {
-    const { tmpDir, filePath, requests } = setupHttpFile();
+    const { tmpDir, filePath, requests, sourceFormat } = setupHttpFile();
     try {
-      const { stdin, lastFrame } = renderApp({ filePath, requests });
+      const { stdin, lastFrame } = renderApp({ filePath, requests, sourceFormat });
       await delay(KEY_DELAY_MS);
 
       await gotoCreateUser(stdin);
@@ -140,9 +143,9 @@ describe('in-place save integration', () => {
   });
 
   it('a Postman-loaded source shows the hint and no prompt', async () => {
-    const { tmpDir, filePath, requests } = setupPostmanFile();
+    const { tmpDir, filePath, requests, sourceFormat } = setupPostmanFile();
     try {
-      const { stdin, lastFrame } = renderApp({ filePath, requests });
+      const { stdin, lastFrame } = renderApp({ filePath, requests, sourceFormat });
       await delay(KEY_DELAY_MS);
 
       await gotoCreateUser(stdin);
@@ -163,9 +166,9 @@ describe('in-place save integration', () => {
   });
 
   it('a clean Ctrl+S with no edits shows no prompt, writes nothing, and displays No changes to save', async () => {
-    const { tmpDir, filePath, requests } = setupHttpFile();
+    const { tmpDir, filePath, requests, sourceFormat } = setupHttpFile();
     try {
-      const { stdin, lastFrame } = renderApp({ filePath, requests });
+      const { stdin, lastFrame } = renderApp({ filePath, requests, sourceFormat });
       await delay(KEY_DELAY_MS);
 
       expect(lastFrame() ?? '').not.toContain('*collection.http');

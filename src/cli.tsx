@@ -119,6 +119,7 @@ const { availableEnvironments, activeEnvName } = aggregateEnvironments({
 const app = render(
   <App
     filePath={filePath}
+    sourceFormat={parseResult.format}
     requests={parseResult.requests}
     variables={mergedVariables}
     fileVariables={parseResult.variables}

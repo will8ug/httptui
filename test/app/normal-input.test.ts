@@ -73,3 +73,59 @@ describe('normal-mode panel toggles', () => {
     expect(actions).toEqual([{ type: 'TOGGLE_REQUEST_DETAILS' }]);
   });
 });
+
+describe('Ctrl+S in-place save format gate', () => {
+  it('refuses a non-http source with the transient hint and never opens the confirm prompt', () => {
+    const state = panelState(null, {
+      requests: [createRequest({ isDirty: true })],
+      filePath: 'collection.json',
+      sourceFormat: 'postman',
+    });
+
+    const actions = pressKey(state, 's', makeKey({ ctrl: true }));
+
+    expect(actions).toEqual([
+      { type: 'SET_TRANSIENT_MESSAGE', message: 'In-place save is only available for .http files; press S to save as a new file' },
+    ]);
+  });
+
+  it('opens the in-place save confirm for an http source', () => {
+    const state = panelState(null, {
+      requests: [createRequest({ isDirty: true })],
+      filePath: 'api.http',
+      sourceFormat: 'http',
+    });
+
+    const actions = pressKey(state, 's', makeKey({ ctrl: true }));
+
+    expect(actions).toEqual([{ type: 'ENTER_IN_PLACE_SAVE_CONFIRM' }]);
+  });
+});
+
+describe('Ctrl+G editor-handoff format gate', () => {
+  it('refuses a non-http source with the transient message and no discard prompt', () => {
+    const state = panelState(null, {
+      requests: [createRequest({ isDirty: true })],
+      filePath: 'collection.json',
+      sourceFormat: 'postman',
+    });
+
+    const actions = pressKey(state, 'g', makeKey({ ctrl: true }));
+
+    expect(actions).toEqual([
+      { type: 'SET_TRANSIENT_MESSAGE', message: 'External editor is only available for .http files' },
+    ]);
+  });
+
+  it('requests the discard confirm for a dirty http source', () => {
+    const state = panelState(null, {
+      requests: [createRequest({ isDirty: true })],
+      filePath: 'api.http',
+      sourceFormat: 'http',
+    });
+
+    const actions = pressKey(state, 'g', makeKey({ ctrl: true }));
+
+    expect(actions).toEqual([{ type: 'REQUEST_DISCARD_CONFIRM', action: 'editorHandoff' }]);
+  });
+});

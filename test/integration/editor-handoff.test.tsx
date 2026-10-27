@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { parseHttpFile } from '../../src/core/importers/http';
+import type { ImportFormat } from '../../src/core/importer';
 import type { ExecutorConfig, ParseResult } from '../../src/core/types';
 import {
   CTRL_G,
@@ -114,9 +115,10 @@ function writeSource(name: string, content: string): string {
   return filePath;
 }
 
-function renderParsed(filePath: string, parsed: ParseResult, executorConfig?: ExecutorConfig) {
+function renderParsed(filePath: string, parsed: ParseResult, sourceFormat: ImportFormat = 'http', executorConfig?: ExecutorConfig) {
   return renderApp({
     filePath,
+    sourceFormat,
     requests: parsed.requests,
     variables: parsed.variables,
     fileVariables: parsed.variables,
@@ -131,7 +133,7 @@ function renderHttp(content: string = INITIAL_HTTP) {
 
 function renderHttpWithEditor(editor: string) {
   const filePath = writeSource('api.http', INITIAL_HTTP);
-  return renderParsed(filePath, parseHttpFile(INITIAL_HTTP), { insecure: false, editor });
+  return renderParsed(filePath, parseHttpFile(INITIAL_HTTP), 'http', { insecure: false, editor });
 }
 
 async function commitDirtyEdit(stdin: { write: (data: string) => void }): Promise<void> {
@@ -194,7 +196,8 @@ describe('editor-handoff integration', () => {
       const marker = useFakeEditor('exit 0');
       const content = readFixture('postman/postman-basic.json');
       const filePath = writeSource('collection.json', content);
-      const { stdin, lastFrame } = renderParsed(filePath, importOk(filePath, content));
+      const outcome = importOk(filePath, content);
+      const { stdin, lastFrame } = renderParsed(filePath, outcome, outcome.format);
       await delay(KEY_DELAY_MS);
 
       await press(stdin, CTRL_G);
@@ -209,7 +212,8 @@ describe('editor-handoff integration', () => {
       const marker = useFakeEditor('exit 0');
       const content = readFixture('openapi/openapi-basic.yaml');
       const filePath = writeSource('openapi.yaml', content);
-      const { stdin, lastFrame } = renderParsed(filePath, importOk(filePath, content));
+      const outcome = importOk(filePath, content);
+      const { stdin, lastFrame } = renderParsed(filePath, outcome, outcome.format);
       await delay(KEY_DELAY_MS);
 
       await press(stdin, CTRL_G);
@@ -517,7 +521,8 @@ describe('editor-handoff integration', () => {
       const marker = useFakeEditor('');
       const content = readFixture('postman/postman-basic.json');
       const filePath = writeSource('collection.json', content);
-      const { stdin, lastFrame } = renderParsed(filePath, importOk(filePath, content));
+      const outcome = importOk(filePath, content);
+      const { stdin, lastFrame } = renderParsed(filePath, outcome, outcome.format);
       await delay(KEY_DELAY_MS);
 
       await commitDirtyEdit(stdin);

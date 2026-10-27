@@ -34,6 +34,7 @@ export async function press(stdin: { write: (data: string) => void }, key: strin
 
 const defaultProps: AppProps = {
   filePath: 'test.http',
+  sourceFormat: 'http',
   requests: [],
   variables: [],
   environmentVariables: [],
@@ -48,6 +49,7 @@ export function renderApp(overrides: Partial<AppProps> = {}) {
   return render(
     <App
       filePath={props.filePath}
+      sourceFormat={props.sourceFormat}
       requests={props.requests}
       variables={props.variables}
       environmentVariables={props.environmentVariables}

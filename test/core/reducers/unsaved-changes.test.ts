@@ -150,6 +150,7 @@ describe('per-request dirty markers', () => {
       type: 'RELOAD_FILE',
       requests: [createRequest()],
       variables: [],
+      format: 'http',
     });
 
     expect(result.requests[0].isDirty).toBe(false);
@@ -165,6 +166,7 @@ describe('per-request dirty markers', () => {
       requests: [createRequest()],
       variables: [],
       filePath: 'new.http',
+      format: 'http',
     });
 
     expect(result.requests[0].isDirty).toBe(false);
