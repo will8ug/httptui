@@ -414,7 +414,6 @@ describe('buildInPlaceContent', () => {
       url: 'https://api.example.com/login',
       headers: { 'Content-Type': 'application/json' },
       body: '{"user":"alice"}',
-      lineNumber: 0,
       isDirty: true,
     });
     const requests = [...parseHttpFile(raw).requests, pasted];
@@ -446,14 +445,12 @@ describe('buildInPlaceContent', () => {
         method: 'POST',
         url: 'https://api.example.com/login',
         body: 'a=1',
-        lineNumber: 0,
         isDirty: true,
       }),
       createRequest({
         name: 'DELETE /login',
         method: 'DELETE',
         url: 'https://api.example.com/login',
-        lineNumber: 0,
         isDirty: true,
       }),
     ];
@@ -483,7 +480,6 @@ describe('buildInPlaceContent', () => {
       name: 'PUT /c',
       method: 'PUT',
       url: 'https://api.example.com/c',
-      lineNumber: 0,
       isDirty: true,
     });
 
@@ -509,7 +505,6 @@ describe('buildInPlaceContent', () => {
       url: 'https://api.example.com/login',
       headers: { 'Content-Type': 'application/json' },
       body: '{"user":"alice"}',
-      lineNumber: 0,
       isDirty: true,
     });
     const requests = [...parseHttpFile(raw).requests, pasted];
@@ -531,7 +526,6 @@ describe('buildInPlaceContent', () => {
       name: 'POST /login',
       method: 'POST',
       url: 'https://api.example.com/login',
-      lineNumber: 0,
       isDirty: true,
     });
     const requests = [...parseHttpFile(raw).requests, pasted];
@@ -551,7 +545,6 @@ describe('buildInPlaceContent', () => {
       name: 'POST /login',
       method: 'POST',
       url: 'https://api.example.com/login',
-      lineNumber: 0,
       isDirty: true,
     });
     const requests = [...parseHttpFile(raw).requests, pasted];
@@ -570,7 +563,6 @@ describe('buildInPlaceContent', () => {
       name: 'POST /login',
       method: 'POST',
       url: 'https://api.example.com/login',
-      lineNumber: 0,
       isDirty: true,
     });
 
@@ -590,7 +582,6 @@ describe('buildInPlaceContent', () => {
       headers: { 'Content-Type': 'multipart/form-data; boundary=x' },
       body: undefined,
       formdataFields: [{ key: 'username', value: 'alice', type: 'text' }],
-      lineNumber: 0,
       isDirty: true,
     });
     const requests = [...parseHttpFile(raw).requests, pasted];
@@ -611,7 +602,6 @@ describe('buildInPlaceContent', () => {
       name: 'POST /login',
       method: 'POST',
       url: 'https://api.example.com/login',
-      lineNumber: 0,
       isDirty: false,
     });
     const requests = [...parseHttpFile(raw).requests, surplus];
@@ -628,7 +618,6 @@ describe('buildInPlaceContent', () => {
       method: 'POST',
       url: 'https://api.example.com/login',
       body: '### oops',
-      lineNumber: 0,
       isDirty: true,
     });
     const requests = [...parseHttpFile(raw).requests, pasted];

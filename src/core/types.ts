@@ -22,7 +22,7 @@ export interface ParsedRequest {
   headers: Record<string, string>;
   body: string | undefined;
   formdataFields?: FormDataParam[];
-  lineNumber: number;
+  lineNumber?: number;
   isDirty: boolean;
 }
 

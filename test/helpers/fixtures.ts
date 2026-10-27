@@ -30,7 +30,6 @@ export const sampleRequests: ParsedRequest[] = [
     name: 'Get users',
     method: 'GET',
     url: 'https://api.example.com/users',
-    lineNumber: 1,
   }),
   createRequest({
     name: 'Create user',
@@ -38,13 +37,11 @@ export const sampleRequests: ParsedRequest[] = [
     url: 'https://api.example.com/users',
     headers: { 'Content-Type': 'application/json' },
     body: '{"name":"John"}',
-    lineNumber: 8,
   }),
   createRequest({
     name: 'Delete user',
     method: 'DELETE',
     url: 'https://api.example.com/users/1',
-    lineNumber: 15,
   }),
 ];
 

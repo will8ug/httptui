@@ -33,7 +33,6 @@ describe('handleNormalInput p', () => {
             method: 'GET',
             url: 'https://api.example.com/pinged',
             isDirty: true,
-            lineNumber: 0,
           }),
         },
         { type: 'SET_TRANSIENT_MESSAGE', message: 'Pasted request' },

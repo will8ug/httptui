@@ -27,7 +27,6 @@ function makeUrlRequest(url: string = 'https://example.com/users'): ParsedReques
       url,
       headers: { Accept: 'application/json' },
       body: '{"name":"Alice"}',
-      lineNumber: 1,
       isDirty: false,
     },
   ];

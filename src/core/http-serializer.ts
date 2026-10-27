@@ -34,8 +34,8 @@ export function serializeRequestBlock(request: ParsedRequest): string {
  * Convert the in-memory request and variable model into `.http` file text that the
  * existing `parseHttpFile` parser can read back. Pure: no I/O, no React imports.
  *
- * `{{var}}` placeholders are preserved verbatim. The synthetic `lineNumber` field
- * is never serialized. Form-data bodies (when `formdataFields` is present and
+ * `{{var}}` placeholders are preserved verbatim. The `lineNumber` field is never
+ * serialized. Form-data bodies (when `formdataFields` is present and
  * `body` is `undefined`) are replaced with a `# form-data body omitted` comment and
  * the `Content-Type: multipart/form-data` header is stripped.
  */

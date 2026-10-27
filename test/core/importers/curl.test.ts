@@ -86,11 +86,10 @@ describe('parseCurlCommand', () => {
       expect(warnings).toEqual([]);
     });
 
-    it('marks the request dirty with the lineNumber placeholder', () => {
+    it('marks the request dirty', () => {
       const { request } = parseOk(`curl 'https://api.example.com/users'`);
 
       expect(request.isDirty).toBe(true);
-      expect(request.lineNumber).toBe(0);
     });
   });
 

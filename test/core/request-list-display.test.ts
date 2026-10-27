@@ -7,7 +7,7 @@ import { createRequest } from '../helpers/requests';
 describe('getMaxRequestLineWidth with variables', () => {
   it('computes width from resolved path, not raw URL', () => {
     const variables: FileVariable[] = [{ name: 'baseUrl', value: 'https://x.io' }];
-    const requests = [createRequest({ url: '{{baseUrl}}/very-long-path', lineNumber: 1 })];
+    const requests = [createRequest({ url: '{{baseUrl}}/very-long-path' })];
 
     const width = getMaxRequestLineWidth({ requests, variables });
 
@@ -16,7 +16,7 @@ describe('getMaxRequestLineWidth with variables', () => {
   });
 
   it('computes width from raw URL when variable is unresolved', () => {
-    const requests = [createRequest({ url: '{{unknown}}/very-long-path', lineNumber: 1 })];
+    const requests = [createRequest({ url: '{{unknown}}/very-long-path' })];
 
     const width = getMaxRequestLineWidth({ requests, variables: [] });
 

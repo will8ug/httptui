@@ -34,7 +34,6 @@ describe('TOGGLE_WRAP reducer', () => {
           url: 'https://example.com',
           headers: {},
           body: undefined,
-          lineNumber: 1,
           isDirty: false,
         },
       ],

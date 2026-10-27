@@ -270,7 +270,6 @@ function createRequest(overrides: Partial<ParsedRequest> = {}): ParsedRequest {
     url: 'https://example.com',
     headers: {},
     body: undefined,
-    lineNumber: 1,
     isDirty: false,
     ...overrides,
   };

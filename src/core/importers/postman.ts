@@ -345,7 +345,6 @@ export function parsePostmanCollection(doc: unknown): ImportSuccess {
       body: convertedBody,
       isDirty: false,
       formdataFields,
-      lineNumber: requestIndex,
     });
   }
 

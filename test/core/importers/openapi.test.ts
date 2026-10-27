@@ -176,26 +176,6 @@ describe('parseOpenApiSpec - operation names', () => {
   });
 });
 
-describe('parseOpenApiSpec - line numbers', () => {
-  it('assigns incrementing line numbers', () => {
-    const content = {
-      openapi: '3.0.3',
-      paths: {
-        '/users/{id}': {
-          get: { operationId: 'getUser' },
-          put: { operationId: 'updateUser' },
-          delete: { operationId: 'deleteUser' },
-        },
-      },
-    };
-    const result = parseOpenApiSpec(content);
-
-    expect(result.requests[0].lineNumber).toBe(1);
-    expect(result.requests[1].lineNumber).toBe(2);
-    expect(result.requests[2].lineNumber).toBe(3);
-  });
-});
-
 describe('parseOpenApiSpec - path parameters', () => {
   it('maps path parameter with default', () => {
     const content = readJsonFixture('openapi/openapi-params.json');
@@ -1152,8 +1132,6 @@ describe('integration smoke test', () => {
       expect(req.name).toBeTruthy();
       expect(req.method).toMatch(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/);
       expect(req.url).toMatch(/^{{baseUrl}}/);
-      expect(typeof req.lineNumber).toBe('number');
-      expect(req.lineNumber).toBeGreaterThan(0);
     }
   });
 });

@@ -15,12 +15,10 @@ describe('parsePostmanCollection', () => {
     expect(result.requests[0].url).toBe('https://api.example.com/users');
     expect(result.requests[0].headers).toEqual({ accept: 'application/json' });
     expect(result.requests[0].body).toBeUndefined();
-    expect(result.requests[0].lineNumber).toBe(1);
 
     expect(result.requests[1].name).toBe('Create User');
     expect(result.requests[1].method).toBe('POST');
     expect(result.requests[1].body).toBe('{"name": "Alice", "email": "alice@example.com"}');
-    expect(result.requests[1].lineNumber).toBe(2);
   });
 
   it('parses an empty collection', () => {
@@ -103,14 +101,6 @@ describe('parsePostmanCollection', () => {
     expect(formRequest).toBeDefined();
     assertDefinedToNarrowType(formRequest, 'Expected form request to be defined');
     expect(formRequest.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
-  });
-
-  it('assigns incrementing synthetic lineNumbers', () => {
-    const content = readJsonFixture('postman/postman-basic.json');
-    const result = parsePostmanCollection(content);
-
-    expect(result.requests[0].lineNumber).toBe(1);
-    expect(result.requests[1].lineNumber).toBe(2);
   });
 
   it('preserves {{variable}} placeholders in URL and headers', () => {
@@ -324,8 +314,6 @@ describe('integration smoke test', () => {
       expect(req.name).toBeTruthy();
       expect(req.method).toMatch(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/);
       expect(req.url).toBeTruthy();
-      expect(typeof req.lineNumber).toBe('number');
-      expect(req.lineNumber).toBeGreaterThan(0);
     }
   });
 });

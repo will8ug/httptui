@@ -15,12 +15,7 @@ export function reduceNavigation(state: AppState, action: NavigationAction): App
     }
 
     case 'APPEND_REQUEST': {
-      // Pasted requests carry lineNumber 0 as a "no file origin" placeholder; rewrite it
-      // to max(existing) + 1 solely so RequestList's `${lineNumber}-${method}-${url}`
-      // React keys stay unique across repeated pastes — never a file position.
-      const maxLineNumber = state.requests.reduce((max, req) => Math.max(max, req.lineNumber), 0);
-      const appended = { ...action.request, lineNumber: maxLineNumber + 1 };
-      const nextState = { ...state, requests: [...state.requests, appended] };
+      const nextState = { ...state, requests: [...state.requests, action.request] };
       return navigateRequests(nextState, nextState.requests.length - 1);
     }
 

@@ -76,7 +76,6 @@ export function makeShortUrlRequests(count: number): ParsedRequest[] {
     url: `https://a.co/u/${i + 1}`,
     headers: {},
     body: undefined,
-    lineNumber: i + 1,
     isDirty: false,
   }));
 }

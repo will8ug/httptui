@@ -410,7 +410,6 @@ export function parseCurlCommand(text: string): ImportOutcome {
         headers,
         body,
         formdataFields,
-        lineNumber: 0,
         isDirty: true,
       },
     ],

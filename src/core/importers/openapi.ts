@@ -370,7 +370,6 @@ function buildRequest(
   pathItem: any,
   operation: any,
   doc: any,
-  lineNumber: number,
   variables: FileVariable[],
   warnings: string[],
 ): ParsedRequest {
@@ -438,7 +437,6 @@ function buildRequest(
     headers,
     body,
     isDirty: false,
-    lineNumber,
   };
 }
 
@@ -538,8 +536,6 @@ export function parseOpenApiSpec(doc: unknown): ImportSuccess {
     return { ok: true, format: 'openapi', requests, variables, warnings };
   }
 
-  let lineNumber = 0;
-
   for (const [path, pathItem] of Object.entries(spec.paths)) {
     if (!pathItem || typeof pathItem !== 'object') {
       continue;
@@ -565,15 +561,12 @@ export function parseOpenApiSpec(doc: unknown): ImportSuccess {
         continue;
       }
 
-      lineNumber += 1;
-
       const request = buildRequest(
         method,
         path,
         pathItem,
         operation,
         spec,
-        lineNumber,
         variables,
         warnings,
       );
