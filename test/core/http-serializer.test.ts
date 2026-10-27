@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { serializeHttpFile, serializeRequestBlock } from '../../src/core/http-serializer';
-import { parseHttpFile } from '../../src/core/parser';
+import { parseHttpFile } from '../../src/core/importers/http';
 import type { FileVariable, FormDataParam, ParsedRequest } from '../../src/core/types';
 import { createRequest } from '../helpers/requests';
 
@@ -541,14 +541,13 @@ describe('serializeHttpFile', () => {
       expect(request.body).toBe('# form-data body omitted (2 text fields: username, email)');
     });
 
-    it('round-trips pasted requests (isDirty, lineNumber 0) with a body and with form-data fields', () => {
+    it('round-trips pasted requests (isDirty) with a body and with form-data fields', () => {
       const pastedBody = createRequest({
         name: 'POST /login',
         method: 'POST',
         url: 'https://api.example.com/login',
         headers: { 'Content-Type': 'application/json' },
         body: '{"user":"alice"}',
-        lineNumber: 0,
         isDirty: true,
       });
       const pastedForm = createRequest({
@@ -558,7 +557,6 @@ describe('serializeHttpFile', () => {
         headers: { 'Content-Type': 'multipart/form-data; boundary=x' },
         body: undefined,
         formdataFields: [{ key: 'username', value: 'alice', type: 'text' }],
-        lineNumber: 0,
         isDirty: true,
       });
 

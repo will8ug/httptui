@@ -1,6 +1,6 @@
 import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
-import { INITIAL_SEARCH, setTransient } from './helpers';
+import { INITIAL_SEARCH, setTransient, warningSuffix } from './helpers';
 
 type RequestLifecycleAction = Extract<Action, { type: 'SEND_REQUEST' | 'RECEIVE_RESPONSE' | 'REQUEST_ERROR' | 'REQUEST_CANCEL' | 'RELOAD_FILE' }>;
 
@@ -55,6 +55,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         requests: action.requests,
         fileVariables: action.variables,
         variables: mergeVariables(action.variables, state.environmentVariables),
+        sourceFormat: action.format,
         selectedIndex: newIndex >= 0 ? newIndex : 0,
         response: null,
         requestError: null,
@@ -62,7 +63,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         requestScrollOffset: 0,
         detailsScrollOffset: 0,
         detailsHorizontalOffset: 0,
-        ...setTransient({ message: 'Reloaded' }),
+        ...setTransient({ message: `Reloaded${warningSuffix(action.warningCount)}` }),
         search: INITIAL_SEARCH,
       };
     }

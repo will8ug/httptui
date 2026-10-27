@@ -3,8 +3,10 @@ import type { AppProps, AppState } from '../../src/core/types';
 
 const defaultAppProps: AppProps = {
   filePath: 'test.http',
+  sourceFormat: 'http',
   requests: [],
   variables: [],
+  warnings: [],
   environmentVariables: [],
   fileVariables: [],
   activeEnvName: null,

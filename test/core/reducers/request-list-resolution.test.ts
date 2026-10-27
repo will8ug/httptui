@@ -10,7 +10,7 @@ describe('request list re-resolves on env switch', () => {
   it('SWITCH_ENV updates the variable map used by the request list', () => {
     const fileVariables: FileVariable[] = [{ name: 'baseUrl', value: 'https://api.local' }];
     const envVariables: FileVariable[] = [{ name: 'baseUrl', value: 'https://api.dev.com' }];
-    const requests: ParsedRequest[] = [createRequest({ url: '{{baseUrl}}/posts', lineNumber: 1 })];
+    const requests: ParsedRequest[] = [createRequest({ url: '{{baseUrl}}/posts' })];
 
     const initialState = createInitialState({
       requests,
@@ -40,7 +40,7 @@ describe('request list re-resolves on env switch', () => {
   it('switching back to (none) reverts to file variables', () => {
     const fileVariables: FileVariable[] = [{ name: 'baseUrl', value: 'https://api.local' }];
     const envVariables: FileVariable[] = [{ name: 'baseUrl', value: 'https://api.dev.com' }];
-    const requests: ParsedRequest[] = [createRequest({ url: '{{baseUrl}}/posts', lineNumber: 1 })];
+    const requests: ParsedRequest[] = [createRequest({ url: '{{baseUrl}}/posts' })];
 
     const initialState = createInitialState({
       requests,
@@ -73,7 +73,7 @@ describe('request list re-resolves on file reload', () => {
   it('RELOAD_FILE updates the variable map used by the request list', () => {
     const oldVariables: FileVariable[] = [{ name: 'baseUrl', value: 'https://a.com' }];
     const newVariables: FileVariable[] = [{ name: 'baseUrl', value: 'https://b.com' }];
-    const requests: ParsedRequest[] = [createRequest({ url: '{{baseUrl}}/very-long-path', lineNumber: 1 })];
+    const requests: ParsedRequest[] = [createRequest({ url: '{{baseUrl}}/very-long-path' })];
 
     const initialState = createInitialState({
       requests,
@@ -85,6 +85,8 @@ describe('request list re-resolves on file reload', () => {
       type: 'RELOAD_FILE',
       requests,
       variables: newVariables,
+      format: 'http',
+      warningCount: 0,
     });
 
     expect(reloadedState.variables).toContainEqual({ name: 'baseUrl', value: 'https://b.com' });

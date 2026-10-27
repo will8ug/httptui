@@ -12,7 +12,6 @@ const requests: ParsedRequest[] = [
     name: 'Get users',
     method: 'GET',
     url: 'https://api.example.com/users',
-    lineNumber: 1,
   }),
   createRequest({
     name: 'Create user',
@@ -20,7 +19,6 @@ const requests: ParsedRequest[] = [
     url: 'https://api.example.com/users',
     headers: { 'content-type': 'application/json' },
     body: '{"name":"Ada"}',
-    lineNumber: 5,
   }),
 ];
 
@@ -29,7 +27,6 @@ const reloadedRequests: ParsedRequest[] = [
     name: 'Get users',
     method: 'GET',
     url: 'https://api.example.com/users?fresh=true',
-    lineNumber: 1,
   }),
   createRequest({
     name: 'Create user',
@@ -37,7 +34,6 @@ const reloadedRequests: ParsedRequest[] = [
     url: 'https://api.example.com/users?fresh=true',
     headers: { 'content-type': 'application/json' },
     body: '{"name":"Ada"}',
-    lineNumber: 5,
   }),
 ];
 
@@ -310,6 +306,8 @@ describe('request details scrolling reducer behavior', () => {
         type: 'RELOAD_FILE',
         requests: reloadedRequests,
         variables: [],
+        format: 'http',
+        warningCount: 0,
       });
 
       expect(result.detailsScrollOffset).toBe(0);
@@ -331,6 +329,8 @@ describe('request details scrolling reducer behavior', () => {
         requests: reloadedRequests,
         variables: [],
         filePath: '/tmp/next.http',
+        format: 'http',
+        warningCount: 0,
       });
 
       expect(result.detailsScrollOffset).toBe(0);

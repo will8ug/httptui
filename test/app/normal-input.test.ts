@@ -73,3 +73,92 @@ describe('normal-mode panel toggles', () => {
     expect(actions).toEqual([{ type: 'TOGGLE_REQUEST_DETAILS' }]);
   });
 });
+
+describe('Ctrl+S in-place save format gate', () => {
+  it('refuses a non-http source with the transient hint and never opens the confirm prompt', () => {
+    const state = panelState(null, {
+      requests: [createRequest({ isDirty: true })],
+      filePath: 'collection.json',
+      sourceFormat: 'postman',
+    });
+
+    const actions = pressKey(state, 's', makeKey({ ctrl: true }));
+
+    expect(actions).toEqual([
+      { type: 'SET_TRANSIENT_MESSAGE', message: 'In-place save is only available for .http files; press S to save as a new file' },
+    ]);
+  });
+
+  it('opens the in-place save confirm for an http source', () => {
+    const state = panelState(null, {
+      requests: [createRequest({ isDirty: true })],
+      filePath: 'api.http',
+      sourceFormat: 'http',
+    });
+
+    const actions = pressKey(state, 's', makeKey({ ctrl: true }));
+
+    expect(actions).toEqual([{ type: 'ENTER_IN_PLACE_SAVE_CONFIRM' }]);
+  });
+});
+
+describe('Ctrl+G editor-handoff format gate', () => {
+  it('refuses a non-http source with the transient message and no discard prompt', () => {
+    const state = panelState(null, {
+      requests: [createRequest({ isDirty: true })],
+      filePath: 'collection.json',
+      sourceFormat: 'postman',
+    });
+
+    const actions = pressKey(state, 'g', makeKey({ ctrl: true }));
+
+    expect(actions).toEqual([
+      { type: 'SET_TRANSIENT_MESSAGE', message: 'External editor is only available for .http files' },
+    ]);
+  });
+
+  it('requests the discard confirm for a dirty http source', () => {
+    const state = panelState(null, {
+      requests: [createRequest({ isDirty: true })],
+      filePath: 'api.http',
+      sourceFormat: 'http',
+    });
+
+    const actions = pressKey(state, 'g', makeKey({ ctrl: true }));
+
+    expect(actions).toEqual([{ type: 'REQUEST_DISCARD_CONFIRM', action: 'editorHandoff' }]);
+  });
+});
+
+describe('normal-mode R reload', () => {
+  const WARNINGS_FIXTURE = 'test/fixtures/postman/postman-graphql-body.json';
+  const CLEAN_FIXTURE = 'test/fixtures/http/load-revert-fixture.http';
+
+  it('R on a file whose import warns dispatches RELOAD_FILE carrying the warning count', () => {
+    const state = panelState(null, { requests: [createRequest()], filePath: WARNINGS_FIXTURE });
+
+    const actions = pressKey(state, 'R');
+
+    expect(actions).toEqual([{
+      type: 'RELOAD_FILE',
+      requests: [expect.objectContaining({ name: 'GraphQL Request' })],
+      variables: [],
+      format: 'postman',
+      warningCount: 1,
+    }]);
+  });
+
+  it('R on a warnings-free file dispatches RELOAD_FILE with zero warnings', () => {
+    const state = panelState(null, { requests: [createRequest()], filePath: CLEAN_FIXTURE });
+
+    const actions = pressKey(state, 'R');
+
+    expect(actions).toEqual([{
+      type: 'RELOAD_FILE',
+      requests: [expect.objectContaining({ name: 'test request' })],
+      variables: [{ name: 'baseUrl', value: 'http://file-value' }],
+      format: 'http',
+      warningCount: 0,
+    }]);
+  });
+});

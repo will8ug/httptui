@@ -1,5 +1,5 @@
 import { serializeRequestBlock } from './http-serializer';
-import { parseHttpFile } from './parser';
+import { parseHttpFile } from './importers/http';
 import type { ParsedRequest } from './types';
 
 const SEPARATOR_RE = /^#{3,}/;
@@ -137,7 +137,14 @@ export function buildInPlaceContent(rawContent: string, currentRequests: ParsedR
       return { ok: false, error: violation };
     }
 
-    const requestLineIndex = original.requests[i].lineNumber - 1;
+    // The shared ParsedRequest type allows origin-less requests, but this
+    // in-place-save parse is http-format only: real line numbers guaranteed.
+    const requestLineNumber = original.requests[i].lineNumber;
+    if (requestLineNumber === undefined) {
+      throw new Error('http-parsed request without a source line number');
+    }
+
+    const requestLineIndex = requestLineNumber - 1;
     const { blockStart, blockEnd } = resolveBlockRegion(lines, requestLineIndex);
     regions.push({
       blockStart,

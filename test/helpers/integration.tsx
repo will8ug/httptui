@@ -34,8 +34,10 @@ export async function press(stdin: { write: (data: string) => void }, key: strin
 
 const defaultProps: AppProps = {
   filePath: 'test.http',
+  sourceFormat: 'http',
   requests: [],
   variables: [],
+  warnings: [],
   environmentVariables: [],
   fileVariables: [],
   activeEnvName: null,
@@ -48,8 +50,10 @@ export function renderApp(overrides: Partial<AppProps> = {}) {
   return render(
     <App
       filePath={props.filePath}
+      sourceFormat={props.sourceFormat}
       requests={props.requests}
       variables={props.variables}
+      warnings={props.warnings}
       environmentVariables={props.environmentVariables}
       fileVariables={props.fileVariables}
       activeEnvName={props.activeEnvName}
@@ -76,7 +80,6 @@ export function makeShortUrlRequests(count: number): ParsedRequest[] {
     url: `https://a.co/u/${i + 1}`,
     headers: {},
     body: undefined,
-    lineNumber: i + 1,
     isDirty: false,
   }));
 }

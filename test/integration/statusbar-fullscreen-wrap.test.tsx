@@ -66,7 +66,6 @@ function makeRequest(): ParsedRequest[] {
       url: 'https://a.co/u/1',
       headers: {},
       body: undefined,
-      lineNumber: 1,
       isDirty: false,
     },
   ];

@@ -79,9 +79,9 @@ describe('RequestList variable resolution', () => {
 describe('RequestList selection and horizontal shift', () => {
   it('highlights the selected request with ▸', () => {
     const requests = [
-      createRequest({ url: 'https://a.co/u/1', lineNumber: 1 }),
-      createRequest({ url: 'https://a.co/u/2', lineNumber: 2 }),
-      createRequest({ url: 'https://a.co/u/3', lineNumber: 3 }),
+      createRequest({ url: 'https://a.co/u/1' }),
+      createRequest({ url: 'https://a.co/u/2' }),
+      createRequest({ url: 'https://a.co/u/3' }),
     ];
 
     const { lastFrame } = render(

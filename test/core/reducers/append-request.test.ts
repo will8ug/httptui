@@ -10,7 +10,6 @@ function makeRequests(count: number): ParsedRequest[] {
   return Array.from({ length: count }, (_, i) =>
     createRequest({
       name: `Request ${i + 1}`,
-      lineNumber: i + 1,
     }),
   );
 }
@@ -20,7 +19,6 @@ function pastedRequest(): ParsedRequest {
     name: 'GET /users',
     method: 'GET',
     url: 'https://api.example.com/users',
-    lineNumber: 0,
     isDirty: true,
   });
 }
@@ -100,33 +98,20 @@ describe('APPEND_REQUEST reducer', () => {
     expect(result.requests[3]?.isDirty).toBe(true);
   });
 
-  it('replaces the lineNumber 0 placeholder with max existing lineNumber + 1', () => {
+  it('appends the pasted request verbatim without rewriting it', () => {
     const state = createInitialState({ requests: makeRequests(3) });
+    const pasted = pastedRequest();
+
+    const result = reducer(state, { type: 'APPEND_REQUEST', request: pasted });
+
+    expect(result.requests[3]).toEqual(pasted);
+  });
+
+  it('preserves the source format of the loaded file', () => {
+    const state = createInitialState({ requests: makeRequests(3), sourceFormat: 'postman' });
 
     const result = reducer(state, { type: 'APPEND_REQUEST', request: pastedRequest() });
 
-    expect(result.requests[3]?.lineNumber).toBe(4);
-  });
-
-  it('assigns lineNumber 1 when the request list is empty', () => {
-    const state = createInitialState({ requests: [] });
-
-    const result = reducer(state, { type: 'APPEND_REQUEST', request: pastedRequest() });
-
-    expect(result.requests[0]?.lineNumber).toBe(1);
-  });
-
-  it('assigns distinct non-zero lineNumbers to two identical pastes', () => {
-    const state = createInitialState({ requests: makeRequests(3) });
-
-    const first = reducer(state, { type: 'APPEND_REQUEST', request: pastedRequest() });
-    const second = reducer(first, { type: 'APPEND_REQUEST', request: pastedRequest() });
-
-    const firstLineNumber = first.requests[3]?.lineNumber;
-    const secondLineNumber = second.requests[4]?.lineNumber;
-
-    expect(firstLineNumber).toBe(4);
-    expect(secondLineNumber).toBe(5);
-    expect(new Set([firstLineNumber, secondLineNumber]).size).toBe(2);
+    expect(result.sourceFormat).toBe('postman');
   });
 });

@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 import pkg from 'postman-collection';
 
-import type { FileVariable, FormDataParam, HttpMethod, ParseResult, ParsedRequest } from './types';
+import type { ImportSuccess } from '../importer';
+import type { FileVariable, FormDataParam, HttpMethod, ParsedRequest } from '../types';
 
 const { Collection } = pkg;
 
@@ -24,10 +25,6 @@ const UNSUPPORTED_AUTH_TYPES: ReadonlySet<string> = new Set([
   'awsv4',
   'noauth',
 ]);
-
-function warn(message: string): void {
-  process.stderr.write(`\x1b[33m⚠ ${message}\x1b[0m\n`);
-}
 
 function isSupportedMethod(method: string): method is HttpMethod {
   if (!method) {
@@ -62,7 +59,7 @@ function inferContentTypeFromLanguage(
   }
 }
 
-function buildAuthHeaders(item: any): Record<string, string> {
+function buildAuthHeaders(item: any, warnings: string[]): Record<string, string> {
   if (!item?.request?.auth) {
     return {};
   }
@@ -72,7 +69,7 @@ function buildAuthHeaders(item: any): Record<string, string> {
 
   if (!authType || UNSUPPORTED_AUTH_TYPES.has(authType)) {
     if (authType) {
-      warn(`Unsupported auth type "${authType}" in request "${item.name ?? '(unnamed)'}" — skipped`);
+      warnings.push(`Unsupported auth type "${authType}" in request "${item.name ?? '(unnamed)'}" — skipped`);
     }
 
     return {};
@@ -118,7 +115,7 @@ function buildAuthHeaders(item: any): Record<string, string> {
       }
 
       if (addTo !== 'header') {
-        warn(`API Key with "in: ${inEntry?.value}" in request "${item.name ?? '(unnamed)'}" — only header mode supported`);
+        warnings.push(`API Key with "in: ${inEntry?.value}" in request "${item.name ?? '(unnamed)'}" — only header mode supported`);
       }
     }
   } catch {
@@ -146,7 +143,7 @@ function convertKeyValueParamsToUrlEncoded(params: any[]): string | undefined {
     .join('&');
 }
 
-function convertBody(item: any): { body: string | undefined; formdataFields?: FormDataParam[] } {
+function convertBody(item: any, warnings: string[]): { body: string | undefined; formdataFields?: FormDataParam[] } {
   if (!item?.request?.body) {
     return { body: undefined };
   }
@@ -174,7 +171,7 @@ function convertBody(item: any): { body: string | undefined; formdataFields?: Fo
       const hasFiles = paramArray.some((p: any) => p.type === 'file');
 
       if (hasFiles) {
-        warn(`Request "${item.name ?? '(unnamed)'}" has form-data with file uploads — not supported`);
+        warnings.push(`Request "${item.name ?? '(unnamed)'}" has form-data with file uploads — not supported`);
 
         return { body: undefined };
       }
@@ -191,13 +188,13 @@ function convertBody(item: any): { body: string | undefined; formdataFields?: Fo
     }
 
     if (mode === 'graphql') {
-      warn(`Request "${item.name ?? '(unnamed)'}" has GraphQL body — not supported`);
+      warnings.push(`Request "${item.name ?? '(unnamed)'}" has GraphQL body — not supported`);
 
       return { body: undefined };
     }
 
     if (mode === 'file') {
-      warn(`Request "${item.name ?? '(unnamed)'}" has binary file body — not supported`);
+      warnings.push(`Request "${item.name ?? '(unnamed)'}" has binary file body — not supported`);
 
       return { body: undefined };
     }
@@ -214,7 +211,7 @@ function convertBody(item: any): { body: string | undefined; formdataFields?: Fo
   return { body: undefined };
 }
 
-function checkForScripts(item: any): void {
+function checkForScripts(item: any, warnings: string[]): void {
   if (!item?.request?.events) {
     return;
   }
@@ -223,9 +220,9 @@ function checkForScripts(item: any): void {
 
   for (const event of events) {
     if (event.listen === 'test') {
-      warn(`Request "${item.name ?? '(unnamed)'}" has test scripts — not supported`);
+      warnings.push(`Request "${item.name ?? '(unnamed)'}" has test scripts — not supported`);
     } else if (event.listen === 'prerequest') {
-      warn(`Request "${item.name ?? '(unnamed)'}" has pre-request scripts — not supported`);
+      warnings.push(`Request "${item.name ?? '(unnamed)'}" has pre-request scripts — not supported`);
     }
   }
 }
@@ -260,21 +257,14 @@ function flattenCollectionItems(items: any[], parentPath?: string): any[] {
   return result;
 }
 
-export function parsePostmanCollection(content: string): ParseResult {
-  let raw: any;
-
-  try {
-    raw = JSON.parse(content);
-  } catch {
-    throw new Error('Failed to parse Postman collection: invalid JSON');
-  }
-
-  const collection = new Collection(raw);
+export function parsePostmanCollection(doc: unknown): ImportSuccess {
+  const collection = new Collection(doc);
   const collectionItems = collection.items?.members ?? collection.items ?? [];
   const flatItems = flattenCollectionItems(collectionItems);
 
   const requests: ParsedRequest[] = [];
   const variables: FileVariable[] = [];
+  const warnings: string[] = [];
 
   let requestIndex = 0;
 
@@ -285,13 +275,13 @@ export function parsePostmanCollection(content: string): ParseResult {
 
     requestIndex += 1;
 
-    checkForScripts(item);
+    checkForScripts(item, warnings);
 
     const req = item.request;
     const method = String(req.method ?? 'GET').toUpperCase();
 
     if (!isSupportedMethod(method)) {
-      warn(`Unsupported HTTP method "${method}" in request "${item.name ?? '(unnamed)'}" — skipped`);
+      warnings.push(`Unsupported HTTP method "${method}" in request "${item.name ?? '(unnamed)'}" — skipped`);
 
       continue;
     }
@@ -324,8 +314,8 @@ export function parsePostmanCollection(content: string): ParseResult {
     const sdkHeaders: Record<string, string> =
       req.headers?.toObject?.() ?? req.headers?.all?.() ?? {};
 
-    const authHeaders = buildAuthHeaders(item);
-    const { body: convertedBody, formdataFields } = convertBody(item);
+    const authHeaders = buildAuthHeaders(item, warnings);
+    const { body: convertedBody, formdataFields } = convertBody(item, warnings);
 
     const headers: Record<string, string> = { ...sdkHeaders };
 
@@ -355,7 +345,6 @@ export function parsePostmanCollection(content: string): ParseResult {
       body: convertedBody,
       isDirty: false,
       formdataFields,
-      lineNumber: requestIndex,
     });
   }
 
@@ -372,5 +361,11 @@ export function parsePostmanCollection(content: string): ParseResult {
     });
   }
 
-  return { requests, variables };
+  return {
+    ok: true,
+    format: 'postman',
+    requests,
+    variables,
+    warnings,
+  };
 }

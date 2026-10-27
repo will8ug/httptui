@@ -11,7 +11,6 @@ function makeRequests(count: number): ParsedRequest[] {
       name: `Request ${i + 1}`,
       method: 'GET',
       url: `https://api.example.com/resource/${i + 1}`,
-      lineNumber: i + 1,
     }),
   );
 }

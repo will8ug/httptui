@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseCurlCommand } from '../../src/core/curl-parser';
-import { toCurlCommand } from '../../src/core/curl-serializer';
-import type { ResolvedRequest } from '../../src/core/types';
-import { createResolvedRequest } from '../helpers/requests';
+import { parseCurlCommand } from '../../../src/core/importers/curl';
+import { toCurlCommand } from '../../../src/core/curl-serializer';
+import type { ResolvedRequest } from '../../../src/core/types';
+import { createResolvedRequest } from '../../helpers/requests';
 
 function parseOk(text: string) {
   const result = parseCurlCommand(text);
   if (!result.ok) {
     throw new Error(`expected successful parse, got refusal: ${result.error}`);
   }
-  return result;
+  return { request: result.requests[0], warnings: result.warnings };
 }
 
 describe('parseCurlCommand', () => {
@@ -22,12 +22,12 @@ describe('parseCurlCommand', () => {
         `  --data-raw '{"name":"Alice"}'`,
       ].join('\n');
 
-      const { request, skipped } = parseOk(command);
+      const { request, warnings } = parseOk(command);
 
       expect(request.url).toBe('https://api.example.com/users');
       expect(request.headers['Accept']).toBe('application/json');
       expect(request.body).toBe('{"name":"Alice"}');
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
     });
 
     it("decodes the copy-as-curl quote idiom '\\'' as a literal single quote", () => {
@@ -76,21 +76,20 @@ describe('parseCurlCommand', () => {
   });
 
   describe('simple GET command', () => {
-    it('parses method GET, the url, and a clean skipped flag', () => {
-      const { request, skipped } = parseOk(`curl 'https://api.example.com/users'`);
+    it('parses method GET, the url, and reports no skipped options', () => {
+      const { request, warnings } = parseOk(`curl 'https://api.example.com/users'`);
 
       expect(request.method).toBe('GET');
       expect(request.url).toBe('https://api.example.com/users');
       expect(request.headers).toEqual({});
       expect(request.body).toBeUndefined();
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
     });
 
-    it('marks the request dirty with the lineNumber placeholder', () => {
+    it('marks the request dirty', () => {
       const { request } = parseOk(`curl 'https://api.example.com/users'`);
 
       expect(request.isDirty).toBe(true);
-      expect(request.lineNumber).toBe(0);
     });
   });
 
@@ -98,12 +97,12 @@ describe('parseCurlCommand', () => {
     it('parses the method, header, and body from a Chrome DevTools style command', () => {
       const command = `curl -X POST 'https://api.example.com/users' -H 'Content-Type: application/json' --data-raw '{"name":"Alice"}'`;
 
-      const { request, skipped } = parseOk(command);
+      const { request, warnings } = parseOk(command);
 
       expect(request.method).toBe('POST');
       expect(request.headers).toEqual({ 'Content-Type': 'application/json' });
       expect(request.body).toBe('{"name":"Alice"}');
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
     });
   });
 
@@ -131,10 +130,10 @@ describe('parseCurlCommand', () => {
 
   describe('HEAD from -I', () => {
     it('derives HEAD from -I', () => {
-      const { request, skipped } = parseOk(`curl -I 'https://api.example.com'`);
+      const { request, warnings } = parseOk(`curl -I 'https://api.example.com'`);
 
       expect(request.method).toBe('HEAD');
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
     });
 
     it('derives HEAD from --head', () => {
@@ -184,12 +183,12 @@ describe('parseCurlCommand', () => {
 
   describe('silent conversions', () => {
     it('converts -u user:password to a Basic Authorization header without warning', () => {
-      const { request, skipped } = parseOk(`curl -u 'alice:secret' 'https://api.example.com'`);
+      const { request, warnings } = parseOk(`curl -u 'alice:secret' 'https://api.example.com'`);
 
       expect(request.headers['Authorization']).toBe(
         `Basic ${Buffer.from('alice:secret').toString('base64')}`,
       );
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
     });
 
     it('keeps colons inside the -u password in the base64 credentials', () => {
@@ -201,29 +200,29 @@ describe('parseCurlCommand', () => {
     });
 
     it('skips -u without a colon with a warning instead of converting', () => {
-      const { request, skipped } = parseOk(`curl -u 'alice' 'https://api.example.com'`);
+      const { request, warnings } = parseOk(`curl -u 'alice' 'https://api.example.com'`);
 
       expect(request.headers['Authorization']).toBeUndefined();
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
       expect(request.url).toBe('https://api.example.com');
     });
 
     it('converts a -b cookie string to a Cookie header without warning', () => {
-      const { request, skipped } = parseOk(`curl -b 'session=abc' 'https://api.example.com'`);
+      const { request, warnings } = parseOk(`curl -b 'session=abc' 'https://api.example.com'`);
 
       expect(request.headers['Cookie']).toBe('session=abc');
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
     });
 
     it('skips a -b file reference with a warning', () => {
-      const { request, skipped } = parseOk(`curl -b '@cookies.txt' 'https://api.example.com'`);
+      const { request, warnings } = parseOk(`curl -b '@cookies.txt' 'https://api.example.com'`);
 
       expect(request.headers['Cookie']).toBeUndefined();
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
 
     it('converts --json to Accept, Content-Type, body, and a POST default', () => {
-      const { request, skipped } = parseOk(`curl --json '{"a":1}' 'https://api.example.com'`);
+      const { request, warnings } = parseOk(`curl --json '{"a":1}' 'https://api.example.com'`);
 
       expect(request.method).toBe('POST');
       expect(request.headers).toEqual({
@@ -231,31 +230,31 @@ describe('parseCurlCommand', () => {
         'Content-Type': 'application/json',
       });
       expect(request.body).toBe('{"a":1}');
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
     });
 
     it('skips a --json file reference with a warning', () => {
-      const { request, skipped } = parseOk(`curl --json '@payload.json' 'https://api.example.com'`);
+      const { request, warnings } = parseOk(`curl --json '@payload.json' 'https://api.example.com'`);
 
       expect(request.headers).toEqual({});
       expect(request.body).toBeUndefined();
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
 
     it('converts -A to a User-Agent header without warning', () => {
-      const { request, skipped } = parseOk(`curl -A 'Mozilla/5.0' 'https://api.example.com'`);
+      const { request, warnings } = parseOk(`curl -A 'Mozilla/5.0' 'https://api.example.com'`);
 
       expect(request.headers['User-Agent']).toBe('Mozilla/5.0');
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
     });
 
     it('converts -e to a Referer header without warning', () => {
-      const { request, skipped } = parseOk(
+      const { request, warnings } = parseOk(
         `curl -e 'https://example.com/page' 'https://api.example.com'`,
       );
 
       expect(request.headers['Referer']).toBe('https://example.com/page');
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
     });
   });
 
@@ -273,10 +272,10 @@ describe('parseCurlCommand', () => {
     });
 
     it('drops a -H argument without a colon and sets the warning flag', () => {
-      const { request, skipped } = parseOk(`curl -H 'X-No-Colon' 'https://x.example'`);
+      const { request, warnings } = parseOk(`curl -H 'X-No-Colon' 'https://x.example'`);
 
       expect(request.headers).toEqual({});
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
 
     it('applies repeated header names with last-wins record semantics', () => {
@@ -300,25 +299,25 @@ describe('parseCurlCommand', () => {
     it('keeps text fields and drops @file fields with the warning flag', () => {
       const command = `curl -F 'username=alice' -F 'avatar=@/tmp/a.png' 'https://api.example.com/upload'`;
 
-      const { request, skipped } = parseOk(command);
+      const { request, warnings } = parseOk(command);
 
       expect(request.formdataFields).toEqual([{ key: 'username', value: 'alice', type: 'text' }]);
       expect(request.body).toBeUndefined();
       expect(request.method).toBe('POST');
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
 
     it('drops <file-backed form fields with the warning flag', () => {
-      const { request, skipped } = parseOk(
+      const { request, warnings } = parseOk(
         `curl -F 'plan=<input.txt' -F 'note=hello' 'https://api.example.com'`,
       );
 
       expect(request.formdataFields).toEqual([{ key: 'note', value: 'hello', type: 'text' }]);
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
 
     it('accepts --form and --form-string like -F', () => {
-      const { request, skipped } = parseOk(
+      const { request, warnings } = parseOk(
         `curl --form 'a=1' --form-string 'b=2' 'https://api.example.com'`,
       );
 
@@ -326,24 +325,24 @@ describe('parseCurlCommand', () => {
         { key: 'a', value: '1', type: 'text' },
         { key: 'b', value: '2', type: 'text' },
       ]);
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
     });
 
     it('drops a form argument without = with the warning flag', () => {
-      const { request, skipped } = parseOk(`curl -F 'malformed' 'https://api.example.com'`);
+      const { request, warnings } = parseOk(`curl -F 'malformed' 'https://api.example.com'`);
 
       expect(request.formdataFields).toBeUndefined();
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
 
     it('lets form fields win over data flags, skipping the data flags with a warning', () => {
-      const { request, skipped } = parseOk(
+      const { request, warnings } = parseOk(
         `curl -F 'username=alice' -d 'a=1' 'https://api.example.com'`,
       );
 
       expect(request.formdataFields).toEqual([{ key: 'username', value: 'alice', type: 'text' }]);
       expect(request.body).toBeUndefined();
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
   });
 
@@ -351,11 +350,11 @@ describe('parseCurlCommand', () => {
     it('skips a leading @ data argument while importing the rest', () => {
       const command = `curl --data '@payload.json' 'https://api.example.com'`;
 
-      const { request, skipped } = parseOk(command);
+      const { request, warnings } = parseOk(command);
 
       expect(request.body).toBeUndefined();
       expect(request.url).toBe('https://api.example.com');
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
   });
 
@@ -363,26 +362,26 @@ describe('parseCurlCommand', () => {
     it('imports the request when redirect and verbosity flags are skipped', () => {
       const command = `curl --location -X POST 'https://api.example.com' -H 'X-Api-Key: k' -v --compressed`;
 
-      const { request, skipped } = parseOk(command);
+      const { request, warnings } = parseOk(command);
 
       expect(request.method).toBe('POST');
       expect(request.url).toBe('https://api.example.com');
       expect(request.headers).toEqual({ 'X-Api-Key': 'k' });
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
 
     it('warn-skips TLS flags -k and --insecure', () => {
-      const { skipped } = parseOk(`curl -k --insecure 'https://api.example.com'`);
+      const { warnings } = parseOk(`curl -k --insecure 'https://api.example.com'`);
 
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
 
     it('warn-skips HTTP version, IP version, redirect, and cosmetic flags', () => {
       const command = `curl --http1.1 --http2 --http2-prior-knowledge --http3 -4 -6 -G -s -S --silent --show-error --verbose # 'https://api.example.com/data'`;
 
-      const { request, skipped } = parseOk(command);
+      const { request, warnings } = parseOk(command);
 
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
       expect(request.url).toBe('https://api.example.com/data');
       expect(request.method).toBe('GET');
     });
@@ -395,19 +394,19 @@ describe('parseCurlCommand', () => {
         `'https://api.example.com/data'`,
       ].join(' ');
 
-      const { request, skipped } = parseOk(command);
+      const { request, warnings } = parseOk(command);
 
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
       expect(request.url).toBe('https://api.example.com/data');
       expect(request.method).toBe('GET');
       expect(request.body).toBeUndefined();
     });
 
     it('warn-skips an unknown arity-0 flag without blocking import', () => {
-      const { request, skipped } = parseOk(`curl --progress-bar 'https://api.example.com'`);
+      const { request, warnings } = parseOk(`curl --progress-bar 'https://api.example.com'`);
 
       expect(request.url).toBe('https://api.example.com');
-      expect(skipped).toBe(true);
+      expect(warnings).toEqual(['some curl options were skipped']);
     });
 
     it('refuses when an unknown arity-0 flag leaves its value as a second positional token', () => {
@@ -607,15 +606,15 @@ describe('parseCurlCommand', () => {
   });
 
   describe('clean paste', () => {
-    it('reports skipped false when only supported and convertible flags are present', () => {
+    it('reports no warnings when only supported and convertible flags are present', () => {
       const command = [
         `curl -X POST 'https://api.example.com/users' -H 'Content-Type: application/json'`,
         `-H 'Authorization: Basic abc' --data-raw '{"name":"Alice"}'`,
       ].join(' ');
 
-      const { request, skipped } = parseOk(command);
+      const { request, warnings } = parseOk(command);
 
-      expect(skipped).toBe(false);
+      expect(warnings).toEqual([]);
       expect(request.method).toBe('POST');
       expect(Object.keys(request.headers)).toEqual(['Content-Type', 'Authorization']);
     });
@@ -630,13 +629,15 @@ describe('parseCurlCommand', () => {
       if (!result.ok) {
         throw new Error(result.error);
       }
-      expect(result.skipped).toBe(false);
-      expect(result.request.method).toBe(request.method);
-      expect(result.request.url).toBe(request.url);
-      expect(result.request.headers).toEqual(request.headers);
-      expect(Object.keys(result.request.headers)).toEqual(Object.keys(request.headers));
-      expect(result.request.body).toBe(request.body);
-      expect(result.request.formdataFields).toEqual(request.formdataFields);
+      expect(result.warnings).toEqual([]);
+      expect(result.requests).toHaveLength(1);
+      const [parsed] = result.requests;
+      expect(parsed.method).toBe(request.method);
+      expect(parsed.url).toBe(request.url);
+      expect(parsed.headers).toEqual(request.headers);
+      expect(Object.keys(parsed.headers)).toEqual(Object.keys(request.headers));
+      expect(parsed.body).toBe(request.body);
+      expect(parsed.formdataFields).toEqual(request.formdataFields);
       return result;
     }
 
@@ -713,20 +714,21 @@ describe('parseCurlCommand', () => {
       );
     });
 
-    it('at most sets the skipped flag for the -k TLS flag', () => {
+    it('at most warns about skipped options for the -k TLS flag', () => {
       const request = createResolvedRequest({ headers: { 'X-Api-Key': 'k' } });
       const result = parseCurlCommand(toCurlCommand(request, { insecure: true }));
 
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.skipped).toBe(true);
-        expect(result.request.method).toBe(request.method);
-        expect(result.request.url).toBe(request.url);
-        expect(result.request.headers).toEqual(request.headers);
+        expect(result.warnings).toEqual(['some curl options were skipped']);
+        const [parsed] = result.requests;
+        expect(parsed.method).toBe(request.method);
+        expect(parsed.url).toBe(request.url);
+        expect(parsed.headers).toEqual(request.headers);
       }
     });
 
-    it('at most sets the skipped flag for PEM certificate flags', () => {
+    it('at most warns about skipped options for PEM certificate flags', () => {
       const request = createResolvedRequest({ headers: { 'X-Api-Key': 'k' } });
       const result = parseCurlCommand(
         toCurlCommand(request, {
@@ -737,13 +739,14 @@ describe('parseCurlCommand', () => {
 
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.skipped).toBe(true);
-        expect(result.request.url).toBe(request.url);
-        expect(result.request.headers).toEqual(request.headers);
+        expect(result.warnings).toEqual(['some curl options were skipped']);
+        const [parsed] = result.requests;
+        expect(parsed.url).toBe(request.url);
+        expect(parsed.headers).toEqual(request.headers);
       }
     });
 
-    it('at most sets the skipped flag for PFX certificate flags with special characters in the passphrase', () => {
+    it('at most warns about skipped options for PFX certificate flags with special characters in the passphrase', () => {
       const request = createResolvedRequest({ body: undefined });
       const result = parseCurlCommand(
         toCurlCommand(request, {
@@ -754,10 +757,11 @@ describe('parseCurlCommand', () => {
 
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.skipped).toBe(true);
-        expect(result.request.method).toBe(request.method);
-        expect(result.request.url).toBe(request.url);
-        expect(result.request.headers).toEqual(request.headers);
+        expect(result.warnings).toEqual(['some curl options were skipped']);
+        const [parsed] = result.requests;
+        expect(parsed.method).toBe(request.method);
+        expect(parsed.url).toBe(request.url);
+        expect(parsed.headers).toEqual(request.headers);
       }
     });
   });

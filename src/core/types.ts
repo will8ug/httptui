@@ -1,3 +1,4 @@
+import type { ImportFormat } from './importer';
 import type { ClipboardRunner } from './clipboard';
 
 export type HttpMethod =
@@ -22,7 +23,7 @@ export interface ParsedRequest {
   headers: Record<string, string>;
   body: string | undefined;
   formdataFields?: FormDataParam[];
-  lineNumber: number;
+  lineNumber?: number;
   isDirty: boolean;
 }
 
@@ -185,6 +186,7 @@ export interface AppState {
   verbose: boolean;
   showHelp: boolean;
   filePath: string;
+  sourceFormat: ImportFormat;
   responseScrollOffset: number;
   requestScrollOffset: number;
   requestHorizontalOffset: number;
@@ -218,8 +220,10 @@ export interface AppState {
 
 export interface AppProps {
   filePath: string;
+  sourceFormat: ImportFormat;
   requests: ParsedRequest[];
   variables: FileVariable[];
+  warnings: string[];
   environmentVariables: FileVariable[];
   fileVariables: FileVariable[];
   activeEnvName: string | null;
@@ -244,7 +248,7 @@ export type Action =
   | { type: 'SCROLL'; direction: 'up' | 'down' }
   | { type: 'SCROLL_HORIZONTAL'; direction: 'left' | 'right' }
   | { type: 'CLOSE_HELP' }
-  | { type: 'RELOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[] }
+  | { type: 'RELOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; format: ImportFormat; warningCount: number }
   | { type: 'SET_TRANSIENT_MESSAGE'; message: string }
   | { type: 'SET_TRANSIENT_WARNING'; warning: string }
   | { type: 'SET_TRANSIENT_ERROR'; error: string }
@@ -254,7 +258,7 @@ export type Action =
   | { type: 'FILE_LOAD_KEY'; op: EditOp; insert?: string }
   | { type: 'SET_FILE_LOAD_ERROR'; error: string }
   | { type: 'SET_FILE_LOAD_COMPLETIONS'; completions: string[] | null }
-  | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string; executorConfig?: ExecutorConfig }
+  | { type: 'LOAD_FILE'; requests: ParsedRequest[]; variables: FileVariable[]; filePath: string; format: ImportFormat; executorConfig?: ExecutorConfig; warningCount: number }
   | { type: 'CANCEL_FILE_LOAD' }
   | { type: 'TOGGLE_WRAP' }
   | { type: 'TOGGLE_RAW' }

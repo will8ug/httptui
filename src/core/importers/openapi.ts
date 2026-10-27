@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
-import type { FileVariable, HttpMethod, ParseResult, ParsedRequest } from './types';
+import type { ImportSuccess } from '../importer';
+import type { FileVariable, HttpMethod, ParsedRequest } from '../types';
 
 const SUPPORTED_METHODS: ReadonlySet<string> = new Set([
   'GET',
@@ -24,12 +25,6 @@ const NON_METHOD_PATH_KEYS: ReadonlySet<string> = new Set([
   '$ref',
 ]);
 
-export const logger = {
-  warn(message: string): void {
-    process.stderr.write(`\x1b[33m⚠ ${message}\x1b[0m\n`);
-  },
-};
-
 function isSupportedMethod(method: string): method is HttpMethod {
   if (!method) {
     return false;
@@ -37,9 +32,9 @@ function isSupportedMethod(method: string): method is HttpMethod {
   return SUPPORTED_METHODS.has(method.toUpperCase());
 }
 
-function resolveRef(ref: string, doc: any): any {
+function resolveRef(ref: string, doc: any, warnings: string[]): any {
   if (!ref.startsWith('#/')) {
-    logger.warn(`External $ref "${ref}" is not supported — skipped`);
+    warnings.push(`External $ref "${ref}" is not supported — skipped`);
     return undefined;
   }
 
@@ -56,22 +51,22 @@ function resolveRef(ref: string, doc: any): any {
   return current;
 }
 
-function resolveSchema(schema: any, doc: any): any {
+function resolveSchema(schema: any, doc: any, warnings: string[]): any {
   if (!schema) {
     return undefined;
   }
   if (schema.$ref) {
-    return resolveRef(schema.$ref, doc);
+    return resolveRef(schema.$ref, doc, warnings);
   }
   return schema;
 }
 
-function resolveParamValue(param: any, doc: any): string {
+function resolveParamValue(param: any, doc: any, warnings: string[]): string {
   if (!param || !param.schema) {
     return '';
   }
 
-  const schema = resolveSchema(param.schema, doc);
+  const schema = resolveSchema(param.schema, doc, warnings);
   if (!schema) {
     return '';
   }
@@ -155,6 +150,7 @@ function processSecurity(
   queryParts: string[],
   cookieParts: string[],
   variables: FileVariable[],
+  warnings: string[],
 ): void {
   const securitySchemes = doc?.components?.securitySchemes;
   if (!securitySchemes) {
@@ -175,7 +171,7 @@ function processSecurity(
     for (const schemeName of Object.keys(requirement)) {
       const scheme = securitySchemes[schemeName];
       if (!scheme) {
-        logger.warn(`Security scheme "${schemeName}" not found in components.securitySchemes — skipped`);
+        warnings.push(`Security scheme "${schemeName}" not found in components.securitySchemes — skipped`);
         continue;
       }
 
@@ -191,7 +187,7 @@ function processSecurity(
           headers['Authorization'] = `Basic {{${schemeName}}}`;
           variables.push({ name: schemeName, value: '' });
         } else {
-          logger.warn(`Unsupported HTTP auth scheme "${scheme.scheme ?? '(unknown)'}" in security scheme "${schemeName}" — skipped`);
+          warnings.push(`Unsupported HTTP auth scheme "${scheme.scheme ?? '(unknown)'}" in security scheme "${schemeName}" — skipped`);
         }
       } else if (type === 'apiKey') {
         const inLocation = scheme.in?.toLowerCase();
@@ -207,10 +203,10 @@ function processSecurity(
           cookieParts.push(`${keyName}={{${schemeName}}}`);
           variables.push({ name: schemeName, value: '' });
         } else {
-          logger.warn(`Unsupported apiKey location "${scheme.in ?? '(unknown)'}" in security scheme "${schemeName}" — skipped`);
+          warnings.push(`Unsupported apiKey location "${scheme.in ?? '(unknown)'}" in security scheme "${schemeName}" — skipped`);
         }
       } else {
-        logger.warn(`Unsupported security scheme type "${type ?? '(unknown)'}" for "${schemeName}" — skipped`);
+        warnings.push(`Unsupported security scheme type "${type ?? '(unknown)'}" for "${schemeName}" — skipped`);
       }
     }
   }
@@ -220,10 +216,10 @@ function processSecurity(
  * Recursively synthesize an example value from an OpenAPI schema. Assumes the
  * document is already dereferenced.
  */
-function synthesizeExample(schema: any, doc: any, depth = 0): any {
+function synthesizeExample(schema: any, doc: any, warnings: string[], depth = 0): any {
   if (!schema || depth > 50) {
     if (depth > 50) {
-      logger.warn('Max synthesis depth (50) exceeded — stop');
+      warnings.push('Max synthesis depth (50) exceeded — stop');
     }
     return undefined;
   }
@@ -243,7 +239,7 @@ function synthesizeExample(schema: any, doc: any, depth = 0): any {
     const obj: Record<string, any> = {};
     let hasAny = false;
     for (const [name, propSchema] of Object.entries(schema.properties)) {
-      const val = synthesizeExample(propSchema, doc, depth + 1);
+      const val = synthesizeExample(propSchema, doc, warnings, depth + 1);
       if (val !== undefined) {
         obj[name] = val;
         hasAny = true;
@@ -256,7 +252,7 @@ function synthesizeExample(schema: any, doc: any, depth = 0): any {
     if (!schema.items) {
       return undefined;
     }
-    const item = synthesizeExample(schema.items, doc, depth + 1);
+    const item = synthesizeExample(schema.items, doc, warnings, depth + 1);
     return item !== undefined ? [item] : undefined;
   }
 
@@ -292,6 +288,7 @@ function flattenToUrlencoded(value: any, prefix: string): string {
 function processRequestBody(
   requestBody: any,
   doc: any,
+  warnings: string[],
 ): { body: string | undefined; contentType: string | undefined } {
   if (!requestBody) {
     return { body: undefined, contentType: undefined };
@@ -299,7 +296,7 @@ function processRequestBody(
 
   let resolvedBody = requestBody;
   if (requestBody.$ref) {
-    resolvedBody = resolveRef(requestBody.$ref, doc);
+    resolvedBody = resolveRef(requestBody.$ref, doc, warnings);
     if (!resolvedBody) {
       return { body: undefined, contentType: undefined };
     }
@@ -344,7 +341,7 @@ function processRequestBody(
   }
 
   if (mediaTypeDef.schema) {
-    const resolvedSchema = resolveSchema(mediaTypeDef.schema, doc);
+    const resolvedSchema = resolveSchema(mediaTypeDef.schema, doc, warnings);
 
     // Tier 3: schema.example (after resolving $ref)
     if (resolvedSchema && resolvedSchema.example !== undefined) {
@@ -353,7 +350,7 @@ function processRequestBody(
 
     // Tier 4: recursively synthesize example from schema
     if (resolvedSchema && (resolvedSchema.type === 'object' || resolvedSchema.type === 'array')) {
-      const synthesized = synthesizeExample(resolvedSchema, doc);
+      const synthesized = synthesizeExample(resolvedSchema, doc, warnings);
       if (synthesized !== undefined) {
         if (mediaType === 'application/x-www-form-urlencoded') {
           return { body: flattenToUrlencoded(synthesized, ''), contentType: mediaType };
@@ -373,8 +370,8 @@ function buildRequest(
   pathItem: any,
   operation: any,
   doc: any,
-  lineNumber: number,
   variables: FileVariable[],
+  warnings: string[],
 ): ParsedRequest {
   const name = determineName(method, path, operation);
 
@@ -391,7 +388,7 @@ function buildRequest(
       continue;
     }
 
-    const resolvedParam = param.$ref ? resolveRef(param.$ref, doc) : param;
+    const resolvedParam = param.$ref ? resolveRef(param.$ref, doc, warnings) : param;
     if (!resolvedParam) {
       continue;
     }
@@ -402,7 +399,7 @@ function buildRequest(
     }
 
     const paramIn = resolvedParam.in;
-    const paramValue = resolveParamValue(resolvedParam, doc);
+    const paramValue = resolveParamValue(resolvedParam, doc, warnings);
 
     if (paramIn === 'path') {
       variables.push({ name: paramName, value: paramValue });
@@ -418,9 +415,9 @@ function buildRequest(
     }
   }
 
-  processSecurity(operation, doc, headers, queryParts, cookieParts, variables);
+  processSecurity(operation, doc, headers, queryParts, cookieParts, variables, warnings);
 
-  const { body, contentType } = processRequestBody(operation.requestBody, doc);
+  const { body, contentType } = processRequestBody(operation.requestBody, doc, warnings);
   if (contentType) {
     headers['Content-Type'] = contentType;
   }
@@ -440,7 +437,6 @@ function buildRequest(
     headers,
     body,
     isDirty: false,
-    lineNumber,
   };
 }
 
@@ -463,14 +459,14 @@ function deduplicate(variables: FileVariable[]) {
  *
  * Mutates `doc` in place. `doc` is private to `parseOpenApiSpec`.
  */
-function dereferenceDoc(doc: any): void {
+function dereferenceDoc(doc: any, warnings: string[]): void {
   function dereferenceNode(node: any, current: any, visited: Set<string>, depth: number): any {
     if (node === null || typeof node !== 'object') {
       return node;
     }
 
     if (depth > 100) {
-      logger.warn(`Max dereference depth (100) exceeded at "${node.$ref ?? '<root>'}" — stop resolving`);
+      warnings.push(`Max dereference depth (100) exceeded at "${node.$ref ?? '<root>'}" — stop resolving`);
       return node;
     }
 
@@ -483,7 +479,7 @@ function dereferenceDoc(doc: any): void {
 
     if (node.$ref) {
       if (visited.has(node.$ref)) {
-        logger.warn(`Circular $ref "${node.$ref}" — stop resolving`);
+        warnings.push(`Circular $ref "${node.$ref}" — stop resolving`);
         return node;
       }
 
@@ -493,7 +489,7 @@ function dereferenceDoc(doc: any): void {
       }
 
       visited.add(node.$ref);
-      const target = resolveRef(node.$ref, current);
+      const target = resolveRef(node.$ref, current, warnings);
       if (target === undefined) {
         visited.delete(node.$ref);
         return node;
@@ -512,34 +508,33 @@ function dereferenceDoc(doc: any): void {
   dereferenceNode(doc, doc, new Set(), 0);
 }
 
-export function parseOpenApiSpec(doc: unknown): ParseResult {
+export function parseOpenApiSpec(doc: unknown): ImportSuccess {
   const variables: FileVariable[] = [];
   const requests: ParsedRequest[] = [];
+  const warnings: string[] = [];
 
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
     variables.push({ name: 'baseUrl', value: '' });
-    return { requests, variables };
+    return { ok: true, format: 'openapi', requests, variables, warnings };
   }
 
   const spec: any = doc;
 
   if (spec.swagger && !spec.openapi) {
-    logger.warn('Swagger 2.0 specs are not supported — returning empty results');
+    warnings.push('Swagger 2.0 specs are not supported — returning empty results');
     variables.push({ name: 'baseUrl', value: '' });
-    return { requests, variables };
+    return { ok: true, format: 'openapi', requests, variables, warnings };
   }
 
-  dereferenceDoc(spec);
+  dereferenceDoc(spec, warnings);
 
   const { url: baseUrl, templateVars } = extractBaseUrl(spec);
   variables.push({ name: 'baseUrl', value: baseUrl });
   variables.push(...templateVars);
 
   if (!spec.paths || typeof spec.paths !== 'object' || Array.isArray(spec.paths)) {
-    return { requests, variables };
+    return { ok: true, format: 'openapi', requests, variables, warnings };
   }
-
-  let lineNumber = 0;
 
   for (const [path, pathItem] of Object.entries(spec.paths)) {
     if (!pathItem || typeof pathItem !== 'object') {
@@ -554,7 +549,7 @@ export function parseOpenApiSpec(doc: unknown): ParseResult {
       const method = methodKey.toUpperCase();
 
       if (KNOWN_UNSUPPORTED_METHODS.has(method)) {
-        logger.warn(`Unsupported HTTP method "${method}" on path "${path}" — skipped`);
+        warnings.push(`Unsupported HTTP method "${method}" on path "${path}" — skipped`);
         continue;
       }
 
@@ -566,16 +561,14 @@ export function parseOpenApiSpec(doc: unknown): ParseResult {
         continue;
       }
 
-      lineNumber += 1;
-
       const request = buildRequest(
         method,
         path,
         pathItem,
         operation,
         spec,
-        lineNumber,
         variables,
+        warnings,
       );
 
       requests.push(request);
@@ -583,5 +576,5 @@ export function parseOpenApiSpec(doc: unknown): ParseResult {
   }
 
   const deduped = deduplicate(variables);
-  return { requests, variables: deduped };
+  return { ok: true, format: 'openapi', requests, variables: deduped, warnings };
 }

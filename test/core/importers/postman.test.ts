@@ -1,17 +1,12 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { assertDefinedToNarrowType } from '../helpers/assertions.js';
-import { parsePostmanCollection } from '../../src/core/postman-parser';
-
-function readFixture(name: string): string {
-  return readFileSync(resolve(__dirname, '..', 'fixtures', 'postman', name), 'utf8');
-}
+import { assertDefinedToNarrowType } from '../../helpers/assertions.js';
+import { readJsonFixture } from '../../helpers/fixtures';
+import { parsePostmanCollection } from '../../../src/core/importers/postman';
 
 describe('parsePostmanCollection', () => {
   it('parses a basic collection with multiple requests', () => {
-    const content = readFixture('postman-basic.json');
+    const content = readJsonFixture('postman/postman-basic.json');
     const result = parsePostmanCollection(content);
 
     expect(result.requests).toHaveLength(2);
@@ -20,16 +15,14 @@ describe('parsePostmanCollection', () => {
     expect(result.requests[0].url).toBe('https://api.example.com/users');
     expect(result.requests[0].headers).toEqual({ accept: 'application/json' });
     expect(result.requests[0].body).toBeUndefined();
-    expect(result.requests[0].lineNumber).toBe(1);
 
     expect(result.requests[1].name).toBe('Create User');
     expect(result.requests[1].method).toBe('POST');
     expect(result.requests[1].body).toBe('{"name": "Alice", "email": "alice@example.com"}');
-    expect(result.requests[1].lineNumber).toBe(2);
   });
 
   it('parses an empty collection', () => {
-    const content = readFixture('postman-empty.json');
+    const content = readJsonFixture('postman/postman-empty.json');
     const result = parsePostmanCollection(content);
 
     expect(result.requests).toHaveLength(0);
@@ -37,7 +30,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('flattens nested folders with name prefixing', () => {
-    const content = readFixture('postman-nested.json');
+    const content = readJsonFixture('postman/postman-nested.json');
     const result = parsePostmanCollection(content);
 
     expect(result.requests).toHaveLength(5);
@@ -51,7 +44,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('converts Basic auth to Authorization header', () => {
-    const content = readFixture('postman-nested.json');
+    const content = readJsonFixture('postman/postman-nested.json');
     const result = parsePostmanCollection(content);
 
     const loginRequest = result.requests.find((r) => r.name === 'Auth / Login');
@@ -61,7 +54,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('converts Bearer auth to Authorization header', () => {
-    const content = readFixture('postman-nested.json');
+    const content = readJsonFixture('postman/postman-nested.json');
     const result = parsePostmanCollection(content);
 
     const profileRequest = result.requests.find((r) => r.name === 'Auth / Get Profile');
@@ -71,7 +64,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('converts API Key auth to custom header', () => {
-    const content = readFixture('postman-variables.json');
+    const content = readJsonFixture('postman/postman-variables.json');
     const result = parsePostmanCollection(content);
 
     const apiKeyRequest = result.requests.find((r) => r.name === 'API Key Auth');
@@ -81,7 +74,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('extracts collection variables', () => {
-    const content = readFixture('postman-variables.json');
+    const content = readJsonFixture('postman/postman-variables.json');
     const result = parsePostmanCollection(content);
 
     expect(result.variables).toHaveLength(3);
@@ -91,7 +84,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('converts urlencoded body to key=value string', () => {
-    const content = readFixture('postman-variables.json');
+    const content = readJsonFixture('postman/postman-variables.json');
     const result = parsePostmanCollection(content);
 
     const formRequest = result.requests.find((r) => r.name === 'Submit Form');
@@ -101,7 +94,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('injects Content-Type header for urlencoded body', () => {
-    const content = readFixture('postman-variables.json');
+    const content = readJsonFixture('postman/postman-variables.json');
     const result = parsePostmanCollection(content);
 
     const formRequest = result.requests.find((r) => r.name === 'Submit Form');
@@ -110,16 +103,8 @@ describe('parsePostmanCollection', () => {
     expect(formRequest.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
   });
 
-  it('assigns incrementing synthetic lineNumbers', () => {
-    const content = readFixture('postman-basic.json');
-    const result = parsePostmanCollection(content);
-
-    expect(result.requests[0].lineNumber).toBe(1);
-    expect(result.requests[1].lineNumber).toBe(2);
-  });
-
   it('preserves {{variable}} placeholders in URL and headers', () => {
-    const content = readFixture('postman-variables.json');
+    const content = readJsonFixture('postman/postman-variables.json');
     const result = parsePostmanCollection(content);
 
     const getResource = result.requests.find((r) => r.name === 'Get Resource');
@@ -131,21 +116,21 @@ describe('parsePostmanCollection', () => {
   });
 
   it('handles collection with no variables gracefully', () => {
-    const content = readFixture('postman-basic.json');
+    const content = readJsonFixture('postman/postman-basic.json');
     const result = parsePostmanCollection(content);
 
     expect(result.variables).toHaveLength(0);
   });
 
   it('handles request with no body gracefully', () => {
-    const content = readFixture('postman-basic.json');
+    const content = readJsonFixture('postman/postman-basic.json');
     const result = parsePostmanCollection(content);
 
     expect(result.requests[0].body).toBeUndefined();
   });
 
   it('extracts text-only formdata fields as formdataFields', () => {
-    const content = readFixture('postman-formdata-text.json');
+    const content = readJsonFixture('postman/postman-formdata-text.json');
     const result = parsePostmanCollection(content);
 
     expect(result.requests).toHaveLength(1);
@@ -163,7 +148,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('injects Content-Type: multipart/form-data header for text-only formdata', () => {
-    const content = readFixture('postman-formdata-text.json');
+    const content = readJsonFixture('postman/postman-formdata-text.json');
     const result = parsePostmanCollection(content);
 
     const request = result.requests[0];
@@ -171,7 +156,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('warns on formdata with file fields and sets formdataFields to undefined', () => {
-    const content = readFixture('postman-formdata-mixed.json');
+    const content = readJsonFixture('postman/postman-formdata-mixed.json');
     const result = parsePostmanCollection(content);
 
     expect(result.requests).toHaveLength(1);
@@ -179,10 +164,13 @@ describe('parsePostmanCollection', () => {
     expect(request.name).toBe('Submit Mixed FormData');
     expect(request.body).toBeUndefined();
     expect(request.formdataFields).toBeUndefined();
+    expect(result.warnings).toEqual([
+      'Request "Submit Mixed FormData" has form-data with file uploads — not supported',
+    ]);
   });
 
   it('injects Content-Type: application/json for raw body with JSON language hint', () => {
-    const content = readFixture('postman-raw-content-type.json');
+    const content = readJsonFixture('postman/postman-raw-content-type.json');
     const result = parsePostmanCollection(content);
 
     const request = result.requests.find((r) => r.name === 'Raw JSON Body');
@@ -192,7 +180,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('injects Content-Type: application/xml for raw body with XML language hint', () => {
-    const content = readFixture('postman-raw-content-type.json');
+    const content = readJsonFixture('postman/postman-raw-content-type.json');
     const result = parsePostmanCollection(content);
 
     const request = result.requests.find((r) => r.name === 'Raw XML Body');
@@ -202,7 +190,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('injects Content-Type: text/plain for raw body with text language hint', () => {
-    const content = readFixture('postman-raw-content-type.json');
+    const content = readJsonFixture('postman/postman-raw-content-type.json');
     const result = parsePostmanCollection(content);
 
     const request = result.requests.find((r) => r.name === 'Raw Text Body');
@@ -212,7 +200,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('injects Content-Type: text/html for raw body with HTML language hint', () => {
-    const content = readFixture('postman-raw-content-type.json');
+    const content = readJsonFixture('postman/postman-raw-content-type.json');
     const result = parsePostmanCollection(content);
 
     const request = result.requests.find((r) => r.name === 'Raw HTML Body');
@@ -222,7 +210,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('preserves explicit Content-Type header and does not override', () => {
-    const content = readFixture('postman-raw-content-type.json');
+    const content = readJsonFixture('postman/postman-raw-content-type.json');
     const result = parsePostmanCollection(content);
 
     const request = result.requests.find((r) => r.name === 'Raw JSON With Explicit Content-Type');
@@ -235,7 +223,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('silently ignores unrecognized raw language and does not inject Content-Type', () => {
-    const content = readFixture('postman-raw-content-type.json');
+    const content = readJsonFixture('postman/postman-raw-content-type.json');
     const result = parsePostmanCollection(content);
 
     const request = result.requests.find((r) => r.name === 'Raw Unrecognized Language');
@@ -245,7 +233,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('does not inject Content-Type when raw body has no language hint', () => {
-    const content = readFixture('postman-raw-content-type.json');
+    const content = readJsonFixture('postman/postman-raw-content-type.json');
     const result = parsePostmanCollection(content);
 
     const request = result.requests.find((r) => r.name === 'Raw Without Language Hint');
@@ -255,51 +243,42 @@ describe('parsePostmanCollection', () => {
   });
 
   it('skips requests with unsupported HTTP methods', () => {
-    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-    const content = readFixture('postman-unsupported-method.json');
+    const content = readJsonFixture('postman/postman-unsupported-method.json');
 
     const result = parsePostmanCollection(content);
 
     expect(result.requests).toHaveLength(0);
-    expect(stderrSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Unsupported HTTP method "TRACE"'),
-    );
-
-    stderrSpy.mockRestore();
+    expect(result.warnings).toEqual([
+      'Unsupported HTTP method "TRACE" in request "Trace Request" — skipped',
+    ]);
   });
 
   it('warns about GraphQL body and drops the body', () => {
-    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-    const content = readFixture('postman-graphql-body.json');
+    const content = readJsonFixture('postman/postman-graphql-body.json');
 
     const result = parsePostmanCollection(content);
 
     expect(result.requests).toHaveLength(1);
     expect(result.requests[0].body).toBeUndefined();
-    expect(stderrSpy).toHaveBeenCalledWith(
-      expect.stringContaining('has GraphQL body'),
-    );
-
-    stderrSpy.mockRestore();
+    expect(result.warnings).toEqual([
+      'Request "GraphQL Request" has GraphQL body — not supported',
+    ]);
   });
 
   it('warns about binary file body and drops the body', () => {
-    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-    const content = readFixture('postman-file-body.json');
+    const content = readJsonFixture('postman/postman-file-body.json');
 
     const result = parsePostmanCollection(content);
 
     expect(result.requests).toHaveLength(1);
     expect(result.requests[0].body).toBeUndefined();
-    expect(stderrSpy).toHaveBeenCalledWith(
-      expect.stringContaining('has binary file body'),
-    );
-
-    stderrSpy.mockRestore();
+    expect(result.warnings).toEqual([
+      'Request "(unnamed)" has binary file body — not supported',
+    ]);
   });
 
   it('uses synthetic name for requests without a name', () => {
-    const content = readFixture('postman-no-name.json');
+    const content = readJsonFixture('postman/postman-no-name.json');
     const result = parsePostmanCollection(content);
 
     expect(result.requests).toHaveLength(1);
@@ -307,7 +286,7 @@ describe('parsePostmanCollection', () => {
   });
 
   it('handles urlencoded bodies with empty or missing-key parameters', () => {
-    const content = readFixture('postman-urlencoded-edge.json');
+    const content = readJsonFixture('postman/postman-urlencoded-edge.json');
     const result = parsePostmanCollection(content);
 
     expect(result.requests).toHaveLength(2);
@@ -326,7 +305,7 @@ describe('parsePostmanCollection', () => {
 
 describe('integration smoke test', () => {
   it('parsed collection produces valid AppProps requests', () => {
-    const content = readFixture('postman-nested.json');
+    const content = readJsonFixture('postman/postman-nested.json');
     const result = parsePostmanCollection(content);
 
     expect(result.requests.length).toBeGreaterThan(0);
@@ -335,8 +314,6 @@ describe('integration smoke test', () => {
       expect(req.name).toBeTruthy();
       expect(req.method).toMatch(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/);
       expect(req.url).toBeTruthy();
-      expect(typeof req.lineNumber).toBe('number');
-      expect(req.lineNumber).toBeGreaterThan(0);
     }
   });
 });

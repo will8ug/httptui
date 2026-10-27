@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { parseHttpFile } from '../../src/core/parser';
+import { parseHttpFile } from '../../src/core/importers/http';
 import {
   CTRL_S,
   ENTER,
@@ -27,7 +27,6 @@ function makeUrlRequest(url: string = 'https://example.com/users'): ParsedReques
       url,
       headers: { Accept: 'application/json' },
       body: '{"name":"Alice"}',
-      lineNumber: 1,
       isDirty: false,
     },
   ];

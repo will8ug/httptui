@@ -12,7 +12,7 @@ import { headersToText } from '../core/headers';
 import { isSearchActive, responseViewportFromState, responseVisible } from '../core/reducer';
 import { serializeHttpFile } from '../core/http-serializer';
 import { buildInPlaceContent } from '../core/in-place-save';
-import { detectFormat, parseAnyFormat } from '../core/format-detector';
+import { importContent } from '../core/importer';
 import { parseEnvironmentFile } from '../core/env-parser';
 import { loadConfig } from '../core/config';
 import { completePath } from '../utils/path-completion';
@@ -109,9 +109,14 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
 
     try {
       const content = readFileSync(resolvedPath, 'utf8');
-      const parseResult = parseAnyFormat(resolvedPath, content);
+      const outcome = importContent(resolvedPath, content);
 
-      if (parseResult.requests.length === 0) {
+      if (!outcome.ok) {
+        dispatch({ type: 'SET_FILE_LOAD_ERROR', error: outcome.error });
+        return;
+      }
+
+      if (outcome.requests.length === 0) {
         dispatch({ type: 'SET_FILE_LOAD_ERROR', error: `No requests found in ${inputPath}` });
         return;
       }
@@ -125,10 +130,12 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
 
       dispatch({
         type: 'LOAD_FILE',
-        requests: parseResult.requests,
-        variables: parseResult.variables,
+        requests: outcome.requests,
+        variables: outcome.variables,
         filePath: resolvedPath,
+        format: outcome.format,
         executorConfig: newExecutorConfig,
+        warningCount: outcome.warnings.length,
       });
     } catch (error) {
       dispatch({ type: 'SET_FILE_LOAD_ERROR', error: toErrorInfo(error).message });
@@ -415,8 +422,12 @@ export function handleConfirmDiscardInput({ state, exit, suspend, input, key, di
       case 'reload':
         try {
           const content = readFileSync(state.filePath, 'utf8');
-          const parseResult = parseAnyFormat(state.filePath, content);
-          dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
+          const outcome = importContent(state.filePath, content);
+          if (outcome.ok) {
+            dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables, format: outcome.format, warningCount: outcome.warnings.length });
+          } else {
+            dispatch({ type: 'SET_TRANSIENT_ERROR', error: outcome.error });
+          }
         } catch (error) {
           dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
         }
@@ -536,14 +547,8 @@ export function handleNormalInput({
       return;
     }
 
-    try {
-      const content = readFileSync(state.filePath, 'utf8');
-      if (detectFormat(state.filePath, content) !== 'http') {
-        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'In-place save is only available for .http files; press S to save as a new file' });
-        return;
-      }
-    } catch (error) {
-      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: toErrorInfo(error).message });
+    if (state.sourceFormat !== 'http') {
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'In-place save is only available for .http files; press S to save as a new file' });
       return;
     }
 
@@ -552,14 +557,8 @@ export function handleNormalInput({
   }
 
   if (!isFullscreen && key.ctrl && input === 'g') {
-    try {
-      const content = readFileSync(state.filePath, 'utf8');
-      if (detectFormat(state.filePath, content) !== 'http') {
-        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'External editor is only available for .http files' });
-        return;
-      }
-    } catch (error) {
-      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: toErrorInfo(error).message });
+    if (state.sourceFormat !== 'http') {
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'External editor is only available for .http files' });
       return;
     }
 
@@ -677,8 +676,12 @@ export function handleNormalInput({
       }
       try {
         const content = readFileSync(state.filePath, 'utf8');
-        const parseResult = parseAnyFormat(state.filePath, content);
-        dispatch({ type: 'RELOAD_FILE', requests: parseResult.requests, variables: parseResult.variables });
+        const outcome = importContent(state.filePath, content);
+        if (outcome.ok) {
+          dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables, format: outcome.format, warningCount: outcome.warnings.length });
+        } else {
+          dispatch({ type: 'SET_TRANSIENT_ERROR', error: outcome.error });
+        }
       } catch (error) {
         dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
       }

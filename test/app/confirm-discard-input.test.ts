@@ -102,6 +102,22 @@ describe('handleConfirmDiscardInput', () => {
     expect(actions.map((action) => action.type)).not.toContain('RELOAD_FILE');
   });
 
+  it('y on a reload whose import warns dispatches RELOAD_FILE carrying the warning count', () => {
+    const { actions } = runConfirmInput(
+      confirming('reload', { filePath: 'test/fixtures/postman/postman-graphql-body.json' }),
+      'y',
+    );
+
+    expect(actions[0]).toEqual({ type: 'CONFIRM_DISCARD' });
+    expect(actions[1]).toEqual({
+      type: 'RELOAD_FILE',
+      requests: [expect.objectContaining({ name: 'GraphQL Request' })],
+      variables: [],
+      format: 'postman',
+      warningCount: 1,
+    });
+  });
+
   it('y on quit confirms discard and exits', () => {
     const { actions, exit } = runConfirmInput(confirming('quit'), 'y');
 

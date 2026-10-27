@@ -49,6 +49,7 @@ export function RequestList({
         Requests
       </Text>
       {visibleRequests.map((request, index) => {
+        // Index keys hold: the request array is only replaced wholesale or appended to, never reordered or spliced.
         const actualIndex = scrollOffset + index;
         const isSelected = actualIndex === selectedIndex;
         const prefix = isSelected ? '▸ ' : '  ';
@@ -61,7 +62,7 @@ export function RequestList({
           const displayLine = shiftText(fullLine, horizontalOffset, contentWidth);
 
           return (
-            <Text key={`${request.lineNumber}-${request.method}-${request.url}`} bold={isSelected}>
+            <Text key={actualIndex} bold={isSelected}>
               <Text color={isSelected ? 'cyanBright' : 'white'}>{displayLine}</Text>
             </Text>
           );
@@ -70,7 +71,7 @@ export function RequestList({
         const availableTargetWidth = Math.max(4, contentWidth - prefix.length - methodLabel.length - 1);
 
         return (
-          <Text key={`${request.lineNumber}-${request.method}-${request.url}`} bold={isSelected}>
+          <Text key={actualIndex} bold={isSelected}>
             <Text color={isSelected ? 'cyanBright' : 'white'}>{prefix}</Text>
             <Text color={getMethodColor(request.method)}>{methodLabel}</Text>
             <Text color={isSelected ? 'whiteBright' : 'gray'}>

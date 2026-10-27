@@ -27,7 +27,6 @@ function makeBodyRequest(body: string = 'original-body'): ParsedRequest[] {
       url: 'https://example.com/users',
       headers: {},
       body,
-      lineNumber: 1,
       isDirty: false,
     },
   ];

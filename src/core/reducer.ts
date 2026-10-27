@@ -6,7 +6,7 @@ import { reduceEdit } from './reducers/edit';
 import { reduceEnvSelect } from './reducers/env-select';
 import { reduceFileLoad } from './reducers/file-load';
 import { reduceGeometry } from './reducers/geometry';
-import { INITIAL_CONFIRM, INITIAL_EDIT, INITIAL_ENV_SELECT, INITIAL_FILE_LOAD, INITIAL_RESPONSE_SAVE, INITIAL_SAVE_LOAD, INITIAL_SEARCH } from './reducers/helpers';
+import { INITIAL_CONFIRM, INITIAL_EDIT, INITIAL_ENV_SELECT, INITIAL_FILE_LOAD, INITIAL_RESPONSE_SAVE, INITIAL_SAVE_LOAD, INITIAL_SEARCH, warningSuffix } from './reducers/helpers';
 import { reduceRequestLifecycle } from './reducers/lifecycle';
 import { reduceNavigation } from './reducers/navigation';
 import { reduceResponseSave } from './reducers/response-save';
@@ -141,6 +141,7 @@ export function createInitialState(props: AppProps): AppState {
     verbose: false,
     showHelp: false,
     filePath: props.filePath,
+    sourceFormat: props.sourceFormat,
     responseScrollOffset: 0,
     requestScrollOffset: 0,
     requestHorizontalOffset: 0,
@@ -148,7 +149,9 @@ export function createInitialState(props: AppProps): AppState {
     detailsScrollOffset: 0,
     detailsHorizontalOffset: 0,
     insecure: props.executorConfig.insecure,
-    transientMessage: null,
+    transientMessage: props.warnings.length > 0
+      ? `Loaded ${props.requests.length} requests${warningSuffix(props.warnings.length)}`
+      : null,
     transientError: null,
     transientWarning: null,
     mode: 'normal',

@@ -121,6 +121,7 @@ describe('createInitialState env fields', () => {
 describe.each([
   {
     type: 'RELOAD_FILE' as const,
+    format: 'http' as const,
     envName: 'Staging',
     envVars: stagingEnvVariables,
     newFileVars: [{ name: 'token', value: 'abc' }],
@@ -132,6 +133,7 @@ describe.each([
   },
   {
     type: 'LOAD_FILE' as const,
+    format: 'http' as const,
     envName: 'Development',
     envVars: devEnvVariables,
     newFileVars: [{ name: 'host', value: 'example.com' }],
@@ -142,7 +144,7 @@ describe.each([
       baseUrl: 'https://api.dev.com',
     },
   },
-])('$type preserves active runtime environment', ({ type, envName, envVars, newFileVars, filePath, expectedMerged }) => {
+])('$type preserves active runtime environment', ({ type, format, envName, envVars, newFileVars, filePath, expectedMerged }) => {
   it('re-merges environmentVariables over the new fileVariables and keeps active env', () => {
     const state = makeActiveEnvState(envName, envVars, {
       fileVariables: [{ name: 'baseUrl', value: 'https://api.local' }],
@@ -150,8 +152,10 @@ describe.each([
 
     const action = {
       type,
+      format,
       requests: [],
       variables: newFileVars,
+      warningCount: 0,
       ...(filePath !== undefined ? { filePath } : {}),
     } as Action;
 
@@ -173,6 +177,8 @@ describe('RELOAD_FILE with no active environment', () => {
       type: 'RELOAD_FILE',
       requests: [],
       variables: [{ name: 'k', value: 'v' }],
+      format: 'http',
+      warningCount: 0,
     });
 
     expect(result.activeEnvName).toBeNull();

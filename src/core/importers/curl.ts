@@ -1,8 +1,7 @@
-import type { FormDataParam, HttpMethod, ParsedRequest } from './types';
+import type { ImportOutcome } from '../importer';
+import type { FormDataParam, HttpMethod } from '../types';
 
-export type ParseCurlResult =
-  | { ok: true; request: ParsedRequest; skipped: boolean }
-  | { ok: false; error: string };
+const CURL_SKIPPED_WARNING = 'some curl options were skipped';
 
 const HTTP_METHODS = new Set<string>(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
 
@@ -159,11 +158,11 @@ function tokenize(text: string): string[] {
 }
 
 /**
- * Parse a single shell-style `curl` command into a request. Pure: no I/O and
- * no warnings emitted — `skipped` tells the caller to show the summary
- * warning; `error` strings are user-facing refusals.
+ * Parse a single shell-style `curl` command into a one-request import outcome.
+ * Pure: no I/O; skipped options travel in-band as warnings, and `error`
+ * strings are user-facing refusals.
  */
-export function parseCurlCommand(text: string): ParseCurlResult {
+export function parseCurlCommand(text: string): ImportOutcome {
   const trimmed = text.trim();
   if (trimmed === '') {
     return { ok: false, error: 'Clipboard is empty' };
@@ -402,16 +401,19 @@ export function parseCurlCommand(text: string): ParseCurlResult {
 
   return {
     ok: true,
-    skipped,
-    request: {
-      name: `${resolvedMethod} ${parsedUrl.pathname || '/'}`,
-      method: resolvedMethod,
-      url: requestUrl,
-      headers,
-      body,
-      formdataFields,
-      lineNumber: 0,
-      isDirty: true,
-    },
+    format: 'curl',
+    requests: [
+      {
+        name: `${resolvedMethod} ${parsedUrl.pathname || '/'}`,
+        method: resolvedMethod,
+        url: requestUrl,
+        headers,
+        body,
+        formdataFields,
+        isDirty: true,
+      },
+    ],
+    variables: [],
+    warnings: skipped ? [CURL_SKIPPED_WARNING] : [],
   };
 }

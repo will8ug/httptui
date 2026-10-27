@@ -29,6 +29,13 @@ interface ClipboardCandidate extends ClipboardToolInput {
   args: string[];
 }
 
+type ClipboardDirection = 'copy' | 'read';
+
+interface ClipboardPlatformTools {
+  copy(text: string, env: NodeJS.ProcessEnv): ClipboardCandidate[];
+  read(env: NodeJS.ProcessEnv): ClipboardCandidate[];
+}
+
 export function spawnClipboardTool(
   command: string,
   args: string[],
@@ -80,31 +87,52 @@ function powerShellCopyCommand(text: string): string {
   return `[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${base64}')) | Set-Clipboard`;
 }
 
-function clipboardCandidates(
-  text: string,
-  platform: NodeJS.Platform,
-  env: NodeJS.ProcessEnv,
-): ClipboardCandidate[] {
-  switch (platform) {
-    case 'darwin':
-      return [
-        {
-          command: 'pbcopy',
-          args: [],
-          input: text,
-          // pbcopy encodes according to the caller's locale; pinning the
-          // CTYPE to UTF-8 keeps multi-byte characters intact.
-          env: { ...env, LC_CTYPE: 'UTF-8' },
-        },
-      ];
-    case 'win32':
-      return [
-        {
-          command: 'powershell',
-          args: ['-NoProfile', '-Command', powerShellCopyCommand(text)],
-        },
-      ];
-    case 'linux': {
+const clipboardTools: Partial<Record<NodeJS.Platform, ClipboardPlatformTools>> = {
+  darwin: {
+    copy: (text, env) => [
+      {
+        command: 'pbcopy',
+        args: [],
+        input: text,
+        // pbcopy encodes according to the caller's locale; pinning the
+        // CTYPE to UTF-8 keeps multi-byte characters intact.
+        env: { ...env, LC_CTYPE: 'UTF-8' },
+      },
+    ],
+    read: (env) => [
+      {
+        command: 'pbpaste',
+        args: [],
+        // pbpaste decodes according to the caller's locale; pinning the
+        // CTYPE to UTF-8 keeps multi-byte characters intact.
+        env: { ...env, LC_CTYPE: 'UTF-8' },
+      },
+    ],
+  },
+  win32: {
+    copy: (text) => [
+      {
+        command: 'powershell',
+        args: ['-NoProfile', '-Command', powerShellCopyCommand(text)],
+      },
+    ],
+    read: () => [
+      {
+        command: 'powershell',
+        args: [
+          '-NoProfile',
+          '-Command',
+          // PowerShell recodes its output through the console codepage;
+          // pinning the output encoding to UTF-8 keeps multi-byte
+          // characters intact (the read-side counterpart of the write
+          // side's base64 transport).
+          '[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; Get-Clipboard -Raw',
+        ],
+      },
+    ],
+  },
+  linux: {
+    copy: (text, env) => {
       const candidates: ClipboardCandidate[] = [];
       if (env.WAYLAND_DISPLAY) {
         candidates.push({ command: 'wl-copy', args: [], input: text });
@@ -112,66 +140,8 @@ function clipboardCandidates(
       candidates.push({ command: 'xclip', args: ['-selection', 'clipboard'], input: text });
       candidates.push({ command: 'xsel', args: ['--clipboard', '--input'], input: text });
       return candidates;
-    }
-    default:
-      return [];
-  }
-}
-
-function clipboardFailureMessage(platform: NodeJS.Platform): string {
-  switch (platform) {
-    case 'darwin':
-      return 'Could not copy to clipboard: pbcopy could not be run. pbcopy ships with macOS; verify /usr/bin/pbcopy exists.';
-    case 'win32':
-      return 'Could not copy to clipboard: PowerShell could not be run. Verify PowerShell is installed and on PATH.';
-    case 'linux':
-      return 'Could not copy to clipboard: no clipboard tool found. Install xclip, xsel, or wl-clipboard (provides wl-copy).';
-    default:
-      return `Could not copy to clipboard: ${platform} has no supported clipboard tool.`;
-  }
-}
-
-export async function copyToClipboard(text: string, options: ClipboardOptions = {}): Promise<void> {
-  const { runner = spawnClipboardTool, platform = process.platform, env = process.env } = options;
-  for (const candidate of clipboardCandidates(text, platform, env)) {
-    try {
-      await runner(candidate.command, candidate.args, candidate);
-      return;
-    } catch {
-      // Both spawn errors (ENOENT) and non-zero exits mean "try the next tool".
-    }
-  }
-  throw new ClipboardError(clipboardFailureMessage(platform));
-}
-
-function clipboardReadCandidates(platform: NodeJS.Platform, env: NodeJS.ProcessEnv): ClipboardCandidate[] {
-  switch (platform) {
-    case 'darwin':
-      return [
-        {
-          command: 'pbpaste',
-          args: [],
-          // pbpaste decodes according to the caller's locale; pinning the
-          // CTYPE to UTF-8 keeps multi-byte characters intact.
-          env: { ...env, LC_CTYPE: 'UTF-8' },
-        },
-      ];
-    case 'win32':
-      return [
-        {
-          command: 'powershell',
-          args: [
-            '-NoProfile',
-            '-Command',
-            // PowerShell recodes its output through the console codepage;
-            // pinning the output encoding to UTF-8 keeps multi-byte
-            // characters intact (the read-side counterpart of the write
-            // side's base64 transport).
-            '[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; Get-Clipboard -Raw',
-          ],
-        },
-      ];
-    case 'linux': {
+    },
+    read: (env) => {
       const candidates: ClipboardCandidate[] = [];
       if (env.WAYLAND_DISPLAY) {
         candidates.push({ command: 'wl-paste', args: [] });
@@ -179,33 +149,48 @@ function clipboardReadCandidates(platform: NodeJS.Platform, env: NodeJS.ProcessE
       candidates.push({ command: 'xclip', args: ['-selection', 'clipboard', '-o'] });
       candidates.push({ command: 'xsel', args: ['--clipboard', '--output'] });
       return candidates;
-    }
+    },
+  },
+};
+
+function clipboardFailureMessage(direction: ClipboardDirection, platform: NodeJS.Platform): string {
+  const isCopy = direction === 'copy';
+  const prefix = isCopy ? 'Could not copy to clipboard' : 'Could not read clipboard';
+  const darwinTool = isCopy ? 'pbcopy' : 'pbpaste';
+  const waylandTool = isCopy ? 'wl-copy' : 'wl-paste';
+  switch (platform) {
+    case 'darwin':
+      return `${prefix}: ${darwinTool} could not be run. ${darwinTool} ships with macOS; verify /usr/bin/${darwinTool} exists.`;
+    case 'win32':
+      return `${prefix}: PowerShell could not be run. Verify PowerShell is installed and on PATH.`;
+    case 'linux':
+      return `${prefix}: no clipboard tool found. Install xclip, xsel, or wl-clipboard (provides ${waylandTool}).`;
     default:
-      return [];
+      return `${prefix}: ${platform} has no supported clipboard tool.`;
   }
 }
 
-function clipboardReadFailureMessage(platform: NodeJS.Platform): string {
-  switch (platform) {
-    case 'darwin':
-      return 'Could not read clipboard: pbpaste could not be run. pbpaste ships with macOS; verify /usr/bin/pbpaste exists.';
-    case 'win32':
-      return 'Could not read clipboard: PowerShell could not be run. Verify PowerShell is installed and on PATH.';
-    case 'linux':
-      return 'Could not read clipboard: no clipboard tool found. Install xclip, xsel, or wl-clipboard (provides wl-paste).';
-    default:
-      return `Could not read clipboard: ${platform} has no supported clipboard tool.`;
+export async function copyToClipboard(text: string, options: ClipboardOptions = {}): Promise<void> {
+  const { runner = spawnClipboardTool, platform = process.platform, env = process.env } = options;
+  for (const candidate of clipboardTools[platform]?.copy(text, env) ?? []) {
+    try {
+      await runner(candidate.command, candidate.args, candidate);
+      return;
+    } catch {
+      // Both spawn errors (ENOENT) and non-zero exits mean "try the next tool".
+    }
   }
+  throw new ClipboardError(clipboardFailureMessage('copy', platform));
 }
 
 export async function readFromClipboard(options: ClipboardOptions = {}): Promise<string> {
   const { runner = spawnClipboardTool, platform = process.platform, env = process.env } = options;
-  for (const candidate of clipboardReadCandidates(platform, env)) {
+  for (const candidate of clipboardTools[platform]?.read(env) ?? []) {
     try {
       return await runner(candidate.command, candidate.args, candidate);
     } catch {
       // Both spawn errors (ENOENT) and non-zero exits mean "try the next tool".
     }
   }
-  throw new ClipboardError(clipboardReadFailureMessage(platform));
+  throw new ClipboardError(clipboardFailureMessage('read', platform));
 }

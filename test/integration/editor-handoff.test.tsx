@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup } from 'ink-testing-library';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 
-import { parseAnyFormat } from '../../src/core/format-detector';
-import { parseHttpFile } from '../../src/core/parser';
+import { parseHttpFile } from '../../src/core/importers/http';
+import type { ImportFormat } from '../../src/core/importer';
 import type { ExecutorConfig, ParseResult } from '../../src/core/types';
 import {
   CTRL_G,
@@ -20,6 +20,7 @@ import {
   renderApp,
   selectedLine,
 } from '../helpers/integration';
+import { importOk, readFixture } from '../helpers/fixtures';
 
 const REFUSAL_MESSAGE = 'External editor is only available for .http files';
 
@@ -114,9 +115,10 @@ function writeSource(name: string, content: string): string {
   return filePath;
 }
 
-function renderParsed(filePath: string, parsed: ParseResult, executorConfig?: ExecutorConfig) {
+function renderParsed(filePath: string, parsed: ParseResult, sourceFormat: ImportFormat = 'http', executorConfig?: ExecutorConfig) {
   return renderApp({
     filePath,
+    sourceFormat,
     requests: parsed.requests,
     variables: parsed.variables,
     fileVariables: parsed.variables,
@@ -131,7 +133,7 @@ function renderHttp(content: string = INITIAL_HTTP) {
 
 function renderHttpWithEditor(editor: string) {
   const filePath = writeSource('api.http', INITIAL_HTTP);
-  return renderParsed(filePath, parseHttpFile(INITIAL_HTTP), { insecure: false, editor });
+  return renderParsed(filePath, parseHttpFile(INITIAL_HTTP), 'http', { insecure: false, editor });
 }
 
 async function commitDirtyEdit(stdin: { write: (data: string) => void }): Promise<void> {
@@ -192,9 +194,10 @@ describe('editor-handoff integration', () => {
   describe('format gate', () => {
     it('refuses a Postman source with a transient message and does not launch', async () => {
       const marker = useFakeEditor('exit 0');
-      const content = readFileSync(resolve(__dirname, '../fixtures/postman/postman-basic.json'), 'utf8');
+      const content = readFixture('postman/postman-basic.json');
       const filePath = writeSource('collection.json', content);
-      const { stdin, lastFrame } = renderParsed(filePath, parseAnyFormat(filePath, content));
+      const outcome = importOk(filePath, content);
+      const { stdin, lastFrame } = renderParsed(filePath, outcome, outcome.format);
       await delay(KEY_DELAY_MS);
 
       await press(stdin, CTRL_G);
@@ -207,9 +210,10 @@ describe('editor-handoff integration', () => {
 
     it('refuses an OpenAPI source with a transient message and does not launch', async () => {
       const marker = useFakeEditor('exit 0');
-      const content = readFileSync(resolve(__dirname, '../fixtures/openapi/openapi-basic.yaml'), 'utf8');
+      const content = readFixture('openapi/openapi-basic.yaml');
       const filePath = writeSource('openapi.yaml', content);
-      const { stdin, lastFrame } = renderParsed(filePath, parseAnyFormat(filePath, content));
+      const outcome = importOk(filePath, content);
+      const { stdin, lastFrame } = renderParsed(filePath, outcome, outcome.format);
       await delay(KEY_DELAY_MS);
 
       await press(stdin, CTRL_G);
@@ -358,6 +362,22 @@ describe('editor-handoff integration', () => {
       expect(frame).toContain('/users/updated');
       expect(frame).not.toContain('/users/1');
       expect(selectedLine(frame)).toContain('/users/99');
+    });
+
+    it('shows the reload summary with the warning count after handoff-loading an OpenAPI spec', async () => {
+      // openapi-auth.json: five auth schemes convert silently and the oauth2
+      // scheme is skipped with a warning, so the reload outcome carries 1 warning.
+      const marker = useFakeEditor(mutateTo(readFixture('openapi/openapi-auth.json')));
+      const filePath = writeSource('spec.json', 'not valid json');
+      const { stdin, lastFrame } = renderParsed(filePath, importOk(filePath, 'not valid json'), 'http');
+      await delay(KEY_DELAY_MS);
+
+      await press(stdin, CTRL_G);
+      await waitForMarker(marker);
+
+      const frame = await waitForFrameContaining(lastFrame, 'Reloaded (1 warnings)');
+      expect(frame).toContain('Reloaded (1 warnings)');
+      expect(frame).toContain('/secure/oauth');
     });
   });
 
@@ -515,9 +535,10 @@ describe('editor-handoff integration', () => {
 
     it('never reaches the prompt for a format-refused source that is dirty', async () => {
       const marker = useFakeEditor('');
-      const content = readFileSync(resolve(__dirname, '../fixtures/postman/postman-basic.json'), 'utf8');
+      const content = readFixture('postman/postman-basic.json');
       const filePath = writeSource('collection.json', content);
-      const { stdin, lastFrame } = renderParsed(filePath, parseAnyFormat(filePath, content));
+      const outcome = importOk(filePath, content);
+      const { stdin, lastFrame } = renderParsed(filePath, outcome, outcome.format);
       await delay(KEY_DELAY_MS);
 
       await commitDirtyEdit(stdin);
