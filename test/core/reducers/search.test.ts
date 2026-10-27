@@ -429,6 +429,7 @@ describe('Search state clearing reducer cases', () => {
       requests: [],
       variables: [],
       filePath: 'other.http',
+      format: 'http',
     });
 
     expect(result.response).toBeNull();
@@ -440,6 +441,7 @@ describe('Search state clearing reducer cases', () => {
       type: 'RELOAD_FILE',
       requests: [],
       variables: [],
+      format: 'http',
     });
 
     expect(result.response).toBeNull();

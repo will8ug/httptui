@@ -108,10 +108,6 @@ function detectAndParse(filePath: string, content: string): DetectedDocument {
   return { format: 'http', doc: undefined };
 }
 
-export function detectFormat(filePath: string, content: string): DetectedFormat {
-  return detectAndParse(filePath, content).format;
-}
-
 export function importContent(filePath: string, content: string): ImportOutcome {
   try {
     const detected = detectAndParse(filePath, content);

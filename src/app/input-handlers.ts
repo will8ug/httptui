@@ -12,7 +12,7 @@ import { headersToText } from '../core/headers';
 import { isSearchActive, responseViewportFromState, responseVisible } from '../core/reducer';
 import { serializeHttpFile } from '../core/http-serializer';
 import { buildInPlaceContent } from '../core/in-place-save';
-import { detectFormat, importContent } from '../core/importer';
+import { importContent } from '../core/importer';
 import { parseEnvironmentFile } from '../core/env-parser';
 import { loadConfig } from '../core/config';
 import { completePath } from '../utils/path-completion';
@@ -133,6 +133,7 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
         requests: outcome.requests,
         variables: outcome.variables,
         filePath: resolvedPath,
+        format: outcome.format,
         executorConfig: newExecutorConfig,
       });
     } catch (error) {
@@ -422,7 +423,7 @@ export function handleConfirmDiscardInput({ state, exit, suspend, input, key, di
           const content = readFileSync(state.filePath, 'utf8');
           const outcome = importContent(state.filePath, content);
           if (outcome.ok) {
-            dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables });
+            dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables, format: outcome.format });
           } else {
             dispatch({ type: 'SET_TRANSIENT_ERROR', error: outcome.error });
           }
@@ -545,14 +546,8 @@ export function handleNormalInput({
       return;
     }
 
-    try {
-      const content = readFileSync(state.filePath, 'utf8');
-      if (detectFormat(state.filePath, content) !== 'http') {
-        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'In-place save is only available for .http files; press S to save as a new file' });
-        return;
-      }
-    } catch (error) {
-      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: toErrorInfo(error).message });
+    if (state.sourceFormat !== 'http') {
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'In-place save is only available for .http files; press S to save as a new file' });
       return;
     }
 
@@ -561,14 +556,8 @@ export function handleNormalInput({
   }
 
   if (!isFullscreen && key.ctrl && input === 'g') {
-    try {
-      const content = readFileSync(state.filePath, 'utf8');
-      if (detectFormat(state.filePath, content) !== 'http') {
-        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'External editor is only available for .http files' });
-        return;
-      }
-    } catch (error) {
-      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: toErrorInfo(error).message });
+    if (state.sourceFormat !== 'http') {
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'External editor is only available for .http files' });
       return;
     }
 
@@ -688,7 +677,7 @@ export function handleNormalInput({
         const content = readFileSync(state.filePath, 'utf8');
         const outcome = importContent(state.filePath, content);
         if (outcome.ok) {
-          dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables });
+          dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables, format: outcome.format });
         } else {
           dispatch({ type: 'SET_TRANSIENT_ERROR', error: outcome.error });
         }

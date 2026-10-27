@@ -74,6 +74,7 @@ export function reduceFileLoad(state: AppState, action: FileLoadAction): AppStat
         fileVariables: action.variables,
         variables: mergeVariables(action.variables, state.environmentVariables),
         filePath: action.filePath,
+        sourceFormat: action.format,
         selectedIndex: newIndex >= 0 ? newIndex : 0,
         response: null,
         requestError: null,

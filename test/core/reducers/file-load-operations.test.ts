@@ -24,6 +24,7 @@ describe('RELOAD_FILE reducer', () => {
       type: 'RELOAD_FILE',
       requests: newRequests,
       variables: [],
+      format: 'http',
     });
 
     expect(result.selectedIndex).toBe(1);
@@ -44,6 +45,7 @@ describe('RELOAD_FILE reducer', () => {
       type: 'RELOAD_FILE',
       requests: newRequests,
       variables: [],
+      format: 'http',
     });
 
     expect(result.selectedIndex).toBe(0);
@@ -72,6 +74,7 @@ describe('RELOAD_FILE reducer', () => {
       type: 'RELOAD_FILE',
       requests: sampleRequests,
       variables: sampleVariables,
+      format: 'http',
     });
 
     expect(result.response).toBeNull();
@@ -92,6 +95,7 @@ describe('RELOAD_FILE reducer', () => {
       type: 'RELOAD_FILE',
       requests: sampleRequests,
       variables: sampleVariables,
+      format: 'http',
     });
 
     expect(result.transientError).toBeNull();
@@ -102,9 +106,25 @@ describe('RELOAD_FILE reducer', () => {
       type: 'RELOAD_FILE',
       requests: sampleRequests,
       variables: sampleVariables,
+      format: 'http',
     });
 
     expect(result.transientMessage).toBe('Reloaded');
+  });
+
+  // Characterization pin: the reload outcome's format overwrites the previous
+  // source format, mirroring LOAD_FILE.
+  it('records the reloaded file format in state', () => {
+    const state = createInitialState({ sourceFormat: 'http' });
+
+    const result = reducer(state, {
+      type: 'RELOAD_FILE',
+      requests: sampleRequests,
+      variables: sampleVariables,
+      format: 'postman',
+    });
+
+    expect(result.sourceFormat).toBe('postman');
   });
 });
 
@@ -151,6 +171,7 @@ describe('RELOAD_FILE preserves pristine file variables for later (none) switch'
       type: 'RELOAD_FILE',
       requests: sampleRequests,
       variables: [{ name: 'baseUrl', value: 'new-file-value' }],
+      format: 'http',
     });
 
     expect(afterReload.fileVariables).toEqual([{ name: 'baseUrl', value: 'new-file-value' }]);
@@ -286,6 +307,7 @@ describe('fileLoad dormancy invariant', () => {
       requests: sampleRequests,
       variables: sampleVariables,
       filePath: 'next.http',
+      format: 'http',
     });
     expect(afterLoad.mode).toBe('normal');
     expect(afterLoad.fileLoad).toEqual(INITIAL_FILE_LOAD);
@@ -305,6 +327,7 @@ describe('LOAD_FILE reducer', () => {
       requests: sampleRequests,
       variables: sampleVariables,
       filePath: 'other.http',
+      format: 'http',
     });
 
     expect(result.selectedIndex).toBe(1);
@@ -326,6 +349,7 @@ describe('LOAD_FILE reducer', () => {
       requests: newRequests,
       variables: [],
       filePath: 'other.http',
+      format: 'http',
     });
 
     expect(result.selectedIndex).toBe(0);
@@ -355,6 +379,7 @@ describe('LOAD_FILE reducer', () => {
       requests: sampleRequests,
       variables: sampleVariables,
       filePath: 'new.http',
+      format: 'http',
     });
 
     expect(result.response).toBeNull();
@@ -372,6 +397,7 @@ describe('LOAD_FILE reducer', () => {
       requests: sampleRequests,
       variables: sampleVariables,
       filePath: '/some/deep/path/api.http',
+      format: 'http',
     });
 
     expect(result.transientMessage).toBe('Loaded: api.http');
@@ -388,9 +414,26 @@ describe('LOAD_FILE reducer', () => {
       requests: sampleRequests,
       variables: sampleVariables,
       filePath: '/some/deep/path/api.http',
+      format: 'http',
     });
 
     expect(result.transientError).toBeNull();
+  });
+
+  // Characterization pin: a loaded file's format replaces the previous source
+  // format, unlike APPEND_REQUEST which appends and keeps it.
+  it('records the loaded file format in state', () => {
+    const state = createInitialState({ sourceFormat: 'http' });
+
+    const result = reducer(state, {
+      type: 'LOAD_FILE',
+      requests: sampleRequests,
+      variables: sampleVariables,
+      filePath: 'collection.json',
+      format: 'openapi',
+    });
+
+    expect(result.sourceFormat).toBe('openapi');
   });
 });
 
@@ -427,6 +470,7 @@ describe('LOAD_FILE preserves pristine file variables for later (none) switch', 
       requests: sampleRequests,
       variables: [{ name: 'baseUrl', value: 'from-file' }],
       filePath: 'other.http',
+      format: 'http',
     });
 
     expect(afterLoad.fileVariables).toEqual([{ name: 'baseUrl', value: 'from-file' }]);
