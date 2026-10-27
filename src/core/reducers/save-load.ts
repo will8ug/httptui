@@ -49,6 +49,9 @@ export function reduceSaveLoad(state: AppState, action: SaveLoadAction): AppStat
         mode: 'normal',
         requests: state.requests.map(r => ({ ...r, isDirty: false })),
         filePath: action.filePath,
+        // Save-as always serializes the http format, so the written file is
+        // an http source regardless of the previously loaded format.
+        sourceFormat: 'http',
         saveLoad: INITIAL_SAVE_LOAD,
         ...setTransient({ message: action.message }),
       };

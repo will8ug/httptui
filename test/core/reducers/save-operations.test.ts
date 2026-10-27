@@ -206,6 +206,18 @@ describe('SAVE_FILE reducer', () => {
     expect(hasUnsavedChanges(result.requests)).toBe(false);
   });
 
+  it('records the saved http source format and rebinds filePath on save-as from a postman source', () => {
+    const state = createInitialState({
+      requests: [createRequest({ isDirty: true })],
+      sourceFormat: 'postman',
+    });
+
+    const result = reducer(state, { type: 'SAVE_FILE', message: 'Saved 1 request to api.http', filePath: 'api.http' });
+
+    expect(result.filePath).toBe('api.http');
+    expect(result.sourceFormat).toBe('http');
+  });
+
   it('clears per-request dirty markers after a successful save', () => {
     const state: AppState = {
       ...createInitialState({

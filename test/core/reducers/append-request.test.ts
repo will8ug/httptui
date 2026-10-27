@@ -107,8 +107,6 @@ describe('APPEND_REQUEST reducer', () => {
     expect(result.requests[3]).toEqual(pasted);
   });
 
-  // Characterization pin: a paste appends to whatever file is loaded, so the
-  // source format of that file stays whatever it was.
   it('preserves the source format of the loaded file', () => {
     const state = createInitialState({ requests: makeRequests(3), sourceFormat: 'postman' });
 

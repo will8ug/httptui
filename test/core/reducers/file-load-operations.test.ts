@@ -112,8 +112,7 @@ describe('RELOAD_FILE reducer', () => {
     expect(result.transientMessage).toBe('Reloaded');
   });
 
-  // Characterization pin: the reload outcome's format overwrites the previous
-  // source format, mirroring LOAD_FILE.
+  // Mirrors LOAD_FILE.
   it('records the reloaded file format in state', () => {
     const state = createInitialState({ sourceFormat: 'http' });
 
@@ -420,8 +419,7 @@ describe('LOAD_FILE reducer', () => {
     expect(result.transientError).toBeNull();
   });
 
-  // Characterization pin: a loaded file's format replaces the previous source
-  // format, unlike APPEND_REQUEST which appends and keeps it.
+  // Unlike APPEND_REQUEST, which appends and keeps the previous source format.
   it('records the loaded file format in state', () => {
     const state = createInitialState({ sourceFormat: 'http' });
 

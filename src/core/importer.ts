@@ -6,7 +6,7 @@ import { parseHttpFile } from './importers/http';
 import { parsePostmanCollection } from './importers/postman';
 import { parseOpenApiSpec } from './importers/openapi';
 
-export type DetectedFormat = 'http' | 'postman' | 'openapi';
+type DetectedFormat = 'http' | 'postman' | 'openapi';
 
 export type ImportFormat = DetectedFormat | 'curl';
 

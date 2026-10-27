@@ -154,18 +154,17 @@ const clipboardTools: Partial<Record<NodeJS.Platform, ClipboardPlatformTools>> =
 };
 
 function clipboardFailureMessage(direction: ClipboardDirection, platform: NodeJS.Platform): string {
-  const prefix = direction === 'copy' ? 'Could not copy to clipboard' : 'Could not read clipboard';
+  const isCopy = direction === 'copy';
+  const prefix = isCopy ? 'Could not copy to clipboard' : 'Could not read clipboard';
+  const darwinTool = isCopy ? 'pbcopy' : 'pbpaste';
+  const waylandTool = isCopy ? 'wl-copy' : 'wl-paste';
   switch (platform) {
-    case 'darwin': {
-      const tool = direction === 'copy' ? 'pbcopy' : 'pbpaste';
-      return `${prefix}: ${tool} could not be run. ${tool} ships with macOS; verify /usr/bin/${tool} exists.`;
-    }
+    case 'darwin':
+      return `${prefix}: ${darwinTool} could not be run. ${darwinTool} ships with macOS; verify /usr/bin/${darwinTool} exists.`;
     case 'win32':
       return `${prefix}: PowerShell could not be run. Verify PowerShell is installed and on PATH.`;
-    case 'linux': {
-      const waylandTool = direction === 'copy' ? 'wl-copy' : 'wl-paste';
+    case 'linux':
       return `${prefix}: no clipboard tool found. Install xclip, xsel, or wl-clipboard (provides ${waylandTool}).`;
-    }
     default:
       return `${prefix}: ${platform} has no supported clipboard tool.`;
   }
