@@ -86,6 +86,7 @@ describe('request list re-resolves on file reload', () => {
       requests,
       variables: newVariables,
       format: 'http',
+      warningCount: 0,
     });
 
     expect(reloadedState.variables).toContainEqual({ name: 'baseUrl', value: 'https://b.com' });

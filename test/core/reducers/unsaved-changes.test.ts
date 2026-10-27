@@ -151,6 +151,7 @@ describe('per-request dirty markers', () => {
       requests: [createRequest()],
       variables: [],
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.requests[0].isDirty).toBe(false);
@@ -167,6 +168,7 @@ describe('per-request dirty markers', () => {
       variables: [],
       filePath: 'new.http',
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.requests[0].isDirty).toBe(false);

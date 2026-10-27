@@ -129,3 +129,36 @@ describe('Ctrl+G editor-handoff format gate', () => {
     expect(actions).toEqual([{ type: 'REQUEST_DISCARD_CONFIRM', action: 'editorHandoff' }]);
   });
 });
+
+describe('normal-mode R reload', () => {
+  const WARNINGS_FIXTURE = 'test/fixtures/postman/postman-graphql-body.json';
+  const CLEAN_FIXTURE = 'test/fixtures/http/load-revert-fixture.http';
+
+  it('R on a file whose import warns dispatches RELOAD_FILE carrying the warning count', () => {
+    const state = panelState(null, { requests: [createRequest()], filePath: WARNINGS_FIXTURE });
+
+    const actions = pressKey(state, 'R');
+
+    expect(actions).toEqual([{
+      type: 'RELOAD_FILE',
+      requests: [expect.objectContaining({ name: 'GraphQL Request' })],
+      variables: [],
+      format: 'postman',
+      warningCount: 1,
+    }]);
+  });
+
+  it('R on a warnings-free file dispatches RELOAD_FILE with zero warnings', () => {
+    const state = panelState(null, { requests: [createRequest()], filePath: CLEAN_FIXTURE });
+
+    const actions = pressKey(state, 'R');
+
+    expect(actions).toEqual([{
+      type: 'RELOAD_FILE',
+      requests: [expect.objectContaining({ name: 'test request' })],
+      variables: [{ name: 'baseUrl', value: 'http://file-value' }],
+      format: 'http',
+      warningCount: 0,
+    }]);
+  });
+});

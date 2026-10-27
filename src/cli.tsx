@@ -122,6 +122,7 @@ const app = render(
     sourceFormat={parseResult.format}
     requests={parseResult.requests}
     variables={mergedVariables}
+    warnings={parseResult.warnings}
     fileVariables={parseResult.variables}
     environmentVariables={environmentVariables}
     activeEnvName={activeEnvName}

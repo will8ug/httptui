@@ -240,6 +240,10 @@ export function setTransient(
   };
 }
 
+export function warningSuffix(count: number): string {
+  return count > 0 ? ` (${count} warnings)` : '';
+}
+
 export function navigateRequests(state: AppState, nextIndex: number): AppState {
   const index = clamp(nextIndex, 0, state.requests.length - 1);
   const visibleCount = getRequestVisibleHeight(state.geometry.rows);

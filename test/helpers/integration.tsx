@@ -37,6 +37,7 @@ const defaultProps: AppProps = {
   sourceFormat: 'http',
   requests: [],
   variables: [],
+  warnings: [],
   environmentVariables: [],
   fileVariables: [],
   activeEnvName: null,
@@ -52,6 +53,7 @@ export function renderApp(overrides: Partial<AppProps> = {}) {
       sourceFormat={props.sourceFormat}
       requests={props.requests}
       variables={props.variables}
+      warnings={props.warnings}
       environmentVariables={props.environmentVariables}
       fileVariables={props.fileVariables}
       activeEnvName={props.activeEnvName}

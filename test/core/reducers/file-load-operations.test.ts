@@ -25,6 +25,7 @@ describe('RELOAD_FILE reducer', () => {
       requests: newRequests,
       variables: [],
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.selectedIndex).toBe(1);
@@ -46,6 +47,7 @@ describe('RELOAD_FILE reducer', () => {
       requests: newRequests,
       variables: [],
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.selectedIndex).toBe(0);
@@ -75,6 +77,7 @@ describe('RELOAD_FILE reducer', () => {
       requests: sampleRequests,
       variables: sampleVariables,
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.response).toBeNull();
@@ -96,6 +99,7 @@ describe('RELOAD_FILE reducer', () => {
       requests: sampleRequests,
       variables: sampleVariables,
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.transientError).toBeNull();
@@ -107,6 +111,7 @@ describe('RELOAD_FILE reducer', () => {
       requests: sampleRequests,
       variables: sampleVariables,
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.transientMessage).toBe('Reloaded');
@@ -121,9 +126,22 @@ describe('RELOAD_FILE reducer', () => {
       requests: sampleRequests,
       variables: sampleVariables,
       format: 'postman',
+      warningCount: 0,
     });
 
     expect(result.sourceFormat).toBe('postman');
+  });
+
+  it('appends the warning count to the reload message when the import warns', () => {
+    const result = reducer(createInitialState(), {
+      type: 'RELOAD_FILE',
+      requests: sampleRequests,
+      variables: sampleVariables,
+      format: 'http',
+      warningCount: 2,
+    });
+
+    expect(result.transientMessage).toBe('Reloaded (2 warnings)');
   });
 });
 
@@ -171,6 +189,7 @@ describe('RELOAD_FILE preserves pristine file variables for later (none) switch'
       requests: sampleRequests,
       variables: [{ name: 'baseUrl', value: 'new-file-value' }],
       format: 'http',
+      warningCount: 0,
     });
 
     expect(afterReload.fileVariables).toEqual([{ name: 'baseUrl', value: 'new-file-value' }]);
@@ -307,6 +326,7 @@ describe('fileLoad dormancy invariant', () => {
       variables: sampleVariables,
       filePath: 'next.http',
       format: 'http',
+      warningCount: 0,
     });
     expect(afterLoad.mode).toBe('normal');
     expect(afterLoad.fileLoad).toEqual(INITIAL_FILE_LOAD);
@@ -327,6 +347,7 @@ describe('LOAD_FILE reducer', () => {
       variables: sampleVariables,
       filePath: 'other.http',
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.selectedIndex).toBe(1);
@@ -349,6 +370,7 @@ describe('LOAD_FILE reducer', () => {
       variables: [],
       filePath: 'other.http',
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.selectedIndex).toBe(0);
@@ -379,6 +401,7 @@ describe('LOAD_FILE reducer', () => {
       variables: sampleVariables,
       filePath: 'new.http',
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.response).toBeNull();
@@ -397,6 +420,7 @@ describe('LOAD_FILE reducer', () => {
       variables: sampleVariables,
       filePath: '/some/deep/path/api.http',
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.transientMessage).toBe('Loaded: api.http');
@@ -414,6 +438,7 @@ describe('LOAD_FILE reducer', () => {
       variables: sampleVariables,
       filePath: '/some/deep/path/api.http',
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.transientError).toBeNull();
@@ -429,9 +454,23 @@ describe('LOAD_FILE reducer', () => {
       variables: sampleVariables,
       filePath: 'collection.json',
       format: 'openapi',
+      warningCount: 0,
     });
 
     expect(result.sourceFormat).toBe('openapi');
+  });
+
+  it('appends the warning count to the load message when the import warns', () => {
+    const result = reducer(createInitialState(), {
+      type: 'LOAD_FILE',
+      requests: sampleRequests,
+      variables: sampleVariables,
+      filePath: '/some/deep/path/api.http',
+      format: 'http',
+      warningCount: 2,
+    });
+
+    expect(result.transientMessage).toBe('Loaded: api.http (2 warnings)');
   });
 });
 
@@ -469,6 +508,7 @@ describe('LOAD_FILE preserves pristine file variables for later (none) switch', 
       variables: [{ name: 'baseUrl', value: 'from-file' }],
       filePath: 'other.http',
       format: 'http',
+      warningCount: 0,
     });
 
     expect(afterLoad.fileVariables).toEqual([{ name: 'baseUrl', value: 'from-file' }]);

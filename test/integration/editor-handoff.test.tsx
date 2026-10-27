@@ -363,6 +363,22 @@ describe('editor-handoff integration', () => {
       expect(frame).not.toContain('/users/1');
       expect(selectedLine(frame)).toContain('/users/99');
     });
+
+    it('shows the reload summary with the warning count after handoff-loading an OpenAPI spec', async () => {
+      // openapi-auth.json: five auth schemes convert silently and the oauth2
+      // scheme is skipped with a warning, so the reload outcome carries 1 warning.
+      const marker = useFakeEditor(mutateTo(readFixture('openapi/openapi-auth.json')));
+      const filePath = writeSource('spec.json', 'not valid json');
+      const { stdin, lastFrame } = renderParsed(filePath, importOk(filePath, 'not valid json'), 'http');
+      await delay(KEY_DELAY_MS);
+
+      await press(stdin, CTRL_G);
+      await waitForMarker(marker);
+
+      const frame = await waitForFrameContaining(lastFrame, 'Reloaded (1 warnings)');
+      expect(frame).toContain('Reloaded (1 warnings)');
+      expect(frame).toContain('/secure/oauth');
+    });
   });
 
   describe('exit-status independence', () => {

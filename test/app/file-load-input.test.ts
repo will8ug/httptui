@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { resolve } from 'node:path';
 import type { Key } from 'ink';
 
 import { handleFileLoadInput } from '../../src/app/input-handlers';
@@ -137,5 +138,62 @@ describe('handleFileLoadInput mode isolation', () => {
     const actions = pressFileLoadKey(fileLoadState(), 'g', makeKey({ ctrl: true }));
 
     expect(actions).toEqual([]);
+  });
+});
+
+describe('handleFileLoadInput Enter success path', () => {
+  const WARNINGS_FIXTURE = 'test/fixtures/postman/postman-graphql-body.json';
+  const CLEAN_FIXTURE = 'test/fixtures/http/load-revert-fixture.http';
+  const originalHttpTuiConfig = process.env.HTTP_TUI_CONFIG;
+
+  beforeEach(() => {
+    // The Enter path reads the cert/editor config for the loaded file's
+    // directory; a nonexistent config dir keeps the fixture loads hermetic
+    // (HTTP_TUI_CONFIG outranks HOME and XDG_CONFIG_HOME).
+    process.env.HTTP_TUI_CONFIG = 'nonexistent-httptui-config-dir';
+  });
+
+  afterEach(() => {
+    if (originalHttpTuiConfig === undefined) {
+      delete process.env.HTTP_TUI_CONFIG;
+    } else {
+      process.env.HTTP_TUI_CONFIG = originalHttpTuiConfig;
+    }
+  });
+
+  it('Enter on a file whose import warns dispatches LOAD_FILE carrying the warning count', () => {
+    const actions = pressFileLoadKey(
+      fileLoadState({ input: WARNINGS_FIXTURE, cursor: WARNINGS_FIXTURE.length }),
+      '',
+      makeKey({ return: true }),
+    );
+
+    expect(actions).toEqual([{
+      type: 'LOAD_FILE',
+      requests: [expect.objectContaining({ name: 'GraphQL Request', method: 'POST' })],
+      variables: [],
+      filePath: resolve(WARNINGS_FIXTURE),
+      format: 'postman',
+      executorConfig: { insecure: false },
+      warningCount: 1,
+    }]);
+  });
+
+  it('Enter on a warnings-free file dispatches LOAD_FILE with zero warnings', () => {
+    const actions = pressFileLoadKey(
+      fileLoadState({ input: CLEAN_FIXTURE, cursor: CLEAN_FIXTURE.length }),
+      '',
+      makeKey({ return: true }),
+    );
+
+    expect(actions).toEqual([{
+      type: 'LOAD_FILE',
+      requests: [expect.objectContaining({ name: 'test request' })],
+      variables: [{ name: 'baseUrl', value: 'http://file-value' }],
+      filePath: resolve(CLEAN_FIXTURE),
+      format: 'http',
+      executorConfig: { insecure: false },
+      warningCount: 0,
+    }]);
   });
 });

@@ -112,7 +112,7 @@ export async function performEditorHandoff({ filePath, editor, suspend, dispatch
       return;
     }
 
-    dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables, format: outcome.format });
+    dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables, format: outcome.format, warningCount: outcome.warnings.length });
   } catch (error) {
     dispatch({ type: 'SET_TRANSIENT_ERROR', error: toErrorInfo(error).message });
   }

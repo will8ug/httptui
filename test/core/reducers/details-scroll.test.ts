@@ -307,6 +307,7 @@ describe('request details scrolling reducer behavior', () => {
         requests: reloadedRequests,
         variables: [],
         format: 'http',
+        warningCount: 0,
       });
 
       expect(result.detailsScrollOffset).toBe(0);
@@ -329,6 +330,7 @@ describe('request details scrolling reducer behavior', () => {
         variables: [],
         filePath: '/tmp/next.http',
         format: 'http',
+        warningCount: 0,
       });
 
       expect(result.detailsScrollOffset).toBe(0);

@@ -6,6 +6,7 @@ const defaultAppProps: AppProps = {
   sourceFormat: 'http',
   requests: [],
   variables: [],
+  warnings: [],
   environmentVariables: [],
   fileVariables: [],
   activeEnvName: null,

@@ -155,6 +155,7 @@ describe.each([
       format,
       requests: [],
       variables: newFileVars,
+      warningCount: 0,
       ...(filePath !== undefined ? { filePath } : {}),
     } as Action;
 
@@ -177,6 +178,7 @@ describe('RELOAD_FILE with no active environment', () => {
       requests: [],
       variables: [{ name: 'k', value: 'v' }],
       format: 'http',
+      warningCount: 0,
     });
 
     expect(result.activeEnvName).toBeNull();

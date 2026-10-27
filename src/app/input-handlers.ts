@@ -135,6 +135,7 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
         filePath: resolvedPath,
         format: outcome.format,
         executorConfig: newExecutorConfig,
+        warningCount: outcome.warnings.length,
       });
     } catch (error) {
       dispatch({ type: 'SET_FILE_LOAD_ERROR', error: toErrorInfo(error).message });
@@ -423,7 +424,7 @@ export function handleConfirmDiscardInput({ state, exit, suspend, input, key, di
           const content = readFileSync(state.filePath, 'utf8');
           const outcome = importContent(state.filePath, content);
           if (outcome.ok) {
-            dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables, format: outcome.format });
+            dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables, format: outcome.format, warningCount: outcome.warnings.length });
           } else {
             dispatch({ type: 'SET_TRANSIENT_ERROR', error: outcome.error });
           }
@@ -677,7 +678,7 @@ export function handleNormalInput({
         const content = readFileSync(state.filePath, 'utf8');
         const outcome = importContent(state.filePath, content);
         if (outcome.ok) {
-          dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables, format: outcome.format });
+          dispatch({ type: 'RELOAD_FILE', requests: outcome.requests, variables: outcome.variables, format: outcome.format, warningCount: outcome.warnings.length });
         } else {
           dispatch({ type: 'SET_TRANSIENT_ERROR', error: outcome.error });
         }
