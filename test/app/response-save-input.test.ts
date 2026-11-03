@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 import { handleResponseSaveInput, handleSaveInput } from '../../src/app/input-handlers';
 import { INITIAL_RESPONSE_SAVE, INITIAL_SAVE_LOAD } from '../../src/core/reducers/helpers';
-import type { Action } from '../../src/core/types';
+import type { Action, AppState } from '../../src/core/types';
 import { runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createMockResponse } from '../helpers/responses';
@@ -65,6 +65,56 @@ describe('handleResponseSaveInput', () => {
     handleResponseSaveInput({ state, input: '', key: makeKey({ downArrow: true }), dispatch });
 
     expect(dispatch).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleResponseSaveInput Tab completion', () => {
+  const filePath = join(resolve('test/fixtures/tab-complete'), 'api.http');
+
+  function tabState(input: string): AppState {
+    return createInitialState({
+      filePath,
+      mode: 'responseSave',
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input, cursor: input.length },
+      response: createMockResponse({ body: 'body', rawBody: 'body' }),
+    });
+  }
+
+  function pressTab(state: AppState): Action[] {
+    const dispatched: Action[] = [];
+    handleResponseSaveInput({
+      state,
+      input: '',
+      key: makeKey({ tab: true }),
+      dispatch: (action) => dispatched.push(action),
+    });
+    return dispatched;
+  }
+
+  it('completes a single matching directory with a trailing slash', () => {
+    expect(pressTab(tabState('ad'))).toEqual([
+      { type: 'UPDATE_RESPONSE_SAVE_INPUT', value: 'admin/', cursor: 6 },
+      { type: 'SET_RESPONSE_SAVE_COMPLETIONS', completions: null },
+    ]);
+  });
+
+  it('extends multiple matching files to their common prefix', () => {
+    expect(pressTab(tabState('u'))).toEqual([
+      { type: 'UPDATE_RESPONSE_SAVE_INPUT', value: 'users', cursor: 5 },
+      { type: 'SET_RESPONSE_SAVE_COMPLETIONS', completions: null },
+    ]);
+  });
+
+  it('lists candidates without editing when the common prefix makes no progress', () => {
+    expect(pressTab(tabState('users'))).toEqual([
+      { type: 'SET_RESPONSE_SAVE_COMPLETIONS', completions: ['users-staging.http', 'users.http'] },
+    ]);
+  });
+
+  it('does not edit the input when nothing matches', () => {
+    expect(pressTab(tabState('zzz'))).toEqual([
+      { type: 'SET_RESPONSE_SAVE_COMPLETIONS', completions: null },
+    ]);
   });
 });
 

@@ -307,6 +307,35 @@ describe('SET_FILE_LOAD_ERROR reducer', () => {
   });
 });
 
+describe('SET_FILE_LOAD_COMPLETIONS reducer', () => {
+  it('sets the completion list without touching input, cursor, or error', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'src/', cursor: 4, error: 'File not found: src/' },
+    };
+
+    const result = reducer(state, { type: 'SET_FILE_LOAD_COMPLETIONS', completions: ['src/app', 'src/core'] });
+
+    expect(result.fileLoad.completions).toEqual(['src/app', 'src/core']);
+    expect(result.fileLoad.input).toBe('src/');
+    expect(result.fileLoad.cursor).toBe(4);
+    expect(result.fileLoad.error).toBe('File not found: src/');
+  });
+
+  it('clears the completion list when given null', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'fileLoad',
+      fileLoad: { ...INITIAL_FILE_LOAD, input: 'src/', completions: ['src/app'] },
+    };
+
+    const result = reducer(state, { type: 'SET_FILE_LOAD_COMPLETIONS', completions: null });
+
+    expect(result.fileLoad.completions).toBeNull();
+  });
+});
+
 describe('fileLoad dormancy invariant', () => {
   // Characterization pin: the exit and commit resets already enforce dormancy.
   it('cluster deep-equals INITIAL_FILE_LOAD after every exit/commit action', () => {

@@ -299,6 +299,29 @@ export function handleSaveInput({ state, input, key, dispatch }: {
     return;
   }
 
+  if (key.tab) {
+    const baseDir = dirname(state.filePath);
+    const listDir = (dir: string): PathEntry[] => {
+      try {
+        return readdirSync(resolve(baseDir, dir), { withFileTypes: true }).map((entry) => ({
+          name: entry.name,
+          isDirectory: entry.isDirectory(),
+        }));
+      } catch {
+        return [];
+      }
+    };
+
+    const completed = completePath({ text: state.saveLoad.input, cursor: state.saveLoad.cursor }, listDir);
+
+    if (completed.text !== state.saveLoad.input) {
+      dispatch({ type: 'UPDATE_SAVE_INPUT', value: completed.text, cursor: completed.cursor });
+    }
+
+    dispatch({ type: 'SET_SAVE_COMPLETIONS', completions: completed.candidates });
+    return;
+  }
+
   const editOp = resolveSingleLineEditOp(input, key);
   if (editOp) {
     dispatch({ type: 'SAVE_KEY', ...editOp });
@@ -342,6 +365,32 @@ export function handleResponseSaveInput({ state, input, key, dispatch }: {
       dispatch({ type: 'SET_RESPONSE_SAVE_ERROR', error: toErrorInfo(error).message });
     }
 
+    return;
+  }
+
+  if (key.tab) {
+    const baseDir = dirname(state.filePath);
+    const listDir = (dir: string): PathEntry[] => {
+      try {
+        return readdirSync(resolve(baseDir, dir), { withFileTypes: true }).map((entry) => ({
+          name: entry.name,
+          isDirectory: entry.isDirectory(),
+        }));
+      } catch {
+        return [];
+      }
+    };
+
+    const completed = completePath(
+      { text: state.responseSave.input, cursor: state.responseSave.cursor },
+      listDir,
+    );
+
+    if (completed.text !== state.responseSave.input) {
+      dispatch({ type: 'UPDATE_RESPONSE_SAVE_INPUT', value: completed.text, cursor: completed.cursor });
+    }
+
+    dispatch({ type: 'SET_RESPONSE_SAVE_COMPLETIONS', completions: completed.candidates });
     return;
   }
 

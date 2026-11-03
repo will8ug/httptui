@@ -64,6 +64,9 @@ _Avoid_: export
 **Save response**:
 `s`: write the displayed response's raw body to disk exactly as received, without rebinding the current file.
 
+**Path completion**:
+`Tab` in a path-input overlay (file load `o`, save-as `S`, save response `s`) extends the typed path by one segment when unambiguous, or lists the matching candidates. Relative paths resolve against the same base the overlay commits with: the process working directory for file load, the loaded file's directory for the save overlays.
+
 **Editor handoff**:
 `Ctrl+G`: release the terminal to the user's external editor to edit the whole source file, then reload it if the file changed on disk.
 

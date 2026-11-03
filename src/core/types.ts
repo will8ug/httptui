@@ -135,9 +135,6 @@ export interface TextEntryState {
   input: string;
   cursor: number;
   error: string | null;
-}
-
-export interface FileLoadState extends TextEntryState {
   completions: string[] | null;
 }
 
@@ -197,7 +194,7 @@ export interface AppState {
   transientError: string | null;
   transientWarning: string | null;
   mode: AppMode;
-  fileLoad: FileLoadState;
+  fileLoad: TextEntryState;
   saveLoad: TextEntryState;
   responseSave: TextEntryState;
   envSelect: EnvSelectState;
@@ -279,13 +276,17 @@ export type Action =
   | { type: 'CANCEL_ENV_SELECT' }
   | { type: 'SET_ENV_SELECT_ERROR'; error: string }
   | { type: 'ENTER_SAVE' }
+  | { type: 'UPDATE_SAVE_INPUT'; value: string; cursor: number }
   | { type: 'SAVE_KEY'; op: EditOp; insert?: string }
   | { type: 'SAVE_FILE'; message: string; filePath: string }
   | { type: 'SET_SAVE_ERROR'; error: string }
+  | { type: 'SET_SAVE_COMPLETIONS'; completions: string[] | null }
   | { type: 'CANCEL_SAVE' }
   | { type: 'ENTER_RESPONSE_SAVE' }
+  | { type: 'UPDATE_RESPONSE_SAVE_INPUT'; value: string; cursor: number }
   | { type: 'RESPONSE_SAVE_KEY'; op: EditOp; insert?: string }
   | { type: 'SET_RESPONSE_SAVE_ERROR'; error: string }
+  | { type: 'SET_RESPONSE_SAVE_COMPLETIONS'; completions: string[] | null }
   | { type: 'SAVE_RESPONSE_FILE'; message: string }
   | { type: 'CANCEL_RESPONSE_SAVE' }
   | { type: 'ENTER_EDIT'; buffers: Record<EditTarget, string> }

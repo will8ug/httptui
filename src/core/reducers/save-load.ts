@@ -4,7 +4,7 @@ import { applyEditOp, mutatesText } from '../editor';
 import type { Action, AppState } from '../types';
 import { INITIAL_SAVE_LOAD, setTransient } from './helpers';
 
-type SaveLoadAction = Extract<Action, { type: 'ENTER_SAVE' | 'SAVE_KEY' | 'SET_SAVE_ERROR' | 'SAVE_FILE' | 'CANCEL_SAVE' }>;
+type SaveLoadAction = Extract<Action, { type: 'ENTER_SAVE' | 'UPDATE_SAVE_INPUT' | 'SAVE_KEY' | 'SET_SAVE_ERROR' | 'SET_SAVE_COMPLETIONS' | 'SAVE_FILE' | 'CANCEL_SAVE' }>;
 
 export function reduceSaveLoad(state: AppState, action: SaveLoadAction): AppState {
   switch (action.type) {
@@ -16,6 +16,18 @@ export function reduceSaveLoad(state: AppState, action: SaveLoadAction): AppStat
         saveLoad: { ...INITIAL_SAVE_LOAD, input: defaultPath, cursor: defaultPath.length },
       };
     }
+
+    case 'UPDATE_SAVE_INPUT':
+      return {
+        ...state,
+        saveLoad: {
+          ...state.saveLoad,
+          input: action.value,
+          cursor: action.cursor,
+          error: null,
+          completions: null,
+        },
+      };
 
     case 'SAVE_KEY': {
       const next = applyEditOp(
@@ -30,6 +42,7 @@ export function reduceSaveLoad(state: AppState, action: SaveLoadAction): AppStat
           input: next.text,
           cursor: next.cursor,
           error: mutatesText(action.op) ? null : state.saveLoad.error,
+          completions: null,
         },
       };
     }
@@ -40,6 +53,15 @@ export function reduceSaveLoad(state: AppState, action: SaveLoadAction): AppStat
         saveLoad: {
           ...state.saveLoad,
           error: action.error,
+        },
+      };
+
+    case 'SET_SAVE_COMPLETIONS':
+      return {
+        ...state,
+        saveLoad: {
+          ...state.saveLoad,
+          completions: action.completions,
         },
       };
 

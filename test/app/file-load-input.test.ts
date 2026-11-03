@@ -1,15 +1,15 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { Key } from 'ink';
 
 import { handleFileLoadInput } from '../../src/app/input-handlers';
 import { INITIAL_FILE_LOAD } from '../../src/core/reducers/helpers';
-import type { Action, AppState, FileLoadState } from '../../src/core/types';
+import type { Action, AppState, TextEntryState } from '../../src/core/types';
 import { pressKey } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createInitialState } from '../helpers/state';
 
-function fileLoadState(overrides: Partial<FileLoadState> = {}): AppState {
+function fileLoadState(overrides: Partial<TextEntryState> = {}): AppState {
   return createInitialState({
     mode: 'fileLoad',
     fileLoad: { ...INITIAL_FILE_LOAD, input: 'api.http', cursor: 'api.http'.length, ...overrides },
@@ -195,5 +195,24 @@ describe('handleFileLoadInput Enter success path', () => {
       executorConfig: { insecure: false },
       warningCount: 0,
     }]);
+  });
+});
+
+describe('handleFileLoadInput Tab completion', () => {
+  it('extends multiple matches of an absolute path to their common prefix', () => {
+    const fixtureDir = resolve('test/fixtures/tab-complete');
+    const input = join(fixtureDir, 'us');
+
+    const actions = pressFileLoadKey(
+      fileLoadState({ input, cursor: input.length }),
+      '',
+      makeKey({ tab: true }),
+    );
+
+    const completed = join(fixtureDir, 'users');
+    expect(actions).toEqual([
+      { type: 'UPDATE_FILE_LOAD_INPUT', value: completed, cursor: completed.length },
+      { type: 'SET_FILE_LOAD_COMPLETIONS', completions: null },
+    ]);
   });
 });

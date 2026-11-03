@@ -66,6 +66,34 @@ describe('ENTER_SAVE reducer', () => {
   });
 });
 
+describe('UPDATE_SAVE_INPUT reducer', () => {
+  it('updates saveLoad input and cursor and clears the completion list', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'saveLoad',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: 'old', completions: ['old.http'] },
+    };
+
+    const result = reducer(state, { type: 'UPDATE_SAVE_INPUT', value: 'api.http', cursor: 4 });
+
+    expect(result.saveLoad.input).toBe('api.http');
+    expect(result.saveLoad.cursor).toBe(4);
+    expect(result.saveLoad.completions).toBeNull();
+  });
+
+  it('clears a lingering saveLoad error like the file-load sibling', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'saveLoad',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: 'api.htt', error: 'Permission denied' },
+    };
+
+    const result = reducer(state, { type: 'UPDATE_SAVE_INPUT', value: 'api.http', cursor: 8 });
+
+    expect(result.saveLoad.error).toBeNull();
+  });
+});
+
 describe('SAVE_KEY reducer', () => {
   it('applies the op to the cluster buffer and clears the error', () => {
     const state: AppState = {
@@ -106,6 +134,17 @@ describe('SAVE_KEY reducer', () => {
     expect(result.saveLoad.cursor).toBe(0);
     expect(result.saveLoad.error).toBe('Permission denied');
   });
+
+  it('clears the completion list on every key op', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'saveLoad',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: 'out.http', cursor: 8, completions: ['out.http'] },
+    };
+
+    expect(reducer(state, { type: 'SAVE_KEY', op: 'left' }).saveLoad.completions).toBeNull();
+    expect(reducer(state, { type: 'SAVE_KEY', op: 'insert', insert: 'x' }).saveLoad.completions).toBeNull();
+  });
 });
 
 describe('SET_SAVE_ERROR reducer', () => {
@@ -124,13 +163,42 @@ describe('SET_SAVE_ERROR reducer', () => {
   });
 });
 
+describe('SET_SAVE_COMPLETIONS reducer', () => {
+  it('sets the completion list without touching input, cursor, or error', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'saveLoad',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: 'out', cursor: 3, error: 'Permission denied' },
+    };
+
+    const result = reducer(state, { type: 'SET_SAVE_COMPLETIONS', completions: ['out.http'] });
+
+    expect(result.saveLoad.completions).toEqual(['out.http']);
+    expect(result.saveLoad.input).toBe('out');
+    expect(result.saveLoad.cursor).toBe(3);
+    expect(result.saveLoad.error).toBe('Permission denied');
+  });
+
+  it('clears the completion list when given null', () => {
+    const state: AppState = {
+      ...createInitialState(),
+      mode: 'saveLoad',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input: 'out', completions: ['out.http'] },
+    };
+
+    const result = reducer(state, { type: 'SET_SAVE_COMPLETIONS', completions: null });
+
+    expect(result.saveLoad.completions).toBeNull();
+  });
+});
+
 describe('saveLoad dormancy invariant', () => {
   // Characterization pin: the exit and commit resets already enforce dormancy.
   it('cluster deep-equals INITIAL_SAVE_LOAD after every exit/commit action', () => {
     const dirty: AppState = {
       ...createInitialState(),
       mode: 'saveLoad',
-      saveLoad: { input: 'stale.http', cursor: 4, error: 'Permission denied' },
+      saveLoad: { input: 'stale.http', cursor: 4, error: 'Permission denied', completions: ['stale.http'] },
     };
 
     const afterCancel = reducer(dirty, { type: 'CANCEL_SAVE' });
