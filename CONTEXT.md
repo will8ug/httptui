@@ -97,6 +97,10 @@ _Avoid_: character count, string length
 The single computation behind everything the response panel shows and scrolls: a response, the display preferences (raw, verbose, wrap), and terminal geometry resolved into the visual-line model (sections, anchors, totals, scroll bounds, visible window).
 _Avoid_: response layout, panel metrics
 
+**Follow-tail**:
+The response panel's behavior while a response streams: the viewport tracks the newest content while it sits at the bottom, detaches when the user scrolls up, and re-attaches when the user jumps back to the bottom.
+_Avoid_: auto-scroll, tail mode
+
 **Request details panel**:
 The toggleable panel (`d`) showing the resolved request (method, URL, headers, body); the display counterpart to the raw-text editor.
 
@@ -115,3 +119,15 @@ _Avoid_: skip-verify mode
 **Raw body**:
 The response body decoded exactly as received, before line-ending normalization; save-response writes it. The display-facing body field normalizes CRLF and lone CR to LF.
 _Avoid_: original body
+
+**Streaming response**:
+A response observed while its body is still arriving — the same response mid-transfer, not a different kind of response; its status line, headers, and the body text received so far are displayed while the transfer continues.
+_Avoid_: live response, chunked response
+
+**Partial body**:
+The body text received so far while a response streams; it grows as the transfer continues, and it is kept on display (marked canceled) when the transfer is cancelled.
+_Avoid_: incomplete body, stream buffer
+
+**Chunk**:
+One transport-level piece of a response body as delivered by the server. Distinct from an SSE event, which is a message format within the body; the response panel shows the raw body text as received, not parsed events.
+_Avoid_: event
