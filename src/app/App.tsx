@@ -202,8 +202,8 @@ return (
       overlay={
         state.showHelp ? <HelpOverlay visible={state.showHelp} /> :
         state.mode === 'fileLoad' ? <FileLoadOverlay value={state.fileLoad.input} cursor={state.fileLoad.cursor} error={state.fileLoad.error} completions={state.fileLoad.completions} /> :
-        state.mode === 'saveLoad' ? <SaveOverlay value={state.saveLoad.input} cursor={state.saveLoad.cursor} error={state.saveLoad.error} /> :
-        state.mode === 'responseSave' ? <SaveOverlay title="Save response" value={state.responseSave.input} cursor={state.responseSave.cursor} error={state.responseSave.error} /> :
+        state.mode === 'saveLoad' ? <SaveOverlay value={state.saveLoad.input} cursor={state.saveLoad.cursor} error={state.saveLoad.error} completions={state.saveLoad.completions} /> :
+        state.mode === 'responseSave' ? <SaveOverlay title="Save response" value={state.responseSave.input} cursor={state.responseSave.cursor} error={state.responseSave.error} completions={state.responseSave.completions} /> :
         state.mode === 'envSelect' ? <EnvSelectOverlay options={state.availableEnvironments} selectedIndex={state.envSelect.selectedIndex} scrollOffset={state.envSelect.scrollOffset} activeEnvName={state.activeEnvName} error={state.envSelect.error} /> :
         state.mode === 'edit' ? <EditOverlay title="Edit Request" tabs={EDIT_TAB_ORDER} activeTab={state.edit.target} buffer={state.edit.buffers[state.edit.target].text} cursor={state.edit.buffers[state.edit.target].cursor} scrollOffset={state.edit.scrollOffset} horizontalOffset={state.edit.horizontalOffset} visibleHeight={editorVisibleHeight} contentWidth={editorContentWidth} /> :
         state.mode === 'confirmDiscard' && state.confirm.pendingDiscardAction !== null ? <ConfirmDiscardOverlay pendingAction={state.confirm.pendingDiscardAction} /> :

@@ -72,15 +72,19 @@ export function reducer(state: AppState, action: Action): AppState {
       return reduceFileLoad(state, action);
 
     case 'ENTER_SAVE':
+    case 'UPDATE_SAVE_INPUT':
     case 'SAVE_KEY':
     case 'SET_SAVE_ERROR':
+    case 'SET_SAVE_COMPLETIONS':
     case 'SAVE_FILE':
     case 'CANCEL_SAVE':
       return reduceSaveLoad(state, action);
 
     case 'ENTER_RESPONSE_SAVE':
+    case 'UPDATE_RESPONSE_SAVE_INPUT':
     case 'RESPONSE_SAVE_KEY':
     case 'SET_RESPONSE_SAVE_ERROR':
+    case 'SET_RESPONSE_SAVE_COMPLETIONS':
     case 'SAVE_RESPONSE_FILE':
     case 'CANCEL_RESPONSE_SAVE':
       return reduceResponseSave(state, action);

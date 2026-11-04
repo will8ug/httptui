@@ -56,6 +56,32 @@ describe('ENTER_RESPONSE_SAVE reducer', () => {
   });
 });
 
+describe('UPDATE_RESPONSE_SAVE_INPUT reducer', () => {
+  it('updates responseSave input and cursor and clears the completion list', () => {
+    const state = createInitialState({
+      mode: 'responseSave',
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'old.json', completions: ['old.json'] },
+    });
+
+    const result = reducer(state, { type: 'UPDATE_RESPONSE_SAVE_INPUT', value: 'Get Users.json', cursor: 9 });
+
+    expect(result.responseSave.input).toBe('Get Users.json');
+    expect(result.responseSave.cursor).toBe(9);
+    expect(result.responseSave.completions).toBeNull();
+  });
+
+  it('clears a lingering responseSave error like the file-load sibling', () => {
+    const state = createInitialState({
+      mode: 'responseSave',
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get Users.json', error: 'File exists: Get Users.json' },
+    });
+
+    const result = reducer(state, { type: 'UPDATE_RESPONSE_SAVE_INPUT', value: 'Get Users 2.json', cursor: 16 });
+
+    expect(result.responseSave.error).toBeNull();
+  });
+});
+
 describe('RESPONSE_SAVE_KEY reducer', () => {
   it('applies the op to the cluster buffer', () => {
     const state = createInitialState({
@@ -85,6 +111,16 @@ describe('RESPONSE_SAVE_KEY reducer', () => {
     expect(result.responseSave.cursor).toBe(4);
     expect(result.responseSave.input).toBe('Get Users.json');
     expect(result.responseSave.error).toBe('File exists: Get Users.json');
+  });
+
+  it('clears the completion list on every key op', () => {
+    const state = createInitialState({
+      mode: 'responseSave',
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get Users.json', cursor: 14, completions: ['Get Users.json'] },
+    });
+
+    expect(reducer(state, { type: 'RESPONSE_SAVE_KEY', op: 'left' }).responseSave.completions).toBeNull();
+    expect(reducer(state, { type: 'RESPONSE_SAVE_KEY', op: 'insert', insert: 'x' }).responseSave.completions).toBeNull();
   });
 });
 
@@ -146,7 +182,7 @@ describe('responseSave dormancy invariant', () => {
   it('cluster deep-equals INITIAL_RESPONSE_SAVE after every exit/commit action', () => {
     const dirty = createInitialState({
       mode: 'responseSave',
-      responseSave: { input: 'stale.json', cursor: 4, error: 'File exists: stale.json' },
+      responseSave: { input: 'stale.json', cursor: 4, error: 'File exists: stale.json', completions: ['stale.json'] },
     });
 
     const afterCancel = reducer(dirty, { type: 'CANCEL_RESPONSE_SAVE' });
@@ -174,5 +210,32 @@ describe('SET_RESPONSE_SAVE_ERROR reducer', () => {
     expect(edited.responseSave.error).toBeNull();
     expect(edited.responseSave.input).toBe('Get Users.jsonx');
     expect(edited.responseSave.cursor).toBe(15);
+  });
+});
+
+describe('SET_RESPONSE_SAVE_COMPLETIONS reducer', () => {
+  it('sets the completion list without touching input, cursor, or error', () => {
+    const state = createInitialState({
+      mode: 'responseSave',
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get', cursor: 3, error: 'File exists: Get' },
+    });
+
+    const result = reducer(state, { type: 'SET_RESPONSE_SAVE_COMPLETIONS', completions: ['Get Users.json'] });
+
+    expect(result.responseSave.completions).toEqual(['Get Users.json']);
+    expect(result.responseSave.input).toBe('Get');
+    expect(result.responseSave.cursor).toBe(3);
+    expect(result.responseSave.error).toBe('File exists: Get');
+  });
+
+  it('clears the completion list when given null', () => {
+    const state = createInitialState({
+      mode: 'responseSave',
+      responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'Get', completions: ['Get Users.json'] },
+    });
+
+    const result = reducer(state, { type: 'SET_RESPONSE_SAVE_COMPLETIONS', completions: null });
+
+    expect(result.responseSave.completions).toBeNull();
   });
 });

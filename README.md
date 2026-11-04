@@ -95,7 +95,7 @@ httptui api.http -E Staging
 - [Environments](docs/environments.md) — Environment files and the runtime switcher.
 - [Client Certificates](docs/certificates.md) — mTLS configuration.
 - [Editing](docs/editing.md) — Edit requests in-session or in your `$EDITOR`.
-- [Saving as .http](docs/saving.md) — Export requests from any file format.
+- [Saving](docs/saving.md) — Save in place, export as .http, and save response bodies.
 - [TLS Troubleshooting](docs/tls.md) — Common certificate issues and fixes.
 
 ## Tech Stack

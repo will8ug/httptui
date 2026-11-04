@@ -1,6 +1,6 @@
 # Saving
 
-httptui can persist requests to `.http` files in two ways.
+httptui can persist your work to disk in three ways: save in place, export requests to a `.http` file, or save a response body exactly as received.
 
 ## Save in place (Ctrl+S)
 
@@ -10,7 +10,7 @@ Only the request blocks you edited are rewritten — comments, variables, layout
 
 ## Save as .http (S)
 
-Press `S` to save all requests as a `.http` file. A save overlay appears with a default path — `<collection-basename>.http` in the same directory as the loaded file. You can type a new path (absolute or relative to the loaded file's directory) and press `Enter` to save, or `Escape` to cancel.
+Press `S` to save all requests as a `.http` file. A save overlay appears with a default path — `<collection-basename>.http` in the same directory as the loaded file. You can type a new path (absolute or relative to the loaded file's directory) and press `Enter` to save, or `Escape` to cancel. Press `Tab` to complete the next path segment — it extends the typed path when the match is unambiguous and lists matching candidates beneath the input otherwise, with relative input resolving against the loaded file's directory and absolute paths completing the same way.
 
 If the target file already exists, the save is refused: the overlay shows an inline error and stays open so the path can be edited. No file is overwritten.
 
@@ -19,3 +19,9 @@ On a successful save, the app switches to the written file — the status bar sh
 The saved `.http` file contains all requests with their names, methods, URLs, headers, and bodies. File-level variables are preserved as `@name = value` declarations, and `{{variable}}` placeholders are kept intact for round-trippability.
 
 **Limitations**: Multipart form-data bodies (text fields) are omitted with an inline comment, as the `.http` format has no multipart syntax. GraphQL bodies, file uploads, and Postman scripts are already dropped during import and cannot be recovered. Postman folder structure is preserved as request names (e.g., `### Users / Create User`).
+
+## Save response (s)
+
+Press `s` with a response displayed to save its body exactly as received — no reformatting or line-ending changes. The overlay opens with a filename derived from the selected request's name, using `.json` when the body parses as JSON and `.txt` otherwise.
+
+Type a path and press `Enter` to save, or `Escape` to cancel; `Tab` completes the next path segment. Paths are absolute or relative to the loaded file's directory. An existing file is refused and never overwritten.

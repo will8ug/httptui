@@ -15,7 +15,7 @@ describe('SaveOverlay', () => {
   describe('title and value rendering', () => {
     it('renders the "Save as .http" title and the current file path value', () => {
       const { lastFrame } = render(
-        <SaveOverlay value="output/api.http" error={null} cursor={15} />,
+        <SaveOverlay value="output/api.http" error={null} cursor={15} completions={null} />,
       );
 
       const frame = lastFrame() ?? '';
@@ -27,7 +27,7 @@ describe('SaveOverlay', () => {
   describe('error rendering', () => {
     it('renders error message when error is provided', () => {
       const { lastFrame } = render(
-        <SaveOverlay value="" error="Permission denied" cursor={0} />,
+        <SaveOverlay value="" error="Permission denied" cursor={0} completions={null} />,
       );
 
       const frame = lastFrame() ?? '';
@@ -36,11 +36,11 @@ describe('SaveOverlay', () => {
 
     it('does not render an error when error is null', () => {
       const { lastFrame } = render(
-        <SaveOverlay value="" error={null} cursor={0} />,
+        <SaveOverlay value="" error={null} cursor={0} completions={null} />,
       );
 
       const frame = lastFrame() ?? '';
-      expect(frame).toContain('Press Enter to save, Esc to cancel');
+      expect(frame).toContain('Press Enter to save, Tab to complete, Esc to cancel');
       expect(frame).not.toContain('Permission denied');
     });
   });
@@ -51,7 +51,7 @@ describe('SaveOverlay', () => {
       chalk.level = 3;
       try {
         const { lastFrame } = render(
-          <SaveOverlay value="api.http" error={null} cursor={3} />,
+          <SaveOverlay value="api.http" error={null} cursor={3} completions={null} />,
         );
 
         const frame = lastFrame() ?? '';
@@ -68,7 +68,7 @@ describe('SaveOverlay', () => {
       chalk.level = 3;
       try {
         const { lastFrame } = render(
-          <SaveOverlay value="api.http" error={null} cursor={8} />,
+          <SaveOverlay value="api.http" error={null} cursor={8} completions={null} />,
         );
 
         const frame = lastFrame() ?? '';
@@ -76,6 +76,80 @@ describe('SaveOverlay', () => {
       } finally {
         chalk.level = previousLevel;
       }
+    });
+  });
+
+  describe('completion candidates', () => {
+    it('renders candidate names joined with two spaces beneath the input', () => {
+      const { lastFrame } = render(
+        <SaveOverlay
+          value="users"
+          error={null}
+          cursor={5}
+          completions={['users-staging.http', 'users.http']}
+        />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain('users-staging.http  users.http');
+    });
+
+    it('renders no candidate row when completions is null', () => {
+      const { lastFrame } = render(
+        <SaveOverlay value="" error={null} cursor={0} completions={null} />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).not.toContain('users.http');
+    });
+
+    it('renders no candidate row when completions is empty', () => {
+      const { lastFrame } = render(
+        <SaveOverlay value="" error={null} cursor={0} completions={[]} />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).not.toContain('… +');
+    });
+
+    it('clips an overflowing list to the overlay width with a hidden count', () => {
+      const first = `${'a'.repeat(30)}.http`;
+      const { lastFrame } = render(
+        <SaveOverlay
+          value="a"
+          error={null}
+          cursor={1}
+          completions={[first, `${'b'.repeat(30)}.http`, `${'c'.repeat(30)}.http`]}
+        />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain(`${first} … +2`);
+      expect(frame).not.toContain('bbbb');
+    });
+
+    // Candidate row max width: 80-col test terminal → overlay width 72 → 72 - 6 box chrome = 66;
+    // expectations use 66 - 1 (ellipsis) = 65.
+    it('hard-truncates a single candidate longer than the overlay width', () => {
+      const { lastFrame } = render(
+        <SaveOverlay value="d" error={null} cursor={1} completions={['d'.repeat(80)]} />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain(`${'d'.repeat(65)}…`);
+      expect(frame).not.toContain('d'.repeat(66));
+    });
+
+    // Candidate row max width: 80-col test terminal → overlay width 72 → 72 - 6 box chrome = 66;
+    // expectations use 66 - 5 (" … +1") = 61.
+    it('truncates an overlong first candidate and counts the rest', () => {
+      const { lastFrame } = render(
+        <SaveOverlay value="e" error={null} cursor={1} completions={['e'.repeat(80), 'f.http']} />,
+      );
+
+      const frame = lastFrame() ?? '';
+      expect(frame).toContain(`${'e'.repeat(61)} … +1`);
+      expect(frame).not.toContain('f.http');
     });
   });
 });

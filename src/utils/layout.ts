@@ -101,6 +101,8 @@ const EDITOR_MIN_BOX_WIDTH = 48;
 const EDITOR_MIN_BOX_HEIGHT = 10;
 /** Horizontal inset shared by every centered overlay (3 columns on each side when centered). */
 export const CENTERED_OVERLAY_MARGIN = 6;
+/** Border (1 + 1) + paddingX (2 + 2) of the overlay box */
+export const OVERLAY_HORIZONTAL_CHROME = 6;
 /** Rows reserved outside the editor overlay box: status bar (1) + vertical breathing room (3) */
 const EDITOR_BOX_MARGIN_ROWS = 4;
 /** Border (1 + 1) + paddingX (1 + 1) for the editor overlay */

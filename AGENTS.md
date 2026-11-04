@@ -8,6 +8,16 @@ Non-trivial work runs through the skills pipeline: grill (or grill-with-docs) �
 
 Durable knowledge has one home per concern: domain vocabulary and the capability map in `CONTEXT.md`, decisions in `docs/adr/`, coding conventions in this file, and behavior contracts pinned by the test suite (fastest tier that can verify — see Testing pyramid below).
 
+## Commit cadence
+
+Commit one ticket at a time, as each ticket resolves. Dependency order does the serialization: a ticket commits before the tickets that need it branch off.
+
+- Parallel tickets run in separate git worktrees, each committing its own branch; merge them back into the primary tree one ticket per merge, so each worktree commits only its own work.
+- A fresh worktree has no `node_modules` — copy it in (or install) before running tests there.
+- Ticket bookkeeping (`.scratch/`) stays in the primary tree; agents working in a worktree report back and the tracker is updated centrally.
+
+Precedent: the per-ticket branch merges in history (`ck-06-render`, `ck-08-clearsearch`, `is-03-format`) — one ticket per merge, merged as work progressed rather than squashed at the end of a feature.
+
 ## Comments
 
 Prefer self-documenting code over comments. Only add comments for knowledge that cannot be expressed in the code itself.

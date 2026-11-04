@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { join, resolve } from 'node:path';
 import type { Key } from 'ink';
 
 import { handleFileLoadInput, handleSaveInput } from '../../src/app/input-handlers';
@@ -103,5 +104,49 @@ describe('handleSaveInput', () => {
   it('up and down arrows dispatch nothing on the single-line path', () => {
     expect(pressSaveKey(saveState(), '', makeKey({ upArrow: true }))).toEqual([]);
     expect(pressSaveKey(saveState(), '', makeKey({ downArrow: true }))).toEqual([]);
+  });
+});
+
+describe('handleSaveInput Tab completion', () => {
+  const filePath = join(resolve('test/fixtures/tab-complete'), 'api.http');
+
+  function tabState(input: string): AppState {
+    return createInitialState({
+      filePath,
+      mode: 'saveLoad',
+      saveLoad: { ...INITIAL_SAVE_LOAD, input, cursor: input.length },
+    });
+  }
+
+  it('completes a single matching directory with a trailing slash', () => {
+    const actions = pressSaveKey(tabState('ad'), '', makeKey({ tab: true }));
+
+    expect(actions).toEqual([
+      { type: 'UPDATE_SAVE_INPUT', value: 'admin/', cursor: 6 },
+      { type: 'SET_SAVE_COMPLETIONS', completions: null },
+    ]);
+  });
+
+  it('extends multiple matching files to their common prefix', () => {
+    const actions = pressSaveKey(tabState('u'), '', makeKey({ tab: true }));
+
+    expect(actions).toEqual([
+      { type: 'UPDATE_SAVE_INPUT', value: 'users', cursor: 5 },
+      { type: 'SET_SAVE_COMPLETIONS', completions: null },
+    ]);
+  });
+
+  it('lists candidates without editing when the common prefix makes no progress', () => {
+    const actions = pressSaveKey(tabState('users'), '', makeKey({ tab: true }));
+
+    expect(actions).toEqual([
+      { type: 'SET_SAVE_COMPLETIONS', completions: ['users-staging.http', 'users.http'] },
+    ]);
+  });
+
+  it('does not edit the input when nothing matches', () => {
+    const actions = pressSaveKey(tabState('zzz'), '', makeKey({ tab: true }));
+
+    expect(actions).toEqual([{ type: 'SET_SAVE_COMPLETIONS', completions: null }]);
   });
 });

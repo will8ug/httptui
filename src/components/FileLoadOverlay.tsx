@@ -1,39 +1,14 @@
 import React from 'react';
 import { Box, Text, useStdout } from 'ink';
 
-import { CENTERED_OVERLAY_MARGIN, DEFAULT_TERMINAL_COLUMNS } from '../utils/layout';
-
-/** Border (1 + 1) + paddingX (2 + 2) of the overlay box */
-const OVERLAY_HORIZONTAL_CHROME = 6;
+import { CENTERED_OVERLAY_MARGIN, DEFAULT_TERMINAL_COLUMNS, OVERLAY_HORIZONTAL_CHROME } from '../utils/layout';
+import { formatCompletions } from '../utils/format-completions';
 
 interface FileLoadOverlayProps {
   value: string;
   error: string | null;
   cursor: number;
   completions: string[] | null;
-}
-
-function formatCompletions(names: string[], maxWidth: number): string {
-  const joined = names.join('  ');
-  if (joined.length <= maxWidth) {
-    return joined;
-  }
-
-  for (let shown = names.length - 1; shown >= 1; shown -= 1) {
-    const suffix = ` … +${names.length - shown}`;
-    const line = names.slice(0, shown).join('  ');
-    if (line.length + suffix.length <= maxWidth) {
-      return line + suffix;
-    }
-  }
-
-  const [first, ...rest] = names;
-  if (rest.length === 0) {
-    return `${first.slice(0, maxWidth - 1)}…`;
-  }
-
-  const suffix = ` … +${rest.length}`;
-  return first.slice(0, Math.max(0, maxWidth - suffix.length)) + suffix;
 }
 
 export function FileLoadOverlay({ value, error, cursor, completions }: FileLoadOverlayProps): React.ReactElement {
