@@ -21,6 +21,7 @@ import {
   press,
   renderApp,
 } from '../helpers/integration';
+import { createMockUndiciResponse } from '../helpers/undici';
 
 const THREE_MATCH_BODY = [
   'first needle line',
@@ -33,13 +34,7 @@ const THREE_MATCH_BODY = [
 type Stdin = { write: (data: string) => void };
 
 function stubResponse(body: string): void {
-  requestMock.mockResolvedValue({
-    statusCode: 200,
-    headers: {},
-    body: {
-      text: async () => body,
-    },
-  });
+  requestMock.mockResolvedValue(createMockUndiciResponse({ body }));
 }
 
 async function loadResponse(stdin: Stdin, body: string): Promise<void> {

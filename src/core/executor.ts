@@ -83,6 +83,31 @@ export interface CertConfig {
   ca?: Buffer;
 }
 
+/**
+ * One decoded piece of a streaming body. The piece boundaries follow the wire
+ * chunks, except that a UTF-8 sequence split across chunks joins into the
+ * piece that completes it, and a line ending held back for disambiguation
+ * rides the piece that resolves it.
+ */
+export interface ResponseChunk {
+  /**
+   * Verbatim decoded wire text for this piece; concatenating the raw pieces of
+   * a completed body reproduces `ResponseData.rawBody` exactly.
+   */
+  raw: string;
+  /**
+   * `raw` with CRLF and lone CR normalized to LF; concatenating the display
+   * pieces of a completed body reproduces `ResponseData.body` exactly, so a
+   * line ending split across wire chunks still normalizes to a single newline.
+   */
+  display: string;
+  /**
+   * Wire bytes carried by `raw`, i.e. `Buffer.byteLength(raw, 'utf-8')`; the
+   * sum over a completed body's pieces equals `size.bodyBytes`.
+   */
+  bytes: number;
+}
+
 export interface ResponseCallbacks {
   /**
    * Fires the moment response headers arrive, before the body is read, with a
@@ -91,6 +116,65 @@ export interface ResponseCallbacks {
    * never renders (the duration figure is completion-only).
    */
   onHeaders?: (response: ResponseData) => void;
+  /**
+   * Fires in wire order after `onHeaders`, once per decoded body piece, never
+   * with an empty `raw`. A piece ending in CR is held back until the next piece
+   * (or end of body) shows whether it is CRLF or a lone CR, so `display` is
+   * always exactly normalized. Emission stops for good when the body ends or
+   * the transfer throws — nothing fires after `executeRequest` settles.
+   */
+  onChunk?: (chunk: ResponseChunk) => void;
+}
+
+interface NormalizedPiece {
+  raw: string;
+  display: string;
+}
+
+/**
+ * Turns decoded wire text into display text incrementally, holding a trailing
+ * CR back until the next piece shows whether it starts a CRLF pair. Produces
+ * the same result as `text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')` over
+ * the concatenation, whatever the piece boundaries are.
+ */
+class LineEndingNormalizer {
+  private pendingCarriageReturn = false;
+
+  push(text: string): NormalizedPiece {
+    let rest = text;
+    let raw = '';
+    let display = '';
+
+    if (this.pendingCarriageReturn) {
+      this.pendingCarriageReturn = false;
+      raw = '\r';
+      display = '\n';
+      if (rest.startsWith('\n')) {
+        raw += '\n';
+        rest = rest.slice(1);
+      }
+    }
+
+    if (rest.endsWith('\r')) {
+      this.pendingCarriageReturn = true;
+      rest = rest.slice(0, -1);
+    }
+
+    return {
+      raw: raw + rest,
+      display: display + rest.replace(/\r\n/g, '\n').replace(/\r/g, '\n'),
+    };
+  }
+
+  flush(): NormalizedPiece {
+    if (!this.pendingCarriageReturn) {
+      return { raw: '', display: '' };
+    }
+
+    this.pendingCarriageReturn = false;
+
+    return { raw: '\r', display: '\n' };
+  }
 }
 
 export async function executeRequest(
@@ -153,6 +237,9 @@ export async function executeRequest(
       body,
       signal,
       dispatcher,
+      // ADR 0003: no body idle timeout, so a quiet stream survives past five
+      // minutes and a hung body waits for the user's Esc instead of erroring.
+      bodyTimeout: 0,
     });
 
     const statusCode = response.statusCode;
@@ -169,7 +256,38 @@ export async function executeRequest(
       size: { bodyBytes: 0 },
     });
 
-    const rawBody = await response.body.text();
+    const bodyChunks: AsyncIterable<Uint8Array> = response.body;
+    const decoder = new TextDecoder();
+    const lineEndings = new LineEndingNormalizer();
+    const rawPieces: string[] = [];
+
+    const emit = (piece: NormalizedPiece): void => {
+      if (piece.raw === '') {
+        return;
+      }
+
+      rawPieces.push(piece.raw);
+      callbacks?.onChunk?.({
+        raw: piece.raw,
+        display: piece.display,
+        bytes: Buffer.byteLength(piece.raw, 'utf-8'),
+      });
+    };
+
+    const consume = (text: string): void => {
+      if (text !== '') {
+        emit(lineEndings.push(text));
+      }
+    };
+
+    for await (const chunk of bodyChunks) {
+      consume(decoder.decode(chunk, { stream: true }));
+    }
+
+    consume(decoder.decode());
+    emit(lineEndings.flush());
+
+    const rawBody = rawPieces.join('');
     const responseBody = rawBody.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const endTime = performance.now();
 

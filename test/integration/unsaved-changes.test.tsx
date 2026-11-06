@@ -20,6 +20,7 @@ import {
   press,
   renderApp,
 } from '../helpers/integration';
+import { createMockUndiciResponse } from '../helpers/undici';
 import type { ParsedRequest } from '../../src/core/types';
 
 afterEach(() => {
@@ -31,13 +32,7 @@ beforeEach(() => {
 });
 
 function stubResponse(body: string): void {
-  requestMock.mockResolvedValue({
-    statusCode: 200,
-    headers: {},
-    body: {
-      text: async () => body,
-    },
-  });
+  requestMock.mockResolvedValue(createMockUndiciResponse({ body }));
 }
 
 function makeBodyRequest(body: string = 'original-body'): ParsedRequest[] {

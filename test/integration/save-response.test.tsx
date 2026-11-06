@@ -16,22 +16,9 @@ vi.mock('undici', () => ({
 
 import { BACKSPACE, delay, ENTER, KEY_DELAY_MS, press, renderApp } from '../helpers/integration';
 import { createRequest } from '../helpers/requests';
-
-interface MockUndiciResponse {
-  statusCode: number;
-  headers: Record<string, string>;
-  body: { text: () => Promise<string> };
-}
+import { createMockUndiciResponse } from '../helpers/undici';
 
 let responseBody = '';
-
-function makeResponse(body: string): MockUndiciResponse {
-  return {
-    statusCode: 200,
-    headers: {},
-    body: { text: async () => body },
-  };
-}
 
 async function sendAndReceive(stdin: { write: (data: string) => void }, body: string): Promise<void> {
   responseBody = body;
@@ -46,7 +33,7 @@ afterEach(() => {
 beforeEach(() => {
   responseBody = '';
   requestMock.mockReset();
-  requestMock.mockImplementation(async () => makeResponse(responseBody));
+  requestMock.mockImplementation(async () => createMockUndiciResponse({ body: responseBody }));
 });
 
 describe('save-response integration', () => {

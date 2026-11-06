@@ -12,6 +12,7 @@ vi.mock('undici', () => ({
 }));
 
 import { delay, KEY_DELAY_MS, press, renderApp, TAB } from '../helpers/integration';
+import { createMockUndiciResponse } from '../helpers/undici';
 import type { ParsedRequest } from '../../src/core/types';
 
 /** 30 plain body lines render 30 + status + separator = 32 visual lines. */
@@ -31,13 +32,7 @@ function makeRequest(): ParsedRequest[] {
 }
 
 function stubResponse(body: string): void {
-  requestMock.mockResolvedValue({
-    statusCode: 200,
-    headers: {},
-    body: {
-      text: async () => body,
-    },
-  });
+  requestMock.mockResolvedValue(createMockUndiciResponse({ body }));
 }
 
 /** The test double's stdout has no rows property until a resize defines one. */
