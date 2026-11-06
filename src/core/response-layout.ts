@@ -41,8 +41,7 @@ export function formatStatusLine(response: ResponseForLayout, streaming: boolean
     },
   ];
 
-  // The duration figure is completion-only; the streaming line carries the
-  // received-bytes count instead.
+  // The duration figure is completion-only.
   if (streaming) {
     statusSegments.push({ text: `  STREAMING ${response.size.bodyBytes} B`, color: 'yellow' });
   } else {

@@ -33,7 +33,7 @@ While a panel is fullscreen (`f`), only navigation and keys relevant to the visi
 | `o` | Open a different .http file |
 | `E` | Switch environment |
 | `S` | Export requests to a new .http file |
-| `s` | Save response to file |
+| `s` | Save response to file (not while a response is streaming) |
 | `y` | Copy request as curl |
 | `p` | Paste curl to request list |
 
@@ -51,7 +51,7 @@ While a panel is fullscreen (`f`), only navigation and keys relevant to the visi
 
 | Key | Action |
 |-----|--------|
-| `/` | Search response body (only when the response panel is fullscreen or no panel is fullscreen) |
+| `/` | Search response body (only when the response panel is fullscreen or no panel is fullscreen; not while a response is streaming) |
 | `n` | Go to next match (only when the response panel is fullscreen or no panel is fullscreen) |
 | `N` | Go to previous match (only when the response panel is fullscreen or no panel is fullscreen) |
 | `Escape` | Dismiss search results |
