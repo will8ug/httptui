@@ -148,6 +148,25 @@ describe('streaming partial body', () => {
     expect(completedFrame).not.toContain('STREAMING');
   });
 
+  it('renders a JSON-parseable partial body raw during the stream, then the same body pretty once complete', () => {
+    // '{"a":1}' is valid JSON as a whole, so unlike an invalid partial it would
+    // pretty-print mid-stream without the streaming suppression.
+    const response = createMockResponse({ body: '{"a":1}', size: { bodyBytes: 7 } });
+
+    const streamingFrame = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} />,
+    ).lastFrame() ?? '';
+    expect(streamingFrame).toContain('{"a":1}');
+    expect(streamingFrame).not.toContain('"a": 1');
+    expect(streamingFrame).toContain('STREAMING');
+
+    const completedFrame = render(
+      <ResponseView {...baseProps} response={response} isLoading={false} />,
+    ).lastFrame() ?? '';
+    expect(completedFrame).toContain('"a": 1');
+    expect(completedFrame).not.toContain('{"a":1}');
+  });
+
   it('shows the raw toggle operating on the partial body mid-stream', () => {
     const response = createMockResponse({
       body: '{"id":"1"',
