@@ -42,6 +42,7 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'SEND_REQUEST':
     case 'RECEIVE_RESPONSE_HEADERS':
+    case 'APPEND_RESPONSE_BODY':
     case 'RECEIVE_RESPONSE':
     case 'REQUEST_ERROR':
     case 'REQUEST_CANCEL':
