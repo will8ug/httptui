@@ -1,6 +1,6 @@
 import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
-import { INITIAL_SEARCH, setTransient, warningSuffix } from './helpers';
+import { INITIAL_SEARCH, responseVerticalMaxOffset, setTransient, warningSuffix } from './helpers';
 
 type RequestLifecycleAction = Extract<Action, { type: 'SEND_REQUEST' | 'RECEIVE_RESPONSE_HEADERS' | 'APPEND_RESPONSE_BODY' | 'RECEIVE_RESPONSE' | 'REQUEST_ERROR' | 'REQUEST_CANCEL' | 'RELOAD_FILE' }>;
 
@@ -33,7 +33,12 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         return state;
       }
 
-      return {
+      // Follow-tail is position-derived, not a mode flag: attachment is
+      // re-derived from the offset on every append, so scrolling away and
+      // jumping back to the bottom need no bookkeeping here.
+      const attached = state.responseScrollOffset >= responseVerticalMaxOffset(state);
+
+      const grown: AppState = {
         ...state,
         response: {
           ...state.response,
@@ -45,6 +50,10 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
           },
         },
       };
+
+      return attached
+        ? { ...grown, responseScrollOffset: responseVerticalMaxOffset(grown) }
+        : grown;
     }
 
     case 'RECEIVE_RESPONSE':
