@@ -71,6 +71,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
       return {
         ...state,
         isLoading: false,
+        response: state.response === null ? null : { ...state.response, canceled: true },
         ...setTransient({ warning: action.warning }),
       };
 

@@ -1,21 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { createHeadersTimeSnapshot, createMockResponse } from '../../helpers/responses';
-import { createInitialState, reducer } from '../../helpers/state';
+import { createInitialState, createStreamingState, reducer } from '../../helpers/state';
 import { INITIAL_SEARCH } from '../../../src/core/reducers/helpers';
 
 describe('APPEND_RESPONSE_BODY reducer', () => {
   const append = { chunk: { raw: 'lo world\r', display: 'lo world\n', bytes: 10 } } as const;
 
-  function streamingState() {
-    return reducer(
-      reducer(createInitialState(), { type: 'SEND_REQUEST' }),
-      { type: 'RECEIVE_RESPONSE_HEADERS', response: createHeadersTimeSnapshot() },
-    );
-  }
-
   it('grows the partial body, raw body, and byte count while loading continues', () => {
-    const state = streamingState();
+    const state = createStreamingState();
     const grown = reducer(state, { type: 'APPEND_RESPONSE_BODY', ...append });
 
     expect(grown.response?.body).toBe('lo world\n');
@@ -25,7 +18,7 @@ describe('APPEND_RESPONSE_BODY reducer', () => {
   });
 
   it('accumulates across successive appends and keeps status and headers intact', () => {
-    const state = streamingState();
+    const state = createStreamingState();
     const first = reducer(state, { type: 'APPEND_RESPONSE_BODY', chunk: { raw: 'Hel', display: 'Hel', bytes: 3 } });
     const second = reducer(first, { type: 'APPEND_RESPONSE_BODY', ...append });
 
@@ -37,7 +30,7 @@ describe('APPEND_RESPONSE_BODY reducer', () => {
   });
 
   it('produces a new response object so the viewport relayout memo keys on identity', () => {
-    const state = streamingState();
+    const state = createStreamingState();
     const grown = reducer(state, { type: 'APPEND_RESPONSE_BODY', ...append });
 
     expect(grown.response).not.toBe(state.response);
@@ -45,7 +38,7 @@ describe('APPEND_RESPONSE_BODY reducer', () => {
 
   it('preserves search state and leaves both response offsets untouched', () => {
     const state = {
-      ...streamingState(),
+      ...createStreamingState(),
       responseScrollOffset: 4,
       responseHorizontalOffset: 2,
       search: { query: 'needle', cursor: 3, matches: [2], currentMatchIndex: 0, lastQuery: '' },
@@ -78,7 +71,7 @@ describe('APPEND_RESPONSE_BODY reducer', () => {
   });
 
   it('is replaced wholesale by RECEIVE_RESPONSE at completion', () => {
-    const grown = reducer(streamingState(), { type: 'APPEND_RESPONSE_BODY', ...append });
+    const grown = reducer(createStreamingState(), { type: 'APPEND_RESPONSE_BODY', ...append });
     const completed = createMockResponse({
       body: 'lo world\n',
       rawBody: 'lo world\r',
