@@ -84,26 +84,26 @@ export interface CertConfig {
 }
 
 /**
- * One decoded piece of a streaming body. The piece boundaries follow the wire
- * chunks, except that a UTF-8 sequence split across chunks joins into the
- * piece that completes it, and a line ending held back for disambiguation
- * rides the piece that resolves it.
+ * One decoded chunk of a streaming body. The chunk boundaries follow the wire
+ * chunks, except that a UTF-8 sequence split across wire chunks joins into the
+ * chunk that completes it, and a line ending held back for disambiguation
+ * rides the chunk that resolves it.
  */
 export interface ResponseChunk {
   /**
-   * Verbatim decoded wire text for this piece; concatenating the raw pieces of
+   * Verbatim decoded wire text for this chunk; concatenating the raw chunks of
    * a completed body reproduces `ResponseData.rawBody` exactly.
    */
   raw: string;
   /**
    * `raw` with CRLF and lone CR normalized to LF; concatenating the display
-   * pieces of a completed body reproduces `ResponseData.body` exactly, so a
+   * chunks of a completed body reproduces `ResponseData.body` exactly, so a
    * line ending split across wire chunks still normalizes to a single newline.
    */
   display: string;
   /**
    * Wire bytes carried by `raw`, i.e. `Buffer.byteLength(raw, 'utf-8')`; the
-   * sum over a completed body's pieces equals `size.bodyBytes`.
+   * sum over a completed body's chunks equals `size.bodyBytes`.
    */
   bytes: number;
 }
@@ -117,8 +117,8 @@ export interface ResponseCallbacks {
    */
   onHeaders?: (response: ResponseData) => void;
   /**
-   * Fires in wire order after `onHeaders`, once per decoded body piece, never
-   * with an empty `raw`. A piece ending in CR is held back until the next piece
+   * Fires in wire order after `onHeaders`, once per decoded body chunk, never
+   * with an empty `raw`. A chunk ending in CR is held back until the next chunk
    * (or end of body) shows whether it is CRLF or a lone CR, so `display` is
    * always exactly normalized. Emission stops for good when the body ends or
    * the transfer throws — nothing fires after `executeRequest` settles.
@@ -126,21 +126,21 @@ export interface ResponseCallbacks {
   onChunk?: (chunk: ResponseChunk) => void;
 }
 
-interface NormalizedPiece {
+interface NormalizedChunk {
   raw: string;
   display: string;
 }
 
 /**
  * Turns decoded wire text into display text incrementally, holding a trailing
- * CR back until the next piece shows whether it starts a CRLF pair. Produces
+ * CR back until the next chunk shows whether it starts a CRLF pair. Produces
  * the same result as `text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')` over
- * the concatenation, whatever the piece boundaries are.
+ * the concatenation, whatever the chunk boundaries are.
  */
 class LineEndingNormalizer {
   private pendingCarriageReturn = false;
 
-  push(text: string): NormalizedPiece {
+  push(text: string): NormalizedChunk {
     let rest = text;
     let raw = '';
     let display = '';
@@ -166,7 +166,7 @@ class LineEndingNormalizer {
     };
   }
 
-  flush(): NormalizedPiece {
+  flush(): NormalizedChunk {
     if (!this.pendingCarriageReturn) {
       return { raw: '', display: '' };
     }
@@ -259,18 +259,18 @@ export async function executeRequest(
     const bodyChunks: AsyncIterable<Uint8Array> = response.body;
     const decoder = new TextDecoder();
     const lineEndings = new LineEndingNormalizer();
-    const rawPieces: string[] = [];
+    const rawChunks: string[] = [];
 
-    const emit = (piece: NormalizedPiece): void => {
-      if (piece.raw === '') {
+    const emit = (chunk: NormalizedChunk): void => {
+      if (chunk.raw === '') {
         return;
       }
 
-      rawPieces.push(piece.raw);
+      rawChunks.push(chunk.raw);
       callbacks?.onChunk?.({
-        raw: piece.raw,
-        display: piece.display,
-        bytes: Buffer.byteLength(piece.raw, 'utf-8'),
+        raw: chunk.raw,
+        display: chunk.display,
+        bytes: Buffer.byteLength(chunk.raw, 'utf-8'),
       });
     };
 
@@ -287,7 +287,7 @@ export async function executeRequest(
     consume(decoder.decode());
     emit(lineEndings.flush());
 
-    const rawBody = rawPieces.join('');
+    const rawBody = rawChunks.join('');
     const responseBody = rawBody.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const endTime = performance.now();
 
