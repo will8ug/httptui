@@ -148,6 +148,31 @@ describe('handleNormalInput s guard', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'ENTER_RESPONSE_SAVE' });
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_TRANSIENT_MESSAGE' }));
   });
+
+  it('refuses while a headers-time response is still loading and does not enter the overlay', () => {
+    const state = createInitialState({
+      requests: [createRequest({ name: 'Get Users' })],
+      isLoading: true,
+      response: createMockResponse({ body: '{"a":1}', rawBody: '{"a":1}' }),
+    });
+    const { dispatch } = runNormalInput(state, 's');
+
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_TRANSIENT_MESSAGE', message: 'Cannot save while the response is streaming' });
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'ENTER_RESPONSE_SAVE' });
+  });
+
+  it('refuses while loading before headers arrive, ahead of the no-response message', () => {
+    const state = createInitialState({
+      requests: [createRequest({ name: 'Get Users' })],
+      isLoading: true,
+      response: null,
+    });
+    const { dispatch } = runNormalInput(state, 's');
+
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_TRANSIENT_MESSAGE', message: 'Cannot save while the response is streaming' });
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response to save' });
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'ENTER_RESPONSE_SAVE' });
+  });
 });
 
 describe('s-key mode isolation', () => {

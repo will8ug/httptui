@@ -218,7 +218,7 @@ describe('SCROLL_HORIZONTAL boundary (right-scroll stops at content edge)', () =
       });
 
       const rawMaxBodyLine = Math.max(...compactJsonResponse.body.split('\n').map((l) => l.length));
-      const statusLineLength = formatStatusLine(compactJsonResponse).map((s) => s.text).join('').length;
+      const statusLineLength = formatStatusLine(compactJsonResponse, false).map((s) => s.text).join('').length;
       const expected = Math.max(statusLineLength, rawMaxBodyLine);
 
       expect(viewportOf(state).maxLineDisplayWidth).toBe(expected);

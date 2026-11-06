@@ -683,6 +683,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
 
     const formattedBody = formatResponseBody(response.body, rawMode);
     const layout = computeResponseLayout({
+      streaming: false,
       response,
       verbose,
       rawMode,
@@ -722,6 +723,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
 
     const formattedBody = formatResponseBody(response.body, true);
     const layout = computeResponseLayout({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -757,6 +759,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
 
     const formattedBody = formatResponseBody(response.body, true);
     const layout = computeResponseLayout({
+      streaming: false,
       response,
       verbose: true,
       rawMode: true,
@@ -790,6 +793,7 @@ describe('ledger-derived scroll targets (wrap mode)', () => {
 
     const formattedBody = formatResponseBody(response.body, true);
     const layout = computeResponseLayout({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,

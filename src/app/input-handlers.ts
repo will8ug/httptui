@@ -622,6 +622,13 @@ export function handleNormalInput({
 
   const keyName = normalizeKeyName(input, key);
 
+  // Search entry intercepts ahead of the key-table lookup: the table gate only
+  // checks panel visibility, while a growing body must refuse search outright.
+  if (keyName === '/' && state.isLoading && responseVisible(state)) {
+    dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'Cannot search while the response is streaming' });
+    return;
+  }
+
   const tableAction = resolveKeyAction(keyName, state);
   if (tableAction) {
     dispatch(tableAction);
@@ -680,6 +687,10 @@ export function handleNormalInput({
     }
 
     if (input === 's') {
+      if (state.isLoading) {
+        dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'Cannot save while the response is streaming' });
+        return;
+      }
       if (state.response === null) {
         dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response to save' });
         return;

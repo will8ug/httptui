@@ -517,3 +517,90 @@ describe('executeRequest', () => {
     expect(result.size.bodyBytes).toBe(Buffer.byteLength(result.body, 'utf-8'));
   });
 });
+
+describe('executeRequest headers-time callback', () => {
+  interface HeldResponse {
+    statusCode: number;
+    headers: Record<string, string | string[]>;
+    body: { text: () => Promise<string> };
+  }
+
+  function createHeldBodyResponse(overrides: Partial<Omit<HeldResponse, 'body'>> = {}): {
+    response: HeldResponse;
+    resolveBody: (body: string) => void;
+  } {
+    let resolveBody!: (body: string) => void;
+    const bodyText = new Promise<string>((resolve) => {
+      resolveBody = resolve;
+    });
+    return {
+      response: {
+        statusCode: overrides.statusCode ?? 200,
+        headers: overrides.headers ?? {},
+        body: { text: () => bodyText },
+      },
+      resolveBody,
+    };
+  }
+
+  it('delivers a headers-time snapshot before the body completes, leaving the final object unchanged', async () => {
+    let resolveRequest!: (response: HeldResponse) => void;
+    requestMock.mockReturnValue(new Promise<HeldResponse>((resolve) => {
+      resolveRequest = resolve;
+    }));
+    const held = createHeldBodyResponse({
+      statusCode: 201,
+      headers: { 'content-type': 'text/plain', 'set-cookie': ['a=1', 'b=2'] },
+    });
+    const onHeaders = vi.fn();
+
+    const pending = executeRequest(createResolvedRequest(), undefined, undefined, undefined, { onHeaders });
+    expect(onHeaders).not.toHaveBeenCalled();
+
+    resolveRequest(held.response);
+    await Promise.resolve();
+
+    expect(onHeaders).toHaveBeenCalledTimes(1);
+    expect(onHeaders).toHaveBeenCalledWith({
+      statusCode: 201,
+      statusText: 'Created',
+      headers: { 'content-type': 'text/plain', 'set-cookie': 'a=1, b=2' },
+      body: '',
+      rawBody: '',
+      timing: { durationMs: 0 },
+      size: { bodyBytes: 0 },
+    });
+
+    let settled = false;
+    void pending.then(() => { settled = true; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    held.resolveBody('late payload');
+    const result = await pending;
+
+    expect(isErrorInfo(result)).toBe(false);
+    if (isErrorInfo(result)) {
+      throw new Error('Expected successful response');
+    }
+    expect(result).toEqual({
+      statusCode: 201,
+      statusText: 'Created',
+      headers: { 'content-type': 'text/plain', 'set-cookie': 'a=1, b=2' },
+      body: 'late payload',
+      rawBody: 'late payload',
+      timing: { durationMs: expect.any(Number) },
+      size: { bodyBytes: Buffer.byteLength('late payload', 'utf-8') },
+    });
+  });
+
+  it('never invokes onHeaders when the request fails', async () => {
+    requestMock.mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:3000'));
+    const onHeaders = vi.fn();
+
+    const result = await executeRequest(createResolvedRequest(), undefined, undefined, undefined, { onHeaders });
+
+    expect(isErrorInfo(result)).toBe(true);
+    expect(onHeaders).not.toHaveBeenCalled();
+  });
+});

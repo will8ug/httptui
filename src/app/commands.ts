@@ -49,7 +49,14 @@ export async function sendSelectedRequest({ state, executorConfig, abortControll
       }
     }
 
-    const result = await executeRequest(resolvedRequest, executorConfig, certConfig, controller.signal);
+    const result = await executeRequest(resolvedRequest, executorConfig, certConfig, controller.signal, {
+      onHeaders: (response) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        dispatch({ type: 'RECEIVE_RESPONSE_HEADERS', response });
+      },
+    });
 
     if (controller.signal.aborted) {
       return;
