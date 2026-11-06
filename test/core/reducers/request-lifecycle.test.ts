@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMockResponse } from '../../helpers/responses';
+import { createHeadersTimeSnapshot, createMockResponse } from '../../helpers/responses';
 import { createInitialState, reducer } from '../../helpers/state';
 import { INITIAL_SEARCH } from '../../../src/core/reducers/helpers';
 
@@ -33,12 +33,7 @@ describe('SEND_REQUEST reducer', () => {
 });
 
 describe('RECEIVE_RESPONSE_HEADERS reducer', () => {
-  const headersResponse = createMockResponse({
-    body: '',
-    rawBody: '',
-    timing: { durationMs: 0 },
-    size: { bodyBytes: 0 },
-  });
+  const headersResponse = createHeadersTimeSnapshot();
 
   function loadingState() {
     return reducer(createInitialState(), { type: 'SEND_REQUEST' });

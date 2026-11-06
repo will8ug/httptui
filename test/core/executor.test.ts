@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { ErrorInfo, ResponseData } from '../../src/core/types';
+import type { ErrorInfo, ResolvedRequest, ResponseData } from '../../src/core/types';
 
 const { agentMock, MockFormData, requestMock } = vi.hoisted(() => {
   class FormDataMock {
@@ -29,7 +29,8 @@ vi.mock('undici', () => ({
 }));
 
 import { executeRequest, isErrorInfo } from '../../src/core/executor';
-import type { ResponseChunk } from '../../src/core/executor';
+import type { ResponseCallbacks, ResponseChunk } from '../../src/core/executor';
+import { createHeadersTimeSnapshot } from '../helpers/responses';
 import { createResolvedRequest } from '../helpers/requests';
 import { createHeldUndiciBody, createMockUndiciResponse as createMockResponse } from '../helpers/undici';
 import type { MockUndiciResponse } from '../helpers/undici';
@@ -48,11 +49,11 @@ function createChunkRecorder(): {
   };
 }
 
-function rawPieces(recorded: ResponseChunk[]): string {
+function joinedRaw(recorded: ResponseChunk[]): string {
   return recorded.map((chunk) => chunk.raw).join('');
 }
 
-function displayPieces(recorded: ResponseChunk[]): string {
+function joinedDisplay(recorded: ResponseChunk[]): string {
   return recorded.map((chunk) => chunk.display).join('');
 }
 
@@ -66,6 +67,13 @@ function assertResponse(result: ResponseData | ErrorInfo): ResponseData {
   }
 
   return result;
+}
+
+function executeWithCallbacks(
+  resolvedRequest: ResolvedRequest,
+  callbacks: ResponseCallbacks,
+): Promise<ResponseData | ErrorInfo> {
+  return executeRequest(resolvedRequest, undefined, undefined, undefined, callbacks);
 }
 
 afterEach(() => {
@@ -571,22 +579,20 @@ describe('executeRequest headers-time callback', () => {
     });
     const onHeaders = vi.fn();
 
-    const pending = executeRequest(createResolvedRequest(), undefined, undefined, undefined, { onHeaders });
+    const pending = executeWithCallbacks(createResolvedRequest(), { onHeaders });
     expect(onHeaders).not.toHaveBeenCalled();
 
     resolveRequest(held.response);
     await Promise.resolve();
 
     expect(onHeaders).toHaveBeenCalledTimes(1);
-    expect(onHeaders).toHaveBeenCalledWith({
-      statusCode: 201,
-      statusText: 'Created',
-      headers: { 'content-type': 'text/plain', 'set-cookie': 'a=1, b=2' },
-      body: '',
-      rawBody: '',
-      timing: { durationMs: 0 },
-      size: { bodyBytes: 0 },
-    });
+    expect(onHeaders).toHaveBeenCalledWith(
+      createHeadersTimeSnapshot({
+        statusCode: 201,
+        statusText: 'Created',
+        headers: { 'content-type': 'text/plain', 'set-cookie': 'a=1, b=2' },
+      }),
+    );
 
     let settled = false;
     void pending.then(() => { settled = true; });
@@ -615,7 +621,7 @@ describe('executeRequest headers-time callback', () => {
     requestMock.mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:3000'));
     const onHeaders = vi.fn();
 
-    const result = await executeRequest(createResolvedRequest(), undefined, undefined, undefined, { onHeaders });
+    const result = await executeWithCallbacks(createResolvedRequest(), { onHeaders });
 
     expect(isErrorInfo(result)).toBe(true);
     expect(onHeaders).not.toHaveBeenCalled();
@@ -632,11 +638,20 @@ describe('executeRequest chunk streaming', () => {
     '€\r\n😀\r',
   ];
 
+  const splitUtf8Chunks = [
+    Buffer.from('price: ', 'utf-8'),
+    Buffer.from([0xe2]),
+    Buffer.from([0x82, 0xac]),
+    Buffer.from('1\n', 'utf-8'),
+    Buffer.from([0xf0, 0x9f]),
+    Buffer.from([0x98, 0x80]),
+  ];
+
   function abortError(): DOMException {
     return new DOMException('This operation was aborted', 'AbortError');
   }
 
-  it('emits decoded pieces in wire order, after the headers snapshot', async () => {
+  it('emits decoded chunks in wire order, after the headers snapshot', async () => {
     const events: string[] = [];
     const recorder = createChunkRecorder();
     requestMock.mockResolvedValue(
@@ -644,7 +659,7 @@ describe('executeRequest chunk streaming', () => {
     );
 
     const result = assertResponse(
-      await executeRequest(createResolvedRequest(), undefined, undefined, undefined, {
+      await executeWithCallbacks(createResolvedRequest(), {
         onHeaders: () => {
           events.push('headers');
         },
@@ -656,8 +671,8 @@ describe('executeRequest chunk streaming', () => {
     );
 
     expect(events).toEqual(['headers', 'chunk:data: one\n', 'chunk:data: two\n']);
-    expect(rawPieces(recorder.recorded)).toBe(result.rawBody);
-    expect(displayPieces(recorder.recorded)).toBe(result.body);
+    expect(joinedRaw(recorder.recorded)).toBe(result.rawBody);
+    expect(joinedDisplay(recorder.recorded)).toBe(result.body);
     expect(result).toEqual({
       statusCode: 200,
       statusText: 'OK',
@@ -671,21 +686,10 @@ describe('executeRequest chunk streaming', () => {
 
   it('joins a UTF-8 sequence split across chunks without replacement characters', async () => {
     const recorder = createChunkRecorder();
-    requestMock.mockResolvedValue(
-      createMockResponse({
-        chunks: [
-          Buffer.from('price: ', 'utf-8'),
-          Buffer.from([0xe2]),
-          Buffer.from([0x82, 0xac]),
-          Buffer.from('1\n', 'utf-8'),
-          Buffer.from([0xf0, 0x9f]),
-          Buffer.from([0x98, 0x80]),
-        ],
-      }),
-    );
+    requestMock.mockResolvedValue(createMockResponse({ chunks: splitUtf8Chunks }));
 
     const result = assertResponse(
-      await executeRequest(createResolvedRequest(), undefined, undefined, undefined, {
+      await executeWithCallbacks(createResolvedRequest(), {
         onChunk: recorder.onChunk,
       }),
     );
@@ -697,23 +701,12 @@ describe('executeRequest chunk streaming', () => {
     expect(recorder.recorded.some((chunk) => chunk.raw.includes('\uFFFD'))).toBe(false);
   });
 
-  it('attributes held-back bytes to the piece that completes them', async () => {
+  it('attributes held-back bytes to the chunk that completes them', async () => {
     const recorder = createChunkRecorder();
-    requestMock.mockResolvedValue(
-      createMockResponse({
-        chunks: [
-          Buffer.from('price: ', 'utf-8'),
-          Buffer.from([0xe2]),
-          Buffer.from([0x82, 0xac]),
-          Buffer.from('1\n', 'utf-8'),
-          Buffer.from([0xf0, 0x9f]),
-          Buffer.from([0x98, 0x80]),
-        ],
-      }),
-    );
+    requestMock.mockResolvedValue(createMockResponse({ chunks: splitUtf8Chunks }));
 
     const result = assertResponse(
-      await executeRequest(createResolvedRequest(), undefined, undefined, undefined, {
+      await executeWithCallbacks(createResolvedRequest(), {
         onChunk: recorder.onChunk,
       }),
     );
@@ -733,7 +726,7 @@ describe('executeRequest chunk streaming', () => {
     );
 
     const result = assertResponse(
-      await executeRequest(createResolvedRequest(), undefined, undefined, undefined, {
+      await executeWithCallbacks(createResolvedRequest(), {
         onChunk: recorder.onChunk,
       }),
     );
@@ -752,7 +745,7 @@ describe('executeRequest chunk streaming', () => {
     requestMock.mockResolvedValue(createMockResponse({ chunks: [Buffer.from('a\r')] }));
 
     const result = assertResponse(
-      await executeRequest(createResolvedRequest(), undefined, undefined, undefined, {
+      await executeWithCallbacks(createResolvedRequest(), {
         onChunk: recorder.onChunk,
       }),
     );
@@ -778,7 +771,7 @@ describe('executeRequest chunk streaming', () => {
         const recorder = createChunkRecorder();
 
         const result = assertResponse(
-          await executeRequest(createResolvedRequest(), undefined, undefined, undefined, {
+          await executeWithCallbacks(createResolvedRequest(), {
             onChunk: recorder.onChunk,
           }),
         );
@@ -786,8 +779,8 @@ describe('executeRequest chunk streaming', () => {
 
         expect(result.rawBody, where).toBe(body);
         expect(result.body, where).toBe(body.replace(/\r\n/g, '\n').replace(/\r/g, '\n'));
-        expect(rawPieces(recorded), where).toBe(result.rawBody);
-        expect(displayPieces(recorded), where).toBe(result.body);
+        expect(joinedRaw(recorded), where).toBe(result.rawBody);
+        expect(joinedDisplay(recorded), where).toBe(result.body);
         expect(totalBytes(recorded), where).toBe(result.size.bodyBytes);
         expect(result.size.bodyBytes, where).toBe(Buffer.byteLength(body, 'utf-8'));
         expect(recorded.some((chunk) => chunk.raw === ''), where).toBe(false);
@@ -808,13 +801,13 @@ describe('executeRequest chunk streaming', () => {
       requestMock.mockResolvedValue(createMockResponse({ chunks }));
 
       const result = assertResponse(
-        await executeRequest(createResolvedRequest(), undefined, undefined, undefined, {
+        await executeWithCallbacks(createResolvedRequest(), {
           onChunk: recorder.onChunk,
         }),
       );
 
       expect(result.rawBody).toBe('{"a":1}');
-      expect(rawPieces(recorder.recorded)).toBe('{"a":1}');
+      expect(joinedRaw(recorder.recorded)).toBe('{"a":1}');
       expect(result.size.bodyBytes).toBe(Buffer.byteLength('{"a":1}', 'utf-8'));
     }
   });
@@ -824,7 +817,7 @@ describe('executeRequest chunk streaming', () => {
     requestMock.mockResolvedValue(createMockResponse({ body: '' }));
 
     const result = assertResponse(
-      await executeRequest(createResolvedRequest(), undefined, undefined, undefined, {
+      await executeWithCallbacks(createResolvedRequest(), {
         onChunk: recorder.onChunk,
       }),
     );
@@ -846,14 +839,14 @@ describe('executeRequest chunk streaming', () => {
     requestMock.mockResolvedValue(createMockResponse({ chunks: garbage }));
 
     const result = assertResponse(
-      await executeRequest(createResolvedRequest(), undefined, undefined, undefined, {
+      await executeWithCallbacks(createResolvedRequest(), {
         onChunk: recorder.onChunk,
       }),
     );
 
     expect(result.rawBody).toBe(bufferedRead);
-    expect(rawPieces(recorder.recorded)).toBe(bufferedRead);
-    expect(displayPieces(recorder.recorded)).toBe(result.body);
+    expect(joinedRaw(recorder.recorded)).toBe(bufferedRead);
+    expect(joinedDisplay(recorder.recorded)).toBe(result.body);
     expect(totalBytes(recorder.recorded)).toBe(result.size.bodyBytes);
     expect(result.size.bodyBytes).toBe(Buffer.byteLength(bufferedRead, 'utf-8'));
   });
@@ -925,11 +918,11 @@ describe('executeRequest chunk streaming', () => {
     }));
     const recorder = createChunkRecorder();
 
-    const result = await executeRequest(createResolvedRequest(), undefined, undefined, undefined, {
+    const result = await executeWithCallbacks(createResolvedRequest(), {
       onChunk: recorder.onChunk,
     });
 
     expect(result).toEqual({ message: 'terminated', code: 'UND_ERR_SOCKET' });
-    expect(rawPieces(recorder.recorded)).toBe('partial body');
+    expect(joinedRaw(recorder.recorded)).toBe('partial body');
   });
 });

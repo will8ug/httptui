@@ -77,6 +77,16 @@ describe('content states', () => {
     expect(frame).toContain('STREAMING');
   });
 
+  it('renders the body received so far while the response is still loading', () => {
+    const response = createMockResponse({ body: 'data: partial body marker' });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('data: partial body marker');
+    expect(frame).not.toContain('Sending request');
+  });
+
   it('shows the duration and no STREAMING marker once loading ends', () => {
     const response = createMockResponse({ timing: { durationMs: 100 } });
     const { lastFrame } = render(<ResponseView {...baseProps} response={response} />);

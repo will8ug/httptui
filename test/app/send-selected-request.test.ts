@@ -11,15 +11,10 @@ import { sendSelectedRequest } from '../../src/app/commands';
 import type { ResponseCallbacks } from '../../src/core/executor';
 import type { Action, AppState } from '../../src/core/types';
 import { createRequest } from '../helpers/requests';
-import { createMockResponse } from '../helpers/responses';
+import { createHeadersTimeSnapshot, createMockResponse } from '../helpers/responses';
 import { createInitialState } from '../helpers/state';
 
-const headersSnapshot = createMockResponse({
-  body: '',
-  rawBody: '',
-  timing: { durationMs: 0 },
-  size: { bodyBytes: 0 },
-});
+const headersSnapshot = createHeadersTimeSnapshot();
 
 const completedResponse = createMockResponse({
   body: 'done',
