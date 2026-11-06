@@ -120,7 +120,9 @@ export function ResponseView({
 
   let content: React.ReactNode;
 
-  if (isLoading) {
+  // The spinner only covers the pre-headers window: once the headers-time
+  // response exists, the viewport renders alongside the loading flag.
+  if (isLoading && !response) {
     content = (
       <Box flexDirection="column">
         <Spinner label="Sending request" />
@@ -133,7 +135,7 @@ export function ResponseView({
   } else if (!response) {
     content = <Text color="gray">Press Enter to send a request</Text>;
   } else {
-    const model = computeResponseViewport({ response, verbose, rawMode, wrapMode, geometry });
+    const model = computeResponseViewport({ response, streaming: isLoading, verbose, rawMode, wrapMode, geometry });
     const contentWidth = model.contentWidth;
 
     const transform: LineTransform =

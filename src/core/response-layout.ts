@@ -19,11 +19,12 @@ export interface ResponseLayout {
 
 export type ResponseForLayout = Pick<
   ResponseData,
-  'statusCode' | 'statusText' | 'headers' | 'timing'
+  'statusCode' | 'statusText' | 'headers' | 'timing' | 'size'
 >;
 
 export interface ComputeResponseLayoutOptions {
   response: ResponseForLayout;
+  streaming: boolean;
   verbose: boolean;
   rawMode: boolean;
   wrapMode: WrapMode;
@@ -31,15 +32,24 @@ export interface ComputeResponseLayoutOptions {
   formattedBody: string;
 }
 
-export function formatStatusLine(response: ResponseForLayout): ColorSegment[] {
-  return [
+export function formatStatusLine(response: ResponseForLayout, streaming: boolean): ColorSegment[] {
+  const statusSegments: ColorSegment[] = [
     { text: 'HTTP/1.1 ', color: 'gray' },
     {
       text: `${response.statusCode} ${response.statusText}`,
       color: getStatusColor(response.statusCode),
     },
-    { text: `  ${Math.round(response.timing.durationMs)}ms`, color: 'gray' },
   ];
+
+  // The duration figure is completion-only; the streaming line carries the
+  // received-bytes count instead.
+  if (streaming) {
+    statusSegments.push({ text: `  STREAMING ${response.size.bodyBytes} B`, color: 'yellow' });
+  } else {
+    statusSegments.push({ text: `  ${Math.round(response.timing.durationMs)}ms`, color: 'gray' });
+  }
+
+  return statusSegments;
 }
 
 function singleLineSection(segments: ColorSegment[]): ColorSegment[][] {
@@ -90,12 +100,12 @@ function buildBodyLineVisualLines(
 export function computeResponseLayout(
   options: ComputeResponseLayoutOptions,
 ): ResponseLayout {
-  const { response, verbose, rawMode, wrapMode, contentWidth, formattedBody } = options;
+  const { response, streaming, verbose, rawMode, wrapMode, contentWidth, formattedBody } = options;
 
   const sections: VisualSection[] = [];
   let totalVisualLines = 0;
 
-  const statusSegments = formatStatusLine(response);
+  const statusSegments = formatStatusLine(response, streaming);
   const statusVisualLines = wrapSegments(statusSegments, contentWidth, wrapMode);
   sections.push({ kind: 'status', visualLines: statusVisualLines });
   totalVisualLines += statusVisualLines.length;

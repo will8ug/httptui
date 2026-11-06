@@ -99,7 +99,10 @@ describe('request cancel', () => {
     const held = makeHeldBodyResponse();
     releaseNext(held.response);
     await delay(KEY_DELAY_MS * 2);
-    expect(lastFrame() ?? '').toContain('Sending request');
+    const headersFrame = lastFrame() ?? '';
+    expect(headersFrame).toContain('HTTP/1.1 200 OK');
+    expect(headersFrame).toContain('STREAMING');
+    expect(headersFrame).not.toContain('Sending request');
 
     await press(stdin, ESC);
     await delay(KEY_DELAY_MS * 2);

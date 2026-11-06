@@ -37,11 +37,52 @@ const baseProps = {
 };
 
 describe('content states', () => {
-  it('renders the Sending request spinner label and cancel hint when loading', () => {
+  it('renders the Sending request spinner label and cancel hint while loading with no response yet', () => {
     const { lastFrame } = render(<ResponseView {...baseProps} isLoading={true} />);
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Sending request');
     expect(frame).toContain('(Esc to cancel)');
+  });
+
+  it('replaces the spinner with the status line once a response arrives while loading', () => {
+    const response = createMockResponse({ statusCode: 200, statusText: 'OK' });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('Sending request');
+    expect(frame).toContain('HTTP/1.1 200 OK');
+    expect(frame).toContain('STREAMING 0 B');
+  });
+
+  it('renders no duration figure while streaming', () => {
+    const response = createMockResponse({ timing: { durationMs: 4321 } });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('STREAMING');
+    expect(frame).not.toContain('4321ms');
+  });
+
+  it('renders headers alongside the streaming status line in verbose mode', () => {
+    const response = createMockResponse({
+      headers: { 'content-type': 'text/event-stream' },
+    });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} verbose={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('content-type: text/event-stream');
+    expect(frame).toContain('STREAMING');
+  });
+
+  it('shows the duration and no STREAMING marker once loading ends', () => {
+    const response = createMockResponse({ timing: { durationMs: 100 } });
+    const { lastFrame } = render(<ResponseView {...baseProps} response={response} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('100ms');
+    expect(frame).not.toContain('STREAMING');
   });
 
   it('renders the error message and code', () => {

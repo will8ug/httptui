@@ -2,7 +2,7 @@ import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
 import { INITIAL_SEARCH, setTransient, warningSuffix } from './helpers';
 
-type RequestLifecycleAction = Extract<Action, { type: 'SEND_REQUEST' | 'RECEIVE_RESPONSE' | 'REQUEST_ERROR' | 'REQUEST_CANCEL' | 'RELOAD_FILE' }>;
+type RequestLifecycleAction = Extract<Action, { type: 'SEND_REQUEST' | 'RECEIVE_RESPONSE_HEADERS' | 'RECEIVE_RESPONSE' | 'REQUEST_ERROR' | 'REQUEST_CANCEL' | 'RELOAD_FILE' }>;
 
 export function reduceRequestLifecycle(state: AppState, action: RequestLifecycleAction): AppState {
   switch (action.type) {
@@ -15,6 +15,14 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         responseScrollOffset: 0,
         responseHorizontalOffset: 0,
         search: INITIAL_SEARCH,
+      };
+
+    // The loading flag intentionally stays set: a headers-time response
+    // coexists with loading (ADR 0004) until completion or cancellation.
+    case 'RECEIVE_RESPONSE_HEADERS':
+      return {
+        ...state,
+        response: action.response,
       };
 
     case 'RECEIVE_RESPONSE':

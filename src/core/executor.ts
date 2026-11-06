@@ -83,11 +83,22 @@ export interface CertConfig {
   ca?: Buffer;
 }
 
+export interface ResponseCallbacks {
+  /**
+   * Fires the moment response headers arrive, before the body is read, with a
+   * headers-time snapshot: normalized status and headers, empty body/rawBody,
+   * zero bodyBytes, and a durationMs placeholder the streaming status line
+   * never renders (the duration figure is completion-only).
+   */
+  onHeaders?: (response: ResponseData) => void;
+}
+
 export async function executeRequest(
   resolvedRequest: ResolvedRequest,
   config?: ExecutorConfig,
   certConfig?: CertConfig,
   signal?: AbortSignal,
+  callbacks?: ResponseCallbacks,
 ): Promise<ResponseData | ErrorInfo> {
   try {
     new URL(resolvedRequest.url);
@@ -144,14 +155,28 @@ export async function executeRequest(
       dispatcher,
     });
 
+    const statusCode = response.statusCode;
+    const statusText = getStatusText(statusCode);
+    const responseHeaders = normalizeHeaders(response.headers);
+
+    callbacks?.onHeaders?.({
+      statusCode,
+      statusText,
+      headers: responseHeaders,
+      body: '',
+      rawBody: '',
+      timing: { durationMs: 0 },
+      size: { bodyBytes: 0 },
+    });
+
     const rawBody = await response.body.text();
     const responseBody = rawBody.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const endTime = performance.now();
 
     return {
-      statusCode: response.statusCode,
-      statusText: getStatusText(response.statusCode),
-      headers: normalizeHeaders(response.headers),
+      statusCode,
+      statusText,
+      headers: responseHeaders,
       body: responseBody,
       rawBody,
       timing: {

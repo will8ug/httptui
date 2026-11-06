@@ -30,6 +30,7 @@ const storedResponse = createMockResponse({
 
 function expectedTotalLines(maximizedPanel: FocusedPanel | null): number {
   return computeResponseViewport({
+    streaming: false,
     response: storedResponse,
     verbose: false,
     rawMode: false,
@@ -45,6 +46,7 @@ function expectedTotalLines(maximizedPanel: FocusedPanel | null): number {
 
 function expectedViewportTotal(fullscreen: boolean): number {
   return computeResponseViewport({
+    streaming: false,
     response: storedResponse,
     verbose: false,
     rawMode: false,

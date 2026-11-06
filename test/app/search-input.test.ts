@@ -46,6 +46,7 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
       throw new Error('expected a state with a response');
     }
     return computeResponseViewport({
+      streaming: state.isLoading,
       response,
       verbose: state.verbose,
       rawMode: state.rawMode,
@@ -94,6 +95,49 @@ describe('match offsets in a maximized response panel (wrap mode)', () => {
       firstMatchVisualIndex: bodyVisualStartAt(splitState, null)[1],
     });
     expect(bodyVisualStartAt(splitState, null)[1]).toBeGreaterThan(bodyVisualStartAt(maximized, 'response')[1]);
+  });
+});
+
+describe('search entry refused while loading', () => {
+  it('refuses / with a transient notice while a headers-time response is present', () => {
+    const state = createInitialState({
+      isLoading: true,
+      response: createMockResponse({ body: '', rawBody: '' }),
+    });
+
+    expect(pressKey(state, '/')).toEqual([
+      { type: 'SET_TRANSIENT_MESSAGE', message: 'Cannot search while the response is streaming' },
+    ]);
+  });
+
+  it('refuses / with the same notice before headers arrive', () => {
+    const state = createInitialState({ isLoading: true, response: null });
+
+    expect(pressKey(state, '/')).toEqual([
+      { type: 'SET_TRANSIENT_MESSAGE', message: 'Cannot search while the response is streaming' },
+    ]);
+  });
+
+  it('refuses / while loading in the fullscreen response panel', () => {
+    const state = createInitialState({
+      isLoading: true,
+      maximizedPanel: 'response',
+      focusedPanel: 'response',
+    });
+
+    expect(pressKey(state, '/')).toEqual([
+      { type: 'SET_TRANSIENT_MESSAGE', message: 'Cannot search while the response is streaming' },
+    ]);
+  });
+
+  it('stays silent when the response panel is hidden while loading', () => {
+    const state = createInitialState({
+      isLoading: true,
+      maximizedPanel: 'details',
+      focusedPanel: 'details',
+    });
+
+    expect(pressKey(state, '/')).toEqual([]);
   });
 });
 

@@ -236,6 +236,7 @@ export type Action =
   | { type: 'APPEND_REQUEST'; request: ParsedRequest }
   | { type: 'MOVE_SELECTION'; direction: 'up' | 'down' }
   | { type: 'SEND_REQUEST' }
+  | { type: 'RECEIVE_RESPONSE_HEADERS'; response: ResponseData }
   | { type: 'RECEIVE_RESPONSE'; response: ResponseData }
   | { type: 'REQUEST_ERROR'; error: ErrorInfo }
   | { type: 'REQUEST_CANCEL'; warning: string }

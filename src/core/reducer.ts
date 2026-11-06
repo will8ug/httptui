@@ -41,6 +41,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return reduceNavigation(state, action);
 
     case 'SEND_REQUEST':
+    case 'RECEIVE_RESPONSE_HEADERS':
     case 'RECEIVE_RESPONSE':
     case 'REQUEST_ERROR':
     case 'REQUEST_CANCEL':
