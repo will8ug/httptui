@@ -19,7 +19,7 @@ While a panel is fullscreen (`f`), only navigation and keys relevant to the visi
 | `←` / `h` | Scroll focused panel left |
 | `→` / `l` | Scroll focused panel right |
 | `g` | Jump to top of focused panel |
-| `G` | Jump to bottom of focused panel |
+| `G` | Jump to bottom of focused panel (while a response streams, re-attaches follow-tail so subsequent updates follow the newest content again) |
 | `0` | Jump to horizontal start |
 | `$` | Jump to horizontal end |
 | `Tab` | Switch focus between panels |
