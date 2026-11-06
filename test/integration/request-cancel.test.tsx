@@ -13,12 +13,8 @@ vi.mock('undici', () => ({
 
 import { delay, ENTER, ESC, KEY_DELAY_MS, press, renderApp } from '../helpers/integration';
 import { createRequest } from '../helpers/requests';
-
-interface MockUndiciResponse {
-  statusCode: number;
-  headers: Record<string, string>;
-  body: { text: () => Promise<string> };
-}
+import { createHeldUndiciBody } from '../helpers/undici';
+import type { MockUndiciResponse } from '../helpers/undici';
 
 interface PendingCall {
   resolve: (response: MockUndiciResponse) => void;
@@ -55,7 +51,7 @@ function makeHeldBodyResponse(): { response: MockUndiciResponse; resolveBody: (b
     resolveBody = resolve;
   });
   return {
-    response: { statusCode: 200, headers: {}, body: { text: () => text } },
+    response: { statusCode: 200, headers: {}, body: createHeldUndiciBody(text) },
     resolveBody,
   };
 }
