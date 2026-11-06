@@ -57,6 +57,12 @@ export interface ResponseData {
   size: {
     bodyBytes: number;
   };
+  /**
+   * Present only on a response whose transfer the user canceled: the body is
+   * the partial text received up to the cancel, kept on display with no
+   * duration figure.
+   */
+  canceled?: boolean;
 }
 
 /**

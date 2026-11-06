@@ -7,7 +7,7 @@ While a panel is fullscreen (`f`), only navigation and keys relevant to the visi
 | Key | Action |
 |-----|--------|
 | `?` | Toggle help overlay |
-| `Escape` | Close current overlay / Cancel in-flight request / Dismiss search results / Exit fullscreen (an active search is dismissed first in split view or with any panel fullscreen; with no search active, exits fullscreen) |
+| `Escape` | Close current overlay / Cancel in-flight request (a streaming response keeps the partial body received so far on display, marked canceled, with no duration shown; the partial body can then be inspected and saved) / Dismiss search results / Exit fullscreen (an active search is dismissed first in split view or with any panel fullscreen; with no search active, exits fullscreen) |
 | `q` | Dismiss search results when shown, otherwise quit application (while fullscreen, quit is disabled; leave fullscreen or use `Ctrl+C` to exit) |
 
 ## Navigation
@@ -33,7 +33,7 @@ While a panel is fullscreen (`f`), only navigation and keys relevant to the visi
 | `o` | Open a different .http file |
 | `E` | Switch environment |
 | `S` | Export requests to a new .http file |
-| `s` | Save response to file (not while a response is streaming) |
+| `s` | Save response to file (not while a response is streaming; a canceled stream's partial body saves exactly as received) |
 | `y` | Copy request as curl |
 | `p` | Paste curl to request list |
 

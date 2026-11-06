@@ -31,6 +31,29 @@ describe('handleResponseSaveInput', () => {
     }
   });
 
+  it('writes a canceled partial raw body exactly as received', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-save-resp-unit-'));
+    try {
+      const state = createInitialState({
+        filePath: join(tmpDir, 'api.http'),
+        mode: 'responseSave',
+        responseSave: { ...INITIAL_RESPONSE_SAVE, input: 'partial.txt', cursor: 'partial.txt'.length },
+        response: createMockResponse({
+          body: 'data: one\ndata: two\n',
+          rawBody: 'data: one\r\ndata: two\r\n',
+          size: { bodyBytes: 22 },
+          canceled: true,
+        }),
+      });
+
+      handleResponseSaveInput({ state, input: '', key: makeKey({ return: true }), dispatch: vi.fn() });
+
+      expect(readFileSync(join(tmpDir, 'partial.txt'), 'utf8')).toBe('data: one\r\ndata: two\r\n');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it('Enter with an existing target dispatches SET_RESPONSE_SAVE_ERROR and does not overwrite', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-save-resp-unit-'));
     try {
@@ -172,6 +195,17 @@ describe('handleNormalInput s guard', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_TRANSIENT_MESSAGE', message: 'Cannot save while the response is streaming' });
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_TRANSIENT_MESSAGE', message: 'No response to save' });
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'ENTER_RESPONSE_SAVE' });
+  });
+
+  it('enters the response-save overlay for a canceled response once loading has ended', () => {
+    const state = createInitialState({
+      requests: [createRequest({ name: 'Get Users' })],
+      response: createMockResponse({ body: 'data: partial', rawBody: 'data: partial', canceled: true }),
+    });
+    const { dispatch } = runNormalInput(state, 's');
+
+    expect(dispatch).toHaveBeenCalledWith({ type: 'ENTER_RESPONSE_SAVE' });
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_TRANSIENT_MESSAGE' }));
   });
 });
 

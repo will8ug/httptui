@@ -7,6 +7,7 @@ import type { Action, AppState, SearchState } from '../../src/core/types';
 import { panelState, populatedPanelState, pressKey, runNormalInput } from '../helpers/dispatch';
 import { makeKey } from '../helpers/keys';
 import { createRequest } from '../helpers/requests';
+import { createMockResponse } from '../helpers/responses';
 import { createInitialState, reducer } from '../helpers/state';
 
 describe('fullscreen match navigation', () => {
@@ -225,6 +226,24 @@ describe('escape while loading', () => {
     const abort = vi.spyOn(abortController, 'abort');
     const result = runNormalInput(
       panelState('response', { isLoading: true }),
+      '',
+      makeKey({ escape: true }),
+      { current: abortController },
+    );
+
+    expect(result.actions).toEqual([{ type: 'REQUEST_CANCEL', warning: 'Request canceled' }]);
+    expect(abort).toHaveBeenCalledOnce();
+  });
+
+  it('Escape mid-stream with the partial body on display dispatches the same REQUEST_CANCEL', () => {
+    const abortController = new AbortController();
+    const abort = vi.spyOn(abortController, 'abort');
+    const result = runNormalInput(
+      createInitialState({
+        requests: [createRequest()],
+        isLoading: true,
+        response: createMockResponse({ body: 'data: partial' }),
+      }),
       '',
       makeKey({ escape: true }),
       { current: abortController },

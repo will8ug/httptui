@@ -199,6 +199,36 @@ describe('streaming partial body', () => {
   });
 });
 
+describe('canceled partial body', () => {
+  it('shows the CANCELED marker with the kept byte count and partial body once loading ends', () => {
+    const response = createMockResponse({
+      body: 'data: partial body',
+      rawBody: 'data: partial body',
+      timing: { durationMs: 0 },
+      size: { bodyBytes: 18 },
+      canceled: true,
+    });
+    const { lastFrame } = render(<ResponseView {...baseProps} response={response} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('CANCELED 18 B');
+    expect(frame).toContain('data: partial body');
+    expect(frame).not.toContain('STREAMING');
+    expect(frame).not.toMatch(/\d+ms/);
+  });
+
+  it('keeps the canceled marker alongside verbose headers', () => {
+    const response = createMockResponse({
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: partial body',
+      canceled: true,
+    });
+    const { lastFrame } = render(<ResponseView {...baseProps} response={response} verbose={true} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('content-type: text/event-stream');
+    expect(frame).toContain('CANCELED');
+  });
+});
+
 describe('display modes', () => {
   it('pretty-prints JSON by default (multi-line indented)', () => {
     const { lastFrame } = render(

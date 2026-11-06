@@ -170,6 +170,50 @@ describe('computeResponseViewport — streaming status line', () => {
   });
 });
 
+describe('computeResponseViewport — canceled status line', () => {
+  it('carries a red CANCELED marker with the kept byte count instead of the 0ms placeholder', () => {
+    const response = createMockResponse({
+      statusCode: 200,
+      statusText: 'OK',
+      timing: { durationMs: 0 },
+      size: { bodyBytes: 19 },
+      canceled: true,
+    });
+    const viewport = computeResponseViewport({
+      streaming: false,
+      response,
+      verbose: false,
+      rawMode: true,
+      wrapMode: 'nowrap',
+      geometry: splitGeometry(20),
+    });
+
+    const status = viewport.sections.find((s) => s.kind === 'status');
+    const segments = status?.visualLines[0];
+    expect(segments).toHaveLength(3);
+    expect(segments?.[0]).toEqual({ text: 'HTTP/1.1 ', color: 'gray' });
+    expect(segments?.[1].text).toBe('200 OK');
+    expect(segments?.[2]).toEqual({ text: '  CANCELED 19 B', color: 'red' });
+  });
+
+  it('never renders a duration figure for a canceled response', () => {
+    const response = createMockResponse({ timing: { durationMs: 4321 }, canceled: true });
+    const viewport = computeResponseViewport({
+      streaming: false,
+      response,
+      verbose: false,
+      rawMode: true,
+      wrapMode: 'nowrap',
+      geometry: splitGeometry(20),
+    });
+
+    const status = viewport.sections.find((s) => s.kind === 'status');
+    const text = (status?.visualLines[0] ?? []).map((segment) => segment.text).join('');
+    expect(text).toContain('CANCELED');
+    expect(text).not.toMatch(/\d+ms/);
+  });
+});
+
 describe('computeResponseViewport — wrap mode', () => {
   it('matches the nowrap shape when status, headers, and body all fit the content width', () => {
     const response = createMockResponse({ headers: { a: 'b' }, body: 'x\ny' });

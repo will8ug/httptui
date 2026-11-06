@@ -19,7 +19,7 @@ export interface ResponseLayout {
 
 export type ResponseForLayout = Pick<
   ResponseData,
-  'statusCode' | 'statusText' | 'headers' | 'timing' | 'size'
+  'statusCode' | 'statusText' | 'headers' | 'timing' | 'size' | 'canceled'
 >;
 
 export interface ComputeResponseLayoutOptions {
@@ -44,6 +44,8 @@ export function formatStatusLine(response: ResponseForLayout, streaming: boolean
   // The duration figure is completion-only.
   if (streaming) {
     statusSegments.push({ text: `  STREAMING ${response.size.bodyBytes} B`, color: 'yellow' });
+  } else if (response.canceled) {
+    statusSegments.push({ text: `  CANCELED ${response.size.bodyBytes} B`, color: 'red' });
   } else {
     statusSegments.push({ text: `  ${Math.round(response.timing.durationMs)}ms`, color: 'gray' });
   }
