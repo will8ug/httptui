@@ -14,7 +14,7 @@ vi.mock('undici', () => ({
 import { CHUNK_COALESCE_WINDOW_MS } from '../../src/utils/timing';
 import { delay, ENTER, ESC, KEY_DELAY_MS, press, renderApp } from '../helpers/integration';
 import { createRequest } from '../helpers/requests';
-import { createHeldUndiciBody, createStagedUndiciBody } from '../helpers/undici';
+import { createMockUndiciResponse, createHeldUndiciBody, createStagedUndiciBody } from '../helpers/undici';
 import type { MockUndiciResponse } from '../helpers/undici';
 
 interface PendingCall {
@@ -121,11 +121,10 @@ describe('request cancel', () => {
   it('canceling mid-stream keeps the partial body on display, marked canceled, and never grows after cancel', async () => {
     const staged = createStagedUndiciBody();
     staged.push('data: first event\n\n');
-    const response: MockUndiciResponse = {
-      statusCode: 200,
+    const response = createMockUndiciResponse({
       headers: { 'content-type': 'text/event-stream' },
       body: staged.body,
-    };
+    });
     requestMock.mockImplementation(() => Promise.resolve(response));
 
     const { stdin, lastFrame } = renderApp({ requests: [createRequest({ name: 'sse-req', url: 'https://a.co/sse' })] });

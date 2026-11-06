@@ -74,12 +74,15 @@ export function createStagedUndiciBody(): StagedUndiciBody {
 export function createMockUndiciResponse(overrides: {
   statusCode?: number;
   headers?: Record<string, string | string[]>;
-  body?: string;
+  body?: string | AsyncIterable<Buffer>;
   chunks?: Buffer[];
 } = {}): MockUndiciResponse {
+  const body = typeof overrides.body === 'string' || overrides.body === undefined
+    ? createMockUndiciBody(overrides.chunks ?? [Buffer.from(overrides.body ?? '', 'utf-8')])
+    : overrides.body;
   return {
     statusCode: overrides.statusCode ?? 200,
     headers: overrides.headers ?? {},
-    body: createMockUndiciBody(overrides.chunks ?? [Buffer.from(overrides.body ?? '', 'utf-8')]),
+    body,
   };
 }

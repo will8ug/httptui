@@ -14,8 +14,7 @@ vi.mock('undici', () => ({
 import { CHUNK_COALESCE_WINDOW_MS } from '../../src/utils/timing';
 import { delay, ENTER, KEY_DELAY_MS, press, renderApp } from '../helpers/integration';
 import { createRequest } from '../helpers/requests';
-import { createStagedUndiciBody } from '../helpers/undici';
-import type { MockUndiciResponse } from '../helpers/undici';
+import { createMockUndiciResponse, createStagedUndiciBody } from '../helpers/undici';
 
 afterEach(() => {
   cleanup();
@@ -29,11 +28,10 @@ describe('streaming response display', () => {
   it('shows the partial body growing mid-stream, then the completed pretty response', async () => {
     const staged = createStagedUndiciBody();
     staged.push('{"message":"hello ');
-    const response: MockUndiciResponse = {
-      statusCode: 200,
+    const response = createMockUndiciResponse({
       headers: { 'content-type': 'application/json' },
       body: staged.body,
-    };
+    });
     requestMock.mockImplementation(() => Promise.resolve(response));
 
     const { stdin, lastFrame } = renderApp({
