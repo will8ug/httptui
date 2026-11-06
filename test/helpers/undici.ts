@@ -22,6 +22,55 @@ export function createHeldUndiciBody(bodyText: Promise<string>): AsyncIterable<B
   };
 }
 
+export interface StagedUndiciBody {
+  body: AsyncIterable<Buffer>;
+  push(chunk: string | Buffer): void;
+  end(): void;
+}
+
+/**
+ * A body whose chunks the test stages externally, so frames can be asserted
+ * while the transfer is still open.
+ */
+export function createStagedUndiciBody(): StagedUndiciBody {
+  const queued: Buffer[] = [];
+  const waiters: Array<() => void> = [];
+  let ended = false;
+
+  const releaseWaiters = (): void => {
+    while (waiters.length > 0) {
+      waiters.shift()?.();
+    }
+  };
+
+  return {
+    body: {
+      async *[Symbol.asyncIterator]() {
+        while (true) {
+          if (queued.length > 0) {
+            yield queued.shift() as Buffer;
+            continue;
+          }
+          if (ended) {
+            return;
+          }
+          await new Promise<void>((resolve) => {
+            waiters.push(resolve);
+          });
+        }
+      },
+    },
+    push(chunk: string | Buffer): void {
+      queued.push(typeof chunk === 'string' ? Buffer.from(chunk, 'utf-8') : chunk);
+      releaseWaiters();
+    },
+    end(): void {
+      ended = true;
+      releaseWaiters();
+    },
+  };
+}
+
 export function createMockUndiciResponse(overrides: {
   statusCode?: number;
   headers?: Record<string, string | string[]>;

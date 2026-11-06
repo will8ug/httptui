@@ -114,6 +114,91 @@ describe('content states', () => {
   });
 });
 
+describe('streaming partial body', () => {
+  it('reflects the received byte count in the STREAMING marker as the partial body grows', () => {
+    const response = createMockResponse({ body: 'partial text', size: { bodyBytes: 12 } });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('STREAMING 12 B');
+    expect(frame).toContain('partial text');
+  });
+
+  it('renders a partial JSON body raw during the stream, then pretty once complete', () => {
+    const partial = createMockResponse({
+      body: '{"id":"1","name"',
+      size: { bodyBytes: 16 },
+    });
+    const streamingFrame = render(
+      <ResponseView {...baseProps} response={partial} isLoading={true} />,
+    ).lastFrame() ?? '';
+    expect(streamingFrame).toContain('{"id":"1","name"');
+    expect(streamingFrame).toContain('STREAMING');
+    expect(streamingFrame).not.toContain('"id": "1"');
+
+    const complete = createMockResponse({
+      body: '{"id":"1","name":"Ada"}',
+      size: { bodyBytes: 21 },
+    });
+    const completedFrame = render(
+      <ResponseView {...baseProps} response={complete} isLoading={false} />,
+    ).lastFrame() ?? '';
+    expect(completedFrame).toContain('"id": "1"');
+    expect(completedFrame).not.toContain('STREAMING');
+  });
+
+  it('shows the raw toggle operating on the partial body mid-stream', () => {
+    const response = createMockResponse({
+      body: '{"id":"1"',
+      size: { bodyBytes: 8 },
+    });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} rawMode={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('{"id":"1"');
+    expect(frame).toContain('[raw]');
+    expect(frame).toContain('STREAMING 8 B');
+  });
+
+  it('shows headers alongside the growing partial body in verbose mode', () => {
+    const response = createMockResponse({
+      body: 'data: first token',
+      headers: { 'content-type': 'text/event-stream' },
+      size: { bodyBytes: 17 },
+    });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} verbose={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('content-type: text/event-stream');
+    expect(frame).toContain('data: first token');
+    expect(frame).toContain('STREAMING');
+  });
+
+  it('wraps a long partial body line in wrap mode mid-stream', () => {
+    const response = createMockResponse({
+      body: `${'V'.repeat(66)}W`,
+      size: { bodyBytes: 67 },
+    });
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        isLoading={true}
+        wrapMode={'wrap' as const}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    const bodyRows = frame.split('\n').filter((line) => line.includes('V') || line.includes('W'));
+    expect(bodyRows).toHaveLength(2);
+    expect(bodyRows[1]).toContain('W');
+    expect(frame).toContain('[wrap]');
+    expect(frame).toContain('STREAMING');
+  });
+});
+
 describe('display modes', () => {
   it('pretty-prints JSON by default (multi-line indented)', () => {
     const { lastFrame } = render(

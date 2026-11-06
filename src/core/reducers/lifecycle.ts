@@ -2,7 +2,7 @@ import type { Action, AppState } from '../types';
 import { mergeVariables } from '../variables';
 import { INITIAL_SEARCH, setTransient, warningSuffix } from './helpers';
 
-type RequestLifecycleAction = Extract<Action, { type: 'SEND_REQUEST' | 'RECEIVE_RESPONSE_HEADERS' | 'RECEIVE_RESPONSE' | 'REQUEST_ERROR' | 'REQUEST_CANCEL' | 'RELOAD_FILE' }>;
+type RequestLifecycleAction = Extract<Action, { type: 'SEND_REQUEST' | 'RECEIVE_RESPONSE_HEADERS' | 'APPEND_RESPONSE_BODY' | 'RECEIVE_RESPONSE' | 'REQUEST_ERROR' | 'REQUEST_CANCEL' | 'RELOAD_FILE' }>;
 
 export function reduceRequestLifecycle(state: AppState, action: RequestLifecycleAction): AppState {
   switch (action.type) {
@@ -24,6 +24,28 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         ...state,
         response: action.response,
       };
+
+    // Appends are a streaming-phase transition: once loading has ended the
+    // response is complete or canceled, and a coalesced flush still in flight
+    // for it must not grow it.
+    case 'APPEND_RESPONSE_BODY': {
+      if (!state.isLoading || !state.response) {
+        return state;
+      }
+
+      return {
+        ...state,
+        response: {
+          ...state.response,
+          body: state.response.body + action.chunk.display,
+          rawBody: state.response.rawBody + action.chunk.raw,
+          size: {
+            ...state.response.size,
+            bodyBytes: state.response.size.bodyBytes + action.chunk.bytes,
+          },
+        },
+      };
+    }
 
     case 'RECEIVE_RESPONSE':
       return {

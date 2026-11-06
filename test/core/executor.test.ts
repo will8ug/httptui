@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { ErrorInfo, ResolvedRequest, ResponseData } from '../../src/core/types';
+import type { ErrorInfo, ResolvedRequest, ResponseChunk, ResponseData } from '../../src/core/types';
 
 const { agentMock, MockFormData, requestMock } = vi.hoisted(() => {
   class FormDataMock {
@@ -29,7 +29,7 @@ vi.mock('undici', () => ({
 }));
 
 import { executeRequest, isErrorInfo } from '../../src/core/executor';
-import type { ResponseCallbacks, ResponseChunk } from '../../src/core/executor';
+import type { ResponseCallbacks } from '../../src/core/executor';
 import { createHeadersTimeSnapshot } from '../helpers/responses';
 import { createResolvedRequest } from '../helpers/requests';
 import { createHeldUndiciBody, createMockUndiciResponse as createMockResponse } from '../helpers/undici';
