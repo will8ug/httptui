@@ -14,6 +14,16 @@ export function createMockResponse(overrides: Partial<ResponseData> = {}): Respo
   };
 }
 
+export function createHeadersTimeSnapshot(overrides: Partial<ResponseData> = {}): ResponseData {
+  return createMockResponse({
+    body: '',
+    rawBody: '',
+    timing: { durationMs: 0 },
+    size: { bodyBytes: 0 },
+    ...overrides,
+  });
+}
+
 export const longResponse: ResponseData = createMockResponse({
   body: 'x'.repeat(200),
   size: { bodyBytes: 200 },

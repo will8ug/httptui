@@ -65,6 +65,7 @@ export function responseViewportFromState(state: AppState): ResponseViewportMode
   );
   return computeResponseViewport({
     response: state.response,
+    streaming: state.isLoading,
     verbose: state.verbose,
     rawMode: state.rawMode,
     wrapMode: state.wrapMode,

@@ -12,6 +12,7 @@ vi.mock('undici', () => ({
 }));
 
 import { delay, KEY_DELAY_MS, press, renderApp, TAB } from '../helpers/integration';
+import { createMockUndiciResponse } from '../helpers/undici';
 import { createMockResponse } from '../helpers/responses';
 import { computeResponseViewport } from '../../src/core/response-viewport';
 import { DEFAULT_TERMINAL_ROWS } from '../../src/utils/layout';
@@ -30,6 +31,7 @@ const storedResponse = createMockResponse({
 
 function expectedTotalLines(maximizedPanel: FocusedPanel | null): number {
   return computeResponseViewport({
+    streaming: false,
     response: storedResponse,
     verbose: false,
     rawMode: false,
@@ -45,6 +47,7 @@ function expectedTotalLines(maximizedPanel: FocusedPanel | null): number {
 
 function expectedViewportTotal(fullscreen: boolean): number {
   return computeResponseViewport({
+    streaming: false,
     response: storedResponse,
     verbose: false,
     rawMode: false,
@@ -72,13 +75,7 @@ function makeRequest(): ParsedRequest[] {
 }
 
 function stubResponse(body: string): void {
-  requestMock.mockResolvedValue({
-    statusCode: 200,
-    headers: {},
-    body: {
-      text: async () => body,
-    },
-  });
+  requestMock.mockResolvedValue(createMockUndiciResponse({ body }));
 }
 
 function lineIndicatorTotal(frame: string): number {

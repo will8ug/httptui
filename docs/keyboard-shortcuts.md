@@ -7,7 +7,7 @@ While a panel is fullscreen (`f`), only navigation and keys relevant to the visi
 | Key | Action |
 |-----|--------|
 | `?` | Toggle help overlay |
-| `Escape` | Close current overlay / Cancel in-flight request / Dismiss search results / Exit fullscreen (an active search is dismissed first in split view or with any panel fullscreen; with no search active, exits fullscreen) |
+| `Escape` | Close current overlay / Cancel in-flight request (a streaming response keeps the partial body received so far on display, marked canceled, with no duration shown; the partial body can then be inspected and saved) / Dismiss search results / Exit fullscreen (an active search is dismissed first in split view or with any panel fullscreen; with no search active, exits fullscreen) |
 | `q` | Dismiss search results when shown, otherwise quit application (while fullscreen, quit is disabled; leave fullscreen or use `Ctrl+C` to exit) |
 
 ## Navigation
@@ -19,7 +19,7 @@ While a panel is fullscreen (`f`), only navigation and keys relevant to the visi
 | `←` / `h` | Scroll focused panel left |
 | `→` / `l` | Scroll focused panel right |
 | `g` | Jump to top of focused panel |
-| `G` | Jump to bottom of focused panel |
+| `G` | Jump to bottom of focused panel (while a response streams, re-attaches follow-tail so subsequent updates follow the newest content again) |
 | `0` | Jump to horizontal start |
 | `$` | Jump to horizontal end |
 | `Tab` | Switch focus between panels |
@@ -33,7 +33,7 @@ While a panel is fullscreen (`f`), only navigation and keys relevant to the visi
 | `o` | Open a different .http file |
 | `E` | Switch environment |
 | `S` | Export requests to a new .http file |
-| `s` | Save response to file |
+| `s` | Save response to file (not while a response is streaming; a canceled stream's partial body saves exactly as received) |
 | `y` | Copy request as curl |
 | `p` | Paste curl to request list |
 
@@ -51,7 +51,7 @@ While a panel is fullscreen (`f`), only navigation and keys relevant to the visi
 
 | Key | Action |
 |-----|--------|
-| `/` | Search response body (only when the response panel is fullscreen or no panel is fullscreen) |
+| `/` | Search response body (only when the response panel is fullscreen or no panel is fullscreen; not while a response is streaming) |
 | `n` | Go to next match (only when the response panel is fullscreen or no panel is fullscreen) |
 | `N` | Go to previous match (only when the response panel is fullscreen or no panel is fullscreen) |
 | `Escape` | Dismiss search results |

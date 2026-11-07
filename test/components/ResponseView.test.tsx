@@ -37,11 +37,62 @@ const baseProps = {
 };
 
 describe('content states', () => {
-  it('renders the Sending request spinner label and cancel hint when loading', () => {
+  it('renders the Sending request spinner label and cancel hint while loading with no response yet', () => {
     const { lastFrame } = render(<ResponseView {...baseProps} isLoading={true} />);
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Sending request');
     expect(frame).toContain('(Esc to cancel)');
+  });
+
+  it('replaces the spinner with the status line once a response arrives while loading', () => {
+    const response = createMockResponse({ statusCode: 200, statusText: 'OK' });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).not.toContain('Sending request');
+    expect(frame).toContain('HTTP/1.1 200 OK');
+    expect(frame).toContain('STREAMING 0 B');
+  });
+
+  it('renders no duration figure while streaming', () => {
+    const response = createMockResponse({ timing: { durationMs: 4321 } });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('STREAMING');
+    expect(frame).not.toContain('4321ms');
+  });
+
+  it('renders headers alongside the streaming status line in verbose mode', () => {
+    const response = createMockResponse({
+      headers: { 'content-type': 'text/event-stream' },
+    });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} verbose={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('content-type: text/event-stream');
+    expect(frame).toContain('STREAMING');
+  });
+
+  it('renders the body received so far while the response is still loading', () => {
+    const response = createMockResponse({ body: 'data: partial body marker' });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('data: partial body marker');
+    expect(frame).not.toContain('Sending request');
+  });
+
+  it('shows the duration and no STREAMING marker once loading ends', () => {
+    const response = createMockResponse({ timing: { durationMs: 100 } });
+    const { lastFrame } = render(<ResponseView {...baseProps} response={response} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('100ms');
+    expect(frame).not.toContain('STREAMING');
   });
 
   it('renders the error message and code', () => {
@@ -60,6 +111,140 @@ describe('content states', () => {
     const { lastFrame } = render(<ResponseView {...baseProps} />);
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Press Enter to send a request');
+  });
+});
+
+describe('streaming partial body', () => {
+  it('reflects the received byte count in the STREAMING marker as the partial body grows', () => {
+    const response = createMockResponse({ body: 'partial text', size: { bodyBytes: 12 } });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('STREAMING 12 B');
+    expect(frame).toContain('partial text');
+  });
+
+  it('renders a partial JSON body raw during the stream, then pretty once complete', () => {
+    const partial = createMockResponse({
+      body: '{"id":"1","name"',
+      size: { bodyBytes: 16 },
+    });
+    const streamingFrame = render(
+      <ResponseView {...baseProps} response={partial} isLoading={true} />,
+    ).lastFrame() ?? '';
+    expect(streamingFrame).toContain('{"id":"1","name"');
+    expect(streamingFrame).toContain('STREAMING');
+    expect(streamingFrame).not.toContain('"id": "1"');
+
+    const complete = createMockResponse({
+      body: '{"id":"1","name":"Ada"}',
+      size: { bodyBytes: 21 },
+    });
+    const completedFrame = render(
+      <ResponseView {...baseProps} response={complete} isLoading={false} />,
+    ).lastFrame() ?? '';
+    expect(completedFrame).toContain('"id": "1"');
+    expect(completedFrame).not.toContain('STREAMING');
+  });
+
+  it('renders a JSON-parseable partial body raw during the stream, then the same body pretty once complete', () => {
+    // '{"a":1}' is valid JSON as a whole, so unlike an invalid partial it would
+    // pretty-print mid-stream without the streaming suppression.
+    const response = createMockResponse({ body: '{"a":1}', size: { bodyBytes: 7 } });
+
+    const streamingFrame = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} />,
+    ).lastFrame() ?? '';
+    expect(streamingFrame).toContain('{"a":1}');
+    expect(streamingFrame).not.toContain('"a": 1');
+    expect(streamingFrame).toContain('STREAMING');
+
+    const completedFrame = render(
+      <ResponseView {...baseProps} response={response} isLoading={false} />,
+    ).lastFrame() ?? '';
+    expect(completedFrame).toContain('"a": 1');
+    expect(completedFrame).not.toContain('{"a":1}');
+  });
+
+  it('shows the raw toggle operating on the partial body mid-stream', () => {
+    const response = createMockResponse({
+      body: '{"id":"1"',
+      size: { bodyBytes: 8 },
+    });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} rawMode={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('{"id":"1"');
+    expect(frame).toContain('[raw]');
+    expect(frame).toContain('STREAMING 8 B');
+  });
+
+  it('shows headers alongside the growing partial body in verbose mode', () => {
+    const response = createMockResponse({
+      body: 'data: first token',
+      headers: { 'content-type': 'text/event-stream' },
+      size: { bodyBytes: 17 },
+    });
+    const { lastFrame } = render(
+      <ResponseView {...baseProps} response={response} isLoading={true} verbose={true} />,
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('content-type: text/event-stream');
+    expect(frame).toContain('data: first token');
+    expect(frame).toContain('STREAMING');
+  });
+
+  it('wraps a long partial body line in wrap mode mid-stream', () => {
+    const response = createMockResponse({
+      body: `${'V'.repeat(66)}W`,
+      size: { bodyBytes: 67 },
+    });
+    const { lastFrame } = render(
+      <ResponseView
+        {...baseProps}
+        response={response}
+        isLoading={true}
+        wrapMode={'wrap' as const}
+      />,
+    );
+    const frame = lastFrame() ?? '';
+    const bodyRows = frame.split('\n').filter((line) => line.includes('V') || line.includes('W'));
+    expect(bodyRows).toHaveLength(2);
+    expect(bodyRows[1]).toContain('W');
+    expect(frame).toContain('[wrap]');
+    expect(frame).toContain('STREAMING');
+  });
+});
+
+describe('canceled partial body', () => {
+  it('shows the CANCELED marker with the kept byte count and partial body once loading ends', () => {
+    const response = createMockResponse({
+      body: 'data: partial body',
+      rawBody: 'data: partial body',
+      timing: { durationMs: 0 },
+      size: { bodyBytes: 18 },
+      canceled: true,
+    });
+    const { lastFrame } = render(<ResponseView {...baseProps} response={response} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('CANCELED 18 B');
+    expect(frame).toContain('data: partial body');
+    expect(frame).not.toContain('STREAMING');
+    expect(frame).not.toMatch(/\d+ms/);
+  });
+
+  it('keeps the canceled marker alongside verbose headers', () => {
+    const response = createMockResponse({
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: partial body',
+      canceled: true,
+    });
+    const { lastFrame } = render(<ResponseView {...baseProps} response={response} verbose={true} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('content-type: text/event-stream');
+    expect(frame).toContain('CANCELED');
   });
 });
 

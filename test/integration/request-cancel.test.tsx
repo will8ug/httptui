@@ -11,14 +11,11 @@ vi.mock('undici', () => ({
   request: requestMock,
 }));
 
+import { CHUNK_COALESCE_WINDOW_MS } from '../../src/utils/timing';
 import { delay, ENTER, ESC, KEY_DELAY_MS, press, renderApp } from '../helpers/integration';
 import { createRequest } from '../helpers/requests';
-
-interface MockUndiciResponse {
-  statusCode: number;
-  headers: Record<string, string>;
-  body: { text: () => Promise<string> };
-}
+import { createMockUndiciResponse, createHeldUndiciBody, createStagedUndiciBody } from '../helpers/undici';
+import type { MockUndiciResponse } from '../helpers/undici';
 
 interface PendingCall {
   resolve: (response: MockUndiciResponse) => void;
@@ -55,7 +52,7 @@ function makeHeldBodyResponse(): { response: MockUndiciResponse; resolveBody: (b
     resolveBody = resolve;
   });
   return {
-    response: { statusCode: 200, headers: {}, body: { text: () => text } },
+    response: { statusCode: 200, headers: {}, body: createHeldUndiciBody(text) },
     resolveBody,
   };
 }
@@ -99,11 +96,18 @@ describe('request cancel', () => {
     const held = makeHeldBodyResponse();
     releaseNext(held.response);
     await delay(KEY_DELAY_MS * 2);
-    expect(lastFrame() ?? '').toContain('Sending request');
+    const headersFrame = lastFrame() ?? '';
+    expect(headersFrame).toContain('HTTP/1.1 200 OK');
+    expect(headersFrame).toContain('STREAMING');
+    expect(headersFrame).not.toContain('Sending request');
 
     await press(stdin, ESC);
     await delay(KEY_DELAY_MS * 2);
-    expect(lastFrame() ?? '').toContain('Request canceled');
+    const canceledFrame = lastFrame() ?? '';
+    expect(canceledFrame).toContain('Request canceled');
+    expect(canceledFrame).toContain('CANCELED 0 B');
+    expect(canceledFrame).not.toContain('STREAMING');
+    expect(canceledFrame).not.toMatch(/\d+ms/);
 
     held.resolveBody('late payload');
     await delay(KEY_DELAY_MS * 4);
@@ -112,5 +116,46 @@ describe('request cancel', () => {
     expect(frame).not.toContain('late payload');
     expect(frame).toContain('Request canceled');
     expect(frame).not.toContain('Sending request');
+  });
+
+  it('canceling mid-stream keeps the partial body on display, marked canceled, and never grows after cancel', async () => {
+    const staged = createStagedUndiciBody();
+    staged.push('data: first event\n\n');
+    const response = createMockUndiciResponse({
+      headers: { 'content-type': 'text/event-stream' },
+      body: staged.body,
+    });
+    requestMock.mockImplementation(() => Promise.resolve(response));
+
+    const { stdin, lastFrame } = renderApp({ requests: [createRequest({ name: 'sse-req', url: 'https://a.co/sse' })] });
+    await delay(KEY_DELAY_MS);
+
+    await press(stdin, ENTER);
+    await delay(CHUNK_COALESCE_WINDOW_MS + 100);
+
+    const streamingFrame = lastFrame() ?? '';
+    expect(streamingFrame).toContain('HTTP/1.1 200 OK');
+    expect(streamingFrame).toContain('STREAMING 19 B');
+    expect(streamingFrame).toContain('data: first event');
+
+    await press(stdin, ESC);
+    await delay(KEY_DELAY_MS * 2);
+
+    const canceledFrame = lastFrame() ?? '';
+    expect(canceledFrame).toContain('Request canceled');
+    expect(canceledFrame).toContain('data: first event');
+    expect(canceledFrame).toContain('CANCELED 19 B');
+    expect(canceledFrame).not.toContain('STREAMING');
+    expect(canceledFrame).not.toMatch(/\d+ms/);
+
+    staged.push('data: late event\n\n');
+    staged.end();
+    await delay(CHUNK_COALESCE_WINDOW_MS + 100);
+
+    const settledFrame = lastFrame() ?? '';
+    expect(settledFrame).toContain('CANCELED 19 B');
+    expect(settledFrame).toContain('data: first event');
+    expect(settledFrame).not.toContain('data: late event');
+    expect(settledFrame).not.toContain('Sending request');
   });
 });

@@ -184,6 +184,7 @@ return (
           responseScrollOffset={state.responseScrollOffset}
           responseTotalLines={state.response ? computeResponseViewport({
             response: state.response,
+            streaming: state.isLoading,
             verbose: state.verbose,
             rawMode: state.rawMode,
             wrapMode: state.wrapMode,

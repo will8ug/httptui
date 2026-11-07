@@ -35,6 +35,7 @@ export interface ResponseViewportGeometry {
 
 export interface ResponseViewportOptions {
   response: ResponseData;
+  streaming: boolean;
   verbose: boolean;
   rawMode: boolean;
   wrapMode: WrapMode;
@@ -116,6 +117,7 @@ function sameGeometry(a: ResponseViewportGeometry, b: ResponseViewportGeometry):
 function sameOptions(a: ResponseViewportOptions, b: ResponseViewportOptions): boolean {
   return (
     a.response === b.response &&
+    a.streaming === b.streaming &&
     a.verbose === b.verbose &&
     a.rawMode === b.rawMode &&
     a.wrapMode === b.wrapMode &&
@@ -131,15 +133,17 @@ export function computeResponseViewport(options: ResponseViewportOptions): Respo
     return memoizedModel;
   }
 
-  const { response, verbose, rawMode, wrapMode, geometry } = options;
+  const { response, streaming, verbose, rawMode, wrapMode, geometry } = options;
   const contentWidth = contentWidthFor(geometry);
   const layout = computeResponseLayout({
     response,
+    streaming,
     verbose,
     rawMode,
     wrapMode,
     contentWidth,
-    formattedBody: formatResponseBody(response.body, rawMode),
+    // The partial body displays raw; pretty-printing applies only at completion.
+    formattedBody: formatResponseBody(response.body, rawMode || streaming),
   });
   const visibleHeight = visibleHeightFor(geometry);
   const model: ResponseViewportModel = {

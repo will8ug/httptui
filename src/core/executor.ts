@@ -1,6 +1,6 @@
 import { Agent, FormData, request } from 'undici';
 
-import type { ExecutorConfig, ErrorInfo, ResolvedRequest, ResponseData } from './types';
+import type { ExecutorConfig, ErrorInfo, ResolvedRequest, ResponseChunk, ResponseData } from './types';
 
 const STATUS_TEXTS: Record<number, string> = {
   200: 'OK',
@@ -83,11 +83,81 @@ export interface CertConfig {
   ca?: Buffer;
 }
 
+export interface ResponseCallbacks {
+  /**
+   * Fires the moment response headers arrive, before the body is read, with a
+   * headers-time snapshot: normalized status and headers, empty body/rawBody,
+   * zero bodyBytes, and a durationMs placeholder the streaming status line
+   * never renders (the duration figure is completion-only).
+   */
+  onHeaders?: (response: ResponseData) => void;
+  /**
+   * Fires in wire order after `onHeaders`, once per decoded body chunk, never
+   * with an empty `raw`. A chunk ending in CR is held back until the next chunk
+   * (or end of body) shows whether it is CRLF or a lone CR, so `display` is
+   * always exactly normalized. Emission stops for good when the body ends or
+   * the transfer throws — nothing fires after `executeRequest` settles.
+   */
+  onChunk?: (chunk: ResponseChunk) => void;
+}
+
+interface NormalizedChunk {
+  raw: string;
+  display: string;
+}
+
+/**
+ * Turns decoded wire text into display text incrementally, holding a trailing
+ * CR back until the next chunk shows whether it starts a CRLF pair. Produces
+ * the same result as `text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')` over
+ * the concatenation, whatever the chunk boundaries are.
+ */
+class LineEndingNormalizer {
+  private pendingCarriageReturn = false;
+
+  push(text: string): NormalizedChunk {
+    let rest = text;
+    let raw = '';
+    let display = '';
+
+    if (this.pendingCarriageReturn) {
+      this.pendingCarriageReturn = false;
+      raw = '\r';
+      display = '\n';
+      if (rest.startsWith('\n')) {
+        raw += '\n';
+        rest = rest.slice(1);
+      }
+    }
+
+    if (rest.endsWith('\r')) {
+      this.pendingCarriageReturn = true;
+      rest = rest.slice(0, -1);
+    }
+
+    return {
+      raw: raw + rest,
+      display: display + rest.replace(/\r\n/g, '\n').replace(/\r/g, '\n'),
+    };
+  }
+
+  flush(): NormalizedChunk {
+    if (!this.pendingCarriageReturn) {
+      return { raw: '', display: '' };
+    }
+
+    this.pendingCarriageReturn = false;
+
+    return { raw: '\r', display: '\n' };
+  }
+}
+
 export async function executeRequest(
   resolvedRequest: ResolvedRequest,
   config?: ExecutorConfig,
   certConfig?: CertConfig,
   signal?: AbortSignal,
+  callbacks?: ResponseCallbacks,
 ): Promise<ResponseData | ErrorInfo> {
   try {
     new URL(resolvedRequest.url);
@@ -142,16 +212,64 @@ export async function executeRequest(
       body,
       signal,
       dispatcher,
+      // ADR 0003: no body idle timeout, so a quiet stream survives past five
+      // minutes and a hung body waits for the user's Esc instead of erroring.
+      bodyTimeout: 0,
     });
 
-    const rawBody = await response.body.text();
+    const statusCode = response.statusCode;
+    const statusText = getStatusText(statusCode);
+    const responseHeaders = normalizeHeaders(response.headers);
+
+    callbacks?.onHeaders?.({
+      statusCode,
+      statusText,
+      headers: responseHeaders,
+      body: '',
+      rawBody: '',
+      timing: { durationMs: 0 },
+      size: { bodyBytes: 0 },
+    });
+
+    const bodyChunks: AsyncIterable<Uint8Array> = response.body;
+    const decoder = new TextDecoder();
+    const lineEndings = new LineEndingNormalizer();
+    const rawChunks: string[] = [];
+
+    const emit = (chunk: NormalizedChunk): void => {
+      if (chunk.raw === '') {
+        return;
+      }
+
+      rawChunks.push(chunk.raw);
+      callbacks?.onChunk?.({
+        raw: chunk.raw,
+        display: chunk.display,
+        bytes: Buffer.byteLength(chunk.raw, 'utf-8'),
+      });
+    };
+
+    const consume = (text: string): void => {
+      if (text !== '') {
+        emit(lineEndings.push(text));
+      }
+    };
+
+    for await (const chunk of bodyChunks) {
+      consume(decoder.decode(chunk, { stream: true }));
+    }
+
+    consume(decoder.decode());
+    emit(lineEndings.flush());
+
+    const rawBody = rawChunks.join('');
     const responseBody = rawBody.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const endTime = performance.now();
 
     return {
-      statusCode: response.statusCode,
-      statusText: getStatusText(response.statusCode),
-      headers: normalizeHeaders(response.headers),
+      statusCode,
+      statusText,
+      headers: responseHeaders,
       body: responseBody,
       rawBody,
       timing: {

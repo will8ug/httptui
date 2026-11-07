@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createMockResponse } from '../../helpers/responses';
-import { createInitialState, reducer } from '../../helpers/state';
+import { createInitialState, createStreamingState, reducer } from '../../helpers/state';
 
 function loadingState() {
   return createInitialState({
@@ -77,5 +77,49 @@ describe('REQUEST_CANCEL reducer', () => {
     expect(result.selectedIndex).toBe(2);
     expect(result.focusedPanel).toBe('response');
     expect(result.mode).toBe('normal');
+  });
+});
+
+describe('REQUEST_CANCEL keeps a streaming partial body, marked canceled', () => {
+  function partialBodyState() {
+    return reducer(
+      createStreamingState(),
+      { type: 'APPEND_RESPONSE_BODY', chunk: { raw: 'data: partial\r', display: 'data: partial\n', bytes: 14 } },
+    );
+  }
+
+  it('marks the response canceled while keeping the partial body verbatim', () => {
+    const result = reducer(partialBodyState(), { type: 'REQUEST_CANCEL', warning: 'Request canceled' });
+
+    expect(result.response?.canceled).toBe(true);
+    expect(result.response?.body).toBe('data: partial\n');
+    expect(result.response?.rawBody).toBe('data: partial\r');
+    expect(result.response?.size.bodyBytes).toBe(14);
+    expect(result.response?.statusCode).toBe(200);
+  });
+
+  it('marks the kept partial body canceled in a new response object', () => {
+    const state = partialBodyState();
+    const result = reducer(state, { type: 'REQUEST_CANCEL', warning: 'Request canceled' });
+
+    expect(result.response).not.toBe(state.response);
+  });
+
+  it('discards a chunk appended after the cancel — the kept partial is the last-displayed state', () => {
+    const canceled = reducer(partialBodyState(), { type: 'REQUEST_CANCEL', warning: 'Request canceled' });
+
+    const result = reducer(canceled, { type: 'APPEND_RESPONSE_BODY', chunk: { raw: ' late', display: ' late', bytes: 5 } });
+
+    expect(result).toBe(canceled);
+    expect(result.response?.body).toBe('data: partial\n');
+  });
+
+  it('wipes the canceled response when a new request is sent', () => {
+    const canceled = reducer(partialBodyState(), { type: 'REQUEST_CANCEL', warning: 'Request canceled' });
+
+    const result = reducer(canceled, { type: 'SEND_REQUEST' });
+
+    expect(result.response).toBeNull();
+    expect(result.isLoading).toBe(true);
   });
 });

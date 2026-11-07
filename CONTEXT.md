@@ -9,9 +9,9 @@ The TUI occupies the alternate screen buffer with a split layout: a request list
 - **CLI & configuration**: `httptui <file>` entry, `--help`/`--version`, the global config (`~/.config/httptui/config.json`, overridable via `$HTTP_TUI_CONFIG`/`$XDG_CONFIG_HOME`) shallow-merged with a project sidecar `.httptui.json` (project wins), and the supported Node.js runtime floor. `src/cli.tsx`, `src/args.ts`, `src/core/config.ts`, `src/version.ts`.
 - **Environments & variables**: `{{...}}` placeholder resolution in two passes (file variables first, then system/env variables), environment files layered over the file-variable base via `--env`/`--env-name` flags, config registration, and the runtime picker. `src/core/variables.ts`, `src/core/env-parser.ts`, `src/core/env-aggregator.ts`.
 - **File I/O & the .http format**: the zero-dependency `.http`/`.rest` parser (`###` separators, `@name = value` variables), in-TUI file load (`o`) and reload (`R`), the three save flavors, and the dirty-marker tracking plus discard confirmation that guard them. `src/core/importers/http.ts`, `src/core/importer.ts`, `src/core/in-place-save.ts`, `src/core/http-serializer.ts`, `src/core/response-save.ts`.
-- **HTTP execution**: undici execution of the resolved request (no redirects, no deadlines, no retries; non-2xx is a valid response), user-driven cancellation of in-flight requests, and host-matched client certificates for mTLS. `src/core/executor.ts`, `src/core/certificates.ts`.
+- **HTTP execution**: undici execution of the resolved request (no redirects, no deadlines, no retries; non-2xx is a valid response), streaming the response body as decoded chunks with wire-to-text translation (split UTF-8 sequences and CRLF/lone-CR line endings normalized across chunk boundaries, no body idle deadline), user-driven cancellation of in-flight requests, and host-matched client certificates for mTLS. `src/core/executor.ts`, `src/core/certificates.ts`.
 - **Request editing**: the in-TUI raw-text editor with URL/headers/body tabs, multipart form-data bodies (encoded but not editable in-TUI), and handoff to the user's external editor for whole-file edits. `src/core/editor.ts`, `src/core/editor-launcher.ts`, `src/components/EditOverlay.tsx`.
-- **Navigation & display**: panel focus cycling (`Tab`), horizontal scroll and edge jumps (`g`/`G`/`0`/`$`), display-cell text measurement, wrap vs truncate (`w`), fullscreen, and response rendering with states, pretty-print/raw toggle (`r`), and verbose headers (`v`). `src/core/response-viewport.ts`, `src/utils/wrap.ts`, `src/utils/layout-metrics.ts`, `src/core/response-layout.ts`, `src/components/ResponseView.tsx`.
+- **Navigation & display**: panel focus cycling (`Tab`), horizontal scroll and edge jumps (`g`/`G`/`0`/`$`), display-cell text measurement, wrap vs truncate (`w`), fullscreen, and response rendering with states, pretty-print/raw toggle (`r`), and verbose headers (`v`), including a streaming response's incremental partial body (headers-time status line, STREAMING byte counter, CANCELED marking) with follow-tail scrolling. `src/core/response-viewport.ts`, `src/utils/wrap.ts`, `src/utils/layout-metrics.ts`, `src/core/response-layout.ts`, `src/components/ResponseView.tsx`, `src/utils/chunk-coalescer.ts`.
 - **Response search**: `/` search over the formatted body, `n`/`N` match navigation, visual-line-aware match indicators, and the inline search bar. `src/components/ResponseView.tsx`, `src/core/reducers/`.
 - **Import & export**: the import seam (`importContent`: format detection, one document parse, adapter dispatch, warnings in-band on the outcome), OpenAPI 3.x and Postman v2.1 importers (synthetic line numbers, warnings as data for unsupported features), and the paste-as-curl (`p`) / copy-as-curl (`y`) clipboard round-trip. `src/core/importer.ts`, `src/core/importers/openapi.ts`, `src/core/importers/postman.ts`, `src/core/importers/curl.ts`, `src/core/curl-serializer.ts`, `src/core/clipboard.ts`.
 - **Panels, status & shortcuts**: the request list (resolved `METHOD /path` entries), the request-details panel (`d`), the context-aware status bar (position indicators, transient messages, unsaved-changes `*`, environment name, INSECURE flag), and the centralized `SHORTCUTS` registry feeding both the status bar and the two-column help overlay. `src/components/RequestList.tsx`, `src/components/RequestDetailsView.tsx`, `src/components/StatusBar.tsx`, `src/components/HelpOverlay.tsx`, `src/core/shortcuts.ts`.
@@ -97,6 +97,10 @@ _Avoid_: character count, string length
 The single computation behind everything the response panel shows and scrolls: a response, the display preferences (raw, verbose, wrap), and terminal geometry resolved into the visual-line model (sections, anchors, totals, scroll bounds, visible window).
 _Avoid_: response layout, panel metrics
 
+**Follow-tail**:
+The response panel's behavior while a response streams: the viewport tracks the newest content while it sits at the bottom, detaches when the user scrolls up, and re-attaches when the user jumps back to the bottom.
+_Avoid_: auto-scroll, tail mode
+
 **Request details panel**:
 The toggleable panel (`d`) showing the resolved request (method, URL, headers, body); the display counterpart to the raw-text editor.
 
@@ -115,3 +119,15 @@ _Avoid_: skip-verify mode
 **Raw body**:
 The response body decoded exactly as received, before line-ending normalization; save-response writes it. The display-facing body field normalizes CRLF and lone CR to LF.
 _Avoid_: original body
+
+**Streaming response**:
+A response observed while its body is still arriving — the same response mid-transfer, not a different kind of response; its status line, headers, and the body text received so far are displayed while the transfer continues.
+_Avoid_: live response, chunked response
+
+**Partial body**:
+The body text received so far while a response streams; it grows as the transfer continues, and it is kept on display (marked canceled) when the transfer is cancelled.
+_Avoid_: incomplete body, stream buffer
+
+**Chunk**:
+One transport-level piece of a response body as delivered by the server. Distinct from an SSE event, which is a message format within the body; the response panel shows the raw body text as received, not parsed events.
+_Avoid_: event

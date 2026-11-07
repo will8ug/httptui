@@ -19,6 +19,7 @@ describe('computeResponseViewport — nowrap mode', () => {
   it('anchors the body after status and separator and totals five visual lines for a three-line body', () => {
     const response = createMockResponse({ body: 'line1\nline2\nline3' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -35,6 +36,7 @@ describe('computeResponseViewport — nowrap mode', () => {
   it('measures the separator visual line at the split content width', () => {
     const response = createMockResponse({ body: 'x' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -53,6 +55,7 @@ describe('computeResponseViewport — nowrap mode', () => {
       timing: { durationMs: 123 },
     });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -75,6 +78,7 @@ describe('computeResponseViewport — nowrap mode', () => {
       body: 'a\nb',
     });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: true,
       rawMode: true,
@@ -90,6 +94,7 @@ describe('computeResponseViewport — nowrap mode', () => {
   it('does not count headers when verbose is off', () => {
     const response = createMockResponse({ headers: { 'content-type': 'application/json' }, body: 'x' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -101,10 +106,119 @@ describe('computeResponseViewport — nowrap mode', () => {
   });
 });
 
+describe('computeResponseViewport — streaming status line', () => {
+  function statusText(viewport: ReturnType<typeof computeResponseViewport>): string {
+    const status = viewport.sections.find((s) => s.kind === 'status');
+    return (status?.visualLines[0] ?? []).map((segment) => segment.text).join('');
+  }
+
+  it('carries a STREAMING marker with the received-bytes count instead of the duration', () => {
+    const response = createMockResponse({
+      statusCode: 404,
+      statusText: 'Not Found',
+      timing: { durationMs: 4321 },
+      size: { bodyBytes: 0 },
+    });
+    const viewport = computeResponseViewport({
+      streaming: true,
+      response,
+      verbose: false,
+      rawMode: true,
+      wrapMode: 'nowrap',
+      geometry: splitGeometry(20),
+    });
+
+    const status = viewport.sections.find((s) => s.kind === 'status');
+    const segments = status?.visualLines[0];
+    expect(segments).toHaveLength(3);
+    expect(segments?.[0]).toEqual({ text: 'HTTP/1.1 ', color: 'gray' });
+    expect(segments?.[1].text).toBe('404 Not Found');
+    expect(segments?.[2]).toEqual({ text: '  STREAMING 0 B', color: 'yellow' });
+  });
+
+  it('shows the grown byte count mid-stream', () => {
+    const response = createMockResponse({ size: { bodyBytes: 1234 } });
+    const viewport = computeResponseViewport({
+      streaming: true,
+      response,
+      verbose: false,
+      rawMode: true,
+      wrapMode: 'nowrap',
+      geometry: splitGeometry(20),
+    });
+
+    expect(statusText(viewport)).toContain('STREAMING 1234 B');
+  });
+
+  it('recomputes the status line when streaming flips for the same response object', () => {
+    const response = createMockResponse({ timing: { durationMs: 123 } });
+    const base = {
+      response,
+      verbose: false,
+      rawMode: true as const,
+      wrapMode: 'nowrap' as const,
+      geometry: splitGeometry(20),
+    };
+
+    const completed = computeResponseViewport({ ...base, streaming: false });
+    const streaming = computeResponseViewport({ ...base, streaming: true });
+    const backToCompleted = computeResponseViewport({ ...base, streaming: false });
+
+    expect(statusText(completed)).toContain('123ms');
+    expect(statusText(streaming)).toContain('STREAMING');
+    expect(statusText(backToCompleted)).toContain('123ms');
+  });
+});
+
+describe('computeResponseViewport — canceled status line', () => {
+  it('carries a red CANCELED marker with the kept byte count instead of the 0ms placeholder', () => {
+    const response = createMockResponse({
+      statusCode: 200,
+      statusText: 'OK',
+      timing: { durationMs: 0 },
+      size: { bodyBytes: 19 },
+      canceled: true,
+    });
+    const viewport = computeResponseViewport({
+      streaming: false,
+      response,
+      verbose: false,
+      rawMode: true,
+      wrapMode: 'nowrap',
+      geometry: splitGeometry(20),
+    });
+
+    const status = viewport.sections.find((s) => s.kind === 'status');
+    const segments = status?.visualLines[0];
+    expect(segments).toHaveLength(3);
+    expect(segments?.[0]).toEqual({ text: 'HTTP/1.1 ', color: 'gray' });
+    expect(segments?.[1].text).toBe('200 OK');
+    expect(segments?.[2]).toEqual({ text: '  CANCELED 19 B', color: 'red' });
+  });
+
+  it('never renders a duration figure for a canceled response', () => {
+    const response = createMockResponse({ timing: { durationMs: 4321 }, canceled: true });
+    const viewport = computeResponseViewport({
+      streaming: false,
+      response,
+      verbose: false,
+      rawMode: true,
+      wrapMode: 'nowrap',
+      geometry: splitGeometry(20),
+    });
+
+    const status = viewport.sections.find((s) => s.kind === 'status');
+    const text = (status?.visualLines[0] ?? []).map((segment) => segment.text).join('');
+    expect(text).toContain('CANCELED');
+    expect(text).not.toMatch(/\d+ms/);
+  });
+});
+
 describe('computeResponseViewport — wrap mode', () => {
   it('matches the nowrap shape when status, headers, and body all fit the content width', () => {
     const response = createMockResponse({ headers: { a: 'b' }, body: 'x\ny' });
     const nowrap = computeResponseViewport({
+      streaming: false,
       response,
       verbose: true,
       rawMode: true,
@@ -112,6 +226,7 @@ describe('computeResponseViewport — wrap mode', () => {
       geometry: splitGeometry(20),
     });
     const wrap = computeResponseViewport({
+      streaming: false,
       response,
       verbose: true,
       rawMode: true,
@@ -130,6 +245,7 @@ describe('computeResponseViewport — wrap mode', () => {
       body: 'x',
     });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -153,6 +269,7 @@ describe('computeResponseViewport — wrap mode', () => {
       body: 'x',
     });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: true,
       rawMode: true,
@@ -173,6 +290,7 @@ describe('computeResponseViewport — wrap mode', () => {
     const longLine = 'abcdefghijklmnopqrstuvwxyz '.repeat(5).trim();
     const response = createMockResponse({ body: `${longLine}\nsecond\nthird` });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -190,6 +308,7 @@ describe('computeResponseViewport — visible window and scroll bounds', () => {
   it('derives max vertical offset from total visual lines minus the visible window height', () => {
     const response = createMockResponse({ body: 'line1\nline2\nline3' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -205,6 +324,7 @@ describe('computeResponseViewport — visible window and scroll bounds', () => {
   it('clamps max vertical offset to zero when the response fits the visible window', () => {
     const response = createMockResponse({ body: 'x' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -219,6 +339,7 @@ describe('computeResponseViewport — visible window and scroll bounds', () => {
     const response = createMockResponse({ body: 'line1\nline2\nline3' });
     // 5 visual lines; availableHeight 8 - 3 chrome = a window of exactly 5.
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -239,10 +360,12 @@ describe('computeResponseViewport — visible window and scroll bounds', () => {
       wrapMode: 'nowrap' as const,
     };
     const withoutSearchBar = computeResponseViewport({
+      streaming: false,
       ...options,
       geometry: { columns: 80, availableHeight: 6, fullscreen: false, searchVisible: false },
     });
     const withSearchBar = computeResponseViewport({
+      streaming: false,
       ...options,
       geometry: { columns: 80, availableHeight: 6, fullscreen: false, searchVisible: true },
     });
@@ -255,6 +378,7 @@ describe('computeResponseViewport — visible window and scroll bounds', () => {
   it('never reports fewer than one visible line for a shrunken terminal', () => {
     const response = createMockResponse({ body: 'line1\nline2\nline3' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -271,6 +395,7 @@ describe('computeResponseViewport — max line display width', () => {
   it('reports the separator width when it is the widest rendered line', () => {
     const response = createMockResponse({ body: 'x' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -284,6 +409,7 @@ describe('computeResponseViewport — max line display width', () => {
   it('reports a nowrap body line that is wider than status, headers, and separator', () => {
     const response = createMockResponse({ body: 'a'.repeat(60) });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -297,6 +423,7 @@ describe('computeResponseViewport — max line display width', () => {
   it('measures wide characters in display cells, not code units', () => {
     const response = createMockResponse({ body: '你好'.repeat(26) });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -312,6 +439,7 @@ describe('computeResponseViewport — max line display width', () => {
     // 24-column fullscreen keeps the separator (20) and status (22) lines
     // below the 24-cell CJK line, so the CJK line must win the max.
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -333,10 +461,12 @@ describe('computeResponseViewport — fullscreen versus split geometry', () => {
       wrapMode: 'wrap' as const,
     };
     const split = computeResponseViewport({
+      streaming: false,
       ...options,
       geometry: { columns: 80, availableHeight: 40, fullscreen: false, searchVisible: false },
     });
     const fullscreen = computeResponseViewport({
+      streaming: false,
       ...options,
       geometry: { columns: 80, availableHeight: 40, fullscreen: true, searchVisible: false },
     });
@@ -348,6 +478,7 @@ describe('computeResponseViewport — fullscreen versus split geometry', () => {
   it('expands the single body section to four wrapped visual lines in split and three in fullscreen', () => {
     const response = createMockResponse({ body: 'a'.repeat(160) });
     const split = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -355,6 +486,7 @@ describe('computeResponseViewport — fullscreen versus split geometry', () => {
       geometry: { columns: 80, availableHeight: 40, fullscreen: false, searchVisible: false },
     });
     const fullscreen = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -377,10 +509,12 @@ describe('computeResponseViewport — fullscreen versus split geometry', () => {
       wrapMode: 'nowrap' as const,
     };
     const split = computeResponseViewport({
+      streaming: false,
       ...options,
       geometry: { columns: 80, availableHeight: 40, fullscreen: false, searchVisible: false },
     });
     const fullscreen = computeResponseViewport({
+      streaming: false,
       ...options,
       geometry: { columns: 80, availableHeight: 40, fullscreen: true, searchVisible: false },
     });
@@ -393,6 +527,7 @@ describe('computeResponseViewport — fullscreen versus split geometry', () => {
   it('breaks a wide-character body line on display-cell boundaries in fullscreen wrap', () => {
     const response = createMockResponse({ body: '你'.repeat(20) });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -414,6 +549,7 @@ describe('computeResponseViewport — fullscreen versus split geometry', () => {
 describe('sliceVisibleLines — visible-window slice', () => {
   const response = createMockResponse({ body: 'line1\nline2\nline3' });
   const viewport = computeResponseViewport({
+    streaming: false,
     response,
     verbose: false,
     rawMode: true,
@@ -435,6 +571,7 @@ describe('sliceVisibleLines — visible-window slice', () => {
 
   it('cuts the wrapped chunks of one body line into consecutive windows', () => {
     const wrapped = computeResponseViewport({
+      streaming: false,
       response: createMockResponse({ body: 'a'.repeat(110) }),
       verbose: false,
       rawMode: true,
@@ -452,6 +589,7 @@ describe('computeResponseViewport — repeated computation', () => {
   it('returns the same model object for repeated calls with identical inputs', () => {
     const response = createMockResponse({ body: 'line1\nline2\nline3' });
     const first = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -459,6 +597,7 @@ describe('computeResponseViewport — repeated computation', () => {
       geometry: splitGeometry(24),
     });
     const second = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -484,6 +623,7 @@ describe('computeResponseViewport — model shape', () => {
   it('exposes exactly the visual-line model fields', () => {
     const response = createMockResponse({ body: 'hi' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -513,8 +653,9 @@ describe('computeResponseViewport — model shape', () => {
       rawMode: true as const,
       wrapMode: 'nowrap' as const,
     };
-    const split = computeResponseViewport({ ...options, geometry: splitGeometry(20) });
+    const split = computeResponseViewport({ streaming: false, ...options, geometry: splitGeometry(20) });
     const fullscreen = computeResponseViewport({
+      streaming: false,
       ...options,
       geometry: { columns: 80, availableHeight: 20, fullscreen: true, searchVisible: false },
     });
@@ -533,10 +674,12 @@ describe('computeResponseViewport — model shape', () => {
       wrapMode: 'nowrap' as const,
     };
     const split = computeResponseViewport({
+      streaming: false,
       ...options,
       geometry: { columns: 30, availableHeight: 20, fullscreen: false, searchVisible: false },
     });
     const fullscreen = computeResponseViewport({
+      streaming: false,
       ...options,
       geometry: { columns: 10, availableHeight: 20, fullscreen: true, searchVisible: false },
     });
@@ -548,6 +691,7 @@ describe('computeResponseViewport — model shape', () => {
   it('orders sections status, separator, body when verbose is off', () => {
     const response = createMockResponse({ body: 'hi' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -561,6 +705,7 @@ describe('computeResponseViewport — model shape', () => {
   it('orders sections status, headers, separator, body when verbose is on', () => {
     const response = createMockResponse({ headers: { a: 'b', c: 'd' }, body: 'hi' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: true,
       rawMode: true,
@@ -576,6 +721,7 @@ describe('computeResponseViewport — body text preparation', () => {
   it('expands tab characters in raw-mode body lines to spaces', () => {
     const response = createMockResponse({ body: '\t\t<element/>' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
@@ -594,6 +740,7 @@ describe('computeResponseViewport — body text preparation', () => {
   it('formats a JSON body across lines unless raw mode is on', () => {
     const response = createMockResponse({ body: '{"id":"1"}' });
     const viewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: false,
@@ -604,6 +751,7 @@ describe('computeResponseViewport — body text preparation', () => {
     const bodyKinds = viewport.sections.filter((s) => s.kind === 'body');
     expect(bodyKinds).toHaveLength(3);
     const rawViewport = computeResponseViewport({
+      streaming: false,
       response,
       verbose: false,
       rawMode: true,
