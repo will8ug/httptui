@@ -284,4 +284,28 @@ describe('RECEIVE_RESPONSE_HEADERS reducer', () => {
     expect(result.isLoading).toBe(false);
     expect(result.search).toEqual(INITIAL_SEARCH);
   });
+
+  it('is a no-op when late headers arrive after cancellation, keeping the canceled partial', () => {
+    const streaming = reducer(createStreamingState(), {
+      type: 'APPEND_RESPONSE_BODY',
+      chunk: { raw: 'data: partial\r', display: 'data: partial\n', bytes: 14 },
+    });
+    const canceled = reducer(streaming, { type: 'REQUEST_CANCEL', warning: 'Request canceled' });
+
+    const result = reducer(canceled, { type: 'RECEIVE_RESPONSE_HEADERS', response: headersResponse });
+
+    expect(result).toBe(canceled);
+    expect(result.response?.canceled).toBe(true);
+    expect(result.response?.body).toBe('data: partial\n');
+  });
+
+  it('is a no-op when late headers arrive after completion, keeping the completed response', () => {
+    const completed = createMockResponse({ body: '{"done":true}' });
+    const state = { ...createInitialState({ response: completed }), isLoading: false };
+
+    const result = reducer(state, { type: 'RECEIVE_RESPONSE_HEADERS', response: headersResponse });
+
+    expect(result).toBe(state);
+    expect(result.response).toEqual(completed);
+  });
 });

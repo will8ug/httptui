@@ -20,6 +20,13 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
     // The loading flag intentionally stays set: a headers-time response
     // coexists with loading (ADR 0004) until completion or cancellation.
     case 'RECEIVE_RESPONSE_HEADERS':
+      // Headers arriving after loading has ended come from a canceled or
+      // completed request's in-flight callback and must not replace the
+      // kept response.
+      if (!state.isLoading) {
+        return state;
+      }
+
       return {
         ...state,
         response: action.response,
