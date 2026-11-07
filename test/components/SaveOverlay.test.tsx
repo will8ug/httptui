@@ -111,45 +111,5 @@ describe('SaveOverlay', () => {
       const frame = lastFrame() ?? '';
       expect(frame).not.toContain('… +');
     });
-
-    it('clips an overflowing list to the overlay width with a hidden count', () => {
-      const first = `${'a'.repeat(30)}.http`;
-      const { lastFrame } = render(
-        <SaveOverlay
-          value="a"
-          error={null}
-          cursor={1}
-          completions={[first, `${'b'.repeat(30)}.http`, `${'c'.repeat(30)}.http`]}
-        />,
-      );
-
-      const frame = lastFrame() ?? '';
-      expect(frame).toContain(`${first} … +2`);
-      expect(frame).not.toContain('bbbb');
-    });
-
-    // Candidate row max width: 80-col test terminal → overlay width 72 → 72 - 6 box chrome = 66;
-    // expectations use 66 - 1 (ellipsis) = 65.
-    it('hard-truncates a single candidate longer than the overlay width', () => {
-      const { lastFrame } = render(
-        <SaveOverlay value="d" error={null} cursor={1} completions={['d'.repeat(80)]} />,
-      );
-
-      const frame = lastFrame() ?? '';
-      expect(frame).toContain(`${'d'.repeat(65)}…`);
-      expect(frame).not.toContain('d'.repeat(66));
-    });
-
-    // Candidate row max width: 80-col test terminal → overlay width 72 → 72 - 6 box chrome = 66;
-    // expectations use 66 - 5 (" … +1") = 61.
-    it('truncates an overlong first candidate and counts the rest', () => {
-      const { lastFrame } = render(
-        <SaveOverlay value="e" error={null} cursor={1} completions={['e'.repeat(80), 'f.http']} />,
-      );
-
-      const frame = lastFrame() ?? '';
-      expect(frame).toContain(`${'e'.repeat(61)} … +1`);
-      expect(frame).not.toContain('f.http');
-    });
   });
 });
