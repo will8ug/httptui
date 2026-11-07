@@ -25,6 +25,19 @@ import { EDIT_TAB_ORDER } from '../core/types';
 import { copySelectedAsCurl, pasteFromClipboard, performEditorHandoff, sendSelectedRequest } from './commands';
 import { normalizeKeyName, resolveKeyAction } from './key-table';
 
+function listDirFrom(baseDir: string): (dir: string) => PathEntry[] {
+  return (dir) => {
+    try {
+      return readdirSync(resolve(baseDir, dir), { withFileTypes: true }).map((entry) => ({
+        name: entry.name,
+        isDirectory: entry.isDirectory(),
+      }));
+    } catch {
+      return [];
+    }
+  };
+}
+
 function findMatchIndices(response: ResponseData, rawMode: boolean, query: string): number[] {
   const formattedBody = formatResponseBody(response.body, rawMode);
   const bodyLines = formattedBody.split('\n');
@@ -145,16 +158,9 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
   }
 
   if (key.tab) {
-    const listDir = (dir: string): PathEntry[] => {
-      try {
-        return readdirSync(resolve(dir), { withFileTypes: true }).map((entry) => ({
-          name: entry.name,
-          isDirectory: entry.isDirectory(),
-        }));
-      } catch {
-        return [];
-      }
-    };
+    // Completion base is cwd here: the save modes complete against the loaded
+    // file's directory, the same base their Return commits resolve against.
+    const listDir = listDirFrom('.');
 
     const completed = completePath({ text: state.fileLoad.input, cursor: state.fileLoad.cursor }, listDir);
 
@@ -301,16 +307,7 @@ export function handleSaveInput({ state, input, key, dispatch }: {
 
   if (key.tab) {
     const baseDir = dirname(state.filePath);
-    const listDir = (dir: string): PathEntry[] => {
-      try {
-        return readdirSync(resolve(baseDir, dir), { withFileTypes: true }).map((entry) => ({
-          name: entry.name,
-          isDirectory: entry.isDirectory(),
-        }));
-      } catch {
-        return [];
-      }
-    };
+    const listDir = listDirFrom(baseDir);
 
     const completed = completePath({ text: state.saveLoad.input, cursor: state.saveLoad.cursor }, listDir);
 
@@ -370,16 +367,7 @@ export function handleResponseSaveInput({ state, input, key, dispatch }: {
 
   if (key.tab) {
     const baseDir = dirname(state.filePath);
-    const listDir = (dir: string): PathEntry[] => {
-      try {
-        return readdirSync(resolve(baseDir, dir), { withFileTypes: true }).map((entry) => ({
-          name: entry.name,
-          isDirectory: entry.isDirectory(),
-        }));
-      } catch {
-        return [];
-      }
-    };
+    const listDir = listDirFrom(baseDir);
 
     const completed = completePath(
       { text: state.responseSave.input, cursor: state.responseSave.cursor },
