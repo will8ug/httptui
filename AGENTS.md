@@ -20,14 +20,14 @@ Precedent: the per-ticket branch merges in history (`ck-06-render`, `ck-08-clear
 
 ## Comments
 
-Prefer self-documenting code over comments. Only add comments for knowledge that cannot be expressed in the code itself.
+Prefer self-documenting code over comments. A comment earns its place by supplying a contract, gotcha, or reason that is not clear from the code at that point.
 
-- **Self-document first.** Use clear test names, descriptive assertion values, and meaningful function names. A switch statement or an `expect().toBe(...)` is already its own documentation.
-- **Never restate what the code says.** If a comment describes what the next line does, the code already says that — remove the comment.
-- **Never reference change history.** Comments like `// After recursive-body-synthesis, ...` are git-history noise. The commit message already captures what changed. Explain the *current state*, not the transition.
-- **Reserve comments for non-obvious knowledge only:** gotchas that look correct but aren't (e.g., an em-dash resembling a hyphen), design decisions not evident from the code (e.g., bracket-notation encoding).
+- **Self-document first.** Use meaningful function and variable names for phases and invariants. In tests, use descriptive names and named constants for fixture geometry or expected offsets instead of comments that narrate arithmetic or arrange/assert steps.
+- **Document contracts once, at their owner.** Public callback timing and lifecycle, chunk-boundary rules, units, and reconstruction guarantees belong on the owning type or function. Prefer one concise sentence per guarantee; use more only when the contract requires it. Call-site comments should add only a local constraint, not repeat the owner's documentation.
+- **Explain why, not what.** Keep race hazards, ADR-backed configuration rationale, and design decisions that look incorrect or surprising without context. Let conditionals, method calls, test names, and assertions describe behavior themselves; a comment about a guard should explain the hidden hazard, such as a late callback replacing a completed response.
+- **Explain current state, not change history.** Comments like `// After recursive-body-synthesis, ...` are git-history noise. The commit message already captures what changed.
 
-Precedent: 9 restating comments and 3 verbose docstrings were cleaned up in the `recursive-body-synthesis` change, keeping only gotcha warnings and design-decision notes.
+Precedent: the `recursive-body-synthesis` and streaming-response cleanups removed restating comments and condensed verbose docstrings while retaining concise API contracts, race warnings, and design rationale.
 
 ## Shortcut documentation
 

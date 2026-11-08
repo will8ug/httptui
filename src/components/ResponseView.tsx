@@ -120,9 +120,8 @@ export function ResponseView({
 
   let content: React.ReactNode;
 
-  // The spinner only covers the pre-headers window: once the headers-time
-  // response exists, the viewport renders alongside the loading flag.
-  if (isLoading && !response) {
+  const waitingForHeaders = isLoading && !response;
+  if (waitingForHeaders) {
     content = (
       <Box flexDirection="column">
         <Spinner label="Sending request" />

@@ -149,8 +149,6 @@ describe('streaming partial body', () => {
   });
 
   it('renders a JSON-parseable partial body raw during the stream, then the same body pretty once complete', () => {
-    // '{"a":1}' is valid JSON as a whole, so unlike an invalid partial it would
-    // pretty-print mid-stream without the streaming suppression.
     const response = createMockResponse({ body: '{"a":1}', size: { bodyBytes: 7 } });
 
     const streamingFrame = render(

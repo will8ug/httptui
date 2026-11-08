@@ -38,20 +38,16 @@ export async function sendSelectedRequest({ state, executorConfig, abortControll
   const controller = new AbortController();
   abortControllerRef.current = controller;
 
-  // One coalescer per send paces the appends. It carries only the raw text as
-  // its windowing string; the display copy and byte count ride alongside in
-  // unflushed.
-  const unflushed = { raw: '', display: '', bytes: 0 };
+  const pendingChunk = { raw: '', display: '', bytes: 0 };
   const coalescer = new ChunkCoalescer(() => {
-    // A window can still fire between an Esc-cancel and the settled executor
-    // rejecting; this is the same late-discard check the other callbacks use.
+    // A flush window can still fire between an Esc-cancel and the executor rejecting.
     if (controller.signal.aborted) {
       return;
     }
-    dispatch({ type: 'APPEND_RESPONSE_BODY', chunk: { raw: unflushed.raw, display: unflushed.display, bytes: unflushed.bytes } });
-    unflushed.raw = '';
-    unflushed.display = '';
-    unflushed.bytes = 0;
+    dispatch({ type: 'APPEND_RESPONSE_BODY', chunk: { raw: pendingChunk.raw, display: pendingChunk.display, bytes: pendingChunk.bytes } });
+    pendingChunk.raw = '';
+    pendingChunk.display = '';
+    pendingChunk.bytes = 0;
   });
 
   try {
@@ -77,12 +73,10 @@ export async function sendSelectedRequest({ state, executorConfig, abortControll
         if (controller.signal.aborted) {
           return;
         }
-        // Accumulating and pushing stay paired only because the executor never
-        // emits an empty raw: an empty raw would accumulate without arming a
-        // window, stranding its display text and bytes unflushed.
-        unflushed.raw += chunk.raw;
-        unflushed.display += chunk.display;
-        unflushed.bytes += chunk.bytes;
+        pendingChunk.raw += chunk.raw;
+        pendingChunk.display += chunk.display;
+        pendingChunk.bytes += chunk.bytes;
+        // Non-empty raw guarantees that this push arms a flush window for all accumulated fields.
         coalescer.push(chunk.raw);
       },
     });
@@ -98,8 +92,6 @@ export async function sendSelectedRequest({ state, executorConfig, abortControll
       return;
     }
 
-    // complete() flushes anything still coalesced synchronously, so the tail
-    // append lands before the response is replaced wholesale.
     coalescer.complete();
     dispatch({ type: 'RECEIVE_RESPONSE', response: result });
   } catch (error) {

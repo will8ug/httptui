@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { formatCompletions } from '../../src/utils/format-completions';
+import { OVERLAY_HORIZONTAL_CHROME } from '../../src/utils/layout';
 
-// 80-col test terminal → overlay width 72 → 72 - 6 box chrome = 66.
-const OVERLAY_ROW_WIDTH = 66;
+const OVERLAY_WIDTH_AT_80_COLUMNS = 72;
+const OVERLAY_ROW_WIDTH = OVERLAY_WIDTH_AT_80_COLUMNS - OVERLAY_HORIZONTAL_CHROME;
 
 describe('formatCompletions', () => {
   it('joins names with two spaces when they fit the width', () => {

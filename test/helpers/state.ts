@@ -24,11 +24,7 @@ export function createInitialState(overrides: Partial<AppState> = {}): AppState 
   return { ...base, ...overrides };
 }
 
-/**
- * The streaming phase of a request: loading stays set while the headers-time
- * response is already populated — the state that chunk appends and a user
- * cancel act on.
- */
+/** Headers received but still loading, the state that chunk appends and cancel act on. */
 export function createStreamingState(): AppState {
   return reducer(
     reducer(createInitialState(), { type: 'SEND_REQUEST' }),

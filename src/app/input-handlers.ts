@@ -158,8 +158,7 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
   }
 
   if (key.tab) {
-    // Completion base is cwd here: the save modes complete against the loaded
-    // file's directory, the same base their Return commits resolve against.
+    // Unlike save modes, file-load completion uses the process cwd.
     const listDir = listDirFrom('.');
 
     const completed = completePath({ text: state.fileLoad.input, cursor: state.fileLoad.cursor }, listDir);
@@ -610,8 +609,7 @@ export function handleNormalInput({
 
   const keyName = normalizeKeyName(input, key);
 
-  // Search entry intercepts ahead of the key-table lookup: the table gate only
-  // checks panel visibility, while a growing body must refuse search outright.
+  // Reject streaming searches before the key table's visibility-only gate.
   if (keyName === '/' && state.isLoading && responseVisible(state)) {
     dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'Cannot search while the response is streaming' });
     return;

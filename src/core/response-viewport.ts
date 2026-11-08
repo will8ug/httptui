@@ -142,7 +142,7 @@ export function computeResponseViewport(options: ResponseViewportOptions): Respo
     rawMode,
     wrapMode,
     contentWidth,
-    // The partial body displays raw; pretty-printing applies only at completion.
+    // Avoid reformatting a still-growing body; pretty-print only at completion.
     formattedBody: formatResponseBody(response.body, rawMode || streaming),
   });
   const visibleHeight = visibleHeightFor(geometry);

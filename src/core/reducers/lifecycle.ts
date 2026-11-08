@@ -17,12 +17,9 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         search: INITIAL_SEARCH,
       };
 
-    // The loading flag intentionally stays set: a headers-time response
-    // coexists with loading (ADR 0004) until completion or cancellation.
+    // Headers-time responses coexist with loading until completion or cancellation (ADR 0004).
     case 'RECEIVE_RESPONSE_HEADERS':
-      // Headers arriving after loading has ended come from a canceled or
-      // completed request's in-flight callback and must not replace the
-      // kept response.
+      // Late headers must not replace a completed or canceled response.
       if (!state.isLoading) {
         return state;
       }
@@ -32,18 +29,13 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         response: action.response,
       };
 
-    // Appends are a streaming-phase transition: once loading has ended the
-    // response is complete or canceled, and a coalesced flush still in flight
-    // for it must not grow it.
+    // A late coalesced flush must not grow a completed or canceled response.
     case 'APPEND_RESPONSE_BODY': {
       if (!state.isLoading || !state.response) {
         return state;
       }
 
-      // Follow-tail is position-derived, not a mode flag: attachment is
-      // re-derived from the offset on every append, so scrolling away and
-      // jumping back to the bottom need no bookkeeping here.
-      const attached = state.responseScrollOffset >= responseVerticalMaxOffset(state);
+      const shouldFollowTail = state.responseScrollOffset >= responseVerticalMaxOffset(state);
 
       const grown: AppState = {
         ...state,
@@ -58,7 +50,7 @@ export function reduceRequestLifecycle(state: AppState, action: RequestLifecycle
         },
       };
 
-      return attached
+      return shouldFollowTail
         ? { ...grown, responseScrollOffset: responseVerticalMaxOffset(grown) }
         : grown;
     }

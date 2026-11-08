@@ -28,10 +28,6 @@ export interface StagedUndiciBody {
   end(): void;
 }
 
-/**
- * A body whose chunks the test stages externally, so frames can be asserted
- * while the transfer is still open.
- */
 export function createStagedUndiciBody(): StagedUndiciBody {
   const queued: Buffer[] = [];
   const waiters: Array<() => void> = [];

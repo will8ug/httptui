@@ -57,36 +57,17 @@ export interface ResponseData {
   size: {
     bodyBytes: number;
   };
-  /**
-   * Present only on a response whose transfer the user canceled: the body is
-   * the partial text received up to the cancel, kept on display with no
-   * duration figure.
-   */
+  /** Present when the user canceled the transfer: the partial body stays on display with no duration figure. */
   canceled?: boolean;
 }
 
-/**
- * One decoded chunk of a streaming body. The chunk boundaries follow the wire
- * chunks, except that a UTF-8 sequence split across wire chunks joins into the
- * chunk that completes it, and a line ending held back for disambiguation
- * rides the chunk that resolves it.
- */
+/** One decoded body chunk; split UTF-8 sequences and line endings are resolved across wire chunks. */
 export interface ResponseChunk {
-  /**
-   * Verbatim decoded wire text for this chunk; concatenating the raw chunks of
-   * a completed body reproduces `ResponseData.rawBody` exactly.
-   */
+  /** Verbatim decoded wire text; raw concatenation over a completed body reproduces `ResponseData.rawBody`. */
   raw: string;
-  /**
-   * `raw` with CRLF and lone CR normalized to LF; concatenating the display
-   * chunks of a completed body reproduces `ResponseData.body` exactly, so a
-   * line ending split across wire chunks still normalizes to a single newline.
-   */
+  /** raw with CRLF and lone CR normalized to LF; display concatenation reproduces `ResponseData.body`. */
   display: string;
-  /**
-   * Wire bytes carried by `raw`, i.e. `Buffer.byteLength(raw, 'utf-8')`; the
-   * sum over a completed body's chunks equals `size.bodyBytes`.
-   */
+  /** UTF-8 byte length of raw; the total over a completed body's chunks equals `size.bodyBytes`. */
   bytes: number;
 }
 

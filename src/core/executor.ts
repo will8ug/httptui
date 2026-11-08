@@ -84,20 +84,9 @@ export interface CertConfig {
 }
 
 export interface ResponseCallbacks {
-  /**
-   * Fires the moment response headers arrive, before the body is read, with a
-   * headers-time snapshot: normalized status and headers, empty body/rawBody,
-   * zero bodyBytes, and a durationMs placeholder the streaming status line
-   * never renders (the duration figure is completion-only).
-   */
+  /** Called before body streaming with empty bodies and zero timing/size. */
   onHeaders?: (response: ResponseData) => void;
-  /**
-   * Fires in wire order after `onHeaders`, once per decoded body chunk, never
-   * with an empty `raw`. A chunk ending in CR is held back until the next chunk
-   * (or end of body) shows whether it is CRLF or a lone CR, so `display` is
-   * always exactly normalized. Emission stops for good when the body ends or
-   * the transfer throws — nothing fires after `executeRequest` settles.
-   */
+  /** Called with non-empty decoded chunks in wire order, never after execution settles. */
   onChunk?: (chunk: ResponseChunk) => void;
 }
 
@@ -106,12 +95,7 @@ interface NormalizedChunk {
   display: string;
 }
 
-/**
- * Turns decoded wire text into display text incrementally, holding a trailing
- * CR back until the next chunk shows whether it starts a CRLF pair. Produces
- * the same result as `text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')` over
- * the concatenation, whatever the chunk boundaries are.
- */
+/** Normalizes CRLF and lone CR to LF, including line endings split across chunks. */
 class LineEndingNormalizer {
   private pendingCarriageReturn = false;
 
@@ -212,8 +196,7 @@ export async function executeRequest(
       body,
       signal,
       dispatcher,
-      // ADR 0003: no body idle timeout, so a quiet stream survives past five
-      // minutes and a hung body waits for the user's Esc instead of erroring.
+      // ADR 0003: no body idle timeout — a hung stream waits for the user's Esc.
       bodyTimeout: 0,
     });
 

@@ -1,12 +1,9 @@
 import { CHUNK_COALESCE_WINDOW_MS } from './timing';
 
 /**
- * Coalesces bursty text pieces into a steady flush cadence: the first piece
- * opens a window that flushes on expiry, carrying everything accumulated
- * since the previous flush, so a piece becomes visible within one window no
- * matter how fast pieces arrive. complete() and abort() are terminal — the
- * instance is inert afterwards and never leaves a pending timer. Owns
- * windowing only; it has no knowledge of what the pieces are.
+ * Batches bursty pieces into timed flushes; a piece becomes visible within
+ * one window. complete() synchronously flushes the tail, abort() discards it;
+ * both are terminal and leave no pending timer.
  */
 export class ChunkCoalescer {
   private readonly onFlush: (accumulated: string) => void;
