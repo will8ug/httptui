@@ -12,7 +12,6 @@ badges/
 .DS_Store
 .env
 
-package-lock.json
 /.worktrees/
 /.scratch/
 .openspec/
