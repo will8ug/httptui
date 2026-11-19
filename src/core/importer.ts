@@ -10,11 +10,6 @@ type DetectedFormat = 'http' | 'postman' | 'openapi';
 
 export type ImportFormat = DetectedFormat | 'curl';
 
-/**
- * The "http-format source" contract (CONTEXT.md): true only for a session
- * backed by an .http/.rest file — the sole format in-place save and editor
- * handoff can rewrite faithfully.
- */
 export function isHttpFormatSource(format: ImportFormat): boolean {
   return format === 'http';
 }
@@ -32,12 +27,6 @@ export interface ImportFailure {
 
 export type ImportOutcome = ImportSuccess | ImportFailure;
 
-/**
- * Append import warnings to a single-line rejection message: the first
- * warning, then "(+N more warnings)" when more remain. A warningless outcome
- * leaves the message byte-identical. The CLI startup error instead lists
- * every warning indented on its own line.
- */
 export function appendImportWarnings(message: string, warnings: readonly string[]): string {
   if (warnings.length === 0) {
     return message;
