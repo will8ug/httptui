@@ -10,6 +10,16 @@ type DetectedFormat = 'http' | 'postman' | 'openapi';
 
 export type ImportFormat = DetectedFormat | 'curl';
 
+/**
+ * The "http-format source" contract (CONTEXT.md): true only for a session
+ * backed by an .http/.rest file — the sole format in-place save and editor
+ * handoff can rewrite faithfully. Deferred per-format capability divergence
+ * lands at this predicate if built.
+ */
+export function isHttpFormatSource(format: ImportFormat): boolean {
+  return format === 'http';
+}
+
 export interface ImportSuccess extends ParseResult {
   ok: true;
   format: ImportFormat;
