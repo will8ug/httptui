@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { importContent } from '../../src/core/importer';
+import { appendImportWarnings, importContent } from '../../src/core/importer';
 import { parsePostmanCollection } from '../../src/core/importers/postman';
 import { importOk, readFixture, readJsonFixture } from '../helpers/fixtures';
 
@@ -182,5 +182,31 @@ describe('importContent dispatch and outcome shape', () => {
     const viaAdapter = parsePostmanCollection(readJsonFixture('postman/postman-basic.json'));
 
     expect(viaSeam).toEqual(viaAdapter);
+  });
+});
+
+describe('appendImportWarnings', () => {
+  it('returns the message unchanged when the outcome has no warnings', () => {
+    const message = 'No requests found in empty.http';
+
+    expect(appendImportWarnings(message, [])).toBe(message);
+  });
+
+  it('appends the single warning after a colon', () => {
+    const message = 'No requests found in spec.json';
+    const warnings = ['Swagger 2.0 specs are not supported — returning empty results'];
+
+    expect(appendImportWarnings(message, warnings)).toBe(
+      'No requests found in spec.json: Swagger 2.0 specs are not supported — returning empty results',
+    );
+  });
+
+  it('summarizes the warnings beyond the first as a count', () => {
+    const message = 'No requests found in spec.json';
+    const warnings = ['first warning', 'second warning', 'third warning'];
+
+    expect(appendImportWarnings(message, warnings)).toBe(
+      'No requests found in spec.json: first warning (+2 more warnings)',
+    );
   });
 });

@@ -1,0 +1,28 @@
+{
+  "swagger": "2.0",
+  "info": { "title": "Legacy Petstore", "version": "1.0.0" },
+  "host": "petstore.example.com",
+  "basePath": "/v1",
+  "schemes": ["https"],
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "listPets",
+        "summary": "List pets",
+        "responses": { "200": { "description": "A list of pets" } }
+      },
+      "post": {
+        "operationId": "createPet",
+        "summary": "Create a pet",
+        "parameters": [
+          {
+            "name": "pet",
+            "in": "body",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "201": { "description": "The created pet" } }
+      }
+    }
+  }
+}
