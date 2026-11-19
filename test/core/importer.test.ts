@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
-import { importContent } from '../../src/core/importer';
+import { importContent, isHttpFormatSource } from '../../src/core/importer';
 import { parsePostmanCollection } from '../../src/core/importers/postman';
 import { importOk, readFixture, readJsonFixture } from '../helpers/fixtures';
+
+describe('isHttpFormatSource', () => {
+  it('answers true for the http format', () => {
+    expect(isHttpFormatSource('http')).toBe(true);
+  });
+
+  it('answers false for postman, openapi, and curl', () => {
+    expect(isHttpFormatSource('postman')).toBe(false);
+    expect(isHttpFormatSource('openapi')).toBe(false);
+    expect(isHttpFormatSource('curl')).toBe(false);
+  });
+});
 
 describe('importContent detection', () => {
   it('routes a collection with info.schema containing "postman" to the postman adapter', () => {

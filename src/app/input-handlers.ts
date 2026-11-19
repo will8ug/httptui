@@ -12,7 +12,7 @@ import { headersToText } from '../core/headers';
 import { isSearchActive, responseViewportFromState, responseVisible } from '../core/reducer';
 import { serializeHttpFile } from '../core/http-serializer';
 import { buildInPlaceContent } from '../core/in-place-save';
-import { importContent } from '../core/importer';
+import { importContent, isHttpFormatSource } from '../core/importer';
 import { parseEnvironmentFile } from '../core/env-parser';
 import { loadConfig } from '../core/config';
 import { completePath } from '../utils/path-completion';
@@ -583,7 +583,7 @@ export function handleNormalInput({
       return;
     }
 
-    if (state.sourceFormat !== 'http') {
+    if (!isHttpFormatSource(state.sourceFormat)) {
       dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'In-place save is only available for .http files; press S to save as a new file' });
       return;
     }
@@ -593,7 +593,7 @@ export function handleNormalInput({
   }
 
   if (!isFullscreen && key.ctrl && input === 'g') {
-    if (state.sourceFormat !== 'http') {
+    if (!isHttpFormatSource(state.sourceFormat)) {
       dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: 'External editor is only available for .http files' });
       return;
     }
