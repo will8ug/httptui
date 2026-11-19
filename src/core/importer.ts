@@ -13,8 +13,7 @@ export type ImportFormat = DetectedFormat | 'curl';
 /**
  * The "http-format source" contract (CONTEXT.md): true only for a session
  * backed by an .http/.rest file — the sole format in-place save and editor
- * handoff can rewrite faithfully. Deferred per-format capability divergence
- * lands at this predicate if built.
+ * handoff can rewrite faithfully.
  */
 export function isHttpFormatSource(format: ImportFormat): boolean {
   return format === 'http';
@@ -45,8 +44,8 @@ export function appendImportWarnings(message: string, warnings: readonly string[
   }
 
   const [first, ...rest] = warnings;
-  const moreCount = rest.length > 0 ? ` (+${rest.length} more warnings)` : '';
-  return `${message}: ${first}${moreCount}`;
+  const moreWarningsSuffix = rest.length > 0 ? ` (+${rest.length} more warnings)` : '';
+  return `${message}: ${first}${moreWarningsSuffix}`;
 }
 
 interface DetectedDocument {
