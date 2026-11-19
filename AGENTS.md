@@ -4,7 +4,7 @@ Guidance for coding agents (and humans) working in this repository.
 
 ## Planning workflow
 
-Non-trivial work runs through the skills pipeline: grill (or grill-with-docs) → to-spec → to-tickets → implement. `to-tickets` publishes to the local-markdown tracker under `.scratch/` — gitignored by design; tickets are working state, never commit them. Tracker conventions: `docs/agents/issue-tracker.md`; the `## Agent skills` section at the end of this file holds the scaffold pointers.
+Non-trivial work runs through the skills pipeline: grill (or grill-with-docs) → to-spec → to-tickets → implement-spec, which runs the whole ticket graph in one session — worktree-per-ticket subagents, a single integration branch, one final code-review pass. Name the test seams in the spec — implement-spec runs unattended and never asks. Drop to `implement` for a single ticket or work too ambiguous to batch. `to-tickets` publishes to the local-markdown tracker under `.scratch/` — gitignored by design; tickets are working state, never commit them. Tracker conventions: `docs/agents/issue-tracker.md`; the `## Agent skills` section at the end of this file holds the scaffold pointers.
 
 Durable knowledge has one home per concern: domain vocabulary and the capability map in `CONTEXT.md`, decisions in `docs/adr/`, coding conventions in this file, and behavior contracts pinned by the test suite (fastest tier that can verify — see Testing pyramid below).
 

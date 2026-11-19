@@ -21,3 +21,7 @@ At the time of the decision the repo carried 38 capability specs (~5.7k lines) u
 
 - Positive: a single source of truth per concern. Domain vocabulary: `CONTEXT.md`. Decisions: `docs/adr/`. Conventions: `AGENTS.md`. Behavior: tests. No delta-spec bookkeeping, no archiving step.
 - Trade-off: no prose WHEN/THEN behavior contracts remain. Behavioral truth lives in tests, which pin what the code does today but do not state intent the way scenarios did; recovering the old spec prose requires git history. Tracker files under `.scratch/` are untracked by design, so plans live only on the machine that wrote them.
+
+## Amendment (2026-11-19)
+
+The pipeline's terminal step is `implement-spec` by default, replacing plain `implement` as the standard loop. One run implements a whole spec's ticket graph: one implementer subagent per ticket in its own worktree, merges into a single integration branch, then one `code-review` pass over the branch with a single fix-up pass. `implement` remains for a single ticket or work too ambiguous to batch. Trade-off: review moves from per-ticket to end-of-branch, and the batch loop never asks about seams — name them in the spec.
