@@ -12,7 +12,7 @@ import { headersToText } from '../core/headers';
 import { isSearchActive, responseViewportFromState, responseVisible } from '../core/reducer';
 import { serializeHttpFile } from '../core/http-serializer';
 import { buildInPlaceContent } from '../core/in-place-save';
-import { importContent, isHttpFormatSource } from '../core/importer';
+import { appendImportWarnings, importContent, isHttpFormatSource } from '../core/importer';
 import { parseEnvironmentFile } from '../core/env-parser';
 import { loadConfig } from '../core/config';
 import { completePath } from '../utils/path-completion';
@@ -130,7 +130,7 @@ export function handleFileLoadInput({ state, input, key, executorConfig, dispatc
       }
 
       if (outcome.requests.length === 0) {
-        dispatch({ type: 'SET_FILE_LOAD_ERROR', error: `No requests found in ${inputPath}` });
+        dispatch({ type: 'SET_FILE_LOAD_ERROR', error: appendImportWarnings(`No requests found in ${inputPath}`, outcome.warnings) });
         return;
       }
 

@@ -198,6 +198,39 @@ describe('handleFileLoadInput Enter success path', () => {
   });
 });
 
+describe('handleFileLoadInput Enter zero-request rejection', () => {
+  const SWAGGER_FIXTURE = 'test/fixtures/openapi/openapi-swagger2.json';
+  const originalHttpTuiConfig = process.env.HTTP_TUI_CONFIG;
+
+  beforeEach(() => {
+    // The Enter path reads the cert/editor config for the loaded file's
+    // directory; a nonexistent config dir keeps the fixture loads hermetic
+    // (HTTP_TUI_CONFIG outranks HOME and XDG_CONFIG_HOME).
+    process.env.HTTP_TUI_CONFIG = 'nonexistent-httptui-config-dir';
+  });
+
+  afterEach(() => {
+    if (originalHttpTuiConfig === undefined) {
+      delete process.env.HTTP_TUI_CONFIG;
+    } else {
+      process.env.HTTP_TUI_CONFIG = originalHttpTuiConfig;
+    }
+  });
+
+  it('Enter on a refused-spec fixture dispatches the error carrying the import warning', () => {
+    const actions = pressFileLoadKey(
+      fileLoadState({ input: SWAGGER_FIXTURE, cursor: SWAGGER_FIXTURE.length }),
+      '',
+      makeKey({ return: true }),
+    );
+
+    expect(actions).toEqual([{
+      type: 'SET_FILE_LOAD_ERROR',
+      error: `No requests found in ${SWAGGER_FIXTURE}: Swagger 2.0 specs are not supported — returning empty results`,
+    }]);
+  });
+});
+
 describe('handleFileLoadInput Tab completion', () => {
   it('extends multiple matches of an absolute path to their common prefix', () => {
     const fixtureDir = resolve('test/fixtures/tab-complete');

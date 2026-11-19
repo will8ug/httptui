@@ -211,6 +211,30 @@ describe('CLI smoke tests', { timeout: 10_000 }, () => {
     }
   });
 
+  it('exits 1 listing each import warning indented on its own line for a refused spec', async () => {
+    const result = await runCli(['test/fixtures/openapi/openapi-swagger2.json']);
+
+    expect(result.code).toBe(1);
+    const stderr = stripAnsi(result.stderr);
+    expect(stderr).toContain('No requests found in test/fixtures/openapi/openapi-swagger2.json');
+    expect(stderr).toContain('\n  Swagger 2.0 specs are not supported — returning empty results');
+  });
+
+  it('exits 1 with the unchanged single-line message for a zero-request file without warnings', async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-zero-'));
+    try {
+      const emptyHttp = join(tmpDir, 'empty.http');
+      writeFileSync(emptyHttp, '');
+
+      const result = await runCli([emptyHttp]);
+
+      expect(result.code).toBe(1);
+      expect(stripAnsi(result.stderr)).toBe(`No requests found in ${emptyHttp}\n`);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it('resolves env file relative to global config dir when project config exists without environments', async () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'httptui-envtest-'));
     try {

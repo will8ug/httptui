@@ -33,6 +33,22 @@ export interface ImportFailure {
 
 export type ImportOutcome = ImportSuccess | ImportFailure;
 
+/**
+ * Append import warnings to a single-line rejection message: the first
+ * warning, then "(+N more warnings)" when more remain. A warningless outcome
+ * leaves the message byte-identical. The CLI startup error instead lists
+ * every warning indented on its own line.
+ */
+export function appendImportWarnings(message: string, warnings: readonly string[]): string {
+  if (warnings.length === 0) {
+    return message;
+  }
+
+  const [first, ...rest] = warnings;
+  const moreCount = rest.length > 0 ? ` (+${rest.length} more warnings)` : '';
+  return `${message}: ${first}${moreCount}`;
+}
+
 interface DetectedDocument {
   format: DetectedFormat;
   doc: unknown;
