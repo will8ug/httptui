@@ -28,6 +28,28 @@ function pressFileLoadKey(state: AppState, input: string, key: Key = makeKey()):
   return dispatched;
 }
 
+/**
+ * A nonexistent HTTP_TUI_CONFIG dir keeps Enter-path fixture loads hermetic:
+ * the loader reads the cert/editor config for the loaded file's directory,
+ * and HTTP_TUI_CONFIG outranks HOME and XDG_CONFIG_HOME. Call from inside a
+ * describe so the hooks stay scoped to its tests.
+ */
+function useHermeticConfigEnv(): void {
+  const originalHttpTuiConfig = process.env.HTTP_TUI_CONFIG;
+
+  beforeEach(() => {
+    process.env.HTTP_TUI_CONFIG = 'nonexistent-httptui-config-dir';
+  });
+
+  afterEach(() => {
+    if (originalHttpTuiConfig === undefined) {
+      delete process.env.HTTP_TUI_CONFIG;
+    } else {
+      process.env.HTTP_TUI_CONFIG = originalHttpTuiConfig;
+    }
+  });
+}
+
 describe('handleNormalInput o', () => {
   it('enters file-load mode when there are no unsaved changes', () => {
     const actions = pressKey(createInitialState(), 'o');
@@ -144,22 +166,7 @@ describe('handleFileLoadInput mode isolation', () => {
 describe('handleFileLoadInput Enter success path', () => {
   const WARNINGS_FIXTURE = 'test/fixtures/postman/postman-graphql-body.json';
   const CLEAN_FIXTURE = 'test/fixtures/http/load-revert-fixture.http';
-  const originalHttpTuiConfig = process.env.HTTP_TUI_CONFIG;
-
-  beforeEach(() => {
-    // The Enter path reads the cert/editor config for the loaded file's
-    // directory; a nonexistent config dir keeps the fixture loads hermetic
-    // (HTTP_TUI_CONFIG outranks HOME and XDG_CONFIG_HOME).
-    process.env.HTTP_TUI_CONFIG = 'nonexistent-httptui-config-dir';
-  });
-
-  afterEach(() => {
-    if (originalHttpTuiConfig === undefined) {
-      delete process.env.HTTP_TUI_CONFIG;
-    } else {
-      process.env.HTTP_TUI_CONFIG = originalHttpTuiConfig;
-    }
-  });
+  useHermeticConfigEnv();
 
   it('Enter on a file whose import warns dispatches LOAD_FILE carrying the warning count', () => {
     const actions = pressFileLoadKey(
@@ -194,6 +201,24 @@ describe('handleFileLoadInput Enter success path', () => {
       format: 'http',
       executorConfig: { insecure: false },
       warningCount: 0,
+    }]);
+  });
+});
+
+describe('handleFileLoadInput Enter zero-request rejection', () => {
+  const SWAGGER_FIXTURE = 'test/fixtures/openapi/openapi-swagger2.json';
+  useHermeticConfigEnv();
+
+  it('Enter on a refused-spec fixture dispatches the error carrying the import warning', () => {
+    const actions = pressFileLoadKey(
+      fileLoadState({ input: SWAGGER_FIXTURE, cursor: SWAGGER_FIXTURE.length }),
+      '',
+      makeKey({ return: true }),
+    );
+
+    expect(actions).toEqual([{
+      type: 'SET_FILE_LOAD_ERROR',
+      error: `No requests found in ${SWAGGER_FIXTURE}: Swagger 2.0 specs are not supported — returning empty results`,
     }]);
   });
 });

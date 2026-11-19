@@ -54,7 +54,10 @@ if (!parseResult.ok) {
 }
 
 if (parseResult.requests.length === 0) {
-  exitWithError(`No requests found in ${filePath}`);
+  exitWithError([
+    `No requests found in ${filePath}`,
+    ...parseResult.warnings.map((warning) => `  ${warning}`),
+  ].join('\n'));
 }
 
 if (insecure) {

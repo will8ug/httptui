@@ -11,7 +11,7 @@ import { matchCertificate, loadCertFiles } from '../core/certificates';
 import { copyToClipboard, readFromClipboard, type ClipboardRunner } from '../core/clipboard';
 import { toCurlCommand } from '../core/curl-serializer';
 import { parseCurlCommand } from '../core/importers/curl';
-import { importContent } from '../core/importer';
+import { appendImportWarnings, importContent } from '../core/importer';
 import { resolveVariables } from '../core/variables';
 import { ChunkCoalescer } from '../utils/chunk-coalescer';
 import type { Action, AppState, CertEntry, ExecutorConfig, FileVariable, ParsedRequest } from '../core/types';
@@ -142,7 +142,7 @@ export async function performEditorHandoff({ filePath, editor, suspend, dispatch
     }
 
     if (outcome.requests.length === 0) {
-      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: `No requests found in ${basename(filePath)}` });
+      dispatch({ type: 'SET_TRANSIENT_MESSAGE', message: appendImportWarnings(`No requests found in ${basename(filePath)}`, outcome.warnings) });
       return;
     }
 

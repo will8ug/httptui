@@ -10,6 +10,10 @@ type DetectedFormat = 'http' | 'postman' | 'openapi';
 
 export type ImportFormat = DetectedFormat | 'curl';
 
+export function isHttpFormatSource(format: ImportFormat): boolean {
+  return format === 'http';
+}
+
 export interface ImportSuccess extends ParseResult {
   ok: true;
   format: ImportFormat;
@@ -22,6 +26,16 @@ export interface ImportFailure {
 }
 
 export type ImportOutcome = ImportSuccess | ImportFailure;
+
+export function appendImportWarnings(message: string, warnings: readonly string[]): string {
+  if (warnings.length === 0) {
+    return message;
+  }
+
+  const [first, ...rest] = warnings;
+  const moreWarningsSuffix = rest.length > 0 ? ` (+${rest.length} more warnings)` : '';
+  return `${message}: ${first}${moreWarningsSuffix}`;
+}
 
 interface DetectedDocument {
   format: DetectedFormat;
